@@ -1,8 +1,8 @@
-#CDOC 2.0 schema
+# CDOC 2.0 schema
 
 flatbuffer schemas and source code generation from schemas
 
-##Building
+## Building
 
 To install flatbuffer compiler and compile schemas, run `mvn compile`
 
