@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <version>0.0.1-SNAPSHOT</version>
+        <groupId>ee.cyber.cdoc20</groupId>
+        <artifactId>cdoc20</artifactId>
+    </parent>
+
+    <artifactId>cdoc20-schema</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <description>CDOC 2.0 flatbuffer schemas and related functionality </description>
+
+    <properties>
+<!--        <maven.compiler.source>17</maven.compiler.source>-->
+<!--        <maven.compiler.target>17</maven.compiler.target>-->
+        <fbs.sources>${basedir}/src/main/fbs</fbs.sources>
+        <fbs.generated.sources>${project.build.directory}/generated-sources/java</fbs.generated.sources>
+<!--        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>-->
+
+
+        <flatbuffers-compiler.version>2.0.3.1</flatbuffers-compiler.version>
+    </properties>
+
+    <!-- profiles for flatc compiler -->
+    <!-- untested for win/osx -->
+    <!-- run mvn -version to determine os family/name -->
+    <profiles>
+        <profile>
+            <id>os-linux</id>
+            <activation>
+                <os>
+                    <!--family>Windows</family-->
+                    <name>linux</name>
+                </os>
+            </activation>
+            <properties>
+                <flatbuffers-compiler.distribution>linux</flatbuffers-compiler.distribution>
+                <flatbuffers-compiler.package>tar.gz</flatbuffers-compiler.package>
+            </properties>
+        </profile>
+        <profile>
+
+            <id>os-osx</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <!--name>osx</name-->
+                </os>
+            </activation>
+            <properties>
+                <flatbuffers-compiler.distribution>osx</flatbuffers-compiler.distribution>
+                <flatbuffers-compiler.package>tar.gz</flatbuffers-compiler.package>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-win</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <flatbuffers-compiler.distribution>windows</flatbuffers-compiler.distribution>
+                <flatbuffers-compiler.package>zip</flatbuffers-compiler.package>
+            </properties>
+        </profile>
+
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.flatbuffers</groupId>
+            <artifactId>flatbuffers-java</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+            <version>${junit.jupiter.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+<!--            <plugin>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.10.0</version>-->
+<!--                <configuration>-->
+<!--                    <source>17</source>-->
+<!--                    <target>17</target>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+<!--            <plugin>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <version>2.22.2</version>-->
+<!--            </plugin>-->
+            <!--plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.github.davidmoten</groupId>
+                                    <artifactId>flatbuffers-compiler</artifactId>
+                                    <version>${flatbuffers-compiler.version}</version>
+                                    <type>${flatbuffers-compiler.package}</type>
+                                    <classifier>distribution-${flatbuffers-compiler.distribution}</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>${project.build.directory}/bin/flatc</executable>
+                    <!-- optional -->
+                    <workingDirectory>${fbs.sources}</workingDirectory>
+                    <arguments>
+                        <argument>--java</argument>
+<!--                        <argument>&#45;&#45;gen-mutable</argument>-->
+                        <argument>-o</argument>
+                        <argument>${fbs.generated.sources}</argument>
+                        <argument>header.fbs</argument>
+                        <argument>recipients.fbs</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${fbs.generated.sources}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,24 @@
+
+namespace ee.cyber.cdoc20.fbs.recipients;
+
+// Elliptic curve type enum for ECCPublicKey recipient
+enum EllipticCurve:byte { 
+    UNKNOWN,
+    secp384r1
+}
+
+// ECC public key recipient
+table ECCPublicKey {
+    curve:                 EllipticCurve = UNKNOWN;
+
+    recipient_public_key:  [ubyte] (required);
+
+    sender_public_key:     [ubyte] (required);
+}
+
+// Keyserver recipient
+table KeyServer {
+    recipient_id:   string (required);
+    keyserver_id:   string (required);
+    transaction_id: string (required);
+}
