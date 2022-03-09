@@ -24,3 +24,4 @@ buildNumber.properties
 hs_err_pid*
 
 /.idea/
+/cdoc20-lib/cdoc20-lib.iml
