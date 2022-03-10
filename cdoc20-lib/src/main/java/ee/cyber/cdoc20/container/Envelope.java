@@ -1,10 +1,10 @@
 package ee.cyber.cdoc20.container;
 
-import com.google.flatbuffers.ByteBufferReadWriteBuf;
+
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.fbs.header.*;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
-import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
