@@ -1,8 +1,10 @@
 package ee.cyber.cdoc20.crypto;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.*;
 import java.util.Arrays;
@@ -10,9 +12,12 @@ import java.util.HexFormat;
 
 import at.favre.lib.crypto.HKDF;
 
-import org.bouncycastle.util.encoders.HexEncoder;
+
+import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.crypto.KeyAgreement;
 
 
 public class Crypto {
@@ -51,7 +56,7 @@ public class Crypto {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");// provider SunEC
         keyPairGenerator.initialize( new ECGenParameterSpec(SECP_384_R_1));
 
-        System.out.println("EC provider:" + keyPairGenerator.getProvider());
+        //System.out.println("EC provider:" + keyPairGenerator.getProvider());
 
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
         return keyPair;
@@ -90,7 +95,7 @@ public class Crypto {
      */
     public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded) throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
 
-        final int expectedLength = 48;
+        final int expectedLength = 48; //TODO
         if (encoded.length != (2 * expectedLength + 1))
         {
             log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, expectedLength,
@@ -111,6 +116,7 @@ public class Crypto {
         ECPoint pubPoint = new ECPoint(X, Y);
         AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
         params.init(new ECGenParameterSpec(SECP_384_R_1));
+
         ECParameterSpec ecParameters = params.getParameterSpec(ECParameterSpec.class);
         ECPublicKeySpec pubECSpec = new ECPublicKeySpec(pubPoint, ecParameters);
         return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(pubECSpec);
@@ -120,7 +126,7 @@ public class Crypto {
         //https://stackoverflow.com/questions/4407779/biginteger-to-byte
         byte[] array = bigInteger.toByteArray();
         int expectedLen = (bigInteger.bitLength() + 7) / 8;
-        log.debug("Crypto::toUnsignedByteArray {}", HexFormat.of().formatHex(array));
+        //log.debug("Crypto::toUnsignedByteArray {}", HexFormat.of().formatHex(array));
         if ((array[0] == 0) && (array.length == expectedLen + 1)) {
             return Arrays.copyOfRange(array, 1, array.length);
         } else {
@@ -129,5 +135,58 @@ public class Crypto {
             }
             return array;
         }
+    }
+
+    public static byte[] calcEcDhSharedSecret(ECPrivateKey ecPrivateKey, ECPublicKey otherPublicKey) throws NoSuchAlgorithmException, InvalidKeyException {
+        // Perform key agreement
+        KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+        ka.init(ecPrivateKey);
+        ka.doPhase(otherPublicKey, true);
+
+        byte[] sharedSecret = ka.generateSecret();
+        return sharedSecret;
+    }
+
+    public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen) throws NoSuchAlgorithmException, InvalidKeyException {
+        byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
+        byte[] kekPm = HKDF.fromHmacSha256().extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.writeBytes("CDOC20kek".getBytes(StandardCharsets.UTF_8));
+        baos.writeBytes(FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).getBytes(StandardCharsets.UTF_8));
+
+        baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
+        baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
+
+        return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen );
+    }
+
+    public static byte[] deriveKeyDecryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen) throws NoSuchAlgorithmException, InvalidKeyException {
+        byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
+        byte[] kekPm = HKDF.fromHmacSha256().extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.writeBytes("CDOC20kek".getBytes(StandardCharsets.UTF_8));
+        baos.writeBytes(FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).getBytes(StandardCharsets.UTF_8));
+
+        baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
+        baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
+
+
+        return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen );
+    }
+
+
+    public static byte[] xor(byte[] x1, byte[] x2)
+    {
+        if (x1.length != x2.length) {
+            throw new IllegalArgumentException("Array lengths must be equal "+x1.length+ "!=" +x2.length);
+        }
+        byte[] out = new byte[x1.length];
+
+        for (int i = x1.length - 1; i >= 0; i--) {
+            out[i] = (byte)(x1[i] ^ x2[i]);
+        }
+        return out;
     }
 }

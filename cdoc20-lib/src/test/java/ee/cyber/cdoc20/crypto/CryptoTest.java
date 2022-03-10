@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.HexFormat;
 
 import at.favre.lib.crypto.HKDF;
 import org.slf4j.Logger;
@@ -69,7 +71,7 @@ public class CryptoTest {
 
     @Test
     void testEcPubKeyEncodeDecode() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException, InvalidKeySpecException {
-
+        log.trace("testEcPubKeyEncodeDecode()");
 
         KeyPair keyPair = Crypto.generateEcKeyPair();
 
@@ -82,7 +84,62 @@ public class CryptoTest {
         ECPublicKey decoded = Crypto.decodeEcPublicKeyFromTls(encodedEcPubKey);
 
         assertEquals(ecPublicKey.getW(), decoded.getW());
+        assertEquals(ecPublicKey, decoded);
 
         System.out.println();
+    }
+
+    @Test
+    void testGenSharedSecret() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+        KeyPair keyPair = Crypto.generateEcKeyPair();
+
+        KeyPair other = Crypto.generateEcKeyPair();
+
+        byte[] ecdhSharedSecret = Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
+
+        assertEquals(48, ecdhSharedSecret.length);
+    }
+
+    @Test
+    void testXorCrypto() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
+        log.trace("testXorCrypto()");
+        byte[] fmk = Crypto.generateFileMasterKey();
+        KeyPair keyPair = Crypto.generateEcKeyPair();
+        KeyPair other = Crypto.generateEcKeyPair();
+
+        byte[] kek = Crypto.deriveKeyEncryptionKey(keyPair, (ECPublicKey) other.getPublic(), fmk.length);
+        byte[] encryptedFmk = Crypto.xor(fmk, kek);
+        byte[] decrypted = Crypto.xor(encryptedFmk, kek);
+
+        log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
+        log.debug("encrypted: {}", HexFormat.of().formatHex(encryptedFmk));
+        log.debug("decrypted: {}", HexFormat.of().formatHex(decrypted));
+
+        assertArrayEquals(fmk, decrypted);
+    }
+
+    @Test
+    void testFmkECCycle() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
+        log.trace("testFmkECCycle()");
+        byte[] fmk = Crypto.generateFileMasterKey();
+
+        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
+        KeyPair bobKeyPair = Crypto.generateEcKeyPair();
+
+        byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);
+        byte[] encryptedFmk = Crypto.xor(fmk, aliceKek);
+
+        byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), fmk.length);
+        byte[] decryptedFmk = Crypto.xor(encryptedFmk, bobKek);
+
+
+
+        log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
+        log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
+        log.debug("encrypted: {}", HexFormat.of().formatHex(encryptedFmk));
+        log.debug("bob KEK:   {}", HexFormat.of().formatHex(bobKek));
+        log.debug("decrypted: {}", HexFormat.of().formatHex(decryptedFmk));
+
+        assertArrayEquals(fmk, decryptedFmk);
     }
 }
