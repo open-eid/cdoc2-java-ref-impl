@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -13,13 +14,17 @@ import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import at.favre.lib.crypto.HKDF;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class CryptoTest {
+    private static Logger log = LoggerFactory.getLogger(CryptoTest.class);
 
     @BeforeAll
     static void initCrypto() {
@@ -45,59 +50,38 @@ public class CryptoTest {
     }
 
     @Test
-    void testEccKeyGen() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        //KeyFactory kf = KeyFactory.getInstance("EC");
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");// provider SunEC
-        keyPairGenerator.initialize( new ECGenParameterSpec("secp384r1"));
-
-        System.out.println("EC provider:" + keyPairGenerator.getProvider());
-
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-
-
-        //s key
-        PrivateKey privateKey = keyPair.getPrivate();
-        PublicKey pubKey = keyPair.getPublic();
-
-        String format = privateKey.getFormat();
-        System.out.println("privKey format:"+format);
-        System.out.println("pubKey format:"+pubKey.getFormat());
-        byte[] privKeyPkcs8 = privateKey.getEncoded();
-        byte[] pubKeyX509 = pubKey.getEncoded();
-
-
-        ECPrivateKey ecPrivateKey = (ECPrivateKey) privateKey;
-        ECPublicKey ecPublicKey = (ECPublicKey) pubKey;
-
-        //network byte order with first byte as sign
-        byte[] xBytes = ecPublicKey.getW().getAffineX().toByteArray();
-        byte[] yBytes = ecPublicKey.getW().getAffineY().toByteArray();
-
-
-        //EC pubKey in TLS 1.3 format
-        //https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
-        //https://github.com/dushitaoyuan/littleca/blob/5694924eb084e2923bb61550c30c0444ddc68484/littleca-core/src/main/java/com/taoyuanx/ca/core/sm/util/BCECUtil.java#L83
-        //https://github.com/bcgit/bc-java/blob/526b5846653100fc521c1a68c02dbe9df3347a29/core/src/main/java/org/bouncycastle/math/ec/ECCurve.java#L410
-        byte[] tlsPubKey = new byte[1 + xBytes.length + yBytes.length];
-        tlsPubKey[0] = 0x04;
-
-        //FIXME: xyBytes has length is 49bytes, so first byte is sign and must be removed? Also byte order in array?
-        System.arraycopy(xBytes, 0, tlsPubKey, 1, xBytes.length);
-        System.arraycopy(yBytes, 0, tlsPubKey, 1 + xBytes.length, yBytes.length);
+    void testBigInteger() {
+        byte[] neg = new BigInteger("-255").toByteArray(); //0xff, 0x01
+        byte[] neg254 = new BigInteger("-254").toByteArray(); //0xff, 0x02
+        byte[] zero = new BigInteger("0").toByteArray(); // 0x00
+        byte[] pos127 = new BigInteger("127").toByteArray(); // 0x7f
+        byte[] pos128 = new BigInteger("128").toByteArray(); // 0x00, 0x80
+        byte[] pos = new BigInteger("255").toByteArray(); // 0x00, 0xff
 
 
 
 
-        //byte[] encodedPubKey = new byte[1 + xBytes.length + yBytes.length];
-//        byte[] sitt = new byte[1];
-//        encodedPubKey[0] = 0x04;
+        assertEquals(new BigInteger("255"), new BigInteger(1, new byte[] {(byte)0xff}));
+        assertEquals(new BigInteger("255"), new BigInteger(1, new byte[] {(byte)0x00, (byte)0xff}));
 
 
-        // 49 bytes starting with 0, first byte is sign
-        //byte[] privKeyRaw = ecPrivateKey.getS().toByteArray();
-//        PKCS8EncodedKeySpec pkcs8 = new PKCS8EncodedKeySpec(privKeyOctets);
-//        pkcs8.
+    }
 
+    @Test
+    void testEcPubKeyEncodeDecode() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException, InvalidKeySpecException {
+
+
+        KeyPair keyPair = Crypto.generateEcKeyPair();
+
+        ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
+
+        byte[] encodedEcPubKey = Crypto.encodeEcPubKeyForTls(ecPublicKey);
+
+        assertEquals(1+48*2, encodedEcPubKey.length);
+
+        ECPublicKey decoded = Crypto.decodeEcPublicKeyFromTls(encodedEcPubKey);
+
+        assertEquals(ecPublicKey.getW(), decoded.getW());
 
         System.out.println();
     }
