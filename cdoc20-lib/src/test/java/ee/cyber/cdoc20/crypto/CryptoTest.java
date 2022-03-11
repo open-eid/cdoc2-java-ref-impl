@@ -1,34 +1,27 @@
 package ee.cyber.cdoc20.crypto;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
+
 import java.util.HexFormat;
 
-import at.favre.lib.crypto.HKDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.*;
 
 
 public class CryptoTest {
@@ -167,6 +160,41 @@ public class CryptoTest {
 
         String decrypted = new String(ChaChaCipher.decryptPayload(cek, encrypted, additionalData), StandardCharsets.UTF_8);
         assertEquals(payload, decrypted);
+    }
 
+    @Test
+    void testChaChaCipherStream()
+            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException,
+            IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+
+        log.trace("testChaChaCipherStream()");
+        SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
+
+        byte[] nonce = ChaChaCipher.generateNonce();
+        byte[] additionalData = ChaChaCipher.getAdditionalData(new byte[0], new byte[0]);
+        String payload = "secret";
+
+//        log.debug("nonce hex: {}", HexFormat.of().formatHex(nonce));
+//        byte[] encryptedBytes = ChaChaCipher.encryptPayload(cek, nonce, payload.getBytes(StandardCharsets.UTF_8), additionalData);
+//        log.debug("encryptedBytes hex: {}", HexFormat.of().formatHex(encryptedBytes));
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        CipherOutputStream cos = ChaChaCipher.initChaChaOutputStream(bos, cek, nonce, additionalData);
+        cos.write(payload.getBytes(StandardCharsets.UTF_8));
+        cos.flush(); // without flush, some bytes are not written and decryption fails
+        cos.close();
+
+        byte[] encrypted = bos.toByteArray();
+//        log.debug("encrypted hex:      {}", HexFormat.of().formatHex(encrypted));
+        ByteArrayInputStream bis = new ByteArrayInputStream(encrypted);
+
+        CipherInputStream cis = ChaChaCipher.initChaChaInputStream(bis, cek, additionalData);
+
+        byte[] buf = new byte[1024];
+        int read = cis.read(buf);
+        assertTrue(read > 0);
+        String decrypted = new String(buf, 0, read, StandardCharsets.UTF_8);
+
+        assertEquals(payload, decrypted);
     }
 }
