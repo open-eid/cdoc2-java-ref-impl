@@ -18,6 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 
 public class Crypto {
@@ -35,21 +39,37 @@ public class Crypto {
      */
     public final static int HHK_LEN_BYTES = 256 / 8; //SHA-256
 
+    public static SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
+        //https://www.veracode.com/blog/research/java-crypto-catchup
+        return SecureRandom.getInstance("DRBG" , //NIST SP 800-90Ar1
+                DrbgParameters.instantiation(256,  // Required security strength
+                        PR_AND_RESEED,  // configure algorithm to provide prediction resistance and reseeding facilities
+                        "CDOC20".getBytes() // personalization string, used to derive seed not involved in providing entropy.
+                )
+        );
+    }
+
 
     public static byte[] generateFileMasterKey() throws NoSuchAlgorithmException {
         byte[] inputKeyingMaterial = new byte[64]; //spec says: ikm should be more than 32bytes of secure random
-        SecureRandom.getInstance("NativePRNG").nextBytes(inputKeyingMaterial);
+        getSecureRandom().nextBytes(inputKeyingMaterial);
         byte[] fmk = HKDF.fromHmacSha256().extract("CDOC20salt".getBytes(StandardCharsets.UTF_8), inputKeyingMaterial);
         return fmk;
     }
 
-    public static byte[] deriveContentEncryptionKey(byte[] fmk) {
-        return HKDF.fromHmacSha256().expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
+//    public static byte[] deriveContentEncryptionKey(byte[] fmk) {
+//        return HKDF.fromHmacSha256().expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
+//    }
+
+    public static SecretKey deriveContentEncryptionKey(byte[] fmk) {
+        byte[] cekBytes = HKDF.fromHmacSha256().expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(cekBytes, "ChaCha20");
+        return secretKeySpec;
     }
 
     public static byte[] deriveHeaderHmacKey(byte[] fmk) throws NoSuchAlgorithmException {
         //MessageDigest.getInstance("SHA-256").getDigestLength();
-        return HKDF.fromHmacSha256().expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
+        return HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
     }
 
     public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
@@ -138,7 +158,6 @@ public class Crypto {
     }
 
     public static byte[] calcEcDhSharedSecret(ECPrivateKey ecPrivateKey, ECPublicKey otherPublicKey) throws NoSuchAlgorithmException, InvalidKeyException {
-        // Perform key agreement
         KeyAgreement ka = KeyAgreement.getInstance("ECDH");
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
@@ -148,20 +167,15 @@ public class Crypto {
     }
 
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen) throws NoSuchAlgorithmException, InvalidKeyException {
-        byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
-        byte[] kekPm = HKDF.fromHmacSha256().extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.writeBytes("CDOC20kek".getBytes(StandardCharsets.UTF_8));
-        baos.writeBytes(FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).getBytes(StandardCharsets.UTF_8));
-
-        baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
-        baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
-
-        return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen );
+        return deriveKek(ecKeyPair, otherPublicKey, keyLen, true);
     }
 
     public static byte[] deriveKeyDecryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen) throws NoSuchAlgorithmException, InvalidKeyException {
+        return deriveKek(ecKeyPair, otherPublicKey, keyLen, false);
+    }
+
+    private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode) throws NoSuchAlgorithmException, InvalidKeyException {
+
         byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
         byte[] kekPm = HKDF.fromHmacSha256().extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
 
@@ -169,12 +183,17 @@ public class Crypto {
         baos.writeBytes("CDOC20kek".getBytes(StandardCharsets.UTF_8));
         baos.writeBytes(FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).getBytes(StandardCharsets.UTF_8));
 
-        baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
-        baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
-
+        if (isEncryptionMode) {
+            baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
+            baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
+        } else {
+            baos.writeBytes(encodeEcPubKeyForTls((ECPublicKey) ecKeyPair.getPublic()));
+            baos.writeBytes(encodeEcPubKeyForTls(otherPublicKey));
+        }
 
         return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen );
     }
+
 
 
     public static byte[] xor(byte[] x1, byte[] x2)

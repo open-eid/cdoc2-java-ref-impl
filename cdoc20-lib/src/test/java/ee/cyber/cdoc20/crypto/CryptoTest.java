@@ -24,6 +24,12 @@ import at.favre.lib.crypto.HKDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 
 public class CryptoTest {
     private static Logger log = LoggerFactory.getLogger(CryptoTest.class);
@@ -44,8 +50,12 @@ public class CryptoTest {
         byte[] fmk = Crypto.generateFileMasterKey();
         assertTrue(fmk.length == 256/8);
 
-        byte[] cek = Crypto.deriveContentEncryptionKey(fmk);
-        assertTrue(cek.length == 256/8);
+        //byte[] cek = Crypto.deriveContentEncryptionKey(fmk);
+        //assertTrue(cek.length == 256/8);
+        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
+        String format = cekKey.getFormat();
+        byte[] cekBytes = cekKey.getEncoded();
+        assertEquals(Crypto.CEK_LEN_BYTES, cekBytes.length);
 
         byte[] hhk = Crypto.deriveHeaderHmacKey(fmk);
         assertTrue(hhk.length == 256/8);
@@ -92,9 +102,7 @@ public class CryptoTest {
     @Test
     void testGenSharedSecret() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
         KeyPair keyPair = Crypto.generateEcKeyPair();
-
         KeyPair other = Crypto.generateEcKeyPair();
-
         byte[] ecdhSharedSecret = Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
         assertEquals(48, ecdhSharedSecret.length);
@@ -141,5 +149,24 @@ public class CryptoTest {
         log.debug("decrypted: {}", HexFormat.of().formatHex(decryptedFmk));
 
         assertArrayEquals(fmk, decryptedFmk);
+    }
+
+    @Test
+    void testChaCha() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+        log.trace("testChaCha()");
+
+        SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
+
+        byte[] nonce = ChaChaCipher.generateNonce();
+        byte[] additionalData = ChaChaCipher.getAdditionalData(new byte[0], new byte[0]);
+        String payload = "secret";
+        byte[] encrypted = ChaChaCipher.encryptPayload(cek, nonce, payload.getBytes(StandardCharsets.UTF_8), additionalData);
+
+        //log.debug("encrypted hex: {}", HexFormat.of().formatHex(encrypted));
+        //log.debug("encrypted str: {}", new String(encrypted));
+
+        String decrypted = new String(ChaChaCipher.decryptPayload(cek, encrypted, additionalData), StandardCharsets.UTF_8);
+        assertEquals(payload, decrypted);
+
     }
 }
