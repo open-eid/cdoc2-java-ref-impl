@@ -83,6 +83,7 @@ public class CryptoTest {
         byte[] encodedEcPubKey = Crypto.encodeEcPubKeyForTls(ecPublicKey);
 
         assertEquals(1+48*2, encodedEcPubKey.length);
+        assertEquals(0x04, encodedEcPubKey[0]);
 
         ECPublicKey decoded = Crypto.decodeEcPublicKeyFromTls(encodedEcPubKey);
 
