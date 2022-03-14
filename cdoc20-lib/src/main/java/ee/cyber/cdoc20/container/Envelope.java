@@ -1,10 +1,9 @@
 package ee.cyber.cdoc20.container;
 
-
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.fbs.header.*;
+import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
-
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -68,15 +67,16 @@ public class Envelope {
         for (int i = 0; i < eccRecipients.length; i++) {
             EccRecipient eccRecipient = eccRecipients[i];
 
-            int recipientPubKeyOffset = builder.createByteVector(eccRecipient.recipientPubKey); //TODO: TLS 1.3 format
-            int senderPubKeyOffset = builder.createByteVector(eccRecipient.senderPubKey); //TODO: TLS 1.3 format
+            int recipientPubKeyOffset = builder.createByteVector(eccRecipient.getRecipientPubKeyTlsEncoded()); // TLS 1.3 format
+            int senderPubKeyOffset = builder.createByteVector(eccRecipient.getSenderPubKeyTlsEncoded()); // TLS 1.3 format
             int eccPubKeyOffset = ECCPublicKey.createECCPublicKey(builder,
                     eccRecipient.ellipticCurve,
                     recipientPubKeyOffset,
                     senderPubKeyOffset
             );
 
-            int encFmkOffset = RecipientRecord.createEncryptedFmkVector(builder, fmkKeyBuf); //TODO: enc with recipientPubKey
+            int encFmkOffset =
+                    RecipientRecord.createEncryptedFmkVector(builder, eccRecipient.getEncryptedFileMasterKey());
 
             RecipientRecord.startRecipientRecord(builder);
             RecipientRecord.addDetailsType(builder, Details.recipients_ECCPublicKey);

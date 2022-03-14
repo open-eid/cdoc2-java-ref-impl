@@ -31,9 +31,16 @@ public class Crypto {
 
 
     /**
+     * File Master KEy length i n octets
+     */
+    public final static int FMK_LEN_BYTES = 256 / 8;
+
+    /**
      * Content Encryption Key length in octets
      */
     public final static int CEK_LEN_BYTES = 256 / 8;
+
+
 
     /**
      * Header HMAC Key length in octets
@@ -159,6 +166,7 @@ public class Crypto {
     }
 
     public static byte[] calcEcDhSharedSecret(ECPrivateKey ecPrivateKey, ECPublicKey otherPublicKey) throws NoSuchAlgorithmException, InvalidKeyException {
+
         KeyAgreement ka = KeyAgreement.getInstance("ECDH");
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
