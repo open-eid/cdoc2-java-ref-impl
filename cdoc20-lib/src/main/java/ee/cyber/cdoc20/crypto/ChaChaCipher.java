@@ -91,7 +91,9 @@ public class ChaChaCipher {
     }
 
     public static byte[] generateNonce() throws NoSuchAlgorithmException {
-        return Crypto.getSecureRandom().generateSeed(NONCE_LEN_BYTES);
+        byte[] nonce = new byte[NONCE_LEN_BYTES];
+        Crypto.getSecureRandom().nextBytes(nonce);
+        return nonce;
     }
 
     public static CipherOutputStream initChaChaOutputStream(OutputStream os,

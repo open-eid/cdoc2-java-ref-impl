@@ -197,4 +197,12 @@ public class CryptoTest {
 
         assertEquals(payload, decrypted);
     }
+
+    @Test
+    void testHmacSha256() throws NoSuchAlgorithmException, InvalidKeyException {
+        byte[] data = "header".getBytes(StandardCharsets.UTF_8);
+        byte[] hmac = Crypto.calcHmacSha256(Crypto.generateFileMasterKey(), data);
+        assertNotNull(hmac);
+        assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
+    }
 }

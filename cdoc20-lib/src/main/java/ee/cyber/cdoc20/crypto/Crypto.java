@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -194,10 +195,21 @@ public class Crypto {
         return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen );
     }
 
+    public static byte[] calcHmacSha256(byte[] fmk, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
+
+        byte[] hhk = deriveHeaderHmacKey(fmk);
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(hhk, "HmacSHA256"));
+        return mac.doFinal(data);
+    }
 
 
-    public static byte[] xor(byte[] x1, byte[] x2)
-    {
+
+    public static byte[] xor(byte[] x1, byte[] x2) {
+
+        if ((x1 == null) || (x2 == null)) {
+            throw new IllegalArgumentException("Cannot xor null value");
+        }
         if (x1.length != x2.length) {
             throw new IllegalArgumentException("Array lengths must be equal "+x1.length+ "!=" +x2.length);
         }
