@@ -27,7 +27,7 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 public class Crypto {
     public static final String SECP_384_R_1 = "secp384r1";
-    private static Logger log = LoggerFactory.getLogger(Crypto.class);
+    private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
 
     /**
@@ -75,10 +75,16 @@ public class Crypto {
         return secretKeySpec;
     }
 
-    public static byte[] deriveHeaderHmacKey(byte[] fmk) throws NoSuchAlgorithmException {
-        //MessageDigest.getInstance("SHA-256").getDigestLength();
-        return HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
+//    public static byte[] deriveHeaderHmacKey(byte[] fmk) throws NoSuchAlgorithmException {
+//        //MessageDigest.getInstance("SHA-256").getDigestLength();
+//        return HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
+//    }
+
+    public static SecretKey deriveHeaderHmacKey(byte[] fmk) {
+        byte[] hhk = HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
+        return new SecretKeySpec(hhk, "HmacSHA256");
     }
+
 
     public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");// provider SunEC
@@ -115,8 +121,8 @@ public class Crypto {
 
     /**
      * Decode EcPublicKey from TLS 1.3 format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
-     * @param encoded
-     * @return
+     * @param encoded EC public key octets encoded as in TLS 1.3 format
+     * @return decoded ECPublicKey
      * @throws InvalidParameterSpecException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
@@ -176,6 +182,7 @@ public class Crypto {
     }
 
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen) throws NoSuchAlgorithmException, InvalidKeyException {
+
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, true);
     }
 
@@ -205,11 +212,18 @@ public class Crypto {
 
     public static byte[] calcHmacSha256(byte[] fmk, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
 
-        byte[] hhk = deriveHeaderHmacKey(fmk);
         Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(hhk, "HmacSHA256"));
+        mac.init(deriveHeaderHmacKey(fmk));
         return mac.doFinal(data);
     }
+
+    public static byte[] calcHmacSha256(SecretKey hhk, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(hhk);
+        return mac.doFinal(data);
+    }
+
 
 
 

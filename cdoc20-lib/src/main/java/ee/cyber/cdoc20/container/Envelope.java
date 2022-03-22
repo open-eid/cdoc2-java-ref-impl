@@ -1,35 +1,79 @@
 package ee.cyber.cdoc20.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import ee.cyber.cdoc20.crypto.ChaChaCipher;
+import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.fbs.header.*;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.crypto.CipherOutputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.ECPublicKey;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Envelope {
+    private static final Logger log = LoggerFactory.getLogger(Envelope.class);
+
+
     public static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 2;
 
 
-    public static final int HDR_HMAC_LEN_BYTES = 32;
+    //public static final int HDR_HMAC_LEN_BYTES = 32;
 
-    private final byte payloadEncByte = PayloadEncryptionMethod.CHACHA20POLY1305;
+    private static final byte payloadEncByte = PayloadEncryptionMethod.CHACHA20POLY1305;
 
-    private final byte[] fmkKeyBuf;
+    //private final byte[] fmkKeyBuf;
     private final EccRecipient[] eccRecipients;
 
-    public Envelope(byte[] fmkKey, EccRecipient[] recipients) {
-        this.fmkKeyBuf = fmkKey;
+    private final SecretKey hmacKey;
+
+    //content encryption  key
+    private final SecretKey cekKey;
+
+    private Envelope(EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
+        //this.fmkKeyBuf = fmkKey;
         this.eccRecipients = recipients;
+        this.hmacKey = hmacKey;
+        this.cekKey = cekKey;
     }
 
-    public void serialize(InputStream payload, OutputStream os) throws IOException {
+    public static Envelope build(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (fmk.length != Crypto.FMK_LEN_BYTES) {
+            throw new IllegalArgumentException("Invalid FMK len");
+        }
+
+        List<EccRecipient> eccRecipientList = new LinkedList<>();
+
+        for (ECPublicKey otherPubKey: recipients) {
+            byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
+            byte[] encryptedFmk = Crypto.xor(fmk, kek);
+            EccRecipient eccRecipient = new EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+            eccRecipientList.add(eccRecipient);
+        }
+
+        SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
+        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
+        return new Envelope(eccRecipientList.toArray(new EccRecipient[0]), hmacKey, cekKey);
+    }
+
+    public void serialize(InputStream payloadIs, OutputStream os) throws IOException {
         os.write(PRELUDE);
         os.write(new byte[]{VERSION});
 
@@ -38,18 +82,24 @@ public class Envelope {
         ByteBuffer bb = ByteBuffer.allocate(4);
         bb.order(ByteOrder.BIG_ENDIAN);
         bb.putInt(headerBytes.length);
-        byte[] beInt = bb.array();
-        os.write(bb.array());
+        byte[] headerLenBytes = bb.array();
 
+        os.write(headerLenBytes);
         os.write(headerBytes);
 
-        os.write(new byte[HDR_HMAC_LEN_BYTES]);// TODO: calculate hmac
 
-        os.write(payload.readAllBytes()); //TODO: tar, zip, encrypt
+        try {
+            byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
+            os.write(hmac);
+            byte[] nonce = ChaChaCipher.generateNonce();
+            byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
+            CipherOutputStream cipherOs = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData);
+            cipherOs.write(payloadIs.readAllBytes()); //TODO: tar, zip, loop before encryption
 
-
-
-
+        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+            log.error("error serializing payload", e);
+            throw new IOException("error serializing payload", e);
+        }
     }
 
     byte[] serializeHeader() throws IOException {

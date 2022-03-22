@@ -20,20 +20,18 @@ import java.util.HexFormat;
 
 public class ChaChaCipher {
 
-    private static Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
-
+    private static final Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
     public final static int NONCE_LEN_BYTES = 96 / 8;
+
     public static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+
         if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)){
             throw new IllegalArgumentException("Invalid nonce");
         }
 
         Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
-
-        //byte[] nonce = Crypto.getSecureRandom().generateSeed(NONCE_LEN_BYTES); //always generate
         // IV, initialization value with nonce
         IvParameterSpec iv = new IvParameterSpec(nonce);
-
         cipher.init(mode, contentEncryptionKey, iv);
         return cipher;
     }
@@ -77,8 +75,7 @@ public class ChaChaCipher {
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, cek, nonce);
 
         cipher.updateAAD(additionalData);
-        byte[] decrypted = cipher.doFinal(encrypted, NONCE_LEN_BYTES, encrypted.length - NONCE_LEN_BYTES);
-        return decrypted;
+        return cipher.doFinal(encrypted, NONCE_LEN_BYTES, encrypted.length - NONCE_LEN_BYTES);
     }
 
     public static byte[] getAdditionalData(byte[] header, byte[] headerHMAC) {
@@ -113,7 +110,7 @@ public class ChaChaCipher {
 
         Cipher cipher = initCipher(Cipher.ENCRYPT_MODE, contentEncryptionKey, nonce);
         cipher.updateAAD(additionalData);
-        os.write(nonce);//how to prepend unencrypted nonce
+        os.write(nonce);//prepend unencrypted nonce
         return new CipherOutputStream(os, cipher);
     }
 

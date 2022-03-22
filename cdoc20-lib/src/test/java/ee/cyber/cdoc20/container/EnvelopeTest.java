@@ -12,6 +12,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
@@ -20,6 +21,7 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.Base64;
+import java.util.List;
 
 class EnvelopeTest {
     byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
@@ -35,7 +37,8 @@ class EnvelopeTest {
 // How to decode pub key from X.509 and priv key from PKCS#8 ?
 
     ECPublicKey recipientPubKey;
-    ECPublicKey senderPubKey;
+    //ECPublicKey senderPubKey;
+    KeyPair senderKeyPair;
 
     @BeforeEach
     void initInputData() throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidAlgorithmParameterException {
@@ -46,7 +49,8 @@ class EnvelopeTest {
 
         KeyPair recipientKeyPair = Crypto.generateEcKeyPair();
 
-        KeyPair senderKeyPair = Crypto.generateEcKeyPair();
+        this.senderKeyPair = Crypto.generateEcKeyPair();
+        this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
 
 //        String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
 //        String recipientPrivKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPrivate().getEncoded());
@@ -56,15 +60,16 @@ class EnvelopeTest {
 
 
         //generate new keys for now as no idea how to decode keys from default encoding (X.509 and PKCS#8)
-        this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
-        this.senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
+
+
     }
 
     @Test
-    void serializeHeaderTest() throws IOException {
-        EccRecipient [] eccRecipients = new EccRecipient[] {new EccRecipient(recipientPubKey, senderPubKey, fmkBuf)};
-        //InputStream payloadIs = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
-        Envelope envelope = new Envelope(fmkBuf, eccRecipients);
+    void serializeHeaderTest() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        //EccRecipient [] eccRecipients = new EccRecipient[] {new EccRecipient(recipientPubKey, senderPubKey, fmkBuf)};
+        List<ECPublicKey> recipients = List.of(recipientPubKey);
+
+        Envelope envelope = Envelope.build(fmkBuf, senderKeyPair, recipients);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         envelope.serializeHeader(baos);
@@ -77,10 +82,11 @@ class EnvelopeTest {
     }
 
     @Test
-    void testContainer() throws IOException {
-        EccRecipient [] eccRecipients = new EccRecipient[] {new EccRecipient(recipientPubKey, senderPubKey, fmkBuf)};
+    void testContainer() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
-        Envelope envelope = new Envelope(fmkBuf, eccRecipients);
+        List<ECPublicKey> recipients = List.of(recipientPubKey);
+
+        Envelope envelope = Envelope.build(fmkBuf, senderKeyPair, recipients);
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.serialize(payload, dst);

@@ -25,7 +25,7 @@ import javax.crypto.*;
 
 
 public class CryptoTest {
-    private static Logger log = LoggerFactory.getLogger(CryptoTest.class);
+    private static final Logger log = LoggerFactory.getLogger(CryptoTest.class);
 
     @BeforeAll
     static void initCrypto() {
@@ -50,8 +50,9 @@ public class CryptoTest {
         byte[] cekBytes = cekKey.getEncoded();
         assertEquals(Crypto.CEK_LEN_BYTES, cekBytes.length);
 
-        byte[] hhk = Crypto.deriveHeaderHmacKey(fmk);
-        assertTrue(hhk.length == 256/8);
+        SecretKey hhkKey = Crypto.deriveHeaderHmacKey(fmk);
+        byte[] hhkBytes = hhkKey.getEncoded();
+        assertTrue( hhkBytes.length == 256/8);
     }
 
     @Test
@@ -166,13 +167,15 @@ public class CryptoTest {
     @Test
     void testChaChaCipherStream()
             throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException,
-            IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+            IOException, InvalidKeyException {
 
         log.trace("testChaChaCipherStream()");
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
 
         byte[] nonce = ChaChaCipher.generateNonce();
-        byte[] additionalData = ChaChaCipher.getAdditionalData(new byte[0], new byte[0]);
+        byte[] header = new byte[0];
+        byte[] headerHMAC = new byte[0];
+        byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
         String payload = "secret";
 
 //        log.debug("nonce hex: {}", HexFormat.of().formatHex(nonce));
@@ -182,7 +185,7 @@ public class CryptoTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         CipherOutputStream cos = ChaChaCipher.initChaChaOutputStream(bos, cek, nonce, additionalData);
         cos.write(payload.getBytes(StandardCharsets.UTF_8));
-        cos.flush(); // without flush, some bytes are not written and decryption fails
+        cos.flush(); // without flush, some bytes are not written
         cos.close();
 
         byte[] encrypted = bos.toByteArray();
