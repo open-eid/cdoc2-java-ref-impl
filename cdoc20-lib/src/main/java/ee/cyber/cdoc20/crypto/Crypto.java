@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.crypto;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.ECPrivateKey;
@@ -31,7 +32,7 @@ public class Crypto {
 
 
     /**
-     * File Master KEy length i n octets
+     * File Master Key length in octets
      */
     public final static int FMK_LEN_BYTES = 256 / 8;
 
@@ -154,6 +155,10 @@ public class Crypto {
         ECParameterSpec ecParameters = params.getParameterSpec(ECParameterSpec.class);
         ECPublicKeySpec pubECSpec = new ECPublicKeySpec(pubPoint, ecParameters);
         return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(pubECSpec);
+    }
+
+    public static ECPublicKey decodeEcPublicKeyFromTls(ByteBuffer encoded) throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
+        return decodeEcPublicKeyFromTls(Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
     }
 
     private static byte[] toUnsignedByteArray(BigInteger bigInteger) {
