@@ -7,6 +7,8 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -18,13 +20,13 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 
 class EnvelopeTest {
-    byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
-    byte[] recipientPubKeyBuf = new byte[1+48*2];
-    byte[] senderPubKeyBuf = new byte[1+48*2];
+    private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
+    byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
 
 //    KeyPair recipientKeyPair = Crypto.generateEcKeyPair();
 //    String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
@@ -33,8 +35,8 @@ class EnvelopeTest {
 //    public static final String recipientPrivKeyBase64 = "ME4CAQAwEAYHKoZIzj0CAQYFK4EEACIENzA1AgEBBDCFkOQ2qBEWDXFMKwR65pAI1I3Hsao+FBj0jroy0xgMl0W5qrGU9ULnGWGg6l0D3S8=";
 // How to decode pub key from X.509 and priv key from PKCS#8 ?
 
-    ECPublicKey recipientPubKey;
-    //ECPublicKey senderPubKey;
+    //ECPublicKey recipientPubKey;
+    KeyPair recipientKeyPair;
     KeyPair senderKeyPair;
 
     @BeforeEach
@@ -44,10 +46,10 @@ class EnvelopeTest {
         fmkBuf[2] = 'k';
         fmkBuf[fmkBuf.length - 1] = (byte)0xff;
 
-        KeyPair recipientKeyPair = Crypto.generateEcKeyPair();
+        this.recipientKeyPair = Crypto.generateEcKeyPair();
 
         this.senderKeyPair = Crypto.generateEcKeyPair();
-        this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
+        //this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
 
 //        String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
 //        String recipientPrivKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPrivate().getEncoded());
@@ -65,8 +67,9 @@ class EnvelopeTest {
     @Test
     void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
 
+        ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
         InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
-        List<ECPublicKey> recipients = List.of(recipientPubKey);
+        List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
         Envelope envelope = Envelope.build(fmkBuf, senderKeyPair, recipients);
 
@@ -77,7 +80,7 @@ class EnvelopeTest {
 
         assertTrue(resultBytes.length > 0);
 
-        List<EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes)); //no exception is good for now
+        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes)); //no exception is good for now
 
         assertTrue(details.size() == 1);
 
@@ -87,10 +90,34 @@ class EnvelopeTest {
 
     }
 
-//    @Test
-//    void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
-//
-//    }
+    @Test
+    void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
+
+        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
+        KeyPair bobKeyPair = Crypto.generateEcKeyPair();
+
+//        byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), Crypto.FMK_LEN_BYTES);
+//        byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), Crypto.FMK_LEN_BYTES);
+//        log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
+//        log.debug("bob KEK:   {}", HexFormat.of().formatHex(bobKek));
+
+        InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
+        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
+        List<ECPublicKey> recipients = List.of(recipientPubKey);
+
+        Envelope senderEnvelope = Envelope.build(fmkBuf, aliceKeyPair, recipients);
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        senderEnvelope.serialize(payload, dst);
+        byte[] resultBytes = dst.toByteArray();
+
+        assertTrue(resultBytes.length > 0);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(resultBytes);
+        Envelope recipientEnvelope = Envelope.fromInputStream(bis, bobKeyPair);
+
+        assertEquals(senderEnvelope, recipientEnvelope);
+
+    }
 
 
 //FIXME: Random EnvelopeTest failure 22.03.22

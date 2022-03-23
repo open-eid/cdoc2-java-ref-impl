@@ -143,6 +143,7 @@ public class CryptoTest {
         log.debug("bob KEK:   {}", HexFormat.of().formatHex(bobKek));
         log.debug("decrypted: {}", HexFormat.of().formatHex(decryptedFmk));
 
+        assertArrayEquals(aliceKek, bobKek);
         assertArrayEquals(fmk, decryptedFmk);
     }
 

@@ -3,9 +3,14 @@ package ee.cyber.cdoc20.container;
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
-import ee.cyber.cdoc20.fbs.header.*;
+
+
+import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
+import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
+import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
+import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +30,9 @@ import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
 
+import static ee.cyber.cdoc20.fbs.header.Details.*;
+
+@EqualsAndHashCode
 public class Envelope {
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
@@ -38,42 +46,72 @@ public class Envelope {
     private static final byte payloadEncByte = PayloadEncryptionMethod.CHACHA20POLY1305;
 
     //private final byte[] fmkKeyBuf;
-    private final EccRecipient[] eccRecipients;
+    private final Details.EccRecipient[] eccRecipients;
 
     private final SecretKey hmacKey;
 
     //content encryption  key
     private final SecretKey cekKey;
 
-    private Envelope(EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
+    private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
         //this.fmkKeyBuf = fmkKey;
         this.eccRecipients = recipients;
         this.hmacKey = hmacKey;
         this.cekKey = cekKey;
     }
 
+    private Envelope(Details.EccRecipient[] recipients, byte[] fmk) {
+        this.eccRecipients = recipients;
+        this.hmacKey = Crypto.deriveHeaderHmacKey(fmk);
+        this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
+    }
+
     public static Envelope build(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients) throws NoSuchAlgorithmException, InvalidKeyException {
+
+        log.trace("Envelope::build");
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
             throw new IllegalArgumentException("Invalid FMK len");
         }
 
-        List<EccRecipient> eccRecipientList = new LinkedList<>();
+        List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
 
         for (ECPublicKey otherPubKey: recipients) {
             byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
+            log.debug("          kek: {}", HexFormat.of().formatHex(kek));//FIXME: remove
             byte[] encryptedFmk = Crypto.xor(fmk, kek);
-            EccRecipient eccRecipient = new EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+            Details.EccRecipient eccRecipient = new Details.EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+            log.debug("          fmk: {}", HexFormat.of().formatHex(fmk));//FIXME: remove
             log.debug("encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmk));
             eccRecipientList.add(eccRecipient);
         }
 
         SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-        return new Envelope(eccRecipientList.toArray(new EccRecipient[0]), hmacKey, cekKey);
+        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
+    }
+
+    public static Envelope fromInputStream(InputStream envelopeIs, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
+
+        log.trace("Envelope::fromInputStream");
+        ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
+        List<Details.EccRecipient> details = parseHeader(envelopeIs);
+
+        for( Details.EccRecipient detailsEccRecipient : details) {
+            ECPublicKey senderPubKey = detailsEccRecipient.getSenderPubKey();
+            if (recipientPubKey.equals(detailsEccRecipient.getRecipientPubKey())) {
+                byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
+                log.debug("          kek: {}", HexFormat.of().formatHex(kek));//FIXME: remove
+                byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());
+                log.debug("Decrypted fmk: {}", HexFormat.of().formatHex(fmk));//FIXME: remove
+                return new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
+            }
+        }
+
+        throw new CDocParseException("No matching EC pub key found");
     }
 
     //TODO: parseHeader return type not final
-    public static List<EccRecipient> parseHeader(InputStream envelopeIs) throws IOException, CDocParseException, GeneralSecurityException {
+    public static List<Details.EccRecipient> parseHeader(InputStream envelopeIs) throws IOException, CDocParseException, GeneralSecurityException {
         final int envelope_min_len = PRELUDE.length
                 + 1 //version 0x02
                 + 4 //header length field
@@ -109,7 +147,7 @@ public class Envelope {
 
         Header header = deserializeHeader(headerBytes);
 
-        List<EccRecipient> eccRecipientList = new LinkedList<>();
+        List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
 
         for (int i=0; i < header.recipientsLength(); i++) {
             RecipientRecord r = header.recipients(i);
@@ -128,7 +166,7 @@ public class Envelope {
 
             log.debug("Parsed encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmkBytes));
 
-            if ( r.detailsType() == Details.recipients_ECCPublicKey) {
+            if ( r.detailsType() == recipients_ECCPublicKey) {
                 ECCPublicKey detailsEccPublicKey = (ECCPublicKey) r.details(new ECCPublicKey());
                 if (detailsEccPublicKey == null) {
                     throw new CDocParseException("error parsing Details");
@@ -138,14 +176,14 @@ public class Envelope {
                     ECPublicKey recipientPubKey = Crypto.decodeEcPublicKeyFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
                     ECPublicKey senderPubKey = Crypto.decodeEcPublicKeyFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
 
-                    eccRecipientList.add(new EccRecipient(r.fmkEncryptionMethod(),
+                    eccRecipientList.add(new Details.EccRecipient(r.fmkEncryptionMethod(),
                             recipientPubKey, senderPubKey, encryptedFmkBytes));
                 } catch (IllegalArgumentException illegalArgumentException) {
                     throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
                 }
-            } else if (r.detailsType() == Details.recipients_KeyServer){
+            } else if (r.detailsType() == recipients_KeyServer){
                 log.warn("Details.recipients_KeyServer not implemented");
-            } else if (r.detailsType() == Details.NONE){
+            } else if (r.detailsType() == NONE){
                 log.warn("Details.NONE not implemented");
             }
             else {
@@ -205,7 +243,7 @@ public class Envelope {
         int[] recipients = new int[eccRecipients.length];
 
         for (int i = 0; i < eccRecipients.length; i++) {
-            EccRecipient eccRecipient = eccRecipients[i];
+            Details.EccRecipient eccRecipient = eccRecipients[i];
 
             int recipientPubKeyOffset = builder.createByteVector(eccRecipient.getRecipientPubKeyTlsEncoded()); // TLS 1.3 format
             int senderPubKeyOffset = builder.createByteVector(eccRecipient.getSenderPubKeyTlsEncoded()); // TLS 1.3 format
@@ -219,7 +257,7 @@ public class Envelope {
                     RecipientRecord.createEncryptedFmkVector(builder, eccRecipient.getEncryptedFileMasterKey());
 
             RecipientRecord.startRecipientRecord(builder);
-            RecipientRecord.addDetailsType(builder, Details.recipients_ECCPublicKey);
+            RecipientRecord.addDetailsType(builder, ee.cyber.cdoc20.fbs.header.Details.recipients_ECCPublicKey);
             RecipientRecord.addDetails(builder, eccPubKeyOffset);
 
             RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
