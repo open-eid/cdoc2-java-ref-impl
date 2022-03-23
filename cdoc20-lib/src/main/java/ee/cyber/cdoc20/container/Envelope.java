@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
@@ -53,6 +54,7 @@ public class Envelope {
     //content encryption  key
     private final SecretKey cekKey;
 
+
     private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
         //this.fmkKeyBuf = fmkKey;
         this.eccRecipients = recipients;
@@ -90,28 +92,87 @@ public class Envelope {
         return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
     }
 
-    public static Envelope fromInputStream(InputStream envelopeIs, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
+//    static Envelope fromInputStream(InputStream envelopeIs, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
+//
+//        log.trace("Envelope::fromInputStream");
+//        ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
+//        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
+//
+//        List<Details.EccRecipient> details = parseHeader(envelopeIs, fileHeaderOs);
+//
+//        for( Details.EccRecipient detailsEccRecipient : details) {
+//            ECPublicKey senderPubKey = detailsEccRecipient.getSenderPubKey();
+//            if (recipientPubKey.equals(detailsEccRecipient.getRecipientPubKey())) {
+//                byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
+//                byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());
+//
+//                Envelope envelope = new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
+//
+//                if (envelopeIs.available() > Crypto.HHK_LEN_BYTES) {
+//                    byte[] calculatedHmac = Crypto.calcHmacSha256(envelope.hmacKey, fileHeaderOs.toByteArray());
+//                    byte[] hmac = envelopeIs.readNBytes(Crypto.HHK_LEN_BYTES);
+//
+//                    if (!Arrays.equals(calculatedHmac, hmac)) {
+//                        log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
+//                        log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
+//
+//                        throw new CDocParseException("Invalid hmac");
+//                    }
+//                } else {
+//                    throw new CDocParseException("No hmac");
+//                }
+//
+//                return envelope;
+//            }
+//        }
+//
+//        log.info("No matching EC pub key found");
+//        throw new CDocParseException("No matching EC pub key found");
+//    }
 
+    public static CipherInputStream decrypt(InputStream envelopeIs, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
         log.trace("Envelope::fromInputStream");
         ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
-        List<Details.EccRecipient> details = parseHeader(envelopeIs);
+        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
+
+        List<Details.EccRecipient> details = parseHeader(envelopeIs, fileHeaderOs);
 
         for( Details.EccRecipient detailsEccRecipient : details) {
             ECPublicKey senderPubKey = detailsEccRecipient.getSenderPubKey();
             if (recipientPubKey.equals(detailsEccRecipient.getRecipientPubKey())) {
                 byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
-                log.debug("          kek: {}", HexFormat.of().formatHex(kek));//FIXME: remove
                 byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());
-                log.debug("Decrypted fmk: {}", HexFormat.of().formatHex(fmk));//FIXME: remove
-                return new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
+
+                Envelope envelope = new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
+
+                if (envelopeIs.available() > Crypto.HHK_LEN_BYTES) {
+                    byte[] calculatedHmac = Crypto.calcHmacSha256(envelope.hmacKey, fileHeaderOs.toByteArray());
+                    byte[] hmac = envelopeIs.readNBytes(Crypto.HHK_LEN_BYTES);
+
+                    if (!Arrays.equals(calculatedHmac, hmac)) {
+                        log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
+                        log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
+
+                        throw new CDocParseException("Invalid hmac");
+                    }
+
+                    byte[] additionalData = ChaChaCipher.getAdditionalData(fileHeaderOs.toByteArray(), hmac);
+                    return ChaChaCipher.initChaChaInputStream(envelopeIs, envelope.cekKey, additionalData);
+                } else {
+                    throw new CDocParseException("No hmac");
+                }
+
             }
         }
 
+        log.info("No matching EC pub key found");
         throw new CDocParseException("No matching EC pub key found");
     }
 
-    //TODO: parseHeader return type not final
-    public static List<Details.EccRecipient> parseHeader(InputStream envelopeIs) throws IOException, CDocParseException, GeneralSecurityException {
+
+
+
+    static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs) throws IOException, CDocParseException, GeneralSecurityException {
         final int envelope_min_len = PRELUDE.length
                 + 1 //version 0x02
                 + 4 //header length field
@@ -143,8 +204,11 @@ public class Envelope {
             throw new CDocParseException("invalid CDOC header length: "+headerLen);
         }
 
-        byte[] headerBytes = envelopeIs.readNBytes(headerLen + Crypto.HHK_LEN_BYTES);
+        byte[] headerBytes = envelopeIs.readNBytes(headerLen);
 
+        if (outHeaderOs != null) {
+            outHeaderOs.writeBytes(headerBytes);
+        }
         Header header = deserializeHeader(headerBytes);
 
         List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
@@ -183,8 +247,8 @@ public class Envelope {
                 }
             } else if (r.detailsType() == recipients_KeyServer){
                 log.warn("Details.recipients_KeyServer not implemented");
-            } else if (r.detailsType() == NONE){
-                log.warn("Details.NONE not implemented");
+//            } else if (r.detailsType() == NONE){
+//                log.warn("Details.NONE not implemented");
             }
             else {
                 log.error("Unknown Details type {}", r.detailsType());
@@ -201,7 +265,8 @@ public class Envelope {
         return header;
     }
 
-    public void serialize(InputStream payloadIs, OutputStream os) throws IOException {
+    public void encrypt(InputStream payloadIs, OutputStream os) throws IOException {
+        log.trace("encrypt");
         os.write(PRELUDE);
         os.write(new byte[]{VERSION});
 
@@ -221,8 +286,12 @@ public class Envelope {
             os.write(hmac);
             byte[] nonce = ChaChaCipher.generateNonce();
             byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
+//            log.debug("nonce: {}", HexFormat.of().formatHex(nonce));
+//            log.debug("AAD:   {}", HexFormat.of().formatHex(additionalData));
             CipherOutputStream cipherOs = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData);
             cipherOs.write(payloadIs.readAllBytes()); //TODO: tar, zip, loop before encryption
+            cipherOs.flush();
+            cipherOs.close(); //TODO: shouldn't be here, refactor API
 
         } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             log.error("error serializing payload", e);

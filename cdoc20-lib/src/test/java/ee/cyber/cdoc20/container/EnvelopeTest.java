@@ -1,26 +1,20 @@
 package ee.cyber.cdoc20.container;
 
-import static java.util.Base64.getEncoder;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ee.cyber.cdoc20.crypto.Crypto;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.CipherInputStream;
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.List;
 
 class EnvelopeTest {
@@ -74,13 +68,14 @@ class EnvelopeTest {
         Envelope envelope = Envelope.build(fmkBuf, senderKeyPair, recipients);
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
-        envelope.serialize(payload, dst);
+        envelope.encrypt(payload, dst);
 
         byte[] resultBytes = dst.toByteArray();
 
         assertTrue(resultBytes.length > 0);
 
-        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes)); //no exception is good for now
+        ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
+        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs); //no exception is good for now
 
         assertTrue(details.size() == 1);
 
@@ -90,16 +85,34 @@ class EnvelopeTest {
 
     }
 
+//    @Test
+//    void testEnvelope() throws IOException, GeneralSecurityException, CDocParseException {
+//
+//        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
+//        KeyPair bobKeyPair = Crypto.generateEcKeyPair();
+//
+//        InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
+//        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
+//        List<ECPublicKey> recipients = List.of(recipientPubKey);
+//
+//        Envelope senderEnvelope = Envelope.build(fmkBuf, aliceKeyPair, recipients);
+//        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+//        senderEnvelope.encrypt(payload, dst);
+//        byte[] resultBytes = dst.toByteArray();
+//
+//        assertTrue(resultBytes.length > 0);
+//
+//        ByteArrayInputStream bis = new ByteArrayInputStream(resultBytes);
+//        Envelope recipientEnvelope = Envelope.fromInputStream(bis, bobKeyPair);
+//
+//        assertEquals(senderEnvelope, recipientEnvelope);
+//    }
+
     @Test
     void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
 
         KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
         KeyPair bobKeyPair = Crypto.generateEcKeyPair();
-
-//        byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), Crypto.FMK_LEN_BYTES);
-//        byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), Crypto.FMK_LEN_BYTES);
-//        log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
-//        log.debug("bob KEK:   {}", HexFormat.of().formatHex(bobKek));
 
         InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
@@ -107,17 +120,22 @@ class EnvelopeTest {
 
         Envelope senderEnvelope = Envelope.build(fmkBuf, aliceKeyPair, recipients);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
-        senderEnvelope.serialize(payload, dst);
-        byte[] resultBytes = dst.toByteArray();
+        senderEnvelope.encrypt(payload, dst);
+        byte[] cdocContainerBytes = dst.toByteArray();
 
-        assertTrue(resultBytes.length > 0);
+        assertTrue(cdocContainerBytes.length > 0);
 
-        ByteArrayInputStream bis = new ByteArrayInputStream(resultBytes);
-        Envelope recipientEnvelope = Envelope.fromInputStream(bis, bobKeyPair);
+        ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes);
+        CipherInputStream cis = Envelope.decrypt(bis, bobKeyPair);
 
-        assertEquals(senderEnvelope, recipientEnvelope);
+        byte[] buf = new byte[1024];
+        int read = cis.read(buf);
+        assertTrue(read > 0);
+        String decrypted = new String(buf, 0, read, StandardCharsets.UTF_8);
 
+        assertEquals("payload", decrypted);
     }
+
 
 
 //FIXME: Random EnvelopeTest failure 22.03.22

@@ -126,7 +126,8 @@ public class ChaChaCipher {
         }
 
         byte[] nonce = is.readNBytes(NONCE_LEN_BYTES);
-        //log.debug("nonce hex: {}", HexFormat.of().formatHex(nonce));
+//        log.debug("nonce : {}", HexFormat.of().formatHex(nonce));
+//        log.debug("AAD   : {}", HexFormat.of().formatHex(additionalData));
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, contentEncryptionKey, nonce);
         cipher.updateAAD(additionalData);
         return new CipherInputStream(is, cipher);
