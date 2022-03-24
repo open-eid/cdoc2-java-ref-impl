@@ -28,6 +28,7 @@
     <modules>
         <module>cdoc20-schema</module>
         <module>cdoc20-lib</module>
+        <module>cdoc20-cli</module>
     </modules>
 
     <dependencyManagement>

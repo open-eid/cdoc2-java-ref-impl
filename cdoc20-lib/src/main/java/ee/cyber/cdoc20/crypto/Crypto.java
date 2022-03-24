@@ -133,7 +133,7 @@ public class Crypto {
         final int expectedLength = 48; //TODO
         if (encoded.length != (2 * expectedLength + 1))
         {
-            log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, expectedLength,
+            log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, (2 * expectedLength + 1),
                     HexFormat.of().formatHex(encoded));
             throw new IllegalArgumentException("Incorrect length for uncompressed encoding");
         }

@@ -10,3 +10,5 @@ security measures with optional server backend.
 ## Structure
 
 - cdoc20-schema - flatbuffers schemas and code generation
+- cdoc20-lib    - CDOC 2.0 creation and processing library
+- cdoc20-cli    - Command line utility to create/process CDOC20 files

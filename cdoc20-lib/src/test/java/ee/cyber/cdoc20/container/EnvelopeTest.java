@@ -29,6 +29,10 @@ class EnvelopeTest {
 //    public static final String recipientPrivKeyBase64 = "ME4CAQAwEAYHKoZIzj0CAQYFK4EEACIENzA1AgEBBDCFkOQ2qBEWDXFMKwR65pAI1I3Hsao+FBj0jroy0xgMl0W5qrGU9ULnGWGg6l0D3S8=";
 // How to decode pub key from X.509 and priv key from PKCS#8 ?
 
+    //https://stackoverflow.com/questions/41927859/how-do-i-load-an-elliptic-curve-pem-encoded-private-key
+    //https://stackoverflow.com/questions/40434317/how-to-load-pem-encoded-elliptic-curve-public-keys-into-bouncy-castle/40439081#40439081
+    //https://www.baeldung.com/java-read-pem-file-keys
+
     //ECPublicKey recipientPubKey;
     KeyPair recipientKeyPair;
     KeyPair senderKeyPair;
