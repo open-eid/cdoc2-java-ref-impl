@@ -9,7 +9,10 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.*;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HexFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import at.favre.lib.crypto.HKDF;
 
@@ -27,9 +30,15 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 
 public class Crypto {
-    public static final String SECP_384_R_1 = "secp384r1";
+
     private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
+    public static final String SECP_384_R_1 = "secp384r1";
+
+    /**
+     * Key length for secp384r1 curve
+     */
+    public static final int SECP_384_R_1_LEN_BYTES = 384 / 8;
 
     /**
      * File Master Key length in octets
@@ -130,7 +139,7 @@ public class Crypto {
      */
     public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded) throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
 
-        final int expectedLength = 48; //TODO
+        final int expectedLength = SECP_384_R_1_LEN_BYTES;
         if (encoded.length != (2 * expectedLength + 1))
         {
             log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, (2 * expectedLength + 1),
@@ -246,5 +255,166 @@ public class Crypto {
             out[i] = (byte)(x1[i] ^ x2[i]);
         }
         return out;
+    }
+
+    /**
+     * Load OpenSSL generated EC private key
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * <code>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </code>
+     * @param openSslPem OpenSSL generated EC private key in PEM
+     * @return EC private key loaded from openSslPem
+     */
+    public static ECPrivateKey loadECPrivateKey(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+
+        //https://stackoverflow.com/questions/41927859/how-do-i-load-an-elliptic-curve-pem-encoded-private-key
+        // static pkcs8 header
+        final byte[] header = HexFormat.of().parseHex("3081bf020100301006072a8648ce3d020106052b810400220481a7");
+
+        byte[] pem = decodeEcPrivateKeyFromPem(openSslPem);
+        byte[] pkcs8 = new byte[header.length + pem.length];
+        System.arraycopy(header, 0, pkcs8, 0, header.length);
+        System.arraycopy(pem, 0,pkcs8, header.length, pem.length);
+        PrivateKey ecPrivate = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(pkcs8));
+        return (ECPrivateKey) ecPrivate;
+    }
+
+    /**
+     * Decode bytes from OpenSSL PEM
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * Example:
+     * <code>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </code>
+     * @param openSslPem OpenSSL generated EC private key in PEM
+     * @return pem decoded into bytes
+     */
+    private static byte[] decodeEcPrivateKeyFromPem(String openSslPem) {
+        Pattern pattern = Pattern.compile("(?s)-----BEGIN EC PRIVATE KEY-----.*-----END EC PRIVATE KEY-----");
+        Matcher matcher = pattern.matcher(openSslPem);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("EC private key not found");
+        }
+        String strippedPem = matcher.group().replace("-----BEGIN EC PRIVATE KEY-----", "")
+                .replace("-----END EC PRIVATE KEY-----", "")
+                .replaceAll("\\s", "");
+        byte[] pem = Base64.getDecoder().decode(strippedPem); //? is it actually x509 or ASN.1 ?
+        return pem;
+    }
+
+    /**
+     * openssl ec -in key.pem -pubout -out public.pem
+     * <code>
+     * -----BEGIN PUBLIC KEY-----
+     * MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO
+     * IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii
+     * 3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw
+     * -----END PUBLIC KEY-----
+     * <code/>
+     * @param openSslPem
+     * @return
+     */
+    public static ECPublicKey loadECPublicKey(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        Pattern pattern = Pattern.compile("(?s)-----BEGIN PUBLIC KEY-----.*-----END PUBLIC KEY-----");
+        Matcher matcher = pattern.matcher(openSslPem);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("Public key not found");
+        }
+        String pubKeyPem = matcher.group()
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+
+        X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pubKeyPem));
+        return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
+    }
+
+    /**
+     * Load EC public key from OpenSSL private key PEM
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * Example key PEM:
+     * <pre>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </pre>
+     * @param openSslPem OpenSSL generated EC private key in PEM
+     * @return ECPublicKey decoded from PEM
+     */
+    private static ECPublicKey loadECPubKeyFromOpenSslPem(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+
+        byte[] raw = decodeEcPrivateKeyFromPem(openSslPem);
+
+        //FIXME: hackish code, find format spec for PEM generated by OpenSSL
+        //public key is last 97 bytes in decoded bytes that preceded by length and 0x00
+        int pubKeyLen = 2 * SECP_384_R_1_LEN_BYTES + 1;
+        if (raw.length > pubKeyLen + 2) {
+            //public key is preceded by length and 0x00
+            if ((raw[raw.length - (pubKeyLen + 2)] == pubKeyLen+1) //+ preceding 0x00
+                    && (raw[raw.length - (pubKeyLen + 1)] == 0x00)
+                    && (raw[raw.length - pubKeyLen ] == 0x04)) { //pubKey starts with 0x04
+
+                byte[] encodedPubKey = new byte[pubKeyLen];
+                System.arraycopy(raw, raw.length - pubKeyLen, encodedPubKey, 0, pubKeyLen);
+                X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(encodedPubKey);
+                log.debug("PEM pub key part: {}", HexFormat.of().formatHex(encodedPubKey));
+                return decodeEcPublicKeyFromTls(encodedPubKey);
+                //return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
+            }
+        }
+
+        //log.error("Unable to decode EC public key from {}", HexFormat.of().formatHex(raw));
+        throw new IllegalArgumentException("Illegal EC key");
+    }
+
+    /**
+     * Load EC keys generated using openssl
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * openssl ec -in key.pem -pubout -out public.pem
+     * @param pubKeyPem
+     * @param ecPrivatePem
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     */
+    public static KeyPair loadFromPem(String pubKeyPem, String ecPrivatePem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        PrivateKey ecPrivate = loadECPrivateKey(ecPrivatePem);
+        ECPublicKey ecPublicKey = loadECPublicKey(pubKeyPem);
+        return new KeyPair(ecPublicKey, ecPrivate);
+    }
+
+    /**
+     * Load EC key pair from OpenSSL generated PEM file:
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * Example key PEM:
+     * <pre>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </pre>
+     * @param pem OpenSSL generated EC private key in PEM
+     * @return EC KeyPair decoded from PEM
+     */
+    public static KeyPair loadFromPem(String pem) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+        PrivateKey ecPrivate = loadECPrivateKey(pem);
+        ECPublicKey ecPublicKey = loadECPubKeyFromOpenSslPem(pem);
+        return new KeyPair(ecPublicKey, ecPrivate);
     }
 }
