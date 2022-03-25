@@ -16,7 +16,12 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HexFormat;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,12 +127,18 @@ public class CryptoTest {
     }
 
     @Test
-    void testFmkECCycle() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
+    void testFmkECCycle() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException {
         log.trace("testFmkECCycle()");
         byte[] fmk = Crypto.generateFileMasterKey();
 
-        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
+        //KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
+        KeyPair aliceKeyPair = loadECKeyFromPem();
         KeyPair bobKeyPair = Crypto.generateEcKeyPair();
+
+        byte[] bobPkcs8 = bobKeyPair.getPrivate().getEncoded();
+        String bobPEM = Base64.getEncoder().encodeToString(bobPkcs8);
+
+        log.debug("bobPEM {}", bobPEM);
 
         byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);
         byte[] encryptedFmk = Crypto.xor(fmk, aliceKek);
@@ -209,5 +220,83 @@ public class CryptoTest {
         byte[] hmac = Crypto.calcHmacSha256(Crypto.generateFileMasterKey(), data);
         assertNotNull(hmac);
         assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
+    }
+
+    //@Test
+    KeyPair loadECKeyFromPem() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+
+        //header/footer and whitespace removed
+        String keyPem =
+            //-----BEGIN EC PRIVATE KEY-----
+            "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd" +
+            "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j" +
+            "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd" +
+            "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=";
+            //-----END EC PRIVATE KEY-----
+
+        //openssl ec -in key.pem -pubout -out public.pem
+        //matching pub key with header/footer and whitespaces removed
+        String pubKeyPem =
+            //-----BEGIN PUBLIC KEY-----
+            "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO" +
+            "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii" +
+            "3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw";
+            //-----END PUBLIC KEY-----
+
+
+        // static header you can put in front
+        final byte[] header = HexFormat.of().parseHex("3081bf020100301006072a8648ce3d020106052b810400220481a7");
+
+        //key from the PEM above
+        byte[] pem = Base64.getDecoder().decode(keyPem);
+
+        byte[] pkcs8 = new byte[header.length + pem.length];
+
+
+
+        System.arraycopy(header, 0, pkcs8, 0, header.length);
+        System.arraycopy(pem, 0,pkcs8, header.length, pem.length);
+
+        PrivateKey ecPrivate = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(pkcs8));
+
+        String alg = ecPrivate.getAlgorithm();
+
+        log.debug("{}", HexFormat.of().formatHex(ecPrivate.getEncoded()));
+
+        assertEquals("EC", alg);
+
+
+
+        X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pubKeyPem));
+
+        ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
+
+        assertEquals("EC", ecPublicKey.getAlgorithm());
+
+        byte[] rawPubKey = Crypto.encodeEcPubKeyForTls(ecPublicKey);
+        log.debug("{}", HexFormat.of().formatHex(rawPubKey));
+
+        KeyPair keyPair = new KeyPair(ecPublicKey, ecPrivate);
+        return keyPair;
+    }
+
+    @Test
+    void testLoadEcPubKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        //openssl ec -in key.pem -pubout -out public.pem
+        String pubKeyPem = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO" +
+                "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii" +
+                "3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw";
+
+        X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pubKeyPem));
+
+        ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
+
+        assertEquals("EC", ecPublicKey.getAlgorithm());
+
+        byte[] rawPubKey = Crypto.encodeEcPubKeyForTls(ecPublicKey);
+        log.debug("{}", HexFormat.of().formatHex(rawPubKey));
+
+
     }
 }
