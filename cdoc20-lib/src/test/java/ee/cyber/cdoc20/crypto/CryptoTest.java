@@ -127,14 +127,12 @@ public class CryptoTest {
 
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         String pem =
-                """
-                -----BEGIN EC PRIVATE KEY-----
-                MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
-                4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
-                C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
-                yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
-                -----END EC PRIVATE KEY-----
-                """;
+                "-----BEGIN EC PRIVATE KEY-----\n" +
+                "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
+                "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j\n" +
+                "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
+                "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
+                "-----END EC PRIVATE KEY-----\n";
         KeyPair aliceKeyPair = ECKeys.loadFromPem(pem);
         //KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair();

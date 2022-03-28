@@ -70,7 +70,7 @@ class EnvelopeTest {
         InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
         List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
-        Envelope envelope = Envelope.build(fmkBuf, senderKeyPair, recipients);
+        Envelope envelope = Envelope.prepare(fmkBuf, senderKeyPair, recipients);
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(payload, dst);
@@ -123,7 +123,7 @@ class EnvelopeTest {
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
-        Envelope senderEnvelope = Envelope.build(fmkBuf, aliceKeyPair, recipients);
+        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         senderEnvelope.encrypt(payload, dst);
         byte[] cdocContainerBytes = dst.toByteArray();

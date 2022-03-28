@@ -1,3 +1,26 @@
+##Building & Running
+
+###Building
+Run cdoc20 parent directory
+```
+mvn package
+```
+
+###Running
+Run from cdoc20-cli directory
+
+To create:
+- Output file `/tmp/mydoc.cdoc`
+- with private EC key `keys/alice.pem`
+- to recipient `keys/bob_pub.pem`
+- to encrypt file 'README.md'
+
+Run:
+```
+cdoc20-cli/target/appassembler/bin/cdoc create --file /tmp/mydoc.cdoc --key keys/alice.pem --pubkey keys/bob_pub.pem README.md
+```
+
+
 ##Generating EC keys
 
 Generate an EC private key, of size 384, and output it to a file named key.pem:

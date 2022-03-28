@@ -69,7 +69,7 @@ public class Envelope {
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
     }
 
-    public static Envelope build(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static Envelope prepare(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients) throws NoSuchAlgorithmException, InvalidKeyException {
 
         log.trace("Envelope::build");
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
@@ -80,10 +80,10 @@ public class Envelope {
 
         for (ECPublicKey otherPubKey: recipients) {
             byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
-            log.debug("          kek: {}", HexFormat.of().formatHex(kek));//FIXME: remove
+            //log.debug("          kek: {}", HexFormat.of().formatHex(kek));//FIXME: remove
             byte[] encryptedFmk = Crypto.xor(fmk, kek);
             Details.EccRecipient eccRecipient = new Details.EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
-            log.debug("          fmk: {}", HexFormat.of().formatHex(fmk));//FIXME: remove
+            //log.debug("          fmk: {}", HexFormat.of().formatHex(fmk));//FIXME: remove
             log.debug("encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmk));
             eccRecipientList.add(eccRecipient);
         }

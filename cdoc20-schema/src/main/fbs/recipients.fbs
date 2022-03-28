@@ -18,6 +18,7 @@ table ECCPublicKey {
 
 // Keyserver recipient
 table KeyServer {
+    //recipient_id is recipient public key
     recipient_id:   string (required);
     keyserver_id:   string (required);
     transaction_id: string (required);

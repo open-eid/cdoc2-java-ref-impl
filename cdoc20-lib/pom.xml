@@ -28,6 +28,7 @@
             <artifactId>hkdf</artifactId>
             <version>1.1.0</version>
         </dependency>
+        <!-- bc.jar 5.6MB -->
         <!--dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
@@ -38,6 +39,8 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.32</version>
         </dependency>
+
+        <!--equals and hashcode generation-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

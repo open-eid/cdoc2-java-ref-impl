@@ -1,11 +1,14 @@
 package ee.cyber.cdoc20;
 
+import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.crypto.Crypto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.OutputStream;
+import java.io.*;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
 import java.util.List;
 
@@ -21,7 +24,7 @@ public class CDocBuilder {
         return this;
     }
 
-//    public CDocBuilder withPayload(byte[] payload) {
+//    public CDocBuilder withPayload(String fileName, byte[] payload) {
 //        return this;
 //    }
 
@@ -40,11 +43,27 @@ public class CDocBuilder {
         return this;
     }
 
-    public void buildToOutputStream(OutputStream outputStream) throws CDocValidationException{
+    public void buildToOutputStream(OutputStream outputStream) throws CDocException, CDocValidationException, IOException {
+
         validate();
+        if (payloadFiles.size() > 1) {
+            throw new CDocValidationException("Encrypting more than one file is not yet implemented. Workaround: add files to tgz and encrypt that");
+        }
+
+        try {
+            Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
+            //TODO: create archive, add all files
+            try (FileInputStream fileInputStream = new FileInputStream(this.payloadFiles.get(0))) { // first file for now
+                envelope.encrypt(fileInputStream, outputStream);
+            } catch (FileNotFoundException fne) {
+                throw new CDocValidationException("Invalid payload file "+this.payloadFiles.get(0));
+            }
+        } catch (NoSuchAlgorithmException| InvalidKeyException ex) {
+            throw new CDocException(ex);
+        }
     }
 
-    void validate() throws CDocValidationException {
+    public void validate() throws CDocValidationException {
         validatePayloadFiles();
         validateSender();
         validateRecipients();
