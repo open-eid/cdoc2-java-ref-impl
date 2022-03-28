@@ -3,6 +3,7 @@ package ee.cyber.cdoc20.container;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ee.cyber.cdoc20.crypto.Crypto;
+import ee.cyber.cdoc20.crypto.ECKeys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -44,9 +45,9 @@ class EnvelopeTest {
         fmkBuf[2] = 'k';
         fmkBuf[fmkBuf.length - 1] = (byte)0xff;
 
-        this.recipientKeyPair = Crypto.generateEcKeyPair();
+        this.recipientKeyPair = ECKeys.generateEcKeyPair();
 
-        this.senderKeyPair = Crypto.generateEcKeyPair();
+        this.senderKeyPair = ECKeys.generateEcKeyPair();
         //this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
 
 //        String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
@@ -115,8 +116,8 @@ class EnvelopeTest {
     @Test
     void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
 
-        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
-        KeyPair bobKeyPair = Crypto.generateEcKeyPair();
+        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
 
         InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();

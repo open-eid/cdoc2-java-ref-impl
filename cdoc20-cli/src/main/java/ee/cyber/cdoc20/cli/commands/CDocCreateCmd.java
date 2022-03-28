@@ -19,6 +19,12 @@ public class CDocCreateCmd implements Callable<Void> {
     @Option(names = { "f", "-f", "--file" }, paramLabel = "FILE", description = "the CDOC2.0 file")
     File cdocFile;
 
+    @Option(names = {"-k", "--key"}, paramLabel = "PEM", description = "EC private key PEM used to encrypt")
+    File privKeyFile;
+
+    @Option(names = {"-p", "--pubkey"}, paramLabel = "PEM", description = "recipient public key")
+    File pubKeyFile;
+
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 

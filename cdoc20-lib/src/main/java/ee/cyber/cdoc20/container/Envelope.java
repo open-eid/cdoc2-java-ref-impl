@@ -5,6 +5,7 @@ import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 
 
+import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
@@ -237,8 +238,8 @@ public class Envelope {
                 }
 
                 try {
-                    ECPublicKey recipientPubKey = Crypto.decodeEcPublicKeyFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
-                    ECPublicKey senderPubKey = Crypto.decodeEcPublicKeyFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
+                    ECPublicKey recipientPubKey = ECKeys.decodeEcPublicKeyFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
+                    ECPublicKey senderPubKey = ECKeys.decodeEcPublicKeyFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
 
                     eccRecipientList.add(new Details.EccRecipient(r.fmkEncryptionMethod(),
                             recipientPubKey, senderPubKey, encryptedFmkBytes));

@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.container;
 
 import ee.cyber.cdoc20.crypto.Crypto;
+import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
 import lombok.EqualsAndHashCode;
 
@@ -45,7 +46,7 @@ public class Details {
          * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
          */
         public byte[] getRecipientPubKeyTlsEncoded() {
-            return Crypto.encodeEcPubKeyForTls(this.recipientPubKey);
+            return ECKeys.encodeEcPubKeyForTls(this.recipientPubKey);
         }
 
         public ECPublicKey getSenderPubKey() {
@@ -56,7 +57,7 @@ public class Details {
          * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
          */
         public byte[] getSenderPubKeyTlsEncoded() {
-            return Crypto.encodeEcPubKeyForTls(this.senderPubKey);
+            return ECKeys.encodeEcPubKeyForTls(this.senderPubKey);
         }
 
         public byte[] getEncryptedFileMasterKey() {
