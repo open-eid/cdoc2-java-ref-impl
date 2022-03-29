@@ -39,7 +39,7 @@ class EnvelopeTest {
     KeyPair senderKeyPair;
 
     @BeforeEach
-    void initInputData() throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidAlgorithmParameterException {
+    void initInputData() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         fmkBuf[0] = 'f';
         fmkBuf[1] = 'm';
         fmkBuf[2] = 'k';
@@ -124,21 +124,23 @@ class EnvelopeTest {
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
         Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
-        ByteArrayOutputStream dst = new ByteArrayOutputStream();
-        senderEnvelope.encrypt(payload, dst);
-        byte[] cdocContainerBytes = dst.toByteArray();
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(payload, dst);
+            byte[] cdocContainerBytes = dst.toByteArray();
 
-        assertTrue(cdocContainerBytes.length > 0);
+            assertTrue(cdocContainerBytes.length > 0);
 
-        ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes);
-        CipherInputStream cis = Envelope.decrypt(bis, bobKeyPair);
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes);
+                 CipherInputStream cis = Envelope.decrypt(bis, bobKeyPair)) {
 
-        byte[] buf = new byte[1024];
-        int read = cis.read(buf);
-        assertTrue(read > 0);
-        String decrypted = new String(buf, 0, read, StandardCharsets.UTF_8);
+                byte[] buf = new byte[1024];
+                int read = cis.read(buf);
+                assertTrue(read > 0);
+                String decrypted = new String(buf, 0, read, StandardCharsets.UTF_8);
 
-        assertEquals("payload", decrypted);
+                assertEquals("payload", decrypted);
+            }
+        }
     }
 
 

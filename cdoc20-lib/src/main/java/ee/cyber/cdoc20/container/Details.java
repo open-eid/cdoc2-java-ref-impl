@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Details {
+
     @EqualsAndHashCode
     public static class EccRecipient {
 
@@ -70,7 +71,7 @@ public class Details {
          * @param fmk             file master key
          * @param senderEcKeyPair EC key pair used to encrypt fmk
          * @param recipients      list of recipients public keys
-         * @return
+         * @return List of EccRecipients
          */
         public static List<EccRecipient> buildEccRecipients(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
                 throws NoSuchAlgorithmException, InvalidKeyException {

@@ -197,6 +197,7 @@ public class Envelope {
 
         ByteBuffer headerLenBuf = ByteBuffer.allocate(4);
         headerLenBuf.order(ByteOrder.BIG_ENDIAN);
+        //noinspection ResultOfMethodCallIgnored
         envelopeIs.read(headerLenBuf.array());
         int headerLen = headerLenBuf.getInt();
 
@@ -262,8 +263,7 @@ public class Envelope {
 
     static Header deserializeHeader(byte[] buf) {
         ByteBuffer byteBuffer = ByteBuffer.wrap(buf);
-        Header header =  Header.getRootAsHeader(byteBuffer);
-        return header;
+        return  Header.getRootAsHeader(byteBuffer);
     }
 
     public void encrypt(InputStream payloadIs, OutputStream os) throws IOException {
@@ -281,7 +281,6 @@ public class Envelope {
         os.write(headerLenBytes);
         os.write(headerBytes);
 
-
         try {
             byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
             os.write(hmac);
@@ -289,10 +288,11 @@ public class Envelope {
             byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
 //            log.debug("nonce: {}", HexFormat.of().formatHex(nonce));
 //            log.debug("AAD:   {}", HexFormat.of().formatHex(additionalData));
-            CipherOutputStream cipherOs = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData);
-            cipherOs.write(payloadIs.readAllBytes()); //TODO: tar, zip, loop before encryption
-            cipherOs.flush();
-            cipherOs.close(); //TODO: shouldn't be here, refactor API
+            try (CipherOutputStream cipherOs = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData)) {
+                cipherOs.write(payloadIs.readAllBytes()); //TODO: tar, zip, loop before encryption
+                cipherOs.flush();
+            }
+
 
         } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             log.error("error serializing payload", e);

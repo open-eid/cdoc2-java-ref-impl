@@ -23,13 +23,15 @@ public class CDocCreateCmd implements Callable<Void> {
 
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
 
-    @Option(names = {"-f", "--file" }, paramLabel = "FILE", description = "the CDOC2.0 file")
+    @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, paramLabel = "PEM", description = "EC private key PEM used to encrypt")
+    @Option(names = {"-k", "--key"}, required = true,
+            paramLabel = "PEM", description = "EC private key PEM used to encrypt")
     File privKeyFile;
 
-    @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"}, paramLabel = "PEM", description = "recipient public key")
+    @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"}, required = true,
+            paramLabel = "PEM", description = "recipient public key")
     File pubKeyFile;
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
@@ -56,6 +58,7 @@ public class CDocCreateCmd implements Callable<Void> {
         }
 
         log.info("Created {}", cdocFile);
+        System.out.println("Created "+cdocFile.getAbsolutePath());
 
         return null;
     }
