@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.container.Tar;
 import ee.cyber.cdoc20.crypto.Crypto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ public class CDocBuilder {
         try {
             Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
             //TODO: create archive, add all files
+            //Tar.archiveFiles();
             try (FileInputStream fileInputStream = new FileInputStream(this.payloadFiles.get(0))) { // first file for now
                 envelope.encrypt(fileInputStream, outputStream);
             } catch (FileNotFoundException fne) {
