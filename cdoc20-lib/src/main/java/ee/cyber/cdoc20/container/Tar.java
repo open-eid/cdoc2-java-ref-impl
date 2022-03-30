@@ -32,9 +32,9 @@ public class Tar {
             TarArchiveEntry tarArchiveEntry = (TarArchiveEntry) tarArchiveOutputStream.createArchiveEntry(file.toFile(),
                     entryName);
 
-            if (file.toFile().canExecute()) {
-                //tarArchiveEntry.setMode(tarArchiveEntry.getMode() | 0755);
-            }
+//            if (file.toFile().canExecute()) {
+//                //tarArchiveEntry.setMode(tarArchiveEntry.getMode() | 0755);
+//            }
             tarArchiveOutputStream.putArchiveEntry(tarArchiveEntry);
 
             try (InputStream input = new BufferedInputStream(Files.newInputStream(file))) {
@@ -61,6 +61,50 @@ public class Tar {
         }
     }
 
+    public static void archiveData(OutputStream dest, byte[] data, String tarEntryName) throws IOException{
+        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
+                dest)))) {
+            tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+
+            TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
+
+            // need defined the file size, else error
+            tarEntry.setSize(data.length);
+
+            tos.putArchiveEntry(tarEntry);
+            tos.write(data, 0, data.length);
+
+            tos.closeArchiveEntry();
+        }
+    }
+
+    /**
+     * Extract single file into outputStream
+     * @param tarGZipInputStream GZipped and tarred input stream
+     * @param outputStream OutputStream to write tarEntry contents
+     * @param tarEntryName file to extract
+     * @return bytes written to outputStream or -1 if tarEntryName was not found from tarGZip
+     * @throws IOException if an I/O error has occurred
+     */
+    public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
+            throws IOException{
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(
+                tarGZipInputStream)))) {
+            TarArchiveEntry tarArchiveEntry;
+            while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
+                if (tarArchiveEntry.isFile() && tarEntryName.equals(tarArchiveEntry.getName())) {
+                    log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
+                    long written = tarInputStream.transferTo(outputStream);
+                    log.debug("Copied {}B", written);
+                    return written;
+                }
+            }
+        }
+
+        log.info("not found {}", tarEntryName);
+        return -1;
+    }
+
     static List<TarArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
@@ -74,9 +118,9 @@ public class Tar {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
-                    log.debug("Extracting: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
-                    Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
+                    log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     if (extract) {
+                        Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
                         long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
                         log.debug("Created {} {}B", newPath, written);
                     }

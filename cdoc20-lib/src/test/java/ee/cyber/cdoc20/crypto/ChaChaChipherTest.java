@@ -1,17 +1,20 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.container.Tar;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.*;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,5 +77,44 @@ public class ChaChaChipherTest {
 
         assertEquals(payload, decrypted);
     }
+
+    @Test
+    void testTarGZipChaChaCipherStream()
+            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException,
+            IOException, InvalidKeyException {
+
+        log.trace("testTarGZipChaChaCipherStream()");
+        SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
+
+        byte[] nonce = ChaChaCipher.generateNonce();
+        byte[] header = new byte[0];
+        byte[] headerHMAC = new byte[0];
+        byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
+        String payload = "secret";
+
+
+        //Path encryptedPath = Path.of(System.getProperty("java.io.tmpdir")).resolve( "encrypted.tar.gz");
+        //encrypted.toFile().deleteOnExit();
+
+
+        ByteBuffer encryptedTarGzBuf;
+
+        String tarEntryName = "payload-"+ UUID.randomUUID();
+        try (ByteArrayOutputStream encryptedTarGzBos = new ByteArrayOutputStream();
+            CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(
+                    encryptedTarGzBos, cek, nonce, additionalData)) {
+
+            Tar.archiveData(cipherOutputStream, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
+            encryptedTarGzBuf = ByteBuffer.wrap(encryptedTarGzBos.toByteArray());
+        }
+
+        try( CipherInputStream cis =
+                 ChaChaCipher.initChaChaInputStream(new ByteArrayInputStream(encryptedTarGzBuf.array()), cek, additionalData);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Tar.extractTarEntry(cis, out, tarEntryName );
+            assertEquals(payload, out.toString(StandardCharsets.UTF_8));
+        }
+    }
+
 
 }

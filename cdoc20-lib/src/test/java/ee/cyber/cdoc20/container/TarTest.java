@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TarTest {
     private final static Logger log = LoggerFactory.getLogger(TarTest.class);
@@ -68,7 +67,8 @@ public class TarTest {
         testCreateArchive(); //create archive
 
         Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve( "tartest");
-        if (Files.exists(outDir)) { //delete tartest recursively
+        if (Files.exists(outDir)) { //delete tartest dir recursively
+            //noinspection ResultOfMethodCallIgnored
             Files.walk(outDir)
                     .sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
@@ -98,5 +98,34 @@ public class TarTest {
         String read = Files.readString(payload_txt);
 
         assertEquals(payload, read);
+    }
+
+    @Test
+    public void testArchiveData() throws IOException {
+        Path outFile = Path.of(System.getProperty("java.io.tmpdir")).resolve( "testArchiveData.tar.gz");
+        //outFile.toFile().deleteOnExit();
+
+        Files.deleteIfExists(outFile);
+
+        String tarEntryName = "payload-"+UUID.randomUUID();
+        Path payloadPath = Path.of(System.getProperty("java.io.tmpdir")).resolve(tarEntryName);
+        payloadPath.toFile().deleteOnExit();
+
+        try (FileOutputStream fos = new FileOutputStream(outFile.toFile())) {
+            Tar.archiveData(fos, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
+        }
+
+        try (FileInputStream is = new FileInputStream(outFile.toFile())) {
+            List<String> filesList = Tar.listFiles(is);
+            assertEquals(List.of(tarEntryName), filesList);
+        }
+
+        try (FileInputStream is = new FileInputStream(outFile.toFile());
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+
+            long extractedLen = Tar.extractTarEntry(is, bos, tarEntryName);
+            assertTrue(extractedLen > 0);
+            assertEquals(payload, bos.toString(StandardCharsets.UTF_8));
+        }
     }
 }
