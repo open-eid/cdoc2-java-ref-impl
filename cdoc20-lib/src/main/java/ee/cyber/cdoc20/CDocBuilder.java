@@ -1,7 +1,6 @@
 package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.Envelope;
-import ee.cyber.cdoc20.container.Tar;
 import ee.cyber.cdoc20.crypto.Crypto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,18 +15,14 @@ import java.util.List;
 public class CDocBuilder {
     private static final Logger log = LoggerFactory.getLogger(CDocBuilder.class);
 
-    private List<String> payloadFiles;
+    private List<File> payloadFiles;
     private List<ECPublicKey> recipients;
     private KeyPair senderKeyPair;
 
-    public CDocBuilder withPayloadFiles(List<String> payloadFiles) {
+    public CDocBuilder withPayloadFiles(List<File> payloadFiles) {
         this.payloadFiles = payloadFiles;
         return this;
     }
-
-//    public CDocBuilder withPayload(String fileName, byte[] payload) {
-//        return this;
-//    }
 
     public CDocBuilder withRecipients(List<ECPublicKey> recipients) {
         this.recipients = recipients;
@@ -53,13 +48,7 @@ public class CDocBuilder {
 
         try {
             Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
-            //TODO: create archive, add all files
-            //Tar.archiveFiles();
-            try (FileInputStream fileInputStream = new FileInputStream(this.payloadFiles.get(0))) { // first file for now
-                envelope.encrypt(fileInputStream, outputStream);
-            } catch (FileNotFoundException fne) {
-                throw new CDocValidationException("Invalid payload file "+this.payloadFiles.get(0));
-            }
+            envelope.encrypt(this.payloadFiles, outputStream);
         } catch (NoSuchAlgorithmException| InvalidKeyException ex) {
             throw new CDocException(ex);
         }
@@ -93,12 +82,10 @@ public class CDocBuilder {
             throw new CDocValidationException("Must contain at least one payload file");
         }
 
-        for(String fileName: payloadFiles) {
-            File file = new File(fileName);
-
+        for(File file: payloadFiles) {
             if (!(file.exists() && file.isFile() && file.canRead())) {
-                log.error("Invalid payload file {}", fileName);
-                throw new CDocValidationException("Invalid payload file "+fileName);
+                log.error("Invalid payload file {}", file);
+                throw new CDocValidationException("Invalid payload file "+file);
             }
         }
     }

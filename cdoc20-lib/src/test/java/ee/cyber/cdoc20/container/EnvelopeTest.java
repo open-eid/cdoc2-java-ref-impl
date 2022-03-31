@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -12,68 +13,65 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.CipherInputStream;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.List;
+import java.util.UUID;
 
 class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
+    private final String aliceKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
+            "MIGkAgEBBDAlhCJUAcquXTQoZ73awJa7izsXqUhjcPxXP0ybTDFJYuGMeJ5qCGRw\n" +
+            "0RHaMUEJIPagBwYFK4EEACKhZANiAASV2VitdXFvs7OYIsnXMxe5I0boJlg4/shi\n" +
+            "FW6PgwFWgARITC7ABMOmYKC4I9KRMVNhwU42287/N+IOt2GtEHvL1OmfJvI9283o\n" +
+            "wiYVMt6Qq/6Fv4kO3IXqSVsV1ylA4jQ=\n" +
+            "-----END EC PRIVATE KEY-----\n";
+
+    private final String bobKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
+            "MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL\n" +
+            "mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B\n" +
+            "LqnEv1cUVHROnhw3hAW63F3H2PI93ZzB/BT6+C+gOLt3XkCT/H3C9X1ZktCd5lS2\n" +
+            "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
+            "-----END EC PRIVATE KEY-----\n";
+
+
     byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
-
-//    KeyPair recipientKeyPair = Crypto.generateEcKeyPair();
-//    String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
-//    String recipientPrivKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPrivate().getEncoded());
-//    public static final String recipientPubKeyBase64 = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEGTr5ojK7f6VnWa2MNceu+BfBnhnejGBpqgi3cKxXxl3huGbBzDCku+/HwYw6R+EqVFHRuVGgspX/QwGzJqxxsxKCEOic3U4hNo4vChF3wMSlTbI2IypZeNdoJybzKXv7";
-//    public static final String recipientPrivKeyBase64 = "ME4CAQAwEAYHKoZIzj0CAQYFK4EEACIENzA1AgEBBDCFkOQ2qBEWDXFMKwR65pAI1I3Hsao+FBj0jroy0xgMl0W5qrGU9ULnGWGg6l0D3S8=";
-// How to decode pub key from X.509 and priv key from PKCS#8 ?
-
-    //https://stackoverflow.com/questions/41927859/how-do-i-load-an-elliptic-curve-pem-encoded-private-key
-    //https://stackoverflow.com/questions/40434317/how-to-load-pem-encoded-elliptic-curve-public-keys-into-bouncy-castle/40439081#40439081
-    //https://www.baeldung.com/java-read-pem-file-keys
-
-    //ECPublicKey recipientPubKey;
-    KeyPair recipientKeyPair;
     KeyPair senderKeyPair;
+    KeyPair recipientKeyPair;
+
 
     @BeforeEach
-    void initInputData() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public void initInputData() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidParameterSpecException {
         fmkBuf[0] = 'f';
         fmkBuf[1] = 'm';
         fmkBuf[2] = 'k';
         fmkBuf[fmkBuf.length - 1] = (byte)0xff;
 
-        this.recipientKeyPair = ECKeys.generateEcKeyPair();
-
-        this.senderKeyPair = ECKeys.generateEcKeyPair();
-        //this.recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
-
-//        String recipientPubKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPublic().getEncoded());
-//        String recipientPrivKeyB64 = Base64.getEncoder().encodeToString(recipientKeyPair.getPrivate().getEncoded());
-//
-//        String senderPubKeyB64 = Base64.getEncoder().encodeToString(senderKeyPair.getPublic().getEncoded());
-//        String senderPrivKeyB64 = Base64.getEncoder().encodeToString(senderKeyPair.getPrivate().getEncoded());
-
-
-        //generate new keys for now as no idea how to decode keys from default encoding (X.509 and PKCS#8)
-
-
+        this.recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
+        this.senderKeyPair = ECKeys.loadFromPem(aliceKeyPem);
     }
 
     // Mainly flatbuffers and friends
     @Test
-    void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
+    public void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
+
+        File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-"+ UUID.randomUUID() +".txt");
+        payloadFile.deleteOnExit();
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write("payload".getBytes(StandardCharsets.UTF_8));
+        }
 
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
-        InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
         List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
         Envelope envelope = Envelope.prepare(fmkBuf, senderKeyPair, recipients);
-
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
-        envelope.encrypt(payload, dst);
+        envelope.encrypt(List.of(payloadFile), dst);
 
         byte[] resultBytes = dst.toByteArray();
 
@@ -90,55 +88,47 @@ class EnvelopeTest {
 
     }
 
-//    @Test
-//    void testEnvelope() throws IOException, GeneralSecurityException, CDocParseException {
-//
-//        KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
-//        KeyPair bobKeyPair = Crypto.generateEcKeyPair();
-//
-//        InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
-//        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
-//        List<ECPublicKey> recipients = List.of(recipientPubKey);
-//
-//        Envelope senderEnvelope = Envelope.build(fmkBuf, aliceKeyPair, recipients);
-//        ByteArrayOutputStream dst = new ByteArrayOutputStream();
-//        senderEnvelope.encrypt(payload, dst);
-//        byte[] resultBytes = dst.toByteArray();
-//
-//        assertTrue(resultBytes.length > 0);
-//
-//        ByteArrayInputStream bis = new ByteArrayInputStream(resultBytes);
-//        Envelope recipientEnvelope = Envelope.fromInputStream(bis, bobKeyPair);
-//
-//        assertEquals(senderEnvelope, recipientEnvelope);
-//    }
-
     @Test
-    void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
+    public void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-"+ uuid +".txt";
+        //String payloadFileName = "A";
+
+        String payloadData = "payload-"+ uuid;
+        //String payloadData = "";
+
+        File payloadFile = new File(System.getProperty("java.io.tmpdir"), payloadFileName);
+        payloadFile.deleteOnExit();
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve( "testContainer-"+uuid);
+        Files.createDirectories(outDir);
+        outDir.toFile().deleteOnExit();
 
         KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
 
-        InputStream payload = new ByteArrayInputStream("payload".getBytes(StandardCharsets.UTF_8));
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
         Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
-            senderEnvelope.encrypt(payload, dst);
+            senderEnvelope.encrypt(List.of(payloadFile), dst);
             byte[] cdocContainerBytes = dst.toByteArray();
 
             assertTrue(cdocContainerBytes.length > 0);
 
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes);
-                 CipherInputStream cis = Envelope.decrypt(bis, bobKeyPair)) {
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
+                List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
 
-                byte[] buf = new byte[1024];
-                int read = cis.read(buf);
-                assertTrue(read > 0);
-                String decrypted = new String(buf, 0, read, StandardCharsets.UTF_8);
+                assertEquals(List.of(payloadFileName), filesExtracted);
+                Path payload_txt = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
+                payload_txt.toFile().deleteOnExit();
 
-                assertEquals("payload", decrypted);
+                assertEquals(payloadData, Files.readString(payload_txt));
             }
         }
     }

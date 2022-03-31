@@ -40,15 +40,10 @@ public class CDocDecrypter {
     public void decrypt() throws IOException, CDocException{
         //TODO: validate
 
-        String destinationFileName = "payload.bin";
-        File destinationFile = new File(destinationDirectory.getPath(), destinationFileName);
         try {
-            try (CipherInputStream cis = Envelope.decrypt(cDocInputStream, recipientKeyPair);
-                 FileOutputStream outputStream = new FileOutputStream(destinationFile)) {
-                cis.transferTo(outputStream);
-            }
-            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath(): "";
-            System.out.println("Decrypted "+fileName+" into "+destinationFile.getAbsolutePath());
+            List<String> extractedFileNames =
+                    Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
+            System.out.println("Decrypted "+extractedFileNames+" into "+destinationDirectory.getAbsolutePath());
         } catch (GeneralSecurityException | CDocParseException ex) {
             String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath(): "";
             throw new CDocException("Error decrypting "+fileName, ex);

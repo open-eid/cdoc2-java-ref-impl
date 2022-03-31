@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * Utility class for dealing with tar gz stream/files. Only supports regular files inside tar.
+ */
 public class Tar {
 
     private final static Logger log = LoggerFactory.getLogger(Tar.class);
@@ -61,26 +64,29 @@ public class Tar {
         }
     }
 
+    /**
+     * Create an archive with single entry.
+     * @param dest destination stream where created archive will be written
+     * @param data data added to archive
+     * @param tarEntryName entry name (file name) for data
+     * @throws IOException
+     */
     public static void archiveData(OutputStream dest, byte[] data, String tarEntryName) throws IOException{
         try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
                 dest)))) {
             tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
-
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
-
-            // need defined the file size, else error
             tarEntry.setSize(data.length);
-
             tos.putArchiveEntry(tarEntry);
-            tos.write(data, 0, data.length);
 
+            tos.write(data, 0, data.length);
             tos.closeArchiveEntry();
         }
     }
 
     /**
      * Extract single file into outputStream
-     * @param tarGZipInputStream GZipped and tarred input stream
+     * @param tarGZipInputStream GZipped and tarred input stream that is scanned for tarEntryName
      * @param outputStream OutputStream to write tarEntry contents
      * @param tarEntryName file to extract
      * @return bytes written to outputStream or -1 if tarEntryName was not found from tarGZip
@@ -88,8 +94,9 @@ public class Tar {
      */
     public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
             throws IOException{
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(
-                tarGZipInputStream)))) {
+
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
+                new BufferedInputStream(tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile() && tarEntryName.equals(tarArchiveEntry.getName())) {
@@ -105,6 +112,15 @@ public class Tar {
         return -1;
     }
 
+    /**
+     * Process tar gzip input stream and find entries in it. If extract is true, then files found from inputStream are
+     * copied to outputDir.
+     * @param tarGZipInputStream tar gzip InputStream to process
+     * @param outputDir output directory where files are extracted when extract=true
+     * @param extract if true, extract files to outputDir. Otherwise list TarArchiveEntries
+     * @return List<TarArchiveEntry> list of TarArchiveEntry found in tarGZipInputStream
+     * @throws IOException if an I/O error has occurred
+     */
     static List<TarArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
@@ -112,9 +128,9 @@ public class Tar {
         }
 
         LinkedList<TarArchiveEntry> result = new LinkedList<>();
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
+                new BufferedInputStream(tarGZipInputStream)))) {
 
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(
-                tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {

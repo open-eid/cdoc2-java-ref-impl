@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -88,9 +87,9 @@ public class ECKeys {
         }
 
         BigInteger X = new BigInteger(1, Arrays.copyOfRange(encoded,1, expectedLength+1));
-        log.debug("decoded X {}", HexFormat.of().formatHex(X.toByteArray()));
+        //log.debug("decoded X {}", HexFormat.of().formatHex(X.toByteArray()));
         BigInteger Y = new BigInteger(1, Arrays.copyOfRange(encoded,expectedLength+1, encoded.length));
-        log.debug("decoded Y {}", HexFormat.of().formatHex(Y.toByteArray()));
+        //log.debug("decoded Y {}", HexFormat.of().formatHex(Y.toByteArray()));
 
         ECPoint pubPoint = new ECPoint(X, Y);
         AlgorithmParameters params = AlgorithmParameters.getInstance("EC");

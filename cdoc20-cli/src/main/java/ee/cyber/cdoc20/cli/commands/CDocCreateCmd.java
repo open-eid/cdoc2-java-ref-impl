@@ -35,7 +35,7 @@ public class CDocCreateCmd implements Callable<Void> {
     File pubKeyFile;
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
-    String[] inputFiles;
+    File[] inputFiles;
 
 //    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
 //    private boolean helpRequested = false;
