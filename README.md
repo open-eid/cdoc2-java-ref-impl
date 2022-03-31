@@ -16,3 +16,13 @@ security measures with optional server backend.
 ## Running
 
 See `cdoc20-cli/README.md`
+
+## Releasing
+
+Will create tag with version vx.y.z in git
+```
+mvn release:prepare
+mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
+```
+
+
