@@ -38,12 +38,12 @@
             <version>1.7.32</version>
         </dependency>
 
-        <!--equals and hashcode generation-->
-        <dependency>
+        <!--equals and hashcode generation ~2MB -->
+        <!--dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.22</version>
-        </dependency>
+        </dependency-->
 
         <!-- tar -->
         <dependency>

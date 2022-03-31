@@ -13,6 +13,12 @@ security measures with optional server backend.
 - cdoc20-lib    - CDOC 2.0 creation and processing library
 - cdoc20-cli    - Command line utility to create/process CDOC20 files
 
+## Building
+
+```
+mvn install
+```
+
 ## Running
 
 See `cdoc20-cli/README.md`
@@ -24,5 +30,7 @@ Will create tag with version vx.y.z in git
 mvn release:prepare
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
+
+As maven repository doesn't exist yet, then maven deploy is not performed 
 
 

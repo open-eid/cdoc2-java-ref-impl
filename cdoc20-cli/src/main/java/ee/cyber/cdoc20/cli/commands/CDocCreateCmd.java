@@ -10,8 +10,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
@@ -52,10 +50,7 @@ public class CDocCreateCmd implements Callable<Void> {
                 .withRecipients(List.of(recipient))
                 .withPayloadFiles(Arrays.asList(inputFiles));
 
-        cDocBuilder.validate();
-        try (OutputStream outputStream = new FileOutputStream(cdocFile)) {
-            cDocBuilder.buildToOutputStream(outputStream);
-        }
+        cDocBuilder.buildToFile(cdocFile);
 
         log.info("Created {}", cdocFile);
         System.out.println("Created "+cdocFile.getAbsolutePath());

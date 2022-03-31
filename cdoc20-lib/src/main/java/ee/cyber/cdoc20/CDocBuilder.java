@@ -39,6 +39,13 @@ public class CDocBuilder {
         return this;
     }
 
+    public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
+        try (OutputStream outputStream = new FileOutputStream(outputCDocFile)) {
+            buildToOutputStream(outputStream);
+        }
+
+    }
+
     public void buildToOutputStream(OutputStream outputStream) throws CDocException, CDocValidationException, IOException {
 
         validate();

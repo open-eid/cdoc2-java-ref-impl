@@ -3,18 +3,19 @@ package ee.cyber.cdoc20.container;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
-import lombok.EqualsAndHashCode;
+//import lombok.EqualsAndHashCode;
 
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Details {
 
-    @EqualsAndHashCode
+    //@EqualsAndHashCode
     public static class EccRecipient {
 
         byte ellipticCurve;
@@ -92,9 +93,67 @@ public class Details {
             return result;
         }
 
-        //    ByteBuffer serialize(ByteBuffer dst) {
-//        return dst;
-//    }
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            } else if (!(o instanceof Details.EccRecipient)) {
+                return false;
+            } else {
+                Details.EccRecipient other = (Details.EccRecipient)o;
+                if (!other.canEqual(this)) {
+                    return false;
+                } else if (this.ellipticCurve != other.ellipticCurve) {
+                    return false;
+                } else {
+                    label41: {
+                        Object this$recipientPubKey = this.getRecipientPubKey();
+                        Object other$recipientPubKey = other.getRecipientPubKey();
+                        if (this$recipientPubKey == null) {
+                            if (other$recipientPubKey == null) {
+                                break label41;
+                            }
+                        } else if (this$recipientPubKey.equals(other$recipientPubKey)) {
+                            break label41;
+                        }
+
+                        return false;
+                    }
+
+                    Object this$senderPubKey = this.getSenderPubKey();
+                    Object other$senderPubKey = other.getSenderPubKey();
+                    if (this$senderPubKey == null) {
+                        if (other$senderPubKey != null) {
+                            return false;
+                        }
+                    } else if (!this$senderPubKey.equals(other$senderPubKey)) {
+                        return false;
+                    }
+
+                    if (!Arrays.equals(this.encryptedFmk, other.encryptedFmk)) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        protected boolean canEqual(Object other) {
+            return other instanceof Details.EccRecipient;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 1;
+            result = result * 59 + this.ellipticCurve;
+            Object $recipientPubKey = this.getRecipientPubKey();
+            result = result * 59 + ($recipientPubKey == null ? 43 : $recipientPubKey.hashCode());
+            Object $senderPubKey = this.getSenderPubKey();
+            result = result * 59 + ($senderPubKey == null ? 43 : $senderPubKey.hashCode());
+            result = result * 59 + Arrays.hashCode(this.encryptedFmk);
+            return result;
+        }
 
     }
 }

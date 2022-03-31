@@ -11,7 +11,7 @@ import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
-import lombok.EqualsAndHashCode;
+//import lombok.EqualsAndHashCode;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc20.fbs.header.Details.*;
 
-@EqualsAndHashCode
+//@EqualsAndHashCode
 public class Envelope {
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
@@ -387,6 +387,60 @@ public class Envelope {
         int bufLen = buf.limit() - buf.position();
         os.write(buf.array(), buf.position(), bufLen);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        } else if (!(o instanceof Envelope)) {
+            return false;
+        } else {
+            Envelope other = (Envelope)o;
+            if (!other.canEqual(this)) {
+                return false;
+            } else if (!Arrays.deepEquals(this.eccRecipients, other.eccRecipients)) {
+                return false;
+            } else {
+                Object this$hmacKey = this.hmacKey;
+                Object other$hmacKey = other.hmacKey;
+                if (this$hmacKey == null) {
+                    if (other$hmacKey != null) {
+                        return false;
+                    }
+                } else if (!this$hmacKey.equals(other$hmacKey)) {
+                    return false;
+                }
+
+                Object this$cekKey = this.cekKey;
+                Object other$cekKey = other.cekKey;
+                if (this$cekKey == null) {
+                    if (other$cekKey != null) {
+                        return false;
+                    }
+                } else if (!this$cekKey.equals(other$cekKey)) {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+    }
+
+    protected boolean canEqual(Object other) {
+        return other instanceof Envelope;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+        result = result * 59 + Arrays.deepHashCode(this.eccRecipients);
+        Object $hmacKey = this.hmacKey;
+        result = result * 59 + ($hmacKey == null ? 43 : $hmacKey.hashCode());
+        Object $cekKey = this.cekKey;
+        result = result * 59 + ($cekKey == null ? 43 : $cekKey.hashCode());
+        return result;
+    }
+
 
 
 
