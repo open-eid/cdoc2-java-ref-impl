@@ -49,9 +49,6 @@ public class CDocBuilder {
     public void buildToOutputStream(OutputStream outputStream) throws CDocException, CDocValidationException, IOException {
 
         validate();
-        if (payloadFiles.size() > 1) {
-            throw new CDocValidationException("Encrypting more than one file is not yet implemented. Workaround: add files to tgz and encrypt that");
-        }
 
         try {
             Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);

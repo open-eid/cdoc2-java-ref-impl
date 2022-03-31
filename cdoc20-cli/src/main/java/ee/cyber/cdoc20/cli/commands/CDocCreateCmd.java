@@ -35,8 +35,8 @@ public class CDocCreateCmd implements Callable<Void> {
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 
-//    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
-//    private boolean helpRequested = false;
+    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+    private boolean helpRequested = false;
 
     @Override
     public Void call() throws Exception{

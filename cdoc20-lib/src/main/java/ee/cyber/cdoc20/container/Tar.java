@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.container;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -118,16 +119,16 @@ public class Tar {
      * @param tarGZipInputStream tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
      * @param extract if true, extract files to outputDir. Otherwise list TarArchiveEntries
-     * @return List<TarArchiveEntry> list of TarArchiveEntry found in tarGZipInputStream
+     * @return List<ArchiveEntry> list of TarArchiveEntry found in tarGZipInputStream
      * @throws IOException if an I/O error has occurred
      */
-    static List<TarArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, boolean extract) throws IOException {
+    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
             throw new IOException("Not directory or not writeable "+ outputDir);
         }
 
-        LinkedList<TarArchiveEntry> result = new LinkedList<>();
+        LinkedList<ArchiveEntry> result = new LinkedList<>();
         try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
 
@@ -150,17 +151,17 @@ public class Tar {
         return result;
     }
 
-    public static List<TarArchiveEntry> extractToDir(InputStream tarGZipInputStream, Path outputDir) throws IOException {
+    public static List<ArchiveEntry> extractToDir(InputStream tarGZipInputStream, Path outputDir) throws IOException {
         return processTarGz(tarGZipInputStream, outputDir, true);
     }
 
-    public static List<TarArchiveEntry> listEntries(InputStream tarGZipInputStream) throws IOException {
+    public static List<ArchiveEntry> listEntries(InputStream tarGZipInputStream) throws IOException {
         return processTarGz(tarGZipInputStream, null, false);
     }
 
     public static List<String> listFiles(InputStream tarGZipInputStream) throws IOException {
         return processTarGz(tarGZipInputStream, null, false).stream()
-                .map(TarArchiveEntry::getName)
+                .map(ArchiveEntry::getName)
                 .collect(Collectors.toList());
     }
 }

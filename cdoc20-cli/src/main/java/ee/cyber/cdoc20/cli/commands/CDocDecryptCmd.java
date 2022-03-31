@@ -24,6 +24,9 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = "output destination | Default: current-directory")
     private File outputPath = new File(".");
 
+    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+    private boolean helpRequested = false;
+
 
 
 

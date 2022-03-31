@@ -12,7 +12,7 @@ import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
 //import lombok.EqualsAndHashCode;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,6 @@ import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
@@ -72,7 +71,7 @@ public class Envelope {
 
     public static Envelope prepare(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients) throws NoSuchAlgorithmException, InvalidKeyException {
 
-        log.trace("Envelope::build");
+        log.trace("Envelope::prepare");
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
             throw new IllegalArgumentException("Invalid FMK len");
         }
@@ -257,7 +256,10 @@ public class Envelope {
         }
     }
 
-    public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir) throws GeneralSecurityException, IOException, CDocParseException {
+    private static List<ArchiveEntry> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair,
+                                              Path outputDir, boolean extract)
+            throws GeneralSecurityException, IOException, CDocParseException {
+
         log.trace("Envelope::decrypt");
         log.debug("total available {}", cdocInputStream.available());
         ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
@@ -290,9 +292,7 @@ public class Envelope {
                     try(CipherInputStream cis =
                                  ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
 
-                            return Tar.extractToDir(cis, outputDir).stream()
-                                .map(TarArchiveEntry::getName)
-                                .collect(Collectors.toList());
+                            return Tar.processTarGz(cis, outputDir, extract);
                     }
                 } else {
                     throw new CDocParseException("No hmac");
@@ -303,6 +303,18 @@ public class Envelope {
         log.info("No matching EC pub key found");
         throw new CDocParseException("No matching EC pub key found");
     }
+
+    public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir) throws GeneralSecurityException, IOException, CDocParseException {
+        return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, true)
+                .stream()
+                .map(ArchiveEntry::getName)
+                .collect(Collectors.toList());
+    }
+
+    public static List<ArchiveEntry> list(InputStream cdocInputStream, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
+        return decrypt(cdocInputStream, recipientEcKeyPair, null, false);
+    }
+
 
 
 //    public void encrypt(InputStream payloadIs, OutputStream os) throws IOException {

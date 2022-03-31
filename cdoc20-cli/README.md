@@ -1,13 +1,20 @@
 ##Building & Running
 
 ###Building
-Run from cdoc20 parent directory
+Run from cdoc20_java parent directory
 ```
 mvn package
 ```
 
 ###Running
 Run from cdoc20-cli directory
+
+Latest help can be seen by running:
+```
+java -jar target/cdoc20-cli-<version>.jar
+```
+
+where `<version>` must be replaced with the latest version built. Example `0.0.3-SNAPSHOT`
 
 ####Encryption
 To create:
@@ -28,4 +35,10 @@ To decrypt:
 
 ```
 java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar decrypt --file /tmp/mydoc.cdoc --keys keys/bob.pem --output /tmp
+```
+
+####List
+
+```
+java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar LIST --file /tmp/mydoc.cdoc --keys keys/bob.pem
 ```
