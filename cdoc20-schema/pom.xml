@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.1</version>
         <groupId>ee.cyber.cdoc20</groupId>
         <artifactId>cdoc20</artifactId>
     </parent>
 
     <artifactId>cdoc20-schema</artifactId>
-    <version>0.0.1</version>
+
     <description>CDOC 2.0 flatbuffer schemas and related functionality </description>
 
     <properties>
