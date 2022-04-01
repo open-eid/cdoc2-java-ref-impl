@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.crypto;
 
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,10 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.Arrays;
 import java.util.HexFormat;
 
@@ -22,6 +20,7 @@ public class ChaChaCipher {
 
     private static final Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
     public final static int NONCE_LEN_BYTES = 96 / 8;
+    static final Provider BC = new BouncyCastleProvider();
 
     public static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
 
@@ -29,7 +28,12 @@ public class ChaChaCipher {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
-        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305");
+        if(Security.getProvider("BC") == null) {
+            Security.addProvider(new BouncyCastleProvider());
+
+        }
+
+        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC); //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files)
         // IV, initialization value with nonce
         IvParameterSpec iv = new IvParameterSpec(nonce);
         cipher.init(mode, contentEncryptionKey, iv);

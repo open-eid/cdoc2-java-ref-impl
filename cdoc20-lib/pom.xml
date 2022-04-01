@@ -27,11 +27,11 @@
             <version>1.1.0</version>
         </dependency>
         <!-- bc.jar 5.6MB -->
-        <!--dependency>
+        <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
             <version>1.70</version>
-        </dependency-->
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>

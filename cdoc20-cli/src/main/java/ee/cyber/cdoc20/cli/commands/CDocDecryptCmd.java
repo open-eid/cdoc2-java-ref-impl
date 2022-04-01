@@ -27,11 +27,17 @@ public class CDocDecryptCmd implements Callable<Void> {
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
-
+    @Option(names = {"-ZZ"}, hidden = true, description = "inputFile will only be decrypted (result will be tar.gz)")
+    private boolean disableCompression = false;
 
 
     @Override
     public Void call() throws Exception {
+        if (disableCompression) {
+            System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
+            System.setProperty("ee.cyber.cdoc20.cDocFile", cdocFile.getName());
+        }
+
         KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)

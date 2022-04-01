@@ -53,8 +53,7 @@ public class Tar {
 
     public static void archiveFiles(OutputStream dest, Iterable<File> files)
             throws IOException {
-        //File tarFile = new File(FileUtils.getTempDirectoryPath(), archiveNameWithOutExtension + ".tar");
-        //tarFile.deleteOnExit();
+
         try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
                 dest)))) {
             tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);

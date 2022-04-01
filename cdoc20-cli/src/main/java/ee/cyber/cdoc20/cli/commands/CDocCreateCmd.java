@@ -35,6 +35,9 @@ public class CDocCreateCmd implements Callable<Void> {
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 
+    @Option(names = {"-ZZ"}, hidden = true, description = "inputFile will only be encrypted (inputFile is already tar.gz)")
+    private boolean disableCompression = false;
+
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
@@ -44,6 +47,10 @@ public class CDocCreateCmd implements Callable<Void> {
         log.debug("create --file {} --key {} --pubkey {} {}", cdocFile, privKeyFile, pubKeyFile, Arrays.toString(inputFiles));
         KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
         ECPublicKey recipient = ECKeys.loadECPubKey(pubKeyFile);
+
+        if (disableCompression) {
+            System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
+        }
 
         CDocBuilder cDocBuilder = new CDocBuilder()
                 .withSender(keyPair)

@@ -26,10 +26,8 @@ import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
-import java.util.Arrays;
-import java.util.HexFormat;
-import java.util.LinkedList;
-import java.util.List;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc20.fbs.header.Details.*;
@@ -227,7 +225,7 @@ public class Envelope {
         return  Header.getRootAsHeader(byteBuffer);
     }
 
-    public void encrypt(Iterable<File> payloadFiles, OutputStream os) throws IOException {
+    public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException {
         log.trace("encrypt");
         os.write(PRELUDE);
         os.write(new byte[]{VERSION});
@@ -248,6 +246,18 @@ public class Envelope {
             byte[] nonce = ChaChaCipher.generateNonce();
             byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
             try (CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData)) {
+                if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {
+                    if ((payloadFiles.size() == 1)
+                            && (payloadFiles.get(0).getName().endsWith(".tgz")
+                            || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
+                        log.warn("disableCompression=true; Encrypting {} contents without compression");
+                        try(FileInputStream fis = new FileInputStream(payloadFiles.get(0))) {
+                            fis.transferTo(os);
+                            os.flush();
+                        }
+                        return;
+                    }
+                }
                 Tar.archiveFiles(cipherOutputStream, payloadFiles);
             }
         } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
@@ -292,7 +302,13 @@ public class Envelope {
                     try(CipherInputStream cis =
                                  ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
 
-                            return Tar.processTarGz(cis, outputDir, extract);
+                        if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression") 
+                                && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
+                            log.warn("disableCompression=true; Decrypting only without decompressing");
+                            return extractTarGZipOnly(outputDir, cis);
+                        }
+
+                        return Tar.processTarGz(cis, outputDir, extract);
                     }
                 } else {
                     throw new CDocParseException("No hmac");
@@ -302,6 +318,57 @@ public class Envelope {
 
         log.info("No matching EC pub key found");
         throw new CDocParseException("No matching EC pub key found");
+    }
+
+    private static List<ArchiveEntry> extractTarGZipOnly(Path outputDir, CipherInputStream cis) throws IOException {
+        String cDocFileName = System.getProperty("ee.cyber.cdoc20.cDocFile");
+        if (cDocFileName.endsWith(".cdoc")) {
+            cDocFileName = cDocFileName.substring(0, cDocFileName.length()-".cdoc".length());
+        }
+        File tarGzFile = outputDir.resolve(cDocFileName+".tgz").toFile();
+        log.debug("Decrypting to {}", tarGzFile);
+        try(FileOutputStream fos = new FileOutputStream(tarGzFile)) {
+            //long tarGzFileSize = cis.transferTo(new FileOutputStream(tarGzFile));
+            long transferred = 0;
+
+            byte[] buffer = new byte[8192];
+            int read;
+            int megaBytes = 0;
+            while ((read = cis.read(buffer, 0, 8192)) >= 0) {
+                fos.write(buffer, 0, read);
+                transferred += read;
+                if ((transferred > (megaBytes+1)*(1024*1024))) {
+                    megaBytes += 1;
+                    if ((megaBytes % 10) == 0) {
+                        System.out.print("*");
+                    } else {
+                        System.out.print(".");
+                    }
+                    if ((megaBytes % 100) == 0) {
+                        System.out.println(megaBytes);
+                    }
+
+                    System.out.flush();
+                }
+
+            }
+
+            final long fileSize = transferred;
+
+            return List.of(new ArchiveEntry() {
+                @Override
+                public String getName() { return tarGzFile.getName();}
+
+                @Override
+                public long getSize() {return fileSize;}
+
+                @Override
+                public boolean isDirectory() {return false;}
+
+                @Override
+                public Date getLastModifiedDate() {return Date.from(Instant.now());}
+            });
+        }
     }
 
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir) throws GeneralSecurityException, IOException, CDocParseException {
