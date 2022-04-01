@@ -117,11 +117,12 @@ public class Tar {
      * copied to outputDir.
      * @param tarGZipInputStream tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
+     * @param filesToExtract if not null, extract specified files otherwise all files
      * @param extract if true, extract files to outputDir. Otherwise list TarArchiveEntries
      * @return List<ArchiveEntry> list of TarArchiveEntry found in tarGZipInputStream
      * @throws IOException if an I/O error has occurred
      */
-    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, boolean extract) throws IOException {
+    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, List<String> filesToExtract, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
             throw new IOException("Not directory or not writeable "+ outputDir);
@@ -136,11 +137,22 @@ public class Tar {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     if (extract) {
-                        Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
-                        long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
-                        log.debug("Created {} {}B", newPath, written);
+                        if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
+                            if (filesToExtract.contains(tarArchiveEntry.getName())) {
+                                Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
+                                long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
+                                log.debug("Created {} {}B", newPath, written);
+                                result.add(tarArchiveEntry);
+                            }
+                        } else { // extract all
+                            Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
+                            long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
+                            log.debug("Created {} {}B", newPath, written);
+                            result.add(tarArchiveEntry);
+                        }
+                    } else { //list
+                        result.add(tarArchiveEntry);
                     }
-                    result.add(tarArchiveEntry);
                 } else {
                     log.info("Ignored non-regular file {}", tarArchiveEntry.getFile());
                 }
@@ -151,15 +163,15 @@ public class Tar {
     }
 
     public static List<ArchiveEntry> extractToDir(InputStream tarGZipInputStream, Path outputDir) throws IOException {
-        return processTarGz(tarGZipInputStream, outputDir, true);
+        return processTarGz(tarGZipInputStream, outputDir, null, true);
     }
 
     public static List<ArchiveEntry> listEntries(InputStream tarGZipInputStream) throws IOException {
-        return processTarGz(tarGZipInputStream, null, false);
+        return processTarGz(tarGZipInputStream, null, null, false);
     }
 
     public static List<String> listFiles(InputStream tarGZipInputStream) throws IOException {
-        return processTarGz(tarGZipInputStream, null, false).stream()
+        return processTarGz(tarGZipInputStream, null, null,false).stream()
                 .map(ArchiveEntry::getName)
                 .collect(Collectors.toList());
     }

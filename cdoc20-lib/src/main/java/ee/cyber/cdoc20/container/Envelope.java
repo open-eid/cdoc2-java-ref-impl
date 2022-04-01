@@ -4,7 +4,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 
-
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
@@ -89,49 +88,6 @@ public class Envelope {
         return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
     }
 
-
-//    public static CipherInputStream decrypt(InputStream envelopeIs, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
-//        log.trace("Envelope::fromInputStream");
-//        ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
-//        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
-//
-//        List<Details.EccRecipient> details = parseHeader(envelopeIs, fileHeaderOs);
-//
-//        for( Details.EccRecipient detailsEccRecipient : details) {
-//            ECPublicKey senderPubKey = detailsEccRecipient.getSenderPubKey();
-//            if (recipientPubKey.equals(detailsEccRecipient.getRecipientPubKey())) {
-//                byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
-//                byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());
-//
-//                Envelope envelope = new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
-//
-//                if (envelopeIs.available() > Crypto.HHK_LEN_BYTES) {
-//                    byte[] calculatedHmac = Crypto.calcHmacSha256(envelope.hmacKey, fileHeaderOs.toByteArray());
-//                    byte[] hmac = envelopeIs.readNBytes(Crypto.HHK_LEN_BYTES);
-//
-//                    if (!Arrays.equals(calculatedHmac, hmac)) {
-//                        log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
-//                        log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
-//
-//                        throw new CDocParseException("Invalid hmac");
-//                    }
-//
-//                    byte[] additionalData = ChaChaCipher.getAdditionalData(fileHeaderOs.toByteArray(), hmac);
-//                    return ChaChaCipher.initChaChaInputStream(envelopeIs, envelope.cekKey, additionalData);
-//                } else {
-//                    throw new CDocParseException("No hmac");
-//                }
-//
-//            }
-//        }
-//
-//        log.info("No matching EC pub key found");
-//        throw new CDocParseException("No matching EC pub key found");
-//    }
-
-
-
-
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs) throws IOException, CDocParseException, GeneralSecurityException {
         final int envelope_min_len = PRELUDE.length
                 + Byte.BYTES //version 0x02
@@ -208,8 +164,6 @@ public class Envelope {
                 }
             } else if (r.detailsType() == recipients_KeyServer){
                 log.warn("Details.recipients_KeyServer not implemented");
-//            } else if (r.detailsType() == NONE){
-//                log.warn("Details.NONE not implemented");
             }
             else {
                 log.error("Unknown Details type {}", r.detailsType());
@@ -246,11 +200,11 @@ public class Envelope {
             byte[] nonce = ChaChaCipher.generateNonce();
             byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
             try (CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData)) {
-                if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {
+                if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) { //hidden feature, mainly for testing
                     if ((payloadFiles.size() == 1)
                             && (payloadFiles.get(0).getName().endsWith(".tgz")
                             || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
-                        log.warn("disableCompression=true; Encrypting {} contents without compression");
+                        log.warn("disableCompression=true; Encrypting {} contents without compression", payloadFiles.get(0));
                         try(FileInputStream fis = new FileInputStream(payloadFiles.get(0))) {
                             fis.transferTo(cipherOutputStream);
                         }
@@ -266,7 +220,7 @@ public class Envelope {
     }
 
     private static List<ArchiveEntry> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair,
-                                              Path outputDir, boolean extract)
+                                              Path outputDir, List<String> filesToExtract, boolean extract)
             throws GeneralSecurityException, IOException, CDocParseException {
 
         log.trace("Envelope::decrypt");
@@ -301,13 +255,13 @@ public class Envelope {
                     try(CipherInputStream cis =
                                  ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
 
-                        if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression") 
+                        if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression") //hidden feature, mainly for testing
                                 && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
                             log.warn("disableCompression=true; Decrypting only without decompressing");
-                            return extractTarGZipOnly(outputDir, cis);
+                            return decryptTarGZip(outputDir, cis);
                         }
 
-                        return Tar.processTarGz(cis, outputDir, extract);
+                        return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
                     }
                 } else {
                     throw new CDocParseException("No hmac");
@@ -319,17 +273,15 @@ public class Envelope {
         throw new CDocParseException("No matching EC pub key found");
     }
 
-    private static List<ArchiveEntry> extractTarGZipOnly(Path outputDir, CipherInputStream cis) throws IOException {
+    private static List<ArchiveEntry> decryptTarGZip(Path outputDir, CipherInputStream cis) throws IOException {
         String cDocFileName = System.getProperty("ee.cyber.cdoc20.cDocFile");
         if (cDocFileName.endsWith(".cdoc")) {
             cDocFileName = cDocFileName.substring(0, cDocFileName.length()-".cdoc".length());
         }
         File tarGzFile = outputDir.resolve(cDocFileName+".tgz").toFile();
-        log.debug("Decrypting to {}", tarGzFile);
+        log.debug("Decrypting {} to {}",cDocFileName, tarGzFile);
         try(FileOutputStream fos = new FileOutputStream(tarGzFile)) {
-            //long tarGzFileSize = cis.transferTo(new FileOutputStream(tarGzFile));
             long transferred = 0;
-
             byte[] buffer = new byte[8192];
             int read;
             int megaBytes = 0;
@@ -344,12 +296,11 @@ public class Envelope {
                         System.out.print(".");
                     }
                     if ((megaBytes % 100) == 0) {
-                        System.out.println(megaBytes);
+                        System.out.println(" "+megaBytes);
                     }
 
                     System.out.flush();
                 }
-
             }
 
             final long fileSize = transferred;
@@ -370,50 +321,36 @@ public class Envelope {
         }
     }
 
+    /**
+     * Decrypt and extract all files from cdocInputStream
+     * @param cdocInputStream
+     * @param recipientEcKeyPair
+     * @param outputDir
+     * @return
+     * @throws GeneralSecurityException
+     * @throws IOException
+     * @throws CDocParseException
+     */
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir) throws GeneralSecurityException, IOException, CDocParseException {
-        return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, true)
+        return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, null, true)
                 .stream()
                 .map(ArchiveEntry::getName)
                 .collect(Collectors.toList());
     }
 
-    public static List<ArchiveEntry> list(InputStream cdocInputStream, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
-        return decrypt(cdocInputStream, recipientEcKeyPair, null, false);
+    public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir, List<String> filesToExtract) throws GeneralSecurityException, IOException, CDocParseException {
+        return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, filesToExtract, true)
+                .stream()
+                .map(ArchiveEntry::getName)
+                .collect(Collectors.toList());
     }
 
 
 
-//    public void encrypt(InputStream payloadIs, OutputStream os) throws IOException {
-//        log.trace("encrypt");
-//        os.write(PRELUDE);
-//        os.write(new byte[]{VERSION});
-//
-//        byte[] headerBytes = serializeHeader();
-//
-//        ByteBuffer bb = ByteBuffer.allocate(Integer.BYTES);
-//        bb.order(ByteOrder.BIG_ENDIAN);
-//        bb.putInt(headerBytes.length);
-//        byte[] headerLenBytes = bb.array();
-//
-//        os.write(headerLenBytes);
-//        os.write(headerBytes);
-//
-//        try {
-//            byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
-//            os.write(hmac);
-//            byte[] nonce = ChaChaCipher.generateNonce();
-//            byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
-//            try (CipherOutputStream cipherOs = ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData)) {
-//                cipherOs.write(payloadIs.readAllBytes()); //TODO: tar, zip, loop before encryption
-//                cipherOs.flush();
-//            }
-//
-//
-//        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
-//            log.error("error serializing payload", e);
-//            throw new IOException("error serializing payload", e);
-//        }
-//    }
+
+    public static List<ArchiveEntry> list(InputStream cdocInputStream, KeyPair recipientEcKeyPair) throws GeneralSecurityException, IOException, CDocParseException {
+        return decrypt(cdocInputStream, recipientEcKeyPair, null, null, false);
+    }
 
     byte[] serializeHeader() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -518,11 +455,4 @@ public class Envelope {
         result = result * 59 + ($cekKey == null ? 43 : $cekKey.hashCode());
         return result;
     }
-
-
-
-
-
-
-
 }

@@ -22,6 +22,8 @@ public class CDocDecrypter {
 
     private File cDocFile;
 
+    private List<String> filesToExtract;
+
     public CDocDecrypter withRecipient(KeyPair recipientKeyPair) {
         this.recipientKeyPair = recipientKeyPair;
         return this;
@@ -38,13 +40,19 @@ public class CDocDecrypter {
         return this;
     }
 
-    public void decrypt() throws IOException, CDocException{
+    public List<String> decrypt() throws IOException, CDocException{
         //TODO: validate
 
         try {
-            List<String> extractedFileNames =
-                    Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
-            System.out.println("Decrypted "+extractedFileNames+" into "+destinationDirectory.getAbsolutePath());
+            if ((filesToExtract == null) || (filesToExtract.isEmpty())) {
+                List<String> extractedFileNames =
+                        Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
+
+                return extractedFileNames;
+            } else {
+                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(), filesToExtract);
+            }
+
         } catch (GeneralSecurityException | CDocParseException ex) {
             String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath(): "";
             throw new CDocException("Error decrypting "+fileName, ex);
@@ -66,4 +74,8 @@ public class CDocDecrypter {
         }
     }
 
+    public CDocDecrypter withFilesToExtract(List<String> filesToExtract) {
+        this.filesToExtract = filesToExtract;
+        return this;
+    }
 }

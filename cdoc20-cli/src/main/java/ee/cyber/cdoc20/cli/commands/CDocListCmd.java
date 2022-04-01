@@ -43,6 +43,7 @@ public class CDocListCmd implements Callable<Void> {
                 .withRecipient(keyPair)
                 ;
 
+        System.out.println("Listing contents of "+cdocFile);
         List<ArchiveEntry> files = cDocDecrypter.list();
         if (!verbose) {
             files.forEach(e -> System.out.println(e.getName()));
