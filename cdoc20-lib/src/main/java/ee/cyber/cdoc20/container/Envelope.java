@@ -252,8 +252,7 @@ public class Envelope {
                             || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
                         log.warn("disableCompression=true; Encrypting {} contents without compression");
                         try(FileInputStream fis = new FileInputStream(payloadFiles.get(0))) {
-                            fis.transferTo(os);
-                            os.flush();
+                            fis.transferTo(cipherOutputStream);
                         }
                         return;
                     }
