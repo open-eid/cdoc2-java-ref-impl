@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
                 CDocDecryptCmd.class,
                 CDocListCmd.class}
 )
-public class CDocCli implements Callable<Void>{
+public class CDocCli implements Callable<Void> {
     @Option(names = {"--version"}, versionHelp = true, description = "display version info")
     boolean versionInfoRequested;
 

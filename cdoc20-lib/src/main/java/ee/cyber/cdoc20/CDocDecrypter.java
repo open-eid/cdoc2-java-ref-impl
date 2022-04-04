@@ -24,23 +24,33 @@ public class CDocDecrypter {
 
     private List<String> filesToExtract;
 
+    @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withRecipient(KeyPair recipientKeyPair) {
         this.recipientKeyPair = recipientKeyPair;
         return this;
     }
 
+    @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withCDoc(File cDocFile) throws FileNotFoundException {
         this.cDocFile = cDocFile;
         this.cDocInputStream = new FileInputStream(cDocFile);
         return this;
     }
 
+    @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withDestinationDirectory(File destinationDirectory) {
         this.destinationDirectory = destinationDirectory;
         return this;
     }
 
-    public List<String> decrypt() throws IOException, CDocException{
+    @SuppressWarnings("checkstyle:HiddenField")
+    public CDocDecrypter withFilesToExtract(List<String> filesToExtract) {
+        this.filesToExtract = filesToExtract;
+        return this;
+    }
+
+
+    public List<String> decrypt() throws IOException, CDocException {
         //TODO: validate
 
         try {
@@ -50,12 +60,13 @@ public class CDocDecrypter {
 
                 return extractedFileNames;
             } else {
-                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(), filesToExtract);
+                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(),
+                        filesToExtract);
             }
 
         } catch (GeneralSecurityException | CDocParseException ex) {
-            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath(): "";
-            throw new CDocException("Error decrypting "+fileName, ex);
+            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
+            throw new CDocException("Error decrypting " + fileName, ex);
         }
     }
 
@@ -69,13 +80,8 @@ public class CDocDecrypter {
 
 
         } catch (GeneralSecurityException | CDocParseException ex) {
-            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath(): "";
-            throw new CDocException("Error decrypting "+fileName, ex);
+            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
+            throw new CDocException("Error decrypting " + fileName, ex);
         }
-    }
-
-    public CDocDecrypter withFilesToExtract(List<String> filesToExtract) {
-        this.filesToExtract = filesToExtract;
-        return this;
     }
 }

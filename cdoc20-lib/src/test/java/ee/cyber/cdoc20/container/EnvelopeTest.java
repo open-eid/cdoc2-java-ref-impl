@@ -4,13 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.CipherInputStream;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,6 +23,7 @@ import java.util.UUID;
 class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
+    @SuppressWarnings("checkstyle:OperatorWrap")
     private final String aliceKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
             "MIGkAgEBBDAlhCJUAcquXTQoZ73awJa7izsXqUhjcPxXP0ybTDFJYuGMeJ5qCGRw\n" +
             "0RHaMUEJIPagBwYFK4EEACKhZANiAASV2VitdXFvs7OYIsnXMxe5I0boJlg4/shi\n" +
@@ -32,6 +31,7 @@ class EnvelopeTest {
             "wiYVMt6Qq/6Fv4kO3IXqSVsV1ylA4jQ=\n" +
             "-----END EC PRIVATE KEY-----\n";
 
+    @SuppressWarnings("checkstyle:OperatorWrap")
     private final String bobKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
             "MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL\n" +
             "mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B\n" +
@@ -46,12 +46,9 @@ class EnvelopeTest {
 
 
     @BeforeEach
-    public void initInputData() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidParameterSpecException {
-        fmkBuf[0] = 'f';
-        fmkBuf[1] = 'm';
-        fmkBuf[2] = 'k';
-        fmkBuf[fmkBuf.length - 1] = (byte)0xff;
-
+    public void initInputData()
+            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+        this.fmkBuf = Crypto.generateFileMasterKey();
         this.recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
         this.senderKeyPair = ECKeys.loadFromPem(aliceKeyPem);
     }
@@ -60,7 +57,7 @@ class EnvelopeTest {
     @Test
     public void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
 
-        File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-"+ UUID.randomUUID() +".txt");
+        File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-" + UUID.randomUUID() + ".txt");
         payloadFile.deleteOnExit();
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write("payload".getBytes(StandardCharsets.UTF_8));
@@ -78,9 +75,11 @@ class EnvelopeTest {
         assertTrue(resultBytes.length > 0);
 
         ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
-        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs); //no exception is good for now
 
-        assertTrue(details.size() == 1);
+        //no exception is also good indication that parsing worked
+        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
+
+        assertEquals(1, details.size());
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
         assertEquals(senderKeyPair.getPublic(), details.get(0).getSenderPubKey());
@@ -92,10 +91,10 @@ class EnvelopeTest {
     public void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
-        String payloadFileName = "payload-"+ uuid +".txt";
+        String payloadFileName = "payload-" + uuid + ".txt";
         //String payloadFileName = "A";
 
-        String payloadData = "payload-"+ uuid;
+        String payloadData = "payload-" + uuid;
         //String payloadData = "";
 
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), payloadFileName);
@@ -104,7 +103,7 @@ class EnvelopeTest {
             payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
 
-        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve( "testContainer-"+uuid);
+        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
         outDir.toFile().deleteOnExit();
 
@@ -125,16 +124,16 @@ class EnvelopeTest {
                 List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
 
                 assertEquals(List.of(payloadFileName), filesExtracted);
-                Path payload_txt = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
-                payload_txt.toFile().deleteOnExit();
+                Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
+                payloadPath.toFile().deleteOnExit();
 
-                assertEquals(payloadData, Files.readString(payload_txt));
+                assertEquals(payloadData, Files.readString(payloadPath));
             }
         }
     }
 
-
-
+@SuppressWarnings("checkstyle:LineLength")
+void checkStyleSuppress() {
 //FIXME: Random EnvelopeTest failure 22.03.22
 //    [INFO] Running ee.cyber.cdoc20.container.EnvelopeTest
 //[main] DEBUG ee.cyber.cdoc20.container.Envelope - encrypted FMK: e5f5a4ed70ad86d18b0c7954c393d34ec585d4d6944b38acdea50a5ca85e6302
@@ -216,6 +215,6 @@ class EnvelopeTest {
 //    at ee.cyber.cdoc20.container.Envelope.parseHeader(Envelope.java:139)
 //            ... 64 more
 
-
+}
 
 }

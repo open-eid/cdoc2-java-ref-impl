@@ -32,8 +32,11 @@
         <property name="message" value="Line has trailing spaces."/>
     </module>
 
+    <module name="SuppressWarningsFilter" />
     <module name="TreeWalker">
 
+        <module name="SuppressWarningsHolder" />
+        <module name="SuppressionCommentFilter"/>
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
         <module name="JavadocMethod">
@@ -112,6 +115,7 @@
         <module name="HiddenField">
             <property name="ignoreConstructorParameter" value="true"/>
             <property name="ignoreSetter" value="true"/>
+            <property name="setterCanReturnItsClass" value="true"/>
         </module>
         <module name="InnerAssignment"/>
         <module name="MagicNumber"/>

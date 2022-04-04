@@ -51,9 +51,9 @@ public class CDocDecryptCmd implements Callable<Void> {
                 .withFilesToExtract(Arrays.asList(filesToExtract))
                 .withDestinationDirectory(outputPath);
 
-        System.out.println("Decrypting "+cdocFile+" to " +outputPath.getAbsolutePath());
+        System.out.println("Decrypting " + cdocFile + " to " + outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();
-        extractedFileNames.forEach(f ->System.out.println(f));
+        extractedFileNames.forEach(f -> System.out.println(f));
         return null;
     }
 }

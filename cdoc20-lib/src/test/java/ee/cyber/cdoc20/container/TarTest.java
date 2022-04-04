@@ -3,18 +3,13 @@ package ee.cyber.cdoc20.container;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.UserPrincipalLookupService;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarFile;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,14 +17,14 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TarTest {
-    private final static Logger log = LoggerFactory.getLogger(TarTest.class);
+    private static final  Logger log = LoggerFactory.getLogger(TarTest.class);
 
     private final File tarGZipFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
 
     private final String payload = "payload\n";
 
     //@Test
-    void testCreateArchive() throws IOException{
+    void testCreateArchive() throws IOException {
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload.txt");
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payload.getBytes(StandardCharsets.UTF_8));
@@ -45,6 +40,7 @@ public class TarTest {
 
         log.debug("Creating tar {}", tarGZipFile);
         try (FileOutputStream fos = new FileOutputStream(tarGZipFile)) {
+            tarGZipFile.deleteOnExit();
             Tar.archiveFiles(fos, List.of(payloadFile, readmeFile));
         }
 
@@ -66,7 +62,7 @@ public class TarTest {
     public void testExtract() throws IOException {
         testCreateArchive(); //create archive
 
-        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve( "tartest");
+        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testExtract");
         if (Files.exists(outDir)) { //delete tartest dir recursively
             //noinspection ResultOfMethodCallIgnored
             Files.walk(outDir)
@@ -93,21 +89,29 @@ public class TarTest {
 
         assertEquals(Set.of("payload.txt", "README.md"), extractedFiles);
 
-        Path payload_txt = Path.of(outDir.toAbsolutePath().toString(), "payload.txt");
+        Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), "payload.txt");
 
-        String read = Files.readString(payload_txt);
+        String read = Files.readString(payloadPath);
 
         assertEquals(payload, read);
+
+        if (Files.exists(outDir)) { //delete tartest dir recursively
+            //noinspection ResultOfMethodCallIgnored
+            Files.walk(outDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
     }
 
     @Test
     public void testArchiveData() throws IOException {
-        Path outFile = Path.of(System.getProperty("java.io.tmpdir")).resolve( "testArchiveData.tar.gz");
-        //outFile.toFile().deleteOnExit();
+        Path outFile = Path.of(System.getProperty("java.io.tmpdir")).resolve("testArchiveData.tar.gz");
+        outFile.toFile().deleteOnExit();
 
-        Files.deleteIfExists(outFile);
+        //Files.deleteIfExists(outFile);
 
-        String tarEntryName = "payload-"+UUID.randomUUID();
+        String tarEntryName = "payload-" + UUID.randomUUID();
         Path payloadPath = Path.of(System.getProperty("java.io.tmpdir")).resolve(tarEntryName);
         payloadPath.toFile().deleteOnExit();
 

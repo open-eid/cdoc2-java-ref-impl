@@ -1,6 +1,5 @@
 package ee.cyber.cdoc20.crypto;
 
-
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,26 +13,26 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Arrays;
-import java.util.HexFormat;
 
-public class ChaChaCipher {
+public final class ChaChaCipher {
 
     private static final Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
-    public final static int NONCE_LEN_BYTES = 96 / 8;
+    public static final int NONCE_LEN_BYTES = 96 / 8;
     static final Provider BC = new BouncyCastleProvider();
 
-    public static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException {
+    private ChaChaCipher() {
+    }
 
-        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)){
+    public static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+                    InvalidKeyException {
+
+        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
-        if(Security.getProvider("BC") == null) {
-            Security.addProvider(new BouncyCastleProvider());
-
-        }
-
-        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC); //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files)
+        //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files)
+        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC);
         // IV, initialization value with nonce
         IvParameterSpec iv = new IvParameterSpec(nonce);
         cipher.init(mode, contentEncryptionKey, iv);
@@ -45,7 +44,7 @@ public class ChaChaCipher {
             NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
-        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)){
+        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
@@ -104,7 +103,7 @@ public class ChaChaCipher {
             throws InvalidAlgorithmParameterException, NoSuchPaddingException,
                     NoSuchAlgorithmException, InvalidKeyException, IOException {
 
-        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)){
+        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
@@ -114,7 +113,7 @@ public class ChaChaCipher {
 
         Cipher cipher = initCipher(Cipher.ENCRYPT_MODE, contentEncryptionKey, nonce);
         cipher.updateAAD(additionalData);
-        os.write(nonce);//prepend unencrypted nonce
+        os.write(nonce); //prepend unencrypted nonce
         return new CipherOutputStream(os, cipher);
     }
 
@@ -130,8 +129,6 @@ public class ChaChaCipher {
         }
 
         byte[] nonce = is.readNBytes(NONCE_LEN_BYTES);
-//        log.debug("nonce : {}", HexFormat.of().formatHex(nonce));
-//        log.debug("AAD   : {}", HexFormat.of().formatHex(additionalData));
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, contentEncryptionKey, nonce);
         cipher.updateAAD(additionalData);
         return new CipherInputStream(is, cipher);

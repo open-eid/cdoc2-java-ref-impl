@@ -19,13 +19,14 @@ public class CDocBuilder {
     private List<ECPublicKey> recipients;
     private KeyPair senderKeyPair;
 
+    @SuppressWarnings("checkstyle:HiddenField")
     public CDocBuilder withPayloadFiles(List<File> payloadFiles) {
         this.payloadFiles = payloadFiles;
         return this;
     }
 
-    public CDocBuilder withRecipients(List<ECPublicKey> recipients) {
-        this.recipients = recipients;
+    public CDocBuilder withRecipients(List<ECPublicKey> recipientsPubKeys) {
+        this.recipients = recipientsPubKeys;
         return this;
     }
 
@@ -43,17 +44,17 @@ public class CDocBuilder {
         try (OutputStream outputStream = new FileOutputStream(outputCDocFile)) {
             buildToOutputStream(outputStream);
         }
-
     }
 
-    public void buildToOutputStream(OutputStream outputStream) throws CDocException, CDocValidationException, IOException {
+    public void buildToOutputStream(OutputStream outputStream)
+            throws CDocException, CDocValidationException, IOException {
 
         validate();
 
         try {
             Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
             envelope.encrypt(this.payloadFiles, outputStream);
-        } catch (NoSuchAlgorithmException| InvalidKeyException ex) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
             throw new CDocException(ex);
         }
     }
@@ -86,10 +87,10 @@ public class CDocBuilder {
             throw new CDocValidationException("Must contain at least one payload file");
         }
 
-        for(File file: payloadFiles) {
+        for (File file: payloadFiles) {
             if (!(file.exists() && file.isFile() && file.canRead())) {
                 log.error("Invalid payload file {}", file);
-                throw new CDocValidationException("Invalid payload file "+file);
+                throw new CDocValidationException("Invalid payload file " + file);
             }
         }
     }

@@ -35,16 +35,18 @@ public class CDocCreateCmd implements Callable<Void> {
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 
-    @Option(names = {"-ZZ"}, hidden = true, description = "inputFile will only be encrypted (inputFile is already tar.gz)")
+    @Option(names = {"-ZZ"}, hidden = true,
+            description = "inputFile will only be encrypted (inputFile is already tar.gz)")
     private boolean disableCompression = false;
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
     @Override
-    public Void call() throws Exception{
+    public Void call() throws Exception {
 
-        log.debug("create --file {} --key {} --pubkey {} {}", cdocFile, privKeyFile, pubKeyFile, Arrays.toString(inputFiles));
+        log.debug("create --file {} --key {} --pubkey {} {}",
+                cdocFile, privKeyFile, pubKeyFile, Arrays.toString(inputFiles));
         KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
         ECPublicKey recipient = ECKeys.loadECPubKey(pubKeyFile);
 
@@ -60,7 +62,7 @@ public class CDocCreateCmd implements Callable<Void> {
         cDocBuilder.buildToFile(cdocFile);
 
         log.info("Created {}", cdocFile);
-        System.out.println("Created "+cdocFile.getAbsolutePath());
+        System.out.println("Created " + cdocFile.getAbsolutePath());
 
         return null;
     }

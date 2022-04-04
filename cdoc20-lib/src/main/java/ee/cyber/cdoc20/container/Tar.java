@@ -21,9 +21,9 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Utility class for dealing with tar gz stream/files. Only supports regular files inside tar.
  */
-public class Tar {
+public final class Tar {
 
-    private final static Logger log = LoggerFactory.getLogger(Tar.class);
+    private static final Logger log = LoggerFactory.getLogger(Tar.class);
 
     private Tar() {
     }
@@ -46,7 +46,7 @@ public class Tar {
                 log.debug("Added {}B", written);
             }
         } else {
-            throw new IOException("Not a file: "+file);
+            throw new IOException("Not a file: " + file);
         }
         tarArchiveOutputStream.closeArchiveEntry();
     }
@@ -71,7 +71,7 @@ public class Tar {
      * @param tarEntryName entry name (file name) for data
      * @throws IOException
      */
-    public static void archiveData(OutputStream dest, byte[] data, String tarEntryName) throws IOException{
+    public static void archiveData(OutputStream dest, byte[] data, String tarEntryName) throws IOException {
         try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
                 dest)))) {
             tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
@@ -93,7 +93,7 @@ public class Tar {
      * @throws IOException if an I/O error has occurred
      */
     public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
-            throws IOException{
+            throws IOException {
 
         try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
@@ -118,14 +118,16 @@ public class Tar {
      * @param tarGZipInputStream tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
      * @param filesToExtract if not null, extract specified files otherwise all files
-     * @param extract if true, extract files to outputDir. Otherwise list TarArchiveEntries
-     * @return List<ArchiveEntry> list of TarArchiveEntry found in tarGZipInputStream
+     * @param extract if true, extract files to outputDir. Otherwise, list TarArchiveEntries
+     * @return List<ArchiveEntry> list of TarArchiveEntry processed in tarGZipInputStream (ignored entries are not
+     *      returned)
      * @throws IOException if an I/O error has occurred
      */
-    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir, List<String> filesToExtract, boolean extract) throws IOException {
+    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir,
+                                           List<String> filesToExtract, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
-            throw new IOException("Not directory or not writeable "+ outputDir);
+            throw new IOException("Not directory or not writeable " + outputDir);
         }
 
         LinkedList<ArchiveEntry> result = new LinkedList<>();
@@ -171,7 +173,7 @@ public class Tar {
     }
 
     public static List<String> listFiles(InputStream tarGZipInputStream) throws IOException {
-        return processTarGz(tarGZipInputStream, null, null,false).stream()
+        return processTarGz(tarGZipInputStream, null, null, false).stream()
                 .map(ArchiveEntry::getName)
                 .collect(Collectors.toList());
     }

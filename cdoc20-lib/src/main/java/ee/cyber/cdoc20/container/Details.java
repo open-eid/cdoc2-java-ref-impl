@@ -74,7 +74,8 @@ public class Details {
          * @param recipients      list of recipients public keys
          * @return List of EccRecipients
          */
-        public static List<EccRecipient> buildEccRecipients(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
+        public static List<EccRecipient> buildEccRecipients(byte[] fmk, KeyPair senderEcKeyPair,
+                                                            List<ECPublicKey> recipients)
                 throws NoSuchAlgorithmException, InvalidKeyException {
 
             if (fmk.length != Crypto.CEK_LEN_BYTES) {
@@ -93,6 +94,7 @@ public class Details {
             return result;
         }
 
+        //CHECKSTYLE:OFF - generated code
         @Override
         public boolean equals(Object o) {
             if (o == this) {
@@ -154,6 +156,7 @@ public class Details {
             result = result * 59 + Arrays.hashCode(this.encryptedFmk);
             return result;
         }
+        //CHECKSTYLE:ON - generated code
 
     }
 }

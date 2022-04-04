@@ -4,12 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.*;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -23,14 +21,16 @@ import java.util.regex.Pattern;
 /**
  * EC keys loading, decoding and encoding
  */
-public class ECKeys {
+public final class ECKeys {
+    public static final String SECP_384_R_1 = "secp384r1";
     private static final Logger log = LoggerFactory.getLogger(ECKeys.class);
 
-    public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");// provider SunEC
-        keyPairGenerator.initialize( new ECGenParameterSpec(Crypto.SECP_384_R_1));
+    private ECKeys() {
+    }
 
-        //System.out.println("EC provider:" + keyPairGenerator.getProvider());
+    public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+        keyPairGenerator.initialize(new ECGenParameterSpec(SECP_384_R_1));
 
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
         return keyPair;
@@ -41,15 +41,17 @@ public class ECKeys {
      * @param ecPublicKey EC public key
      * @return ecPublicKey encoded in TLS 1.3 EC pub key format
      */
+    @SuppressWarnings("checkstyle:LineLength")
     public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) {
         //BigInteger.toByteArray() returns byte in network byte order
         byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX());
         byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY());
 
+        //CHECKSTYLE:OFF
         //EC pubKey in TLS 1.3 format
         //https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
-        //https://github.com/dushitaoyuan/littleca/blob/5694924eb084e2923bb61550c30c0444ddc68484/littleca-core/src/main/java/com/taoyuanx/ca/core/sm/util/BCECUtil.java#L83
         //https://github.com/bcgit/bc-java/blob/526b5846653100fc521c1a68c02dbe9df3347a29/core/src/main/java/org/bouncycastle/math/ec/ECCurve.java#L410
+        //CHECKSTYLE:ON
         byte[] tlsPubKey = new byte[1 + xBytes.length + yBytes.length];
         tlsPubKey[0] = 0x04; //uncompressed
 
@@ -71,11 +73,11 @@ public class ECKeys {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded) throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded)
+            throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         final int expectedLength = Crypto.SECP_384_R_1_LEN_BYTES;
-        if (encoded.length != (2 * expectedLength + 1))
-        {
+        if (encoded.length != (2 * expectedLength + 1)) {
             log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, (2 * expectedLength + 1),
                     HexFormat.of().formatHex(encoded));
             throw new IllegalArgumentException("Incorrect length for uncompressed encoding");
@@ -83,17 +85,17 @@ public class ECKeys {
 
         if (encoded[0] != 0x04) {
             log.error("Illegal EC pub key encoding. Encoded: {}", HexFormat.of().formatHex(encoded));
-            throw new IllegalArgumentException("Invalid encoding" );
+            throw new IllegalArgumentException("Invalid encoding");
         }
 
-        BigInteger X = new BigInteger(1, Arrays.copyOfRange(encoded,1, expectedLength+1));
+        BigInteger x = new BigInteger(1, Arrays.copyOfRange(encoded, 1, expectedLength + 1));
         //log.debug("decoded X {}", HexFormat.of().formatHex(X.toByteArray()));
-        BigInteger Y = new BigInteger(1, Arrays.copyOfRange(encoded,expectedLength+1, encoded.length));
+        BigInteger y = new BigInteger(1, Arrays.copyOfRange(encoded, expectedLength + 1, encoded.length));
         //log.debug("decoded Y {}", HexFormat.of().formatHex(Y.toByteArray()));
 
-        ECPoint pubPoint = new ECPoint(X, Y);
+        ECPoint pubPoint = new ECPoint(x, y);
         AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
-        params.init(new ECGenParameterSpec(Crypto.SECP_384_R_1));
+        params.init(new ECGenParameterSpec(SECP_384_R_1));
 
         ECParameterSpec ecParameters = params.getParameterSpec(ECParameterSpec.class);
         ECPublicKeySpec pubECSpec = new ECPublicKeySpec(pubPoint, ecParameters);
@@ -109,7 +111,8 @@ public class ECKeys {
             return Arrays.copyOfRange(array, 1, array.length);
         } else {
             if (array.length != expectedLen) {
-                log.warn("Expected EC key to be {} bytes, but was {}. bigInteger: {}", expectedLen, array.length, HexFormat.of().formatHex(array));
+                log.warn("Expected EC key to be {} bytes, but was {}. bigInteger: {}",
+                        expectedLen, array.length, HexFormat.of().formatHex(array));
             }
             return array;
         }
@@ -129,7 +132,8 @@ public class ECKeys {
      * @param openSslPem OpenSSL generated EC private key in PEM
      * @return EC private key loaded from openSslPem
      */
-    public static ECPrivateKey loadECPrivateKey(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static ECPrivateKey loadECPrivateKey(String openSslPem)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         //https://stackoverflow.com/questions/41927859/how-do-i-load-an-elliptic-curve-pem-encoded-private-key
         // static pkcs8 header for secp384r1
@@ -140,7 +144,7 @@ public class ECKeys {
 
         byte[] pkcs8 = new byte[header.length + der.length];
         System.arraycopy(header, 0, pkcs8, 0, header.length);
-        System.arraycopy(der, 0,pkcs8, header.length, der.length);
+        System.arraycopy(der, 0, pkcs8, header.length, der.length);
         PrivateKey ecPrivate = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(pkcs8));
         return (ECPrivateKey) ecPrivate;
     }
@@ -194,7 +198,8 @@ public class ECKeys {
      * @param openSslPem
      * @return
      */
-    public static ECPublicKey loadECPublicKey(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static ECPublicKey loadECPublicKey(String openSslPem)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
         Pattern pattern = Pattern.compile("(?s)-----BEGIN PUBLIC KEY-----.*-----END PUBLIC KEY-----");
         Matcher matcher = pattern.matcher(openSslPem);
         if (!matcher.find()) {
@@ -240,7 +245,8 @@ public class ECKeys {
      * @param openSslPem OpenSSL generated EC private key in PEM
      * @return ECPublicKey decoded from PEM
      */
-    private static ECPublicKey loadECPubKeyFromECPrivKeyPem(String openSslPem) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+    private static ECPublicKey loadECPubKeyFromECPrivKeyPem(String openSslPem)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
 
         byte[] raw = decodeEcPrivateKeyFromPem(openSslPem);
         //FIXME: hackish code, find format spec for PEM generated by OpenSSL
@@ -248,7 +254,7 @@ public class ECKeys {
         int pubKeyLen = 2 * Crypto.SECP_384_R_1_LEN_BYTES + 1;
         if (raw.length > pubKeyLen + 2) {
             //public key is preceded by length and 0x00
-            if ((raw[raw.length - (pubKeyLen + 2)] == pubKeyLen+1) //+ preceding 0x00 sign byte
+            if ((raw[raw.length - (pubKeyLen + 2)] == pubKeyLen + 1) //+ preceding 0x00 sign byte
                     && (raw[raw.length - (pubKeyLen + 1)] == 0x00) // preceding 0x00 sign byte
                     && (raw[raw.length - pubKeyLen ] == 0x04)) { //pubKey starts with 0x04
 
@@ -256,8 +262,6 @@ public class ECKeys {
                 System.arraycopy(raw, raw.length - pubKeyLen, encodedPubKey, 0, pubKeyLen);
                 log.debug("PEM pub key part: {}", HexFormat.of().formatHex(encodedPubKey));
                 return ECKeys.decodeEcPublicKeyFromTls(encodedPubKey);
-                //X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(encodedPubKey);
-                //return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
             }
         }
 
@@ -275,7 +279,8 @@ public class ECKeys {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static KeyPair loadFromPem(String pubKeyPem, String ecPrivatePem) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static KeyPair loadFromPem(String pubKeyPem, String ecPrivatePem)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
         PrivateKey ecPrivate = loadECPrivateKey(ecPrivatePem);
         ECPublicKey ecPublicKey = loadECPublicKey(pubKeyPem);
         return new KeyPair(ecPublicKey, ecPrivate);
@@ -296,7 +301,8 @@ public class ECKeys {
      * @param pem OpenSSL generated EC private key in PEM
      * @return EC KeyPair decoded from PEM
      */
-    public static KeyPair loadFromPem(String pem) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+    public static KeyPair loadFromPem(String pem)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
         PrivateKey ecPrivate = loadECPrivateKey(pem);
         ECPublicKey ecPublicKey = loadECPubKeyFromECPrivKeyPem(pem);
         return new KeyPair(ecPublicKey, ecPrivate);
@@ -310,13 +316,7 @@ public class ECKeys {
      */
     public static String readAll(File file) throws IOException {
 
-        try (FileInputStream fis = new FileInputStream(file); FileChannel inChannel = fis.getChannel()) {
-            long fileSize = inChannel.size();
-            ByteBuffer buf = ByteBuffer.allocate((int) fileSize);
-            inChannel.read(buf);
-            buf.flip(); // limit = position; position = 0;
-            return String.valueOf(StandardCharsets.UTF_8.decode(buf));
-        }
+        return Files.readString(file.toPath());
     }
 
 
@@ -335,12 +335,14 @@ public class ECKeys {
      * @param pemFile OpenSSL generated EC private key in PEM
      * @return EC KeyPair decoded from PEM
      */
-    public static KeyPair loadFromPem(File pemFile) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException, IOException {
+    public static KeyPair loadFromPem(File pemFile)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException, IOException {
 
         return loadFromPem(readAll(pemFile));
     }
 
-    public static ECPublicKey loadECPubKey(File pubPemFile) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+    public static ECPublicKey loadECPubKey(File pubPemFile)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
         return loadECPublicKey(readAll(pubPemFile));
     }

@@ -1,6 +1,6 @@
 package ee.cyber.cdoc20;
 
-public class CDocValidationException extends Exception{
+public class CDocValidationException extends Exception {
 
     public CDocValidationException(String msg) {
         super(msg);

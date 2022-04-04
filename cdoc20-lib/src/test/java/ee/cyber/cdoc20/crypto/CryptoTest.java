@@ -4,9 +4,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 
 import java.nio.charset.StandardCharsets;
@@ -40,10 +37,8 @@ public class CryptoTest {
     @Test
     void testHKDF() throws NoSuchAlgorithmException {
         byte[] fmk = Crypto.generateFileMasterKey();
-        assertTrue(fmk.length == 256/8);
+        assertEquals(Crypto.FMK_LEN_BYTES, fmk.length);
 
-        //byte[] cek = Crypto.deriveContentEncryptionKey(fmk);
-        //assertTrue(cek.length == 256/8);
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
         String format = cekKey.getFormat();
         byte[] cekBytes = cekKey.getEncoded();
@@ -51,7 +46,7 @@ public class CryptoTest {
 
         SecretKey hhkKey = Crypto.deriveHeaderHmacKey(fmk);
         byte[] hhkBytes = hhkKey.getEncoded();
-        assertTrue( hhkBytes.length == 256/8);
+        assertEquals(Crypto.HHK_LEN_BYTES, hhkBytes.length);
     }
 
     @Test
@@ -73,33 +68,29 @@ public class CryptoTest {
     }
 
     @Test
-    void testEcPubKeyEncodeDecode() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException, InvalidKeySpecException {
+    void testEcPubKeyEncodeDecode() throws GeneralSecurityException {
         log.trace("testEcPubKeyEncodeDecode()");
 
         KeyPair keyPair = ECKeys.generateEcKeyPair();
-
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
-
         byte[] encodedEcPubKey = ECKeys.encodeEcPubKeyForTls(ecPublicKey);
 
-        assertEquals(1+48*2, encodedEcPubKey.length);
+        assertEquals(1 + Crypto.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
         assertEquals(0x04, encodedEcPubKey[0]);
 
         ECPublicKey decoded = ECKeys.decodeEcPublicKeyFromTls(encodedEcPubKey);
-
         assertEquals(ecPublicKey.getW(), decoded.getW());
         assertEquals(ecPublicKey, decoded);
-
-        System.out.println();
     }
 
     @Test
-    void testGenSharedSecret() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, InvalidKeyException {
+    void testGenSharedSecret() throws GeneralSecurityException {
         KeyPair keyPair = ECKeys.generateEcKeyPair();
         KeyPair other = ECKeys.generateEcKeyPair();
-        byte[] ecdhSharedSecret = Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
+        byte[] ecdhSharedSecret =
+                Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
-        assertEquals(48, ecdhSharedSecret.length);
+        assertEquals(Crypto.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
     }
 
     @Test
@@ -121,11 +112,12 @@ public class CryptoTest {
     }
 
     @Test
-    void testFmkECCycle() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidParameterSpecException {
+    void testFmkECCycle() throws GeneralSecurityException {
         log.trace("testFmkECCycle()");
         byte[] fmk = Crypto.generateFileMasterKey();
 
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+        @SuppressWarnings("checkstyle:OperatorWrap")
         String pem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
                 "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
@@ -166,6 +158,7 @@ public class CryptoTest {
 
     @Test
     void testLoadEcPrivKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
                 "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
@@ -205,6 +198,7 @@ public class CryptoTest {
     void testLoadEcPubKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
+        @SuppressWarnings("checkstyle:OperatorWrap")
         String pubKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
                 "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO\n" +
                 "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii\n" +
@@ -230,7 +224,9 @@ public class CryptoTest {
 //        45:ff:de:f0:03:b8:30
 //        ASN1 OID: secp384r1
 //        NIST CURVE: P-384
-        String expectedHex = "0484465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
+        String expectedHex = "04"
+            + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
+            + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
         ECPublicKey ecPublicKey = ECKeys.loadECPublicKey(pubKeyPem);
 
@@ -240,7 +236,8 @@ public class CryptoTest {
     }
 
     @Test
-    void testLoadEcKeyPairFromPem() throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
+    void testLoadEcKeyPairFromPem() throws GeneralSecurityException {
+        @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
                 "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
@@ -269,10 +266,9 @@ public class CryptoTest {
         //        NIST CURVE: P-384
         String expectedSecretHex =
                 "61d54013f37d8d876657bdd73925b36fdc1704652624f747ac52448f1668365c4ba803b6af4bf91de07b471916d145b6";
-        String expectedPubHex =
-                "04" +
-                "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75" +
-                "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
+        String expectedPubHex = "04"
+                 + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
+                 + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
         KeyPair keyPair = ECKeys.loadFromPem(privKeyPem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
