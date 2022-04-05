@@ -51,10 +51,7 @@ public class CDocDecrypter {
 
         try {
             if ((filesToExtract == null) || (filesToExtract.isEmpty())) {
-                List<String> extractedFileNames =
-                        Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
-
-                return extractedFileNames;
+                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
             } else {
                 return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(),
                         filesToExtract);

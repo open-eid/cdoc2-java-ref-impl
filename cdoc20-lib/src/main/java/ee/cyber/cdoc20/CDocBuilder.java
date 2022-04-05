@@ -81,7 +81,7 @@ public class CDocBuilder {
     }
 
     void validatePayloadFiles() throws CDocValidationException {
-        if ((payloadFiles == null) || (payloadFiles.size() == 0)) {
+        if ((payloadFiles == null) || (payloadFiles.isEmpty())) {
             log.error("Must contain at least one payload file");
             throw new CDocValidationException("Must contain at least one payload file");
         }

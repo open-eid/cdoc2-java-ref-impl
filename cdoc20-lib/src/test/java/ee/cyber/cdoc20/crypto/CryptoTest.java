@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.*;
 
 
-public class CryptoTest {
+class CryptoTest {
     private static final Logger log = LoggerFactory.getLogger(CryptoTest.class);
 
     @BeforeAll

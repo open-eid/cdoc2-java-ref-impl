@@ -432,7 +432,7 @@ public class Envelope {
     }
 
     //CHECKSTYLE:OFF - generated code
-    @SuppressWarnings({"java:S3776", "java:S1119"})
+    @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126"})
     @Override
     public boolean equals(Object o) {
         if (o == this) {
@@ -476,6 +476,7 @@ public class Envelope {
     }
 
     @Override
+    @SuppressWarnings("java:S117")
     public int hashCode() {
         int result = 1;
         result = result * 59 + Arrays.deepHashCode(this.eccRecipients);

@@ -14,9 +14,9 @@ import java.nio.ByteBuffer;
 //import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
-public class FbsHeaderTest {
+class FbsHeaderTest {
 
-    //public static final int KEYLEN_BITS = 256;
+
     public static final int KEYLEN_BYTES = 256 / 8;
 
     @Test
@@ -25,7 +25,6 @@ public class FbsHeaderTest {
         byte payloadEnc = PayloadEncryptionMethod.CHACHA20POLY1305;
 
         byte[] fmkBuf =  new byte[KEYLEN_BYTES];
-        //Arrays.fill(fmkBuf, (byte) 0x00);
         fmkBuf[0] = 'f';
         fmkBuf[1] = 'm';
         fmkBuf[2] = 'k';
@@ -33,7 +32,6 @@ public class FbsHeaderTest {
 
 
         byte[] recipientPubKeyBuf = new byte[KEYLEN_BYTES];
-        //Arrays.fill(recipientPubKeyBuf, (byte) 0x00);
         recipientPubKeyBuf[0] = 'r';
         recipientPubKeyBuf[1] = 'e';
         recipientPubKeyBuf[2] = 'c';
@@ -42,20 +40,12 @@ public class FbsHeaderTest {
 
 
         byte[] senderPubKeyBuf = new byte[KEYLEN_BYTES];
-        //Arrays.fill(senderPubKeyBuf, (byte) 0x00);
         senderPubKeyBuf[0] = 's';
         senderPubKeyBuf[1] = 'e';
         senderPubKeyBuf[2] = 'n';
         senderPubKeyBuf[senderPubKeyBuf.length - 1]  = (byte)0xfc;
 
-
-
-
-
-
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
-
-
         int recipientPubKeyOffset = builder.createByteVector(recipientPubKeyBuf);
         int senderPubKeyOffset = builder.createByteVector(senderPubKeyBuf);
         int eccPubKeyOffset = ECCPublicKey.createECCPublicKey(builder,

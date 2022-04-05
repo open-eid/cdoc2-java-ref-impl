@@ -15,7 +15,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ChaChaChipherTest {
+class ChaChaChipherTest {
     private static final Logger log = LoggerFactory.getLogger(ChaChaChipherTest.class);
 
     @Test
@@ -28,9 +28,6 @@ public class ChaChaChipherTest {
         String payload = "secret";
         byte[] encrypted =
                 ChaChaCipher.encryptPayload(cek, payload.getBytes(StandardCharsets.UTF_8), additionalData);
-
-        //log.debug("encrypted hex: {}", HexFormat.of().formatHex(encrypted));
-        //log.debug("encrypted str: {}", new String(encrypted));
 
         String decrypted = new String(ChaChaCipher.decryptPayload(cek, encrypted, additionalData),
                 StandardCharsets.UTF_8);

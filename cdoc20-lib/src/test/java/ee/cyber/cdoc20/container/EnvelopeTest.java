@@ -55,7 +55,7 @@ class EnvelopeTest {
 
     // Mainly flatbuffers and friends
     @Test
-    public void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
+    void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
 
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-" + UUID.randomUUID() + ".txt");
         payloadFile.deleteOnExit();
@@ -88,14 +88,12 @@ class EnvelopeTest {
     }
 
     @Test
-    public void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
+    void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
-        //String payloadFileName = "A";
 
         String payloadData = "payload-" + uuid;
-        //String payloadData = "";
 
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), payloadFileName);
         payloadFile.deleteOnExit();

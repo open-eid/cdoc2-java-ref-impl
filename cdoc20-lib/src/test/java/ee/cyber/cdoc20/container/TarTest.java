@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TarTest {
+class TarTest {
     private static final  Logger log = LoggerFactory.getLogger(TarTest.class);
 
     private final File tarGZipFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
@@ -59,7 +59,7 @@ public class TarTest {
     }
 
     @Test
-    public void testExtract() throws IOException {
+    void testExtract() throws IOException {
         testCreateArchive(); //create archive
 
         Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testExtract");
@@ -105,7 +105,7 @@ public class TarTest {
     }
 
     @Test
-    public void testArchiveData() throws IOException {
+    void testArchiveData() throws IOException {
         Path outFile = Path.of(System.getProperty("java.io.tmpdir")).resolve("testArchiveData.tar.gz");
         outFile.toFile().deleteOnExit();
 

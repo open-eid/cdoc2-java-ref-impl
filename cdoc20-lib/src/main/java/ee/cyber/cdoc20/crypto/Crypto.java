@@ -58,15 +58,13 @@ public final class Crypto {
     public static byte[] generateFileMasterKey() throws NoSuchAlgorithmException {
         byte[] inputKeyingMaterial = new byte[64]; //spec says: ikm should be more than 32bytes of secure random
         getSecureRandom().nextBytes(inputKeyingMaterial);
-        byte[] fmk = HKDF.fromHmacSha256().extract("CDOC20salt".getBytes(StandardCharsets.UTF_8), inputKeyingMaterial);
-        return fmk;
+        return HKDF.fromHmacSha256().extract("CDOC20salt".getBytes(StandardCharsets.UTF_8), inputKeyingMaterial);
     }
 
     public static SecretKey deriveContentEncryptionKey(byte[] fmk) {
         byte[] cekBytes = HKDF.fromHmacSha256()
                 .expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(cekBytes, "ChaCha20");
-        return secretKeySpec;
+        return new SecretKeySpec(cekBytes, "ChaCha20");
     }
 
     public static SecretKey deriveHeaderHmacKey(byte[] fmk) {
@@ -82,8 +80,8 @@ public final class Crypto {
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
 
-        byte[] sharedSecret = ka.generateSecret();
-        return sharedSecret;
+        //shared secret
+        return ka.generateSecret();
     }
 
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)

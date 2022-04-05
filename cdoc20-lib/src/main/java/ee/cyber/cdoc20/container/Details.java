@@ -90,7 +90,7 @@ public final class Details {
         }
 
         //CHECKSTYLE:OFF - generated code
-        @SuppressWarnings({"java:S3776", "java:S1119"})
+        @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126"})
         @Override
         public boolean equals(Object o) {
             if (o == this) {
@@ -142,6 +142,7 @@ public final class Details {
         }
 
         @Override
+        @SuppressWarnings("java:S117")
         public int hashCode() {
             int result = 1;
             result = result * 59 + this.ellipticCurve;
