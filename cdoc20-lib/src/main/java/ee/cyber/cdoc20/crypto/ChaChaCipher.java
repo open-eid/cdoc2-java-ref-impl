@@ -19,6 +19,7 @@ public final class ChaChaCipher {
     private static final Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
     public static final int NONCE_LEN_BYTES = 96 / 8;
 
+    //Sun ChaChaChipher decryption fails with big files, use BouncyCastle implementation for ChaCha
     static final Provider BC = new BouncyCastleProvider();
 
     private static final String INVALID_ADDITIONAL_DATA = "Invalid additionalData";
@@ -26,6 +27,18 @@ public final class ChaChaCipher {
     private ChaChaCipher() {
     }
 
+    /**
+     *
+     * @param mode {@link Cipher#ENCRYPT_MODE} or {@link Cipher#DECRYPT_MODE}
+     * @param contentEncryptionKey CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
+     * @param nonce if ENCRYPT mode then {@link #NONCE_LEN_BYTES } bytes of secure random, otherwise nonce read from
+     *              InputStream
+     * @return
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidAlgorithmParameterException
+     * @throws InvalidKeyException
+     */
     private static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
                     InvalidKeyException {
@@ -34,10 +47,19 @@ public final class ChaChaCipher {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
-        //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files), use BouncyCastle
-        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC);
+
+        // Triggers S5542 Security vulnerability, but S5542 check only knows about AES and RSA and all other algorithms
+        // without method and padding are incorrectly marked as insecure (ChaCha20 stream cipher does not have a
+        // block operation mode and do not use padding and therefor cannot be specified):
+        // https://github.com/SonarSource/sonar-java/blob/master/java-checks/src/
+        //                main/java/org/sonar/java/checks/security/EncryptionAlgorithmCheck.java
+        Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC); //NOSONAR - S5542
+
+
         // IV, initialization value with nonce
-        IvParameterSpec iv = new IvParameterSpec(nonce);
+        // S3329 - Use a dynamically-generated, random IV.
+        // SQ fails to detect that nonce is generated from secure random
+        IvParameterSpec iv = new IvParameterSpec(nonce); //NOSONAR - S3329
         cipher.init(mode, contentEncryptionKey, iv);
         return cipher;
     }
