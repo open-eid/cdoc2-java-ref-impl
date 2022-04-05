@@ -23,7 +23,7 @@ public final class ChaChaCipher {
     private ChaChaCipher() {
     }
 
-    public static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce)
+    protected static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
                     InvalidKeyException {
 
@@ -31,7 +31,7 @@ public final class ChaChaCipher {
             throw new IllegalArgumentException("Invalid nonce");
         }
 
-        //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files)
+        //Sun ChaChaChipher is 💩 (decrypting is very slow or fails big files), use BouncyCastle
         Cipher cipher = Cipher.getInstance("ChaCha20-Poly1305", BC);
         // IV, initialization value with nonce
         IvParameterSpec iv = new IvParameterSpec(nonce);
@@ -39,14 +39,12 @@ public final class ChaChaCipher {
         return cipher;
     }
 
-    public static byte[] encryptPayload(SecretKey cek, byte[] nonce, byte[] src, byte[] additionalData)
+    public static byte[] encryptPayload(SecretKey cek, byte[] src, byte[] additionalData)
             throws InvalidAlgorithmParameterException,
             NoSuchPaddingException,
             NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
-        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
-            throw new IllegalArgumentException("Invalid nonce");
-        }
+        byte[] nonce = generateNonce();
 
         if ((additionalData == null) || (additionalData.length == 0)) {
             throw new IllegalArgumentException("Invalid additionalData");
@@ -90,22 +88,22 @@ public final class ChaChaCipher {
         return bb.array();
     }
 
-    public static byte[] generateNonce() throws NoSuchAlgorithmException {
+    private static byte[] generateNonce() throws NoSuchAlgorithmException {
         byte[] nonce = new byte[NONCE_LEN_BYTES];
-        Crypto.getSecureRandom().nextBytes(nonce);
+        SecureRandom secureRandom = Crypto.getSecureRandom();
+        secureRandom.nextBytes(nonce);
         return nonce;
     }
 
     public static CipherOutputStream initChaChaOutputStream(OutputStream os,
                                                             SecretKey contentEncryptionKey,
-                                                            byte[] nonce,
+                                                            //byte[] nonceToRemove,
                                                             byte[] additionalData)
             throws InvalidAlgorithmParameterException, NoSuchPaddingException,
                     NoSuchAlgorithmException, InvalidKeyException, IOException {
 
-        if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
-            throw new IllegalArgumentException("Invalid nonce");
-        }
+        byte[] nonce = new byte[NONCE_LEN_BYTES];
+        Crypto.getSecureRandom().nextBytes(nonce);
 
         if ((additionalData == null) || (additionalData.length == 0)) {
             throw new IllegalArgumentException("Invalid additionalData");

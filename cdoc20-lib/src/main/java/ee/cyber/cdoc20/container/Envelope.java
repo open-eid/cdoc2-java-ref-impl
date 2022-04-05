@@ -113,10 +113,8 @@ public class Envelope {
             throw new CDocParseException("Unsupported CDOC version " + version);
         }
 
-        ByteBuffer headerLenBuf = ByteBuffer.allocate(Integer.BYTES);
+        ByteBuffer headerLenBuf = ByteBuffer.wrap(envelopeIs.readNBytes(Integer.BYTES));
         headerLenBuf.order(ByteOrder.BIG_ENDIAN);
-        //noinspection ResultOfMethodCallIgnored
-        envelopeIs.read(headerLenBuf.array());
         int headerLen = headerLenBuf.getInt();
 
         if ((envelopeIs.available() < headerLen + Crypto.HHK_LEN_BYTES)
@@ -201,10 +199,9 @@ public class Envelope {
         try {
             byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
             os.write(hmac);
-            byte[] nonce = ChaChaCipher.generateNonce();
             byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
             try (CipherOutputStream cipherOutputStream =
-                         ChaChaCipher.initChaChaOutputStream(os, cekKey, nonce, additionalData)) {
+                         ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
                 //hidden feature, mainly for testing
                 if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {

@@ -9,10 +9,7 @@ import javax.crypto.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,11 +24,10 @@ public class ChaChaChipherTest {
 
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
 
-        byte[] nonce = ChaChaCipher.generateNonce();
         byte[] additionalData = ChaChaCipher.getAdditionalData(new byte[0], new byte[0]);
         String payload = "secret";
         byte[] encrypted =
-                ChaChaCipher.encryptPayload(cek, nonce, payload.getBytes(StandardCharsets.UTF_8), additionalData);
+                ChaChaCipher.encryptPayload(cek, payload.getBytes(StandardCharsets.UTF_8), additionalData);
 
         //log.debug("encrypted hex: {}", HexFormat.of().formatHex(encrypted));
         //log.debug("encrypted str: {}", new String(encrypted));
@@ -49,20 +45,20 @@ public class ChaChaChipherTest {
         log.trace("testChaChaCipherStream()");
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
 
-        byte[] nonce = ChaChaCipher.generateNonce();
         byte[] header = new byte[0];
         byte[] headerHMAC = new byte[0];
         byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
         String payload = "secret";
 
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        CipherOutputStream cos = ChaChaCipher.initChaChaOutputStream(bos, cek, nonce, additionalData);
-        cos.write(payload.getBytes(StandardCharsets.UTF_8));
-        cos.flush(); // without flush, some bytes are not written
-        cos.close();
+        try (CipherOutputStream cos = ChaChaCipher.initChaChaOutputStream(bos, cek, additionalData)) {
+            cos.write(payload.getBytes(StandardCharsets.UTF_8));
+        }
 
         byte[] encrypted = bos.toByteArray();
-//        log.debug("encrypted hex:      {}", HexFormat.of().formatHex(encrypted));
+
+
         ByteArrayInputStream bis = new ByteArrayInputStream(encrypted);
 
         CipherInputStream cis = ChaChaCipher.initChaChaInputStream(bis, cek, additionalData);
@@ -83,7 +79,6 @@ public class ChaChaChipherTest {
         log.trace("testTarGZipChaChaCipherStream()");
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
 
-        byte[] nonce = ChaChaCipher.generateNonce();
         byte[] header = new byte[0];
         byte[] headerHMAC = new byte[0];
         byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
@@ -99,7 +94,7 @@ public class ChaChaChipherTest {
         String tarEntryName = "payload-" + UUID.randomUUID();
         try (ByteArrayOutputStream encryptedTarGzBos = new ByteArrayOutputStream();
             CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(
-                    encryptedTarGzBos, cek, nonce, additionalData)) {
+                    encryptedTarGzBos, cek, additionalData)) {
 
             Tar.archiveData(cipherOutputStream, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
             encryptedTarGzBuf = ByteBuffer.wrap(encryptedTarGzBos.toByteArray());
