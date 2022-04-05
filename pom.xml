@@ -20,8 +20,41 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc20-schema/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc20-cli/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
 
     </properties>
+    <profiles>
+    <profile>
+    <id>coverage</id>
+    <build>
+    <plugins>
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.7</version>
+            <executions>
+                <execution>
+                    <id>prepare-agent</id>
+                    <goals>
+                        <goal>prepare-agent</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>report</id>
+                    <goals>
+                        <goal>report</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+    </build>
+    </profile>
+    </profiles>
 
     <scm>
         <developerConnection>scm:git:gogs@collab.cyber.ee:jkusman/cdoc20_java.git</developerConnection>
