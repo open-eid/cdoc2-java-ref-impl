@@ -10,14 +10,12 @@ import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
-//import lombok.EqualsAndHashCode;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -31,7 +29,6 @@ import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc20.fbs.header.Details.*;
 
-//@EqualsAndHashCode
 @SuppressWarnings("checkstyle:FinalClass")
 public class Envelope {
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
@@ -129,8 +126,13 @@ public class Envelope {
         }
         Header header = deserializeHeader(headerBytes);
 
-        List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
+        return getDetailsEccRecipients(header);
+    }
 
+    private static List<Details.EccRecipient> getDetailsEccRecipients(Header header)
+            throws CDocParseException, GeneralSecurityException {
+
+        List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
         for (int i = 0; i < header.recipientsLength(); i++) {
             RecipientRecord r = header.recipients(i);
 
@@ -172,7 +174,6 @@ public class Envelope {
                 throw new CDocParseException("Unknown Details type " + r.detailsType());
             }
         }
-
         return eccRecipientList;
     }
 
@@ -181,7 +182,7 @@ public class Envelope {
         return  Header.getRootAsHeader(byteBuffer);
     }
 
-    public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException {
+    public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException, GeneralSecurityException {
         log.trace("encrypt");
         os.write(PRELUDE);
         os.write(new byte[]{VERSION});
@@ -196,33 +197,28 @@ public class Envelope {
         os.write(headerLenBytes);
         os.write(headerBytes);
 
-        try {
-            byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
-            os.write(hmac);
-            byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
-            try (CipherOutputStream cipherOutputStream =
-                         ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
-                //hidden feature, mainly for testing
-                if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {
-                    if ((payloadFiles.size() == 1)
-                            && (payloadFiles.get(0).getName().endsWith(".tgz")
-                            || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
+        byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
+        os.write(hmac);
+        byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
+        try (CipherOutputStream cipherOutputStream =
+                     ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
-                        log.warn("disableCompression=true; Encrypting {} contents without compression",
-                                payloadFiles.get(0));
-                        try (FileInputStream fis = new FileInputStream(payloadFiles.get(0))) {
-                            fis.transferTo(cipherOutputStream);
-                        }
-                        return;
+            //hidden feature, mainly for testing
+            if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {
+                if ((payloadFiles.size() == 1)
+                        && (payloadFiles.get(0).getName().endsWith(".tgz")
+                        || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
+
+                    log.warn("disableCompression=true; Encrypting {} contents without compression",
+                            payloadFiles.get(0));
+                    try (FileInputStream fis = new FileInputStream(payloadFiles.get(0))) {
+                        fis.transferTo(cipherOutputStream);
                     }
+                    return;
                 }
-                Tar.archiveFiles(cipherOutputStream, payloadFiles);
             }
-        } catch (NoSuchAlgorithmException | InvalidKeyException
-                | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
-            log.error("error serializing payload", e);
-            throw new IOException("error serializing payload", e);
+            Tar.archiveFiles(cipherOutputStream, payloadFiles);
         }
     }
 

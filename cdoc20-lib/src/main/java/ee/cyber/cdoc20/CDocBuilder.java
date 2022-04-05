@@ -6,9 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.security.InvalidKeyException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class CDocBuilder {
         try {
             Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
             envelope.encrypt(this.payloadFiles, outputStream);
-        } catch (NoSuchAlgorithmException | InvalidKeyException ex) {
+        } catch (GeneralSecurityException ex) {
             throw new CDocException(ex);
         }
     }

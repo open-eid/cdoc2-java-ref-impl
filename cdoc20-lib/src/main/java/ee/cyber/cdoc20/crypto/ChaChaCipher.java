@@ -33,20 +33,15 @@ public final class ChaChaCipher {
      * @param contentEncryptionKey CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
      * @param nonce if ENCRYPT mode then {@link #NONCE_LEN_BYTES } bytes of secure random, otherwise nonce read from
      *              InputStream
-     * @return
-     * @throws NoSuchPaddingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidAlgorithmParameterException
-     * @throws InvalidKeyException
+     * @return an initialized Cipher
+     * @throws GeneralSecurityException
      */
     private static Cipher initCipher(int mode, Key contentEncryptionKey, byte[] nonce)
-            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-                    InvalidKeyException {
+            throws GeneralSecurityException {
 
         if ((nonce == null) || (nonce.length != NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid nonce");
         }
-
 
         // Triggers S5542 Security vulnerability, but S5542 check only knows about AES and RSA and all other algorithms
         // without method and padding are incorrectly marked as insecure (ChaCha20 stream cipher does not have a
@@ -57,24 +52,21 @@ public final class ChaChaCipher {
 
 
         // IV, initialization value with nonce
-        // S3329 - Use a dynamically-generated, random IV.
-        // SQ fails to detect that nonce is generated from secure random
+        // Triggers S3329 - Use a dynamically-generated, random IV.
+        // SQ fails to detect that nonce *is* generated from secure random
         IvParameterSpec iv = new IvParameterSpec(nonce); //NOSONAR - S3329
         cipher.init(mode, contentEncryptionKey, iv);
         return cipher;
     }
 
     public static byte[] encryptPayload(SecretKey cek, byte[] src, byte[] additionalData)
-            throws InvalidAlgorithmParameterException,
-            NoSuchPaddingException,
-            NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-
-        byte[] nonce = generateNonce();
+            throws GeneralSecurityException {
 
         if ((additionalData == null) || (additionalData.length == 0)) {
             throw new IllegalArgumentException(INVALID_ADDITIONAL_DATA);
         }
 
+        byte[] nonce = generateNonce();
         Cipher cipher = initCipher(Cipher.ENCRYPT_MODE, cek, nonce);
         cipher.updateAAD(additionalData);
         byte[] encrypted = cipher.doFinal(src);
@@ -86,8 +78,7 @@ public final class ChaChaCipher {
     }
 
     public static byte[] decryptPayload(SecretKey cek, byte[] encrypted, byte[] additionalData)
-            throws InvalidAlgorithmParameterException, NoSuchPaddingException, NoSuchAlgorithmException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+            throws GeneralSecurityException {
 
         if ((encrypted == null) || (encrypted.length <= NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid encrypted data");
@@ -99,7 +90,6 @@ public final class ChaChaCipher {
 
         byte[] nonce = Arrays.copyOfRange(encrypted, 0, NONCE_LEN_BYTES);
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, cek, nonce);
-
         cipher.updateAAD(additionalData);
         return cipher.doFinal(encrypted, NONCE_LEN_BYTES, encrypted.length - NONCE_LEN_BYTES);
     }
@@ -122,8 +112,7 @@ public final class ChaChaCipher {
     public static CipherOutputStream initChaChaOutputStream(OutputStream os,
                                                             SecretKey contentEncryptionKey,
                                                             byte[] additionalData)
-            throws InvalidAlgorithmParameterException, NoSuchPaddingException,
-                    NoSuchAlgorithmException, InvalidKeyException, IOException {
+            throws GeneralSecurityException, IOException {
 
         if ((additionalData == null) || (additionalData.length == 0)) {
             throw new IllegalArgumentException(INVALID_ADDITIONAL_DATA);
@@ -139,8 +128,7 @@ public final class ChaChaCipher {
     public static CipherInputStream initChaChaInputStream(InputStream is,
                                                           SecretKey contentEncryptionKey,
                                                           byte[] additionalData)
-            throws IOException, InvalidAlgorithmParameterException, NoSuchPaddingException,
-                    NoSuchAlgorithmException, InvalidKeyException {
+            throws IOException, GeneralSecurityException {
 
         log.trace("initChaChaInputStream()");
         if ((additionalData == null) || (additionalData.length == 0)) {

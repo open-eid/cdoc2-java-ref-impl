@@ -39,8 +39,8 @@ public class ChaChaChipherTest {
 
     @Test
     void testChaChaCipherStream()
-            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException,
-            IOException, InvalidKeyException {
+            throws GeneralSecurityException,
+            IOException {
 
         log.trace("testChaChaCipherStream()");
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
@@ -73,8 +73,7 @@ public class ChaChaChipherTest {
 
     @Test
     void testTarGZipChaChaCipherStream()
-            throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException,
-            IOException, InvalidKeyException {
+            throws GeneralSecurityException, IOException {
 
         log.trace("testTarGZipChaChaCipherStream()");
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
