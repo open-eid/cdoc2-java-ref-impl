@@ -37,13 +37,13 @@ public class Envelope {
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
 
-    public static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
+    protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 2;
 
     public static final int MIN_HEADER_LEN = 1; //TODO: find out min header len
 
 
-    private static final byte payloadEncByte = PayloadEncryptionMethod.CHACHA20POLY1305;
+    private static final byte PAYLOAD_ENC_BYTE = PayloadEncryptionMethod.CHACHA20POLY1305;
 
     //private final byte[] fmkKeyBuf;
     private final Details.EccRecipient[] eccRecipients;
@@ -243,42 +243,61 @@ public class Envelope {
                 byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
                 byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());
 
-                Envelope envelope = new Envelope(new Details.EccRecipient[] {detailsEccRecipient}, fmk);
+                Envelope envelope = new Envelope(new Details.EccRecipient[]{detailsEccRecipient}, fmk);
 
-                if (cdocInputStream.available() > Crypto.HHK_LEN_BYTES) {
-                    byte[] calculatedHmac = Crypto.calcHmacSha256(envelope.hmacKey, fileHeaderOs.toByteArray());
-                    byte[] hmac = cdocInputStream.readNBytes(Crypto.HHK_LEN_BYTES);
+                byte[] hmac = checkHmac(cdocInputStream, fileHeaderOs.toByteArray(), envelope.hmacKey);
 
-                    if (!Arrays.equals(calculatedHmac, hmac)) {
-                        log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
-                        log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
+                log.debug("payload available {}", cdocInputStream.available());
 
-                        throw new CDocParseException("Invalid hmac");
+                byte[] additionalData = ChaChaCipher.getAdditionalData(fileHeaderOs.toByteArray(), hmac);
+                try (CipherInputStream cis =
+                             ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
+
+                    //hidden feature, mainly for testing
+                    if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")
+                            && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
+                        log.warn("disableCompression=true; Decrypting only without decompressing");
+                        return decryptTarGZip(outputDir, cis);
                     }
 
-                    log.debug("payload available {}", cdocInputStream.available());
-
-                    byte[] additionalData = ChaChaCipher.getAdditionalData(fileHeaderOs.toByteArray(), hmac);
-                    try (CipherInputStream cis =
-                                 ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
-
-                        //hidden feature, mainly for testing
-                        if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")
-                                && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
-                            log.warn("disableCompression=true; Decrypting only without decompressing");
-                            return decryptTarGZip(outputDir, cis);
-                        }
-
-                        return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
-                    }
-                } else {
-                    throw new CDocParseException("No hmac");
+                    return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
                 }
+
             }
         }
 
         log.info("No matching EC pub key found");
         throw new CDocParseException("No matching EC pub key found");
+    }
+
+    /**
+     * Check that hmac read from cdocInputStream and hmac calculated from headerBytes match
+     * @param cdocInputStream
+     * @param headerBytes
+     * @param hmacKey
+     * @return
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     * @throws CDocParseException if hmacs don't match
+     */
+    private static byte[] checkHmac(InputStream cdocInputStream, byte[] headerBytes, SecretKey hmacKey)
+            throws IOException, NoSuchAlgorithmException, InvalidKeyException, CDocParseException {
+        byte[] hmac;
+        if (cdocInputStream.available() > Crypto.HHK_LEN_BYTES) {
+            byte[] calculatedHmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
+            hmac = cdocInputStream.readNBytes(Crypto.HHK_LEN_BYTES);
+
+            if (!Arrays.equals(calculatedHmac, hmac)) {
+                log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
+                log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
+
+                throw new CDocParseException("Invalid hmac");
+            }
+        } else {
+            throw new CDocParseException("No hmac");
+        }
+        return hmac;
     }
 
     /* Decrypt contents of cis and copy its contents into .tgz file under outputDir*/
@@ -413,7 +432,7 @@ public class Envelope {
 
         Header.startHeader(builder);
         Header.addRecipients(builder, recipientsOffset);
-        Header.addPayloadEncryptionMethod(builder, payloadEncByte);
+        Header.addPayloadEncryptionMethod(builder, PAYLOAD_ENC_BYTE);
         int headerOffset = Header.endHeader(builder);
         Header.finishHeaderBuffer(builder, headerOffset);
 
@@ -423,6 +442,7 @@ public class Envelope {
     }
 
     //CHECKSTYLE:OFF - generated code
+    @SuppressWarnings("java:S3776")
     @Override
     public boolean equals(Object o) {
         if (o == this) {

@@ -45,6 +45,8 @@ public final class Crypto {
      */
     public static final  int HHK_LEN_BYTES = 256 / 8; //SHA-256
 
+    public static final String HMAC_SHA_256 = "HmacSHA256";
+
     private Crypto() {
     }
 
@@ -74,7 +76,7 @@ public final class Crypto {
 
     public static SecretKey deriveHeaderHmacKey(byte[] fmk) {
         byte[] hhk = HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
-        return new SecretKeySpec(hhk, "HmacSHA256");
+        return new SecretKeySpec(hhk, HMAC_SHA_256);
     }
 
 
@@ -124,7 +126,7 @@ public final class Crypto {
 
     public static byte[] calcHmacSha256(byte[] fmk, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
 
-        Mac mac = Mac.getInstance("HmacSHA256");
+        Mac mac = Mac.getInstance(HMAC_SHA_256);
         mac.init(deriveHeaderHmacKey(fmk));
         return mac.doFinal(data);
     }
@@ -132,7 +134,7 @@ public final class Crypto {
     public static byte[] calcHmacSha256(SecretKey hhk, byte[] data)
             throws NoSuchAlgorithmException, InvalidKeyException {
 
-        Mac mac = Mac.getInstance("HmacSHA256");
+        Mac mac = Mac.getInstance(HMAC_SHA_256);
         mac.init(hhk);
         return mac.doFinal(data);
     }

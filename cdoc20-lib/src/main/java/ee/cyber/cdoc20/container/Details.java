@@ -95,6 +95,7 @@ public class Details {
         }
 
         //CHECKSTYLE:OFF - generated code
+        @SuppressWarnings("java:S3776")
         @Override
         public boolean equals(Object o) {
             if (o == this) {
