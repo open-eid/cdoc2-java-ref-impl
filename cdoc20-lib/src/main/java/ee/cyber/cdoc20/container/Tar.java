@@ -138,18 +138,8 @@ public final class Tar {
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
-                    if (extract) {
-                        if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
-                            if (filesToExtract.contains(tarArchiveEntry.getName())) {
-                                Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
-                                long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
-                                log.debug("Created {} {}B", newPath, written);
-                                result.add(tarArchiveEntry);
-                            }
-                        } else { // extract all
-                            Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
-                            long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
-                            log.debug("Created {} {}B", newPath, written);
+                    if (extract) { //extract
+                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, filesToExtract)) {
                             result.add(tarArchiveEntry);
                         }
                     } else { //list
@@ -162,6 +152,41 @@ public final class Tar {
         }
 
         return result;
+    }
+
+    /**
+     *
+     * @param outputDir output directory where files are extracted
+     * @param tarInputStream tar InputStream to process
+     * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
+     * @param filesToExtract if not null, extract specified files otherwise all files
+     * @return tarArchiveEntry was extracted
+     * @throws IOException if an I/O error has occurred
+     */
+    private static boolean copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
+                                                   TarArchiveEntry tarArchiveEntry, List<String> filesToExtract)
+            throws IOException {
+
+        if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
+            if (filesToExtract.contains(tarArchiveEntry.getName())) {
+                copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry);
+                return true;
+            }
+        } else { // extract all
+            copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static long copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
+                                                TarArchiveEntry tarArchiveEntry) throws IOException {
+
+        Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
+        long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
+        log.debug("Created {} {}B", newPath, written);
+        return written;
     }
 
     public static List<ArchiveEntry> extractToDir(InputStream tarGZipInputStream, Path outputDir) throws IOException {
