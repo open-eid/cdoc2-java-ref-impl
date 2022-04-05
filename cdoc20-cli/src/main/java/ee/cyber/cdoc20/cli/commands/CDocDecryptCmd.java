@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+//S106 Standard outputs should not be used directly to log anything
+//CLI needs to interact with standard outputs
+@SuppressWarnings("java:S106")
 @Command(name = "decrypt", aliases = {"x", "extract"})
 public class CDocDecryptCmd implements Callable<Void> {
 

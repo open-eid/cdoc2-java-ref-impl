@@ -25,7 +25,6 @@ import java.security.*;
 import java.security.interfaces.ECPublicKey;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc20.fbs.header.Details.*;
 
@@ -36,23 +35,24 @@ public class Envelope {
 
     protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 2;
-
     public static final int MIN_HEADER_LEN = 1; //TODO: find out min header len
+    public static final int MIN_PAYLOAD_LEN = 1; //TODO: find minimal payload size
 
+    /**Minimal valid envelope size in bytes*/
+    public static final int MIN_ENVELOPE_SIZE = PRELUDE.length
+            + Byte.BYTES //version 0x02
+            + Integer.BYTES //header length field
+            + MIN_HEADER_LEN
+            + Crypto.HHK_LEN_BYTES
+            + MIN_PAYLOAD_LEN;
 
     private static final byte PAYLOAD_ENC_BYTE = PayloadEncryptionMethod.CHACHA20POLY1305;
-
-    //private final byte[] fmkKeyBuf;
     private final Details.EccRecipient[] eccRecipients;
-
     private final SecretKey hmacKey;
-
-    //content encryption  key
     private final SecretKey cekKey;
 
 
     private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
-        //this.fmkKeyBuf = fmkKey;
         this.eccRecipients = recipients;
         this.hmacKey = hmacKey;
         this.cekKey = cekKey;
@@ -79,7 +79,9 @@ public class Envelope {
             byte[] encryptedFmk = Crypto.xor(fmk, kek);
             Details.EccRecipient eccRecipient =
                     new Details.EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
-            log.debug("encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmk));
+            if (log.isDebugEnabled()) {
+                log.debug("encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmk));
+            }
             eccRecipientList.add(eccRecipient);
         }
 
@@ -90,15 +92,9 @@ public class Envelope {
 
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs)
             throws IOException, CDocParseException, GeneralSecurityException {
-        final int envelopeMinLen = PRELUDE.length
-                + Byte.BYTES //version 0x02
-                + Integer.BYTES //header length field
-                + MIN_HEADER_LEN
-                + Crypto.HHK_LEN_BYTES
-                + 0; // TODO: payload min size
 
-        if (envelopeIs.available() < envelopeMinLen) {
-            throw new CDocParseException("not enough bytes to read, expected min of " + envelopeMinLen);
+        if (envelopeIs.available() < MIN_ENVELOPE_SIZE) {
+            throw new CDocParseException("not enough bytes to read, expected min of " + MIN_ENVELOPE_SIZE);
         }
 
         if (!Arrays.equals(PRELUDE, envelopeIs.readNBytes(PRELUDE.length))) {
@@ -148,8 +144,6 @@ public class Envelope {
             byte[] encryptedFmkBytes = Arrays.copyOfRange(encryptedFmkBuf.array(),
                     encryptedFmkBuf.position(), encryptedFmkBuf.limit());
 
-            log.debug("Parsed encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmkBytes));
-
             if (r.detailsType() == recipients_ECCPublicKey) {
                 ECCPublicKey detailsEccPublicKey = (ECCPublicKey) r.details(new ECCPublicKey());
                 if (detailsEccPublicKey == null) {
@@ -167,9 +161,8 @@ public class Envelope {
                 } catch (IllegalArgumentException illegalArgumentException) {
                     throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
                 }
-            } else if (r.detailsType() == recipients_KeyServer) {
-                log.warn("Details.recipients_KeyServer not implemented");
             } else {
+                // recipients_KeyServer not implemented
                 log.error("Unknown Details type {}", r.detailsType());
                 throw new CDocParseException("Unknown Details type " + r.detailsType());
             }
@@ -205,9 +198,9 @@ public class Envelope {
                      ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
             //hidden feature, mainly for testing
-            if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")) {
-                if ((payloadFiles.size() == 1)
-                        && (payloadFiles.get(0).getName().endsWith(".tgz")
+            if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")
+                    && (payloadFiles.size() == 1)
+                    && (payloadFiles.get(0).getName().endsWith(".tgz")
                         || payloadFiles.get(0).getName().endsWith(".tar.gz"))) {
 
                     log.warn("disableCompression=true; Encrypting {} contents without compression",
@@ -216,7 +209,6 @@ public class Envelope {
                         fis.transferTo(cipherOutputStream);
                     }
                     return;
-                }
             }
             Tar.archiveFiles(cipherOutputStream, payloadFiles);
         }
@@ -285,9 +277,10 @@ public class Envelope {
             hmac = cdocInputStream.readNBytes(Crypto.HHK_LEN_BYTES);
 
             if (!Arrays.equals(calculatedHmac, hmac)) {
-                log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
-                log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
-
+                if (log.isDebugEnabled()) {
+                    log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
+                    log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
+                }
                 throw new CDocParseException("Invalid hmac");
             }
         } else {
@@ -297,6 +290,7 @@ public class Envelope {
     }
 
     /* Decrypt contents of cis and copy its contents into .tgz file under outputDir*/
+    @SuppressWarnings("java:S106")
     private static List<ArchiveEntry> decryptTarGZip(Path outputDir, CipherInputStream cis) throws IOException {
 
         String cDocFileName = System.getProperty("ee.cyber.cdoc20.cDocFile");
@@ -368,7 +362,7 @@ public class Envelope {
         return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, null, true)
                 .stream()
                 .map(ArchiveEntry::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir,
@@ -377,7 +371,7 @@ public class Envelope {
         return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, filesToExtract, true)
                 .stream()
                 .map(ArchiveEntry::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
@@ -438,7 +432,7 @@ public class Envelope {
     }
 
     //CHECKSTYLE:OFF - generated code
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({"java:S3776", "java:S1119"})
     @Override
     public boolean equals(Object o) {
         if (o == this) {

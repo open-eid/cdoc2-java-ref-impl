@@ -3,8 +3,6 @@ package ee.cyber.cdoc20.cli.commands;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -16,9 +14,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+//S106 Standard outputs should not be used directly to log anything
+//CLI needs to interact with standard outputs
+@SuppressWarnings("java:S106")
 @Command(name = "list", aliases = {"l"})
 public class CDocListCmd implements Callable<Void> {
-    private static final Logger log = LoggerFactory.getLogger(CDocListCmd.class);
     @Option(names = {"-f", "--file" }, required = true,
             paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;

@@ -88,12 +88,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.jupiter.version}</version>
         </dependency>
-
-        <!--        <dependency>-->
-<!--            <groupId>org.projectlombok</groupId>-->
-<!--            <artifactId>lombok</artifactId>-->
-<!--            <version>1.18.22</version>-->
-<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -181,15 +175,6 @@
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>4.5.2.0</version>
-
-                <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
-                <!--                <dependencies>-->
-                <!--                    <dependency>-->
-                <!--                        <groupId>com.github.spotbugs</groupId>-->
-                <!--                        <artifactId>spotbugs</artifactId>-->
-                <!--                        <version>4.5.3</version>-->
-                <!--                    </dependency>-->
-                <!--                </dependencies>-->
             </plugin>
         </plugins>
     </build>

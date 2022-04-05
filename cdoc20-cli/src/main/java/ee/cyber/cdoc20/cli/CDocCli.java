@@ -9,6 +9,9 @@ import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
+//S106 Standard outputs should not be used directly to log anything
+//CLI needs to interact with standard outputs
+@SuppressWarnings("java:S106")
 @Command(
         version = {"cdoc20-cli version: 0.0.1", "cdoc20-lib version: 0.0.1"},
         name = "cdoc20-cli",

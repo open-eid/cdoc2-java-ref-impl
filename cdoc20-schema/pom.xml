@@ -13,11 +13,8 @@
     <description>CDOC 2.0 flatbuffer schemas and related functionality </description>
 
     <properties>
-<!--        <maven.compiler.source>17</maven.compiler.source>-->
-<!--        <maven.compiler.target>17</maven.compiler.target>-->
         <fbs.sources>${basedir}/src/main/fbs</fbs.sources>
         <fbs.generated.sources>${project.build.directory}/generated-sources/java</fbs.generated.sources>
-<!--        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>-->
 
 
         <flatbuffers-compiler.version>2.0.3.1</flatbuffers-compiler.version>
@@ -149,7 +146,6 @@
                     <workingDirectory>${fbs.sources}</workingDirectory>
                     <arguments>
                         <argument>--java</argument>
-<!--                        <argument>&#45;&#45;gen-mutable</argument>-->
                         <argument>-o</argument>
                         <argument>${fbs.generated.sources}</argument>
                         <argument>header.fbs</argument>

@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -36,11 +35,7 @@ public final class Tar {
             TarArchiveEntry tarArchiveEntry = (TarArchiveEntry) tarArchiveOutputStream.createArchiveEntry(file.toFile(),
                     entryName);
 
-//            if (file.toFile().canExecute()) {
-//                //tarArchiveEntry.setMode(tarArchiveEntry.getMode() | 0755);
-//            }
             tarArchiveOutputStream.putArchiveEntry(tarArchiveEntry);
-
             try (InputStream input = new BufferedInputStream(Files.newInputStream(file))) {
                 long written = input.transferTo(tarArchiveOutputStream);
                 log.debug("Added {}B", written);
@@ -200,6 +195,6 @@ public final class Tar {
     public static List<String> listFiles(InputStream tarGZipInputStream) throws IOException {
         return processTarGz(tarGZipInputStream, null, null, false).stream()
                 .map(ArchiveEntry::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

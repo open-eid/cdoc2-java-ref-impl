@@ -8,10 +8,7 @@ import java.security.interfaces.ECPublicKey;
 
 import at.favre.lib.crypto.HKDF;
 
-
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -22,8 +19,6 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 
 public final class Crypto {
-
-    private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
     /**
      * Key length for secp384r1 curve

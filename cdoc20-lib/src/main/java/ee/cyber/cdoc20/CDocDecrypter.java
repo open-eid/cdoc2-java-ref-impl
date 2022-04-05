@@ -3,8 +3,6 @@ package ee.cyber.cdoc20;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
@@ -13,8 +11,6 @@ import java.util.List;
 
 
 public class CDocDecrypter {
-    private static final Logger log = LoggerFactory.getLogger(CDocDecrypter.class);
-
 
     private KeyPair recipientKeyPair;
     private InputStream cDocInputStream;

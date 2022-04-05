@@ -3,7 +3,6 @@ package ee.cyber.cdoc20.container;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
-//import lombok.EqualsAndHashCode;
 
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -13,20 +12,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Details {
+public final class Details {
 
-    //@EqualsAndHashCode
+    private Details() {
+    }
+
     public static class EccRecipient {
 
         byte ellipticCurve;
-
-        //byte[] recipientPubKey;
         private final ECPublicKey recipientPubKey;
-
-        //byte[] senderPubKey;
         private final ECPublicKey senderPubKey;
-
-        //FMK encrypted with KEK
         private final byte[] encryptedFmk;
 
         public EccRecipient(ECPublicKey recipientPubKey, ECPublicKey senderPubKey, byte[] encryptedFmk) {
@@ -95,7 +90,7 @@ public class Details {
         }
 
         //CHECKSTYLE:OFF - generated code
-        @SuppressWarnings("java:S3776")
+        @SuppressWarnings({"java:S3776", "java:S1119"})
         @Override
         public boolean equals(Object o) {
             if (o == this) {
