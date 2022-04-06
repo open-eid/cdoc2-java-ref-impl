@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-//S106 Standard outputs should not be used directly to log anything
+//S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
 @Command(name = "create", aliases = {"c", "encrypt"})
@@ -33,7 +33,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
     @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"}, required = true,
             paramLabel = "PEM", description = "recipient public key")
-    File pubKeyFile;
+    File[] pubKeyFiles;
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
@@ -50,10 +50,10 @@ public class CDocCreateCmd implements Callable<Void> {
 
         if (log.isDebugEnabled()) {
             log.debug("create --file {} --key {} --pubkey {} {}",
-                    cdocFile, privKeyFile, pubKeyFile, Arrays.toString(inputFiles));
+                    cdocFile, privKeyFile, Arrays.toString(pubKeyFiles), Arrays.toString(inputFiles));
         }
         KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
-        ECPublicKey recipient = ECKeys.loadECPubKey(pubKeyFile);
+        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(pubKeyFiles);
 
         if (disableCompression) {
             System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
@@ -61,7 +61,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
         CDocBuilder cDocBuilder = new CDocBuilder()
                 .withSender(keyPair)
-                .withRecipients(List.of(recipient))
+                .withRecipients(recipients)
                 .withPayloadFiles(Arrays.asList(inputFiles));
 
         cDocBuilder.buildToFile(cdocFile);

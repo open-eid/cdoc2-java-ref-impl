@@ -12,9 +12,7 @@ import java.security.*;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.*;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HexFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -346,5 +344,15 @@ public final class ECKeys {
             throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
 
         return loadECPublicKey(readAll(pubPemFile));
+    }
+
+    public static List<ECPublicKey> loadECPubKeys(File[] pubPemFiles)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+
+        List<ECPublicKey> list = new LinkedList<>();
+        for (File f: pubPemFiles) {
+            list.add(loadECPubKey(f));
+        }
+        return list;
     }
 }
