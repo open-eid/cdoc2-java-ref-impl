@@ -4,16 +4,18 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.spec.InvalidKeySpecException;
+import java.security.spec.ECGenParameterSpec;
 import java.util.HexFormat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);
@@ -55,7 +57,7 @@ class ECKeysTest {
 
 
     @Test
-    void testLoadEcPrivKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+    void testLoadEcPrivKey() throws GeneralSecurityException, IOException {
         @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
@@ -93,7 +95,7 @@ class ECKeysTest {
 
 
     @Test
-    void testLoadEcPubKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+    void testLoadEcPubKey() throws GeneralSecurityException {
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
         @SuppressWarnings("checkstyle:OperatorWrap")
@@ -129,12 +131,15 @@ class ECKeysTest {
         ECPublicKey ecPublicKey = ECKeys.loadECPublicKey(pubKeyPem);
 
         assertEquals("EC", ecPublicKey.getAlgorithm());
-        byte[] rawPubKey = ECKeys.encodeEcPubKeyForTls(ecPublicKey);
+        assertTrue(ECKeys.isEcSecp384r1Curve(ecPublicKey));
+
+        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams().toString());
+
         assertEquals(expectedHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
 
     @Test
-    void testLoadEcKeyPairFromPem() throws GeneralSecurityException {
+    void testLoadEcKeyPairFromPem() throws GeneralSecurityException, IOException {
         @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
@@ -176,6 +181,12 @@ class ECKeysTest {
         assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
         //No good way to verify secp384r1 curve - this might be different for non Sun Security Provider
         assertEquals("secp384r1 [NIST P-384] (1.3.132.0.34)", ecPrivKey.getParams().toString());
+
+        AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
+        params.init(ecPrivKey.getParams());
+        log.debug("{} oid {}", params.getProvider(), params.getParameterSpec(ECGenParameterSpec.class).getName());
+        assertTrue(ECKeys.isEcSecp384r1Curve(ecPrivKey));
+
 
 
         assertEquals("EC", ecPublicKey.getAlgorithm());

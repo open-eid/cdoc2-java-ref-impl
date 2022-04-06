@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.ECPrivateKey;
@@ -76,7 +77,7 @@ class CryptoTest {
     }
 
     @Test
-    void testFmkECCycle() throws GeneralSecurityException {
+    void testFmkECCycle() throws GeneralSecurityException, IOException {
         log.trace("testFmkECCycle()");
         byte[] fmk = Crypto.generateFileMasterKey();
 
