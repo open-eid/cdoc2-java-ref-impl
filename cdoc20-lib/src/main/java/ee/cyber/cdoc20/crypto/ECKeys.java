@@ -42,8 +42,8 @@ public final class ECKeys {
     @SuppressWarnings("checkstyle:LineLength")
     public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) {
         //BigInteger.toByteArray() returns byte in network byte order
-        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX());
-        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY());
+        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX(), Crypto.SECP_384_R_1_LEN_BYTES);
+        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY(), Crypto.SECP_384_R_1_LEN_BYTES);
 
         //CHECKSTYLE:OFF
         //EC pubKey in TLS 1.3 format
@@ -100,17 +100,19 @@ public final class ECKeys {
         return (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(pubECSpec);
     }
 
-    private static byte[] toUnsignedByteArray(BigInteger bigInteger) {
+    private static byte[] toUnsignedByteArray(BigInteger bigInteger, int len) {
         //https://stackoverflow.com/questions/4407779/biginteger-to-byte
         byte[] array = bigInteger.toByteArray();
-        int expectedLen = (bigInteger.bitLength() + 7) / 8;
-        if ((array[0] == 0) && (array.length == expectedLen + 1)) {
+        if ((array[0] == 0) && (array.length == len + 1)) {
             return Arrays.copyOfRange(array, 1, array.length);
+        } else if (array.length < len) {
+            byte[] padded = new byte[len];
+            System.arraycopy(array, 0, padded, len - array.length, array.length);
+            return padded;
         } else {
-            if (array.length != expectedLen) {
-                String encodedHex = HexFormat.of().formatHex(array);
+            if (array.length != len) {
                 log.warn("Expected EC key to be {} bytes, but was {}. bigInteger: {}",
-                        expectedLen, array.length, encodedHex);
+                        len, array.length, bigInteger.toString(16));
             }
             return array;
         }
