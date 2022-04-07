@@ -1,5 +1,7 @@
 package ee.cyber.cdoc20.crypto;
 
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import java.nio.file.Files;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -46,6 +49,17 @@ public final class ECKeys {
     public static final String SECP_384_OID = "1.3.132.0.34";
     public static final String EC_ALGORITHM_NAME = "EC";
 
+    /**
+     * Key length for secp384r1 curve in bytes
+     */
+    public static final int SECP_384_R_1_LEN_BYTES = 384 / 8;
+
+    // for validating that decoded ECPoints are valid for secp384r1 curve
+    private static final ECCurve SECP_384_R_1_CURVE = new SecP384R1Curve();
+
+
+
+
     private static final Logger log = LoggerFactory.getLogger(ECKeys.class);
 
     private ECKeys() {
@@ -64,9 +78,10 @@ public final class ECKeys {
      */
     @SuppressWarnings("checkstyle:LineLength")
     public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) {
+
         //BigInteger.toByteArray() returns byte in network byte order
-        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX(), Crypto.SECP_384_R_1_LEN_BYTES);
-        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY(), Crypto.SECP_384_R_1_LEN_BYTES);
+        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX(), SECP_384_R_1_LEN_BYTES);
+        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY(), SECP_384_R_1_LEN_BYTES);
 
         //CHECKSTYLE:OFF
         //EC pubKey in TLS 1.3 format
@@ -82,7 +97,7 @@ public final class ECKeys {
         return tlsPubKey;
     }
 
-    public static ECPublicKey decodeEcPublicKeyFromTls(ByteBuffer encoded) throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public static ECPublicKey decodeEcPublicKeyFromTls(ByteBuffer encoded) throws GeneralSecurityException {
         return decodeEcPublicKeyFromTls(Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
     }
 
@@ -95,18 +110,18 @@ public final class ECKeys {
      * @throws InvalidKeySpecException
      */
     public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded)
-            throws InvalidParameterSpecException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws GeneralSecurityException {
 
-        final int expectedLength = Crypto.SECP_384_R_1_LEN_BYTES;
+        String encodedHex = HexFormat.of().formatHex(encoded);
+        final int expectedLength = SECP_384_R_1_LEN_BYTES;
         if (encoded.length != (2 * expectedLength + 1)) {
-            String encodedHex = HexFormat.of().formatHex(encoded);
+
             log.error("Invalid pubKey len {}, expected {}, encoded: {}", encoded.length, (2 * expectedLength + 1),
                     encodedHex);
             throw new IllegalArgumentException("Incorrect length for uncompressed encoding");
         }
 
         if (encoded[0] != 0x04) {
-            String encodedHex = HexFormat.of().formatHex(encoded);
             log.error("Illegal EC pub key encoding. Encoded: {}", encodedHex);
             throw new IllegalArgumentException("Invalid encoding");
         }
@@ -120,7 +135,11 @@ public final class ECKeys {
 
         ECParameterSpec ecParameters = params.getParameterSpec(ECParameterSpec.class);
         ECPublicKeySpec pubECSpec = new ECPublicKeySpec(pubPoint, ecParameters);
-        return (ECPublicKey) KeyFactory.getInstance(EC_ALGORITHM_NAME).generatePublic(pubECSpec);
+        ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory.getInstance(EC_ALGORITHM_NAME).generatePublic(pubECSpec);
+        if (!isValidSecP384R1(ecPublicKey)) {
+            throw new InvalidKeyException("Not valid secp384r1 EC public key " + encodedHex);
+        }
+        return ecPublicKey;
     }
 
     private static byte[] toUnsignedByteArray(BigInteger bigInteger, int len) {
@@ -188,7 +207,7 @@ public final class ECKeys {
      * @return
      */
     public static ECPublicKey loadECPublicKey(String openSslPem)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+            throws GeneralSecurityException {
         Pattern pattern = Pattern.compile("(?s)-----BEGIN PUBLIC KEY-----.*-----END PUBLIC KEY-----");
         Matcher matcher = pattern.matcher(openSslPem);
         if (!matcher.find()) {
@@ -206,6 +225,9 @@ public final class ECKeys {
         //  BIT STRING (776 bit) 0000010001111001011000011010011100101001101001111001000111111000011010…
         X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pubKeyPem));
         ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec);
+        if (!isValidSecP384R1(ecPublicKey)) {
+            throw new IllegalArgumentException("Not valid secp384r1 public key");
+        }
         return ecPublicKey;
     }
 
@@ -282,7 +304,22 @@ public final class ECKeys {
 
         ECPrivateKey ecPrivateKey = (ECPrivateKey)keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey)keyPair.getPublic();
-        return isEcSecp384r1Curve(ecPrivateKey) && isEcSecp384r1Curve(ecPublicKey);
+
+        return isEcSecp384r1Curve(ecPrivateKey) && isValidSecP384R1(ecPublicKey);
+    }
+
+    public static boolean isValidSecP384R1(ECPublicKey ecPublicKey) throws GeneralSecurityException {
+
+        if (!isEcSecp384r1Curve(ecPublicKey)) {
+            return false;
+        }
+
+        // https://neilmadden.blog/2017/05/17/so-how-do-you-validate-nist-ecdh-public-keys/
+        // Instead of implementing public key validation, rely on BC validation
+        // https://github.com/bcgit/bc-java/blob/master/core/src/main/java/org/bouncycastle/math/ec/ECPoint.java
+        org.bouncycastle.math.ec.ECPoint ecPoint = SECP_384_R_1_CURVE.createPoint(ecPublicKey.getW().getAffineX(),
+                ecPublicKey.getW().getAffineY());
+        return ecPoint.isValid();
     }
 
     /**
@@ -319,13 +356,13 @@ public final class ECKeys {
     }
 
     public static ECPublicKey loadECPubKey(File pubPemFile)
-            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+            throws GeneralSecurityException, IOException {
 
         return loadECPublicKey(readAll(pubPemFile));
     }
 
     public static List<ECPublicKey> loadECPubKeys(File[] pubPemFiles)
-            throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+            throws GeneralSecurityException, IOException {
 
         List<ECPublicKey> list = new LinkedList<>();
         for (File f: pubPemFiles) {

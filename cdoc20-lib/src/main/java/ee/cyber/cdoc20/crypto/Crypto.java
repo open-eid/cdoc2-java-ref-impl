@@ -21,11 +21,6 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 public final class Crypto {
 
     /**
-     * Key length for secp384r1 curve
-     */
-    public static final int SECP_384_R_1_LEN_BYTES = 384 / 8;
-
-    /**
      * File Master Key length in octets
      */
     public static final  int FMK_LEN_BYTES = 256 / 8;

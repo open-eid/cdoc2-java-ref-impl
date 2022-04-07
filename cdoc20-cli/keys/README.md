@@ -1,6 +1,6 @@
 This directory contains pre-generate EC keys.
 
-##Generating EC keys
+## Generating EC keys
 
 Generate an EC private key, of size 384, and output it to a file named key.pem:
 ```
@@ -32,7 +32,7 @@ IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii
 ```
 
 
-###Print key info
+### Print key info
 ```
 openssl ec -in key.pem -text -noout
 ```

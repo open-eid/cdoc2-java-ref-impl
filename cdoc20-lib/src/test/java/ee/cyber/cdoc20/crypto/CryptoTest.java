@@ -55,7 +55,7 @@ class CryptoTest {
         byte[] ecdhSharedSecret =
                 Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
-        assertEquals(Crypto.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
+        assertEquals(ECKeys.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
     }
 
     @Test

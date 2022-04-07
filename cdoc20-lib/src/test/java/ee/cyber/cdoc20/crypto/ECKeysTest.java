@@ -46,8 +46,8 @@ class ECKeysTest {
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
         byte[] encodedEcPubKey = ECKeys.encodeEcPubKeyForTls(ecPublicKey);
 
-        assertEquals(1 + Crypto.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
-        assertEquals(1 + Crypto.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
+        assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
+        assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
         assertEquals(0x04, encodedEcPubKey[0]);
 
         ECPublicKey decoded = ECKeys.decodeEcPublicKeyFromTls(encodedEcPubKey);
