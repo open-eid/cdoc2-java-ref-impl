@@ -14,9 +14,10 @@ security measures with optional server backend.
 - cdoc20-cli    - Command line utility to create/process CDOC 2.0 files
 
 ## Building
+CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4
 
 ```
-mvn install
+mvn clean install
 ```
 
 ## Running
@@ -27,8 +28,9 @@ See `cdoc20-cli/README.md`
 
 Will create tag with version v{x.y.z} in git
 ```
+mvn clean
 mvn release:prepare
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
+mvn release:perform
 ```
 
 As maven repository doesn't exist yet, then maven deploy is not performed 
