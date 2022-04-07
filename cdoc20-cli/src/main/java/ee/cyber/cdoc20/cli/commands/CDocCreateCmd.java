@@ -31,7 +31,7 @@ public class CDocCreateCmd implements Callable<Void> {
             paramLabel = "PEM", description = "EC private key PEM used to encrypt")
     File privKeyFile;
 
-    @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"}, required = true,
+    @Option(names = {"-p", "--pubkeys", "--recipients", "--receivers"}, required = true,
             paramLabel = "PEM", description = "recipient public key")
     File[] pubKeyFiles;
 

@@ -24,7 +24,7 @@ To create:
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc --key keys/alice.pem --pubkey keys/bob_pub.pem README.md
+java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc --key keys/alice.pem --pubkeys keys/bob_pub.pem README.md
 ```
 
 ####Decryption
