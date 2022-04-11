@@ -4,25 +4,32 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.utils.InputStreamStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+//import java.util.zip.GZIPInputStream;
+//import java.util.zip.GZIPOutputStream;
 
 /**
- * Utility class for dealing with tar gz stream/files. Only supports regular files inside tar.
+ * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside tar.
+ * Concatenated gzip streams are not supported.
  */
 public final class Tar {
 
     private static final Logger log = LoggerFactory.getLogger(Tar.class);
+
+
+    private static final int DEFAULT_BUFFER_SIZE  = 8192;
+    private static final double MAX_COMPRESSION_RATIO = 10;
 
     private Tar() {
     }
@@ -49,8 +56,8 @@ public final class Tar {
     public static void archiveFiles(OutputStream dest, Iterable<File> files)
             throws IOException {
 
-        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
-                dest)))) {
+        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+                new BufferedOutputStream(dest)))) {
             tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             tos.setAddPaxHeadersForNonAsciiNames(true);
             for (File file : files) {
@@ -62,22 +69,26 @@ public final class Tar {
     /**
      * Create an archive with single entry.
      * @param dest destination stream where created archive will be written
-     * @param data data added to archive
+     * @param inputStream data added to archive
      * @param tarEntryName entry name (file name) for data
      * @throws IOException
      */
-    public static void archiveData(OutputStream dest, byte[] data, String tarEntryName) throws IOException {
-        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
-                dest)))) {
-            tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+    public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
+        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+                new BufferedOutputStream(dest)))) {
+            tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
-            tarEntry.setSize(data.length);
-            tos.putArchiveEntry(tarEntry);
+            //log.debug("adding {}B", inputStream.available());
+            tarEntry.setSize(inputStream.available());
+            tarOs.putArchiveEntry(tarEntry);
 
-            tos.write(data, 0, data.length);
-            tos.closeArchiveEntry();
+            long written = inputStream.transferTo(tarOs);
+            //log.debug("Wrote {}B", written);
+            tarOs.closeArchiveEntry();
         }
     }
+
 
     /**
      * Extract single file into outputStream
@@ -90,13 +101,14 @@ public final class Tar {
     public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
             throws IOException {
 
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GzipCompressorInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile() && tarEntryName.equals(tarArchiveEntry.getName())) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     long written = tarInputStream.transferTo(outputStream);
+                    //TODO: check compression ratio
                     log.debug("Copied {}B", written);
                     return written;
                 }
@@ -110,7 +122,7 @@ public final class Tar {
     /**
      * Process tar gzip input stream and find entries in it. If extract is true, then files found from inputStream are
      * copied to outputDir.
-     * @param tarGZipInputStream tar gzip InputStream to process
+     * @param tarGZipIs tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
      * @param filesToExtract if not null, extract specified files otherwise all files
      * @param extract if true, extract files to outputDir. Otherwise, list TarArchiveEntries
@@ -118,7 +130,7 @@ public final class Tar {
      *      returned)
      * @throws IOException if an I/O error has occurred
      */
-    static List<ArchiveEntry> processTarGz(InputStream tarGZipInputStream, Path outputDir,
+    static List<ArchiveEntry> processTarGz(InputStream tarGZipIs, Path outputDir,
                                            List<String> filesToExtract, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
@@ -126,15 +138,15 @@ public final class Tar {
         }
 
         LinkedList<ArchiveEntry> result = new LinkedList<>();
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GZIPInputStream(
-                new BufferedInputStream(tarGZipInputStream)))) {
+        try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
 
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     if (extract) { //extract
-                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, filesToExtract)) {
+                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs, filesToExtract)) {
                             result.add(tarArchiveEntry);
                         }
                     } else { //list
@@ -159,16 +171,17 @@ public final class Tar {
      * @throws IOException if an I/O error has occurred
      */
     private static boolean copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
-                                                   TarArchiveEntry tarArchiveEntry, List<String> filesToExtract)
+                                                   TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics,
+                                                   List<String> filesToExtract)
             throws IOException {
 
         if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
             if (filesToExtract.contains(tarArchiveEntry.getName())) {
-                copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry);
+                copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
                 return true;
             }
         } else { // extract all
-            copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry);
+            copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
             return true;
         }
 
@@ -176,10 +189,44 @@ public final class Tar {
     }
 
     private static long copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
-                                                TarArchiveEntry tarArchiveEntry) throws IOException {
+                                                TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
+            throws IOException {
 
-        Path newPath = Paths.get(outputDir.toString(), tarArchiveEntry.getName());
-        long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
+        Path tarPath = Path.of(tarArchiveEntry.getName());
+        log.debug("basename {}", tarPath.getFileName());
+        Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName());
+
+//        if (Files.exists(newPath)) {
+//
+//        }
+
+
+        long written = 0;
+        // truncate and overwrite an existing file, or create the file if
+        // it doesn't initially exist
+        try (OutputStream out = Files.newOutputStream(newPath)) {
+            byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+            int read;
+            while ((read = tarInputStream.read(buffer, 0, DEFAULT_BUFFER_SIZE)) >= 0) {
+                out.write(buffer, 0, read);
+                written += read;
+
+
+                double compressionRatio = (double)gZipStatistics.getUncompressedCount()
+                        / (double)gZipStatistics.getCompressedCount();
+                log.debug("compression ratio {}", compressionRatio);
+                if(compressionRatio > MAX_COMPRESSION_RATIO) {
+                    log.debug("Compression ratio for {} is {}", tarArchiveEntry.getName(), compressionRatio);
+                    // ratio between compressed and uncompressed data is highly suspicious, looks like a Zip Bomb Attack
+                    throw new IllegalStateException("Gzip compression ratio is over "+MAX_COMPRESSION_RATIO);
+                }
+            }
+        }
+
+
+
+
+        //long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
         log.debug("Created {} {}B", newPath, written);
         return written;
     }

@@ -30,12 +30,16 @@
     <profiles>
     <profile>
     <id>coverage</id>
+
     <build>
     <plugins>
         <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.7</version>
+            <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
+
             <executions>
                 <execution>
                     <id>prepare-agent</id>

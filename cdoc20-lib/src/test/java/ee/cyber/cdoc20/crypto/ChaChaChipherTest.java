@@ -92,7 +92,7 @@ class ChaChaChipherTest {
             CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(
                     encryptedTarGzBos, cek, additionalData)) {
 
-            Tar.archiveData(cipherOutputStream, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
+            Tar.archiveData(cipherOutputStream, new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8)), tarEntryName);
             encryptedTarGzBuf = ByteBuffer.wrap(encryptedTarGzBos.toByteArray());
         }
 
