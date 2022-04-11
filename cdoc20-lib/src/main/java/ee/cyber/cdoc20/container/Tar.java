@@ -13,15 +13,14 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
 //import java.util.zip.GZIPInputStream;
 //import java.util.zip.GZIPOutputStream;
 
 /**
- * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside tar.
- * Concatenated gzip streams are not supported.
+ * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside
+ * tar. Concatenated gzip streams are not supported.
  */
 public final class Tar {
 
@@ -30,6 +29,14 @@ public final class Tar {
 
     private static final int DEFAULT_BUFFER_SIZE  = 8192;
     private static final double MAX_COMPRESSION_RATIO = 10;
+
+    // disk space available percentage allowed
+    private static final double DEFAULT_MAX_USED_PERCENTAGE = 98;
+
+//    static {
+//        MAX_USED_PERCENTAGE = Double.parseDouble(System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage"));
+//    }
+
 
     private Tar() {
     }
@@ -146,7 +153,9 @@ public final class Tar {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     if (extract) { //extract
-                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs, filesToExtract)) {
+                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
+                                filesToExtract)) {
+
                             result.add(tarArchiveEntry);
                         }
                     } else { //list
@@ -166,12 +175,15 @@ public final class Tar {
      * @param outputDir output directory where files are extracted
      * @param tarInputStream tar InputStream to process
      * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
+     * @param gZipStatistics
      * @param filesToExtract if not null, extract specified files otherwise all files
      * @return tarArchiveEntry was extracted
      * @throws IOException if an I/O error has occurred
      */
-    private static boolean copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
-                                                   TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics,
+    private static boolean copyTarEntryToDirectory(Path outputDir,
+                                                   TarArchiveInputStream tarInputStream,
+                                                   TarArchiveEntry tarArchiveEntry,
+                                                   InputStreamStatistics gZipStatistics,
                                                    List<String> filesToExtract)
             throws IOException {
 
@@ -196,9 +208,23 @@ public final class Tar {
         log.debug("basename {}", tarPath.getFileName());
         Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName());
 
+
+
+
 //        if (Files.exists(newPath)) {
 //
 //        }
+
+        double maxUsedPercentage = DEFAULT_MAX_USED_PERCENTAGE;
+        if (System.getProperties().containsKey("ee.cyber.cdoc20.maxDiskUsagePercentage")) {
+            String maxDiskUsagePercentageStr = System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
+            try {
+                maxUsedPercentage = Double.parseDouble(maxDiskUsagePercentageStr);
+            } catch (NumberFormatException nfe) {
+                log.warn("Invalid value {} for ee.cyber.cdoc20.maxDiskUsagePercentage", maxDiskUsagePercentageStr);
+            }
+        }
+
 
 
         long written = 0;
@@ -208,17 +234,27 @@ public final class Tar {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int read;
             while ((read = tarInputStream.read(buffer, 0, DEFAULT_BUFFER_SIZE)) >= 0) {
+
+                double usedPercentage = (double)outputDir.toFile().getUsableSpace()
+                        / (double)outputDir.toFile().getTotalSpace() * 100;
+
+                if (usedPercentage >= maxUsedPercentage) {
+                    String err = String.format("More than  %.2f%% disk space used. Aborting", maxUsedPercentage);
+                    log.error(err);
+                    throw new IllegalStateException(err);
+                }
+
                 out.write(buffer, 0, read);
                 written += read;
 
 
                 double compressionRatio = (double)gZipStatistics.getUncompressedCount()
                         / (double)gZipStatistics.getCompressedCount();
-                log.debug("compression ratio {}", compressionRatio);
-                if(compressionRatio > MAX_COMPRESSION_RATIO) {
+                if (compressionRatio > MAX_COMPRESSION_RATIO) {
                     log.debug("Compression ratio for {} is {}", tarArchiveEntry.getName(), compressionRatio);
                     // ratio between compressed and uncompressed data is highly suspicious, looks like a Zip Bomb Attack
-                    throw new IllegalStateException("Gzip compression ratio is over "+MAX_COMPRESSION_RATIO);
+                    throw new IllegalStateException("Gzip compression ratio " + compressionRatio + " is over "
+                            + MAX_COMPRESSION_RATIO);
                 }
             }
         }

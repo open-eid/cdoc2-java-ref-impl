@@ -12,33 +12,33 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+// test are executed sequentially without any other tests running at the same time
+@Isolated
 class TarGzTest {
     private static final  Logger log = LoggerFactory.getLogger(TarGzTest.class);
 
-    private final File tarGZipFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
+    //@TempDir
+    //private Path tmpDir;
+
+    //private final File tarGZipFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
+
+    private final String archiveTgz = "archive.tgz";
 
     private final String payload = "payload\n";
 
 
-    void deleteDirRecursively(Path dir) throws IOException {
-        if (Files.exists(dir)) { //delete dir recursively
-            //noinspection ResultOfMethodCallIgnored
-            Files.walk(dir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        }
-    }
 
     //@Test
-    void testCreateArchive() throws IOException {
-        File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload.txt");
+    void testCreateArchive(Path tempDir) throws IOException {
+        File payloadFile = tempDir.resolve("payload.txt").toFile();
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payload.getBytes(UTF_8));
         }
@@ -47,13 +47,11 @@ class TarGzTest {
         if (!readmeFile.exists()) {
             readmeFile = new File("README.md"); // parent dir
         }
-        boolean isFile = readmeFile.isFile();
 
-        //File outTarFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
 
+        File tarGZipFile = tempDir.resolve(archiveTgz).toFile();
         log.debug("Creating tar {}", tarGZipFile);
         try (FileOutputStream fos = new FileOutputStream(tarGZipFile)) {
-            tarGZipFile.deleteOnExit();
             Tar.archiveFiles(fos, List.of(payloadFile, readmeFile));
         }
 
@@ -72,18 +70,11 @@ class TarGzTest {
     }
 
     @Test
-    void testExtract() throws IOException {
-        testCreateArchive(); //create archive
+    void testExtract(@TempDir Path tempDir) throws IOException {
+        testCreateArchive(tempDir); //create archive
+        File tarGZipFile = tempDir.resolve(archiveTgz).toFile();
 
-        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testExtract");
-        if (Files.exists(outDir)) { //delete tartest dir recursively
-            //noinspection ResultOfMethodCallIgnored
-            Files.walk(outDir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        }
-
+        Path outDir = tempDir.resolve("testExtract");
         Files.createDirectories(outDir);
 
         log.debug("Extracting {} to {}", tarGZipFile, outDir);
@@ -107,26 +98,14 @@ class TarGzTest {
         String read = Files.readString(payloadPath);
 
         assertEquals(payload, read);
-
-        if (Files.exists(outDir)) { //delete tartest dir recursively
-            //noinspection ResultOfMethodCallIgnored
-            Files.walk(outDir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        }
     }
 
+    //TempDir and its contents will be automatically cleaned up by Junit
     @Test
-    void testArchiveData() throws IOException {
-        Path outFile = Path.of(System.getProperty("java.io.tmpdir")).resolve("testArchiveData.tar.gz");
-        outFile.toFile().deleteOnExit();
-
-        //Files.deleteIfExists(outFile);
+    void testArchiveData(@TempDir Path tempDir) throws IOException {
+        Path outFile = tempDir.resolve("testArchiveData.tar.gz");
 
         String tarEntryName = "payload-" + UUID.randomUUID();
-        Path payloadPath = Path.of(System.getProperty("java.io.tmpdir")).resolve(tarEntryName);
-        payloadPath.toFile().deleteOnExit();
 
         try (FileOutputStream fos = new FileOutputStream(outFile.toFile())) {
             //Tar.archiveData(fos, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
@@ -149,16 +128,16 @@ class TarGzTest {
     }
 
     @Test
-    void testTarGzBomb() throws IOException {
-        byte[] zeros = new byte[1024];//1KB
+    void testTarGzBomb(@TempDir Path tempDir) throws IOException {
+        byte[] zeros = new byte[1024]; //1KB
 
         long bigFileSize = 1024 //1KB
-                *1024 //1MB
+                * 1024; //1MB
                 //*1024 //1GB
-                ;
+                //;
 
-        Path bombPath =  Path.of(System.getProperty("java.io.tmpdir")).resolve("bomb.tgz");
-        bombPath.toFile().deleteOnExit();
+        Path bombPath =  tempDir.resolve("bomb.tgz");
+        //bombPath.toFile().deleteOnExit();
 
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
                 Files.newOutputStream(bombPath))))) {
@@ -172,8 +151,8 @@ class TarGzTest {
             while (written < bigFileSize) {
                 tarOs.write(zeros);
                 written += zeros.length;
-                if (written % (1024*1024) == 0) {
-                    log.debug("Wrote {}MB", written / (1024*1024));
+                if (written % (1024 * 1024) == 0) {
+                    log.debug("Wrote {}MB", written / (1024 * 1024));
                 }
             }
 
@@ -182,8 +161,7 @@ class TarGzTest {
         }
 
 
-        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testTarGzBomb");
-        deleteDirRecursively(outDir);
+        Path outDir = tempDir.resolve("testTarGzBomb");
         Files.createDirectories(outDir);
 
         log.debug("Extracting {} to {}", bombPath, outDir);
@@ -194,7 +172,16 @@ class TarGzTest {
         });
 
         log.debug("Got {} with message: {}", exception.getClass().getName(), exception.getMessage());
-        log.debug("Cleaning up {}", outDir);
-        deleteDirRecursively(outDir);
+    }
+
+    @Test
+    void testCheckDiskSpaceAvailable(@TempDir Path tempDir) {
+        //might cause other tests to fail, if tests executed parallel
+        System.setProperty("ee.cyber.cdoc20.maxDiskUsagePercentage", "0.1");
+
+        assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
+
+        System.clearProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
+
     }
 }
