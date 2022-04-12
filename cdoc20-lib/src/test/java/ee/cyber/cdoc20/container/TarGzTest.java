@@ -182,6 +182,40 @@ class TarGzTest {
         assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
 
         System.clearProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
-
     }
+
+    @Test
+    void testMaxExtractEntries(@TempDir Path tempDir) {
+        //might cause other tests to fail, if tests executed parallel
+        System.setProperty("ee.cyber.cdoc20.tarEntriesThreshold", "1");
+
+        assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
+
+        System.clearProperty("ee.cyber.cdoc20.tarEntriesThreshold");
+    }
+
+
+//    void checkFileName(File outDir, String fileName) throws IOException {
+//        Path p = Path.of(outDir.getCanonicalPath(), fileName);
+//        log.debug("{}", p);
+//        //log.debug("{}", p.toRealPath());
+//        log.debug("{}", p.getParent());
+//        log.debug("{}", p.getFileName());
+//    }
+//
+//    @Test
+//    void testFileName(@TempDir Path tempDir) throws IOException {
+//        //File outDir = tempDir.resolve("out").toFile();
+//        File outDir = tempDir.toFile();
+//        String fileName = "fi:l*e/p\"a?t>h|.t<xt";
+//
+//        checkFileName(outDir, fileName);
+//
+//        //checkFileName(outDir, "a");
+//
+//
+//    }
+
+
+
 }

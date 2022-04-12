@@ -15,8 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
-//import java.util.zip.GZIPInputStream;
-//import java.util.zip.GZIPOutputStream;
 
 /**
  * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside
@@ -31,7 +29,9 @@ public final class Tar {
     private static final double MAX_COMPRESSION_RATIO = 10;
 
     // disk space available percentage allowed
-    private static final double DEFAULT_MAX_USED_PERCENTAGE = 98;
+    private static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
+
+    private static final int DEFAULT_TAR_ENTRIES_THRESHOLD = 1000;
 
 //    static {
 //        MAX_USED_PERCENTAGE = Double.parseDouble(System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage"));
@@ -115,7 +115,6 @@ public final class Tar {
                 if (tarArchiveEntry.isFile() && tarEntryName.equals(tarArchiveEntry.getName())) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     long written = tarInputStream.transferTo(outputStream);
-                    //TODO: check compression ratio
                     log.debug("Copied {}B", written);
                     return written;
                 }
@@ -144,10 +143,12 @@ public final class Tar {
             throw new IOException("Not directory or not writeable " + outputDir);
         }
 
-        LinkedList<ArchiveEntry> result = new LinkedList<>();
+        LinkedList<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
         try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
              TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
 
+
+            int tarEntriesThreshold = getDefaultTarEntriesThresholdThreshold();
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
@@ -156,18 +157,24 @@ public final class Tar {
                         if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
                                 filesToExtract)) {
 
-                            result.add(tarArchiveEntry);
+                            extractedArchiveEntries.add(tarArchiveEntry);
+
+                            if (extractedArchiveEntries.size() > tarEntriesThreshold) {
+                                log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
+                                throw new IllegalStateException("Tar entries threshold exceeded. Aborting.");
+                            }
+
                         }
                     } else { //list
-                        result.add(tarArchiveEntry);
+                        extractedArchiveEntries.add(tarArchiveEntry);
                     }
                 } else {
-                    log.info("Ignored non-regular file {}", tarArchiveEntry.getFile());
+                    log.info("Ignored non-regular file {}", tarArchiveEntry.getName());
                 }
             }
         }
 
-        return result;
+        return extractedArchiveEntries;
     }
 
     /**
@@ -215,16 +222,7 @@ public final class Tar {
 //
 //        }
 
-        double maxUsedPercentage = DEFAULT_MAX_USED_PERCENTAGE;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.maxDiskUsagePercentage")) {
-            String maxDiskUsagePercentageStr = System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
-            try {
-                maxUsedPercentage = Double.parseDouble(maxDiskUsagePercentageStr);
-            } catch (NumberFormatException nfe) {
-                log.warn("Invalid value {} for ee.cyber.cdoc20.maxDiskUsagePercentage", maxDiskUsagePercentageStr);
-            }
-        }
-
+        double diskUsageThreshold = getDiskUsedPercentageThreshold();
 
 
         long written = 0;
@@ -238,15 +236,14 @@ public final class Tar {
                 double usedPercentage = (double)outputDir.toFile().getUsableSpace()
                         / (double)outputDir.toFile().getTotalSpace() * 100;
 
-                if (usedPercentage >= maxUsedPercentage) {
-                    String err = String.format("More than  %.2f%% disk space used. Aborting", maxUsedPercentage);
+                if (usedPercentage >= diskUsageThreshold) {
+                    String err = String.format("More than  %.2f%% disk space used. Aborting", diskUsageThreshold);
                     log.error(err);
                     throw new IllegalStateException(err);
                 }
 
                 out.write(buffer, 0, read);
                 written += read;
-
 
                 double compressionRatio = (double)gZipStatistics.getUncompressedCount()
                         / (double)gZipStatistics.getCompressedCount();
@@ -266,6 +263,35 @@ public final class Tar {
         log.debug("Created {} {}B", newPath, written);
         return written;
     }
+
+    private static double getDiskUsedPercentageThreshold() {
+        double diskUsageThreshold = DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD;
+        if (System.getProperties().containsKey("ee.cyber.cdoc20.maxDiskUsagePercentage")) {
+            String maxDiskUsagePercentageStr = System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
+            try {
+                diskUsageThreshold = Double.parseDouble(maxDiskUsagePercentageStr);
+            } catch (NumberFormatException nfe) {
+                log.warn("Invalid value {} for ee.cyber.cdoc20.maxDiskUsagePercentage. Using default {}",
+                        maxDiskUsagePercentageStr, DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD);
+            }
+        }
+        return diskUsageThreshold;
+    }
+
+    private static int getDefaultTarEntriesThresholdThreshold() {
+        int tarEntriesThreshold = DEFAULT_TAR_ENTRIES_THRESHOLD;
+        if (System.getProperties().containsKey("ee.cyber.cdoc20.tarEntriesThreshold")) {
+            String tarEntriesThresholdStr = System.getProperty("ee.cyber.cdoc20.tarEntriesThreshold");
+            try {
+                tarEntriesThreshold = Integer.parseInt(tarEntriesThresholdStr);
+            } catch (NumberFormatException nfe) {
+                log.warn("Invalid value {} for ee.cyber.cdoc20.tarEntriesThreshold. Using default {}",
+                        tarEntriesThresholdStr, DEFAULT_TAR_ENTRIES_THRESHOLD);
+            }
+        }
+        return tarEntriesThreshold;
+    }
+
 
     public static List<ArchiveEntry> extractToDir(InputStream tarGZipInputStream, Path outputDir) throws IOException {
         return processTarGz(tarGZipInputStream, outputDir, null, true);
