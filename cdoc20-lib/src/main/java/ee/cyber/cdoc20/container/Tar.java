@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -32,6 +33,9 @@ public final class Tar {
     private static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
 
     private static final int DEFAULT_TAR_ENTRIES_THRESHOLD = 1000;
+
+    // whether overwrite of extracted files is allowed
+    private static final boolean DEFAULT_OVERWRITE = true;
 
     private Tar() {
     }
@@ -136,6 +140,10 @@ public final class Tar {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
             throw new IOException("Not directory or not writeable " + outputDir);
+        }
+
+        if (extract) {
+            log.info("Extracting to {}", outputDir.normalize());
         }
 
         List<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
@@ -245,12 +253,10 @@ public final class Tar {
             throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + outputDir);
         }
 
-
-
-
-//        if (Files.exists(newPath)) {
-//
-//        }
+        if (!isOverWriteAllowed() && Files.exists(newPath)) {
+            log.info("File {} already exists.", newPath.toAbsolutePath().toString());
+            throw new FileAlreadyExistsException(newPath.toAbsolutePath().toString());
+        }
 
         double diskUsageThreshold = getDiskUsedPercentageThreshold();
 
@@ -316,6 +322,20 @@ public final class Tar {
             }
         }
         return tarEntriesThreshold;
+    }
+
+    private static boolean isOverWriteAllowed() {
+        boolean overwrite = DEFAULT_OVERWRITE;
+        if (System.getProperties().containsKey("ee.cyber.cdoc20.overwrite")) {
+            String overwriteStr = System.getProperty("ee.cyber.cdoc20.overwrite");
+
+            if (overwriteStr != null) {
+                //only "true" is considered as true
+                overwrite = Boolean.parseBoolean(overwriteStr);
+            }
+        }
+        return overwrite;
+
     }
 
 

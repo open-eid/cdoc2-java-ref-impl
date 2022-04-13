@@ -30,7 +30,7 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = "output destination | Default: current-directory")
     private File outputPath = new File(".");
 
-    @CommandLine.Parameters(description = "one or more files to decrypt")
+    @CommandLine.Parameters(description = "one or more files to decrypt", paramLabel = "fileToExtract")
     String[] filesToExtract = new String[0];
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
