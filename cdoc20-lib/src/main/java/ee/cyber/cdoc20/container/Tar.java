@@ -33,11 +33,6 @@ public final class Tar {
 
     private static final int DEFAULT_TAR_ENTRIES_THRESHOLD = 1000;
 
-//    static {
-//        MAX_USED_PERCENTAGE = Double.parseDouble(System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage"));
-//    }
-
-
     private Tar() {
     }
 
@@ -143,7 +138,8 @@ public final class Tar {
             throw new IOException("Not directory or not writeable " + outputDir);
         }
 
-        LinkedList<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
+        List<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
+        List<File> extractedFiles = new LinkedList<>();
         try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
              TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
 
@@ -154,10 +150,12 @@ public final class Tar {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     if (extract) { //extract
-                        if (copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
-                                filesToExtract)) {
+                        File extractedFile = copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
+                                filesToExtract);
+                        if (extractedFile != null) {
 
                             extractedArchiveEntries.add(tarArchiveEntry);
+                            extractedFiles.add(extractedFile);
 
                             if (extractedArchiveEntries.size() > tarEntriesThreshold) {
                                 log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
@@ -172,9 +170,23 @@ public final class Tar {
                     log.info("Ignored non-regular file {}", tarArchiveEntry.getName());
                 }
             }
+        } catch (Throwable t) {
+            log.info("Exception {}. Deleting already extracted files {}", t, extractedFiles);
+            deleteFiles(extractedFiles);
+            throw t;
         }
 
         return extractedArchiveEntries;
+    }
+
+    private static void deleteFiles(List<File> filesToDelete) {
+        for (File f: filesToDelete) {
+            try {
+                Files.deleteIfExists(f.toPath());
+            } catch (IOException e) {
+                log.error("Error deleting file {}", f.getAbsolutePath());
+            }
+        }
     }
 
     /**
@@ -184,10 +196,10 @@ public final class Tar {
      * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
      * @param gZipStatistics
      * @param filesToExtract if not null, extract specified files otherwise all files
-     * @return tarArchiveEntry was extracted
+     * @return File extracted from tarArchiveEntry or null if File was not created
      * @throws IOException if an I/O error has occurred
      */
-    private static boolean copyTarEntryToDirectory(Path outputDir,
+    private static File copyTarEntryToDirectory(Path outputDir,
                                                    TarArchiveInputStream tarInputStream,
                                                    TarArchiveEntry tarArchiveEntry,
                                                    InputStreamStatistics gZipStatistics,
@@ -196,24 +208,42 @@ public final class Tar {
 
         if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
             if (filesToExtract.contains(tarArchiveEntry.getName())) {
-                copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
-                return true;
+                return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
             }
+            return null;
         } else { // extract all
-            copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
-            return true;
+            return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
         }
-
-        return false;
     }
 
-    private static long copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
+    /**
+     * Extract tar entry as File in outputDir
+     * @param outputDir directory where file will be created
+     * @param tarInputStream read file contents from tarInputStream
+     * @param tarArchiveEntry tarArchiveEntry to extract
+     * @param gZipStatistics wrapping compression statistics
+     * @return File created from tar
+     * @throws IOException
+     */
+    private static File copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
                                                 TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
             throws IOException {
 
+        if (tarArchiveEntry.getName() == null) {
+            throw new IOException("Invalid tarEntry without name");
+        }
+
         Path tarPath = Path.of(tarArchiveEntry.getName());
-        log.debug("basename {}", tarPath.getFileName());
-        Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName());
+        if (null != tarPath.getParent()) {
+            log.debug("Entries with directories are not supported {}", tarArchiveEntry.getName());
+            throw new IOException("Entries with directories are not supported ("
+                    + tarArchiveEntry.getName() + ")");
+        }
+
+        Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName()).normalize();
+        if (!newPath.startsWith(outputDir)) {
+            throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + outputDir);
+        }
 
 
 
@@ -256,12 +286,8 @@ public final class Tar {
             }
         }
 
-
-
-
-        //long written = Files.copy(tarInputStream, newPath, StandardCopyOption.REPLACE_EXISTING);
         log.debug("Created {} {}B", newPath, written);
-        return written;
+        return newPath.toFile();
     }
 
     private static double getDiskUsedPercentageThreshold() {

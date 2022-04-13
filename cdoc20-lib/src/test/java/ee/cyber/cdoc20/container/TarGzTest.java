@@ -25,11 +25,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class TarGzTest {
     private static final  Logger log = LoggerFactory.getLogger(TarGzTest.class);
 
-    //@TempDir
-    //private Path tmpDir;
-
-    //private final File tarGZipFile = new File(System.getProperty("java.io.tmpdir"), "testCreateArchive.tgz");
-
     private final String archiveTgz = "archive.tgz";
 
     private final String payload = "payload\n";
@@ -195,26 +190,31 @@ class TarGzTest {
     }
 
 
-//    void checkFileName(File outDir, String fileName) throws IOException {
-//        Path p = Path.of(outDir.getCanonicalPath(), fileName);
-//        log.debug("{}", p);
-//        //log.debug("{}", p.toRealPath());
-//        log.debug("{}", p.getParent());
-//        log.debug("{}", p.getFileName());
-//    }
-//
-//    @Test
-//    void testFileName(@TempDir Path tempDir) throws IOException {
-//        //File outDir = tempDir.resolve("out").toFile();
-//        File outDir = tempDir.toFile();
-//        String fileName = "fi:l*e/p\"a?t>h|.t<xt";
-//
-//        checkFileName(outDir, fileName);
-//
-//        //checkFileName(outDir, "a");
-//
-//
-//    }
+    void checkFileName(File outDir, String fileName) throws IOException {
+        Path p = Path.of(outDir.getCanonicalPath(), fileName);
+        log.debug("{}", p);
+        p = p.normalize();
+        log.debug("{}", p);
+        log.debug("{}", p.getParent());
+        log.debug("{}", p.getFileName());
+    }
+
+    @Test
+    void testFileName(@TempDir Path tempDir) throws IOException {
+        //File outDir = tempDir.resolve("out").toFile();
+        File outDir = tempDir.toFile();
+        //String fileName = "fi:l*e/p\"a?t>h|.t<xt";
+        String fileName = "../a.txt";
+
+        Path p = Path.of("a.txt");
+        assertNull(p.getParent());
+
+        checkFileName(outDir, fileName);
+
+        //checkFileName(outDir, "a");
+
+
+    }
 
 
 
