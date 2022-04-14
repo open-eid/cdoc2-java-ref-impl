@@ -14,8 +14,10 @@ import java.io.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
 
 /**
  * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside
@@ -61,6 +63,24 @@ public final class Tar {
 
     public static void archiveFiles(OutputStream dest, Iterable<File> files)
             throws IOException {
+
+        List<String> baseNameList = new LinkedList<>();
+        files.forEach(f -> baseNameList.add(f.getName()));
+        List<String> distinctList = baseNameList.stream().distinct().toList();
+        if (baseNameList.size() != distinctList.size()) {
+            List<String> duplicates = baseNameList.stream()
+                .filter(str -> Collections.frequency(baseNameList, str) > 1)
+                .toList();
+
+            List<File> duplicateFiles = new LinkedList<>();
+            files.forEach(f -> {
+                if (duplicates.contains(f.getName())) {
+                    duplicateFiles.add(f);
+                }
+            });
+
+            throw new IllegalArgumentException("Files with same basename not supported: " + duplicateFiles);
+        }
 
         try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GzipCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
@@ -254,7 +274,7 @@ public final class Tar {
         }
 
         if (!isOverWriteAllowed() && Files.exists(newPath)) {
-            log.info("File {} already exists.", newPath.toAbsolutePath().toString());
+            log.info("File {} already exists.", newPath.toAbsolutePath());
             throw new FileAlreadyExistsException(newPath.toAbsolutePath().toString());
         }
 
