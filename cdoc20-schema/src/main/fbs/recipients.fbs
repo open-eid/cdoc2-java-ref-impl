@@ -17,9 +17,9 @@ table ECCPublicKey {
 }
 
 // Keyserver recipient
-table KeyServer {
-    //recipient_id is recipient public key
-    recipient_id:   string (required);
-    keyserver_id:   string (required);
-    transaction_id: string (required);
+table ECCKeyServer {
+    curve:                 EllipticCurve = UNKNOWN;
+    recipient_public_key:  [ubyte] (required);
+    keyserver_id:          string (required);
+    transaction_id:        string (required);
 }
