@@ -35,8 +35,32 @@ public class Envelope {
 
     protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 2;
-    public static final int MIN_HEADER_LEN = 1; //TODO: find out min header len
+    public static final int MIN_HEADER_LEN = 246; //TODO: find size with FBS overhead
+
+    // MIN_HEADER_LEN value:
+    // raw lengths in bytes (without FBS overhead) for  single ECCPublicKey recipient:
+
+    // details_type: 1
+    // details ECCPublicKey recipient:
+    //   curve: 1
+    //   sender_public_key: 97
+    //   receiver_public_key:97
+    // encrypted_fmk: 48 //secp384 curve
+    // fmk_encryption_method: 1
+    //
+    // per header:
+    // payload_encryption_method: 1
+    //
+    // in practice ECCPublicKey in fbs ~284bytes
+
+
+
+
+
     public static final int MIN_PAYLOAD_LEN = 1; //TODO: find minimal payload size
+
+
+    public static final int MAX_HEADER_LEN = 1024 * 1024; //1MB
 
     /**Minimal valid envelope size in bytes*/
     public static final int MIN_ENVELOPE_SIZE = PRELUDE.length
@@ -79,9 +103,6 @@ public class Envelope {
             byte[] encryptedFmk = Crypto.xor(fmk, kek);
             Details.EccRecipient eccRecipient =
                     new Details.EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
-            if (log.isDebugEnabled()) {
-                log.debug("encrypted FMK: {}", HexFormat.of().formatHex(encryptedFmk));
-            }
             eccRecipientList.add(eccRecipient);
         }
 
@@ -111,7 +132,7 @@ public class Envelope {
         int headerLen = headerLenBuf.getInt();
 
         if ((envelopeIs.available() < headerLen + Crypto.HHK_LEN_BYTES)
-            || (headerLen < MIN_HEADER_LEN))  {
+            || (headerLen < MIN_HEADER_LEN) || (headerLen > MAX_HEADER_LEN))  {
             throw new CDocParseException("invalid CDOC header length: " + headerLen);
         }
 
@@ -428,6 +449,11 @@ public class Envelope {
 
         ByteBuffer buf = builder.dataBuffer();
         int bufLen = buf.limit() - buf.position();
+        if (bufLen > MAX_HEADER_LEN) {
+            log.error("Header serialization failed. Header len {} exceeds MAX_HEADER_LEN {}", bufLen, MAX_HEADER_LEN);
+            throw new IllegalStateException("Header serialization failed. Header length " + bufLen
+                    + " exceeds max header length " + MAX_HEADER_LEN);
+        }
         os.write(buf.array(), buf.position(), bufLen);
     }
 

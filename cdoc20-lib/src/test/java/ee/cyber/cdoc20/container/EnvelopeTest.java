@@ -6,6 +6,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,22 +89,21 @@ class EnvelopeTest {
     }
 
     @Test
-    void testContainer() throws IOException, GeneralSecurityException, CDocParseException {
+    void testContainer(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
 
         String payloadData = "payload-" + uuid;
 
-        File payloadFile = new File(System.getProperty("java.io.tmpdir"), payloadFileName);
-        payloadFile.deleteOnExit();
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
 
-        Path outDir = Path.of(System.getProperty("java.io.tmpdir")).resolve("testContainer-" + uuid);
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
-        outDir.toFile().deleteOnExit();
 
         KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
@@ -121,10 +123,81 @@ class EnvelopeTest {
 
                 assertEquals(List.of(payloadFileName), filesExtracted);
                 Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
-                payloadPath.toFile().deleteOnExit();
 
                 assertEquals(payloadData, Files.readString(payloadPath));
             }
         }
     }
+
+    // comment out as running this test takes ~20seconds.
+    // resources
+    // test that near max size header can be created and parsed
+    @Test
+    void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+
+        String payloadData = "payload-" + uuid;
+
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+
+        ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
+
+
+//        int copies = Envelope.MAX_HEADER_LEN/285;
+//        int length = 0;
+//        do {
+//            length = Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies(++copies, bobPubKey))
+//                    .serializeHeader().length;
+//            log.debug("{} size {}", copies, length);
+//        } while (length < Envelope.MAX_HEADER_LEN);
+//
+//       Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies-1), bobPubKey));
+//        log.debug("Recipients: {} header size: {}B", copies-1, senderEnvelope.serializeHeader().length);
+
+        //max number copies that fits in max_header_len
+        int copies = 3691; // 3691 ECCPublicKey recipients is 1048296B
+
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
+
+        assertTrue(exception.getMessage().contains("Header serialization failed"));
+
+        Instant start = Instant.now();
+        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies), bobPubKey));
+        Instant end = Instant.now();
+        log.debug("Ran: {}s", end.getEpochSecond() - start.getEpochSecond());
+
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(List.of(payloadFile), dst);
+            byte[] cdocContainerBytes = dst.toByteArray();
+
+            assertTrue(cdocContainerBytes.length > 0);
+
+            log.debug("CDOC container with {} recipients and almost empty payload is {}B", copies,
+                    cdocContainerBytes.length);
+
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
+                List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
+
+                assertEquals(List.of(payloadFileName), filesExtracted);
+                Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
+
+                assertEquals(payloadData, Files.readString(payloadPath));
+            }
+        }
+    }
+
 }
