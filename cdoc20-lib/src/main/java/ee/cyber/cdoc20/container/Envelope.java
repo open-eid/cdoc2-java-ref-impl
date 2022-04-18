@@ -184,8 +184,7 @@ public class Envelope {
                 }
             } else {
                 // recipients_KeyServer not implemented
-                log.error("Unknown Details type {}", r.detailsType());
-                throw new CDocParseException("Unknown Details type " + r.detailsType());
+                log.warn("Unknown Details type {}. Ignoring.", r.detailsType());
             }
         }
         return eccRecipientList;
