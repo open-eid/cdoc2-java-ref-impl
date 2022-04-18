@@ -96,15 +96,8 @@ public class Envelope {
             throw new IllegalArgumentException("Invalid FMK len");
         }
 
-        List<Details.EccRecipient> eccRecipientList = new LinkedList<>();
-
-        for (ECPublicKey otherPubKey: recipients) {
-            byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
-            byte[] encryptedFmk = Crypto.xor(fmk, kek);
-            Details.EccRecipient eccRecipient =
-                    new Details.EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
-            eccRecipientList.add(eccRecipient);
-        }
+        List<Details.EccRecipient> eccRecipientList =
+                Details.EccRecipient.buildEccRecipients(fmk, senderEcKeyPair, recipients);
 
         SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
