@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -129,9 +130,9 @@ class EnvelopeTest {
         }
     }
 
-    // commented out as running this test takes ~20seconds.
     // test that near max size header can be created and parsed
-    //@Test
+    @Disabled("running this test takes ~20seconds.")
+    @Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
@@ -153,7 +154,7 @@ class EnvelopeTest {
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
 
-
+// Code to find the limit of max header
 //        int copies = Envelope.MAX_HEADER_LEN/285;
 //        int length = 0;
 //        do {
