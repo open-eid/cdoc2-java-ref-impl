@@ -129,10 +129,9 @@ class EnvelopeTest {
         }
     }
 
-    // comment out as running this test takes ~20seconds.
-    // resources
+    // commented out as running this test takes ~20seconds.
     // test that near max size header can be created and parsed
-    @Test
+    //@Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
