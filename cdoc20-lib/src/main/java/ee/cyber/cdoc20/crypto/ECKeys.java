@@ -41,18 +41,131 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * EC keys loading, decoding and encoding
+ * EC keys loading, decoding and encoding. Currently, supports only secp384r1 EC keys.
  */
 public final class ECKeys {
+    public static final String EC_ALGORITHM_NAME = "EC";
+
     //https://docs.oracle.com/en/java/javase/17/security/oracle-providers.html#GUID-091BF58C-82AB-4C9C-850F-1660824D5254
     public static final String SECP_384_R_1 = "secp384r1";
     public static final String SECP_384_OID = "1.3.132.0.34";
-    public static final String EC_ALGORITHM_NAME = "EC";
 
     /**
      * Key length for secp384r1 curve in bytes
      */
     public static final int SECP_384_R_1_LEN_BYTES = 384 / 8;
+
+
+
+    /**
+     * Curve values from {@link ee.cyber.cdoc20.fbs.recipients.EllipticCurve} defined as enum and mapped to
+     * known elliptic curve names and oid's
+     */
+    public enum EllipticCurve {
+        UNKNOWN(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.UNKNOWN, null,null),
+        secp384r1(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1, SECP_384_R_1, SECP_384_OID);
+
+        private final byte value;
+        private final String name;
+        private final String oid;
+
+
+        EllipticCurve(byte value, String name, String oid) {
+            this.value = value;
+            this.name = name;
+            this.oid = oid;
+        }
+        public byte getValue() {
+            return value;
+        }
+
+        public String getName() {
+            return name;
+        }
+        public String getOid() {
+            return oid;
+        }
+
+        public boolean isValidKey(ECPublicKey key) throws GeneralSecurityException {
+            switch (this) {
+                case secp384r1:
+                    return isValidSecP384R1(key);
+                default:
+                    throw new IllegalStateException("isValidKey not implemented for " + this);
+            }
+        }
+
+        public boolean isValidKeyPair(KeyPair keyPair) throws GeneralSecurityException {
+            switch (this) {
+                case secp384r1:
+                    return isECSecp384r1(keyPair);
+                default:
+                    throw new IllegalStateException("isValidKeyPair not implemented for " + this);
+            }
+        }
+
+        /**Key length in bytes. For secp384r1, its 384/8=48*/
+        public int getKeyLength() {
+            switch (this) {
+                case secp384r1:
+                    return SECP_384_R_1_LEN_BYTES;
+                default:
+                    throw new IllegalStateException("getKeyLength not implemented for " + this);
+            }
+        }
+
+        public ECPublicKey decodeFromTls(ByteBuffer encoded) throws GeneralSecurityException {
+            switch (this) {
+                case secp384r1:
+                    // calls also isValidSecP384R1
+                    return decodeSecP384R1EcPublicKeyFromTls(encoded);
+                default:
+                    throw new IllegalStateException("decodeFromTls not implemented for " + this);
+            }
+        }
+
+        public KeyPair generateEcKeyPair() throws GeneralSecurityException{
+            return ECKeys.generateEcKeyPair(this.getName());
+        }
+
+
+        public static EllipticCurve forName(String name) {
+            if (SECP_384_R_1.equalsIgnoreCase(name)) {
+                return secp384r1;
+            }
+            throw new IllegalArgumentException("Unknown curve name "+name);
+        }
+
+        public static EllipticCurve forOid(String oid) {
+            if (SECP_384_OID.equals(oid)) {
+                return secp384r1;
+            }
+            throw new IllegalArgumentException("Unknown curve oid "+oid);
+        }
+
+        public static EllipticCurve forValue(byte value) {
+            switch (value) {
+                case ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1:
+                    return secp384r1;
+                default:
+                    throw new IllegalArgumentException("Unknown curve value "+value);
+            }
+        }
+
+        /**Supported curve names*/
+        public static String[] names() {
+            return ee.cyber.cdoc20.fbs.recipients.EllipticCurve.names;
+        }
+
+    }
+
+
+
+
+
+
+
+
 
     // for validating that decoded ECPoints are valid for secp384r1 curve
     private static final ECCurve SECP_384_R_1_CURVE = new SecP384R1Curve();
@@ -65,23 +178,31 @@ public final class ECKeys {
     private ECKeys() {
     }
 
-    public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public static KeyPair generateEcKeyPair(String ecCurveName) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(EC_ALGORITHM_NAME);
-        keyPairGenerator.initialize(new ECGenParameterSpec(SECP_384_R_1));
+        keyPairGenerator.initialize(new ECGenParameterSpec(ecCurveName));
         return keyPairGenerator.generateKeyPair();
     }
 
+    public static byte[] encodeEcPubKeyForTls(EllipticCurve curve, ECPublicKey ecPublicKey) {
+        int keyLength = curve.getKeyLength();
+        return encodeEcPubKeyForTls(ecPublicKey, keyLength);
+    }
     /**
      * Encode EcPublicKey in TLS 1.3 format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
      * @param ecPublicKey EC public key
      * @return ecPublicKey encoded in TLS 1.3 EC pub key format
      */
-    @SuppressWarnings("checkstyle:LineLength")
-    public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) {
+    public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) throws GeneralSecurityException {
+        EllipticCurve curve = EllipticCurve.forOid(ECKeys.getCurveOid(ecPublicKey));
+        int keyLength = curve.getKeyLength();
+        return encodeEcPubKeyForTls(ecPublicKey, keyLength);
+    }
 
-        //BigInteger.toByteArray() returns byte in network byte order
-        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX(), SECP_384_R_1_LEN_BYTES);
-        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY(), SECP_384_R_1_LEN_BYTES);
+    @SuppressWarnings("checkstyle:LineLength")
+    private static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey, int keyLength) {
+        byte[] xBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineX(), keyLength);
+        byte[] yBytes = toUnsignedByteArray(ecPublicKey.getW().getAffineY(), keyLength);
 
         //CHECKSTYLE:OFF
         //EC pubKey in TLS 1.3 format
@@ -97,19 +218,19 @@ public final class ECKeys {
         return tlsPubKey;
     }
 
-    public static ECPublicKey decodeEcPublicKeyFromTls(ByteBuffer encoded) throws GeneralSecurityException {
-        return decodeEcPublicKeyFromTls(Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
+    private static ECPublicKey decodeSecP384R1EcPublicKeyFromTls(ByteBuffer encoded) throws GeneralSecurityException {
+        return decodeSecP384R1EcPublicKeyFromTls(Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
     }
 
     /**
      * Decode EcPublicKey from TLS 1.3 format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
-     * @param encoded EC public key octets encoded as in TLS 1.3 format
+     * @param encoded EC public key octets encoded as in TLS 1.3 format. Expects key to be part of secp384r1 curve
      * @return decoded ECPublicKey
      * @throws InvalidParameterSpecException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException
      */
-    public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded)
+    private static ECPublicKey decodeSecP384R1EcPublicKeyFromTls(byte[] encoded)
             throws GeneralSecurityException {
 
         String encodedHex = HexFormat.of().formatHex(encoded);
@@ -311,6 +432,7 @@ public final class ECKeys {
     public static boolean isValidSecP384R1(ECPublicKey ecPublicKey) throws GeneralSecurityException {
 
         if (!isEcSecp384r1Curve(ecPublicKey)) {
+            log.debug("EC pub key curve OID {} is not secp384r1", getCurveOid(ecPublicKey));
             return false;
         }
 
@@ -319,7 +441,12 @@ public final class ECKeys {
         // https://github.com/bcgit/bc-java/blob/master/core/src/main/java/org/bouncycastle/math/ec/ECPoint.java
         org.bouncycastle.math.ec.ECPoint ecPoint = SECP_384_R_1_CURVE.createPoint(ecPublicKey.getW().getAffineX(),
                 ecPublicKey.getW().getAffineY());
-        return ecPoint.isValid();
+
+        boolean onCurve = ecPoint.isValid();
+        if (!onCurve) {
+            log.debug("EC pub key is not on secp384r1 curve");
+        }
+        return onCurve;
     }
 
     /**
@@ -370,4 +497,5 @@ public final class ECKeys {
         }
         return list;
     }
+
 }

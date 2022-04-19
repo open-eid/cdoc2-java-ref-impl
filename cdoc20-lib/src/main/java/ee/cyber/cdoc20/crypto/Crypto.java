@@ -80,18 +80,18 @@ public final class Crypto {
     }
 
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
 
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, true);
     }
 
     public static byte[] deriveKeyDecryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, false);
     }
 
     private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
 
         byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
         byte[] kekPm = HKDF.fromHmacSha256()

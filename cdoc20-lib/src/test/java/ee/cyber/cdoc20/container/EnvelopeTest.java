@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -68,7 +69,8 @@ class EnvelopeTest {
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
-        Envelope envelope = Envelope.prepare(fmkBuf, senderKeyPair, recipients);
+
+        Envelope envelope = Envelope.prepare(fmkBuf, EllipticCurve.secp384r1, senderKeyPair, recipients);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
 
@@ -106,13 +108,13 @@ class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
+        Envelope senderEnvelope = Envelope.prepare(EllipticCurve.secp384r1, recipients);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(List.of(payloadFile), dst);
             byte[] cdocContainerBytes = dst.toByteArray();
@@ -131,7 +133,7 @@ class EnvelopeTest {
     }
 
     // test that near max size header can be created and parsed
-    @Disabled("running this test takes ~20seconds.")
+    @Disabled("testLongHeader is disabled as running it takes ~20seconds.")
     @Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
@@ -149,8 +151,8 @@ class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair aliceKeyPair = ECKeys.loadFromPem(aliceKeyPem);
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
 
@@ -171,12 +173,14 @@ class EnvelopeTest {
 
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
+                Envelope.prepare(fmkBuf, EllipticCurve.secp384r1, aliceKeyPair,
+                        Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
 
         assertTrue(exception.getMessage().contains("Header serialization failed"));
 
         Instant start = Instant.now();
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies), bobPubKey));
+        Envelope senderEnvelope = Envelope.prepare(fmkBuf, EllipticCurve.secp384r1,
+                aliceKeyPair, Collections.nCopies((copies), bobPubKey));
         Instant end = Instant.now();
         log.debug("Ran: {}s", end.getEpochSecond() - start.getEpochSecond());
 

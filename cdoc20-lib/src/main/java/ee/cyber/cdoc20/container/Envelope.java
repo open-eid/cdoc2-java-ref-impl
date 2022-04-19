@@ -4,7 +4,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
@@ -88,19 +88,67 @@ public class Envelope {
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
     }
 
-    public static Envelope prepare(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    public static Envelope prepare(byte[] fmk, EllipticCurve curve,  KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
+            throws GeneralSecurityException {
 
         log.trace("Envelope::prepare");
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
             throw new IllegalArgumentException("Invalid FMK len");
         }
 
-        List<Details.EccRecipient> eccRecipientList =
-                Details.EccRecipient.buildEccRecipients(fmk, senderEcKeyPair, recipients);
+        if (!curve.isValidKeyPair(senderEcKeyPair)) {
+            throw new InvalidKeyException("Invalid sender key");
+        }
 
         SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
+
+
+
+        List<Details.EccRecipient> eccRecipientList =
+                Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
+
+
+
+        for (ECPublicKey ecPublicKey: recipients) {
+            if (!curve.isValidKey(ecPublicKey)) {
+                String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
+                log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
+                throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
+            }
+        }
+
+
+        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
+    }
+
+    /**
+     * Prepare Envelope for ECPublicKey recipients. For each recipient, sender key pair is generated. Single generated
+     * File Master Key (FMK) is used for all recipients.
+     * @param curve
+     * @param recipients
+     * @return Envelope ready for payload
+     */
+    public static Envelope prepare(EllipticCurve curve, List<ECPublicKey> recipients) throws GeneralSecurityException {
+        byte[] fmk = Crypto.generateFileMasterKey();
+        SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
+        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
+        List<Details.EccRecipient> eccRecipientList = List.of();
+
+        try {
+            for (ECPublicKey ecPublicKey : recipients) {
+                if (!curve.isValidKey(ecPublicKey)) {
+                    String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
+                    log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
+                    throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
+                }
+            }
+            eccRecipientList = Details.EccRecipient.buildEccRecipients(curve, fmk, recipients);
+        } finally {
+            //clean up fmk
+            Arrays.fill(fmk, (byte)0);
+        }
+
         return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
     }
 
@@ -165,13 +213,14 @@ public class Envelope {
                 }
 
                 try {
+                    EllipticCurve curve = EllipticCurve.forValue(r.fmkEncryptionMethod());
                     ECPublicKey recipientPubKey =
-                            ECKeys.decodeEcPublicKeyFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
+                            curve.decodeFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
                     ECPublicKey senderPubKey =
-                            ECKeys.decodeEcPublicKeyFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
+                            curve.decodeFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
 
-                    eccRecipientList.add(new Details.EccRecipient(r.fmkEncryptionMethod(),
-                            recipientPubKey, senderPubKey, encryptedFmkBytes));
+                    eccRecipientList.add(new Details.EccRecipient(curve, recipientPubKey, senderPubKey,
+                            encryptedFmkBytes));
                 } catch (IllegalArgumentException illegalArgumentException) {
                     throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
                 }
