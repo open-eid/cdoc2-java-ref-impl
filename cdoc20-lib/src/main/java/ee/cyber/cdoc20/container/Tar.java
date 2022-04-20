@@ -96,7 +96,7 @@ public final class Tar {
      * @param dest destination stream where created archive will be written
      * @param inputStream data added to archive
      * @param tarEntryName entry name (file name) for data
-     * @throws IOException
+     * @throws IOException if an I/O error has occurred
      */
     public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GzipCompressorOutputStream(
@@ -220,7 +220,7 @@ public final class Tar {
      * @param outputDir output directory where files are extracted
      * @param tarInputStream tar InputStream to process
      * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
-     * @param gZipStatistics
+     * @param gZipStatistics InputStreamStatistics from GZip stream
      * @param filesToExtract if not null, extract specified files otherwise all files
      * @return File extracted from tarArchiveEntry or null if File was not created
      * @throws IOException if an I/O error has occurred
@@ -232,14 +232,10 @@ public final class Tar {
                                                    List<String> filesToExtract)
             throws IOException {
 
-        if (((filesToExtract != null) && !filesToExtract.isEmpty())) {
-            if (filesToExtract.contains(tarArchiveEntry.getName())) {
-                return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
-            }
-            return null;
-        } else { // extract all
+        if ((filesToExtract == null) || filesToExtract.contains(tarArchiveEntry.getName())) {
             return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
         }
+        return null;
     }
 
     /**
@@ -249,7 +245,7 @@ public final class Tar {
      * @param tarArchiveEntry tarArchiveEntry to extract
      * @param gZipStatistics wrapping compression statistics
      * @return File created from tar
-     * @throws IOException
+     * @throws IOException if an I/O error has occurred
      */
     private static File copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
                                                 TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
