@@ -20,6 +20,7 @@ import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
@@ -76,11 +77,11 @@ public class Envelope {
     private final SecretKey cekKey;
 
 
-    private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
-        this.eccRecipients = recipients;
-        this.hmacKey = hmacKey;
-        this.cekKey = cekKey;
-    }
+//    private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
+//        this.eccRecipients = recipients;
+//        this.hmacKey = hmacKey;
+//        this.cekKey = cekKey;
+//    }
 
     private Envelope(Details.EccRecipient[] recipients, byte[] fmk) {
         this.eccRecipients = recipients;
@@ -99,9 +100,7 @@ public class Envelope {
         List<Details.EccRecipient> eccRecipientList =
                 Details.EccRecipient.buildEccRecipients(fmk, senderEcKeyPair, recipients);
 
-        SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
-        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
+        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
     }
 
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs)
@@ -188,6 +187,16 @@ public class Envelope {
         return  Header.getRootAsHeader(byteBuffer);
     }
 
+    /**Get additional data used to initialize ChaChaCipher AAD*/
+    public static byte[] getAdditionalData(byte[] header, byte[] headerHMAC) {
+        final byte[] cDoc20Payload = "CDOC20payload".getBytes(StandardCharsets.UTF_8);
+        ByteBuffer bb = ByteBuffer.allocate(cDoc20Payload.length + header.length + headerHMAC.length);
+        bb.put(cDoc20Payload);
+        bb.put(header);
+        bb.put(headerHMAC);
+        return bb.array();
+    }
+
     public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException, GeneralSecurityException {
         log.trace("encrypt");
         os.write(PRELUDE);
@@ -206,7 +215,7 @@ public class Envelope {
 
         byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
         os.write(hmac);
-        byte[] additionalData = ChaChaCipher.getAdditionalData(headerBytes, hmac);
+        byte[] additionalData = getAdditionalData(headerBytes, hmac);
         try (CipherOutputStream cipherOutputStream =
                      ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
@@ -250,7 +259,7 @@ public class Envelope {
 
                 log.debug("payload available {}", cdocInputStream.available());
 
-                byte[] additionalData = ChaChaCipher.getAdditionalData(fileHeaderOs.toByteArray(), hmac);
+                byte[] additionalData = getAdditionalData(fileHeaderOs.toByteArray(), hmac);
                 try (CipherInputStream cis =
                              ChaChaCipher.initChaChaInputStream(cdocInputStream, envelope.cekKey, additionalData)) {
 
@@ -263,7 +272,6 @@ public class Envelope {
 
                     return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
                 }
-
             }
         }
 

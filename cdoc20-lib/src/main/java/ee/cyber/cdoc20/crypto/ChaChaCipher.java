@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Arrays;
 
@@ -19,7 +18,7 @@ public final class ChaChaCipher {
     private static final Logger log = LoggerFactory.getLogger(ChaChaCipher.class);
     public static final int NONCE_LEN_BYTES = 96 / 8;
 
-    //Sun ChaChaChipher decryption fails with big files, use BouncyCastle implementation for ChaCha
+    //Sun ChaChaCipher decryption fails with big files, use BouncyCastle implementation for ChaCha
     static final Provider BC = new BouncyCastleProvider();
 
     private static final String INVALID_ADDITIONAL_DATA = "Invalid additionalData";
@@ -92,15 +91,6 @@ public final class ChaChaCipher {
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, cek, nonce);
         cipher.updateAAD(additionalData);
         return cipher.doFinal(encrypted, NONCE_LEN_BYTES, encrypted.length - NONCE_LEN_BYTES);
-    }
-
-    public static byte[] getAdditionalData(byte[] header, byte[] headerHMAC) {
-        final byte[] cDoc20Payload = "CDOC20payload".getBytes(StandardCharsets.UTF_8);
-        ByteBuffer bb = ByteBuffer.allocate(cDoc20Payload.length + header.length + headerHMAC.length);
-        bb.put(cDoc20Payload);
-        bb.put(header);
-        bb.put(headerHMAC);
-        return bb.array();
     }
 
     private static byte[] generateNonce() throws NoSuchAlgorithmException {

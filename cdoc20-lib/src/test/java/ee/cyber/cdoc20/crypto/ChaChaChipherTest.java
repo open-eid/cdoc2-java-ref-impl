@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.container.Tar;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ class ChaChaChipherTest {
 
         SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
 
-        byte[] additionalData = ChaChaCipher.getAdditionalData(new byte[0], new byte[0]);
+        byte[] additionalData = Envelope.getAdditionalData(new byte[0], new byte[0]);
         String payload = "secret";
         byte[] encrypted =
                 ChaChaCipher.encryptPayload(cek, payload.getBytes(StandardCharsets.UTF_8), additionalData);
@@ -44,7 +45,7 @@ class ChaChaChipherTest {
 
         byte[] header = new byte[0];
         byte[] headerHMAC = new byte[0];
-        byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
+        byte[] additionalData = Envelope.getAdditionalData(header, headerHMAC);
         String payload = "secret";
 
 
@@ -77,7 +78,7 @@ class ChaChaChipherTest {
 
         byte[] header = new byte[0];
         byte[] headerHMAC = new byte[0];
-        byte[] additionalData = ChaChaCipher.getAdditionalData(header, headerHMAC);
+        byte[] additionalData = Envelope.getAdditionalData(header, headerHMAC);
         String payload = "secret";
 
 
