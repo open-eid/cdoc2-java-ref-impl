@@ -84,7 +84,6 @@ public final class Tar {
 
         try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GzipCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
-            tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             tos.setAddPaxHeadersForNonAsciiNames(true);
             for (File file : files) {
                 addFileToTar(tos, file.toPath(), file.getName());
@@ -102,7 +101,6 @@ public final class Tar {
     public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GzipCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
-            tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
             //log.debug("adding {}B", inputStream.available());

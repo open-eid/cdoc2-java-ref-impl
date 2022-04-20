@@ -291,7 +291,7 @@ public class Envelope {
      * @throws CDocParseException if hmacs don't match
      */
     private static byte[] checkHmac(InputStream cdocInputStream, byte[] headerBytes, SecretKey hmacKey)
-            throws IOException, NoSuchAlgorithmException, InvalidKeyException, CDocParseException {
+            throws IOException, GeneralSecurityException, CDocParseException {
         byte[] hmac;
         if (cdocInputStream.available() > Crypto.HHK_LEN_BYTES) {
             byte[] calculatedHmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
