@@ -7,6 +7,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.KeyAgreement;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -22,6 +23,8 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -65,7 +68,7 @@ public final class ECKeys {
     private ECKeys() {
     }
 
-    public static KeyPair generateEcKeyPair() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public static KeyPair generateEcKeyPair() throws GeneralSecurityException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(EC_ALGORITHM_NAME);
         keyPairGenerator.initialize(new ECGenParameterSpec(SECP_384_R_1));
         return keyPairGenerator.generateKeyPair();
@@ -105,9 +108,7 @@ public final class ECKeys {
      * Decode EcPublicKey from TLS 1.3 format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
      * @param encoded EC public key octets encoded as in TLS 1.3 format
      * @return decoded ECPublicKey
-     * @throws InvalidParameterSpecException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeySpecException
+     * @throws GeneralSecurityException
      */
     public static ECPublicKey decodeEcPublicKeyFromTls(byte[] encoded)
             throws GeneralSecurityException {

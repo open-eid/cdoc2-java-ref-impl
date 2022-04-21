@@ -59,7 +59,7 @@ class CryptoTest {
     }
 
     @Test
-    void testXorCrypto() throws NoSuchAlgorithmException, InvalidKeyException, InvalidAlgorithmParameterException {
+    void testXorCrypto() throws GeneralSecurityException {
         log.trace("testXorCrypto()");
         byte[] fmk = Crypto.generateFileMasterKey();
         KeyPair keyPair = ECKeys.generateEcKeyPair();

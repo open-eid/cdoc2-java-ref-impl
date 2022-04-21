@@ -90,7 +90,7 @@ public class Envelope {
     }
 
     public static Envelope prepare(byte[] fmk, KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
 
         log.trace("Envelope::prepare");
         if (fmk.length != Crypto.FMK_LEN_BYTES) {

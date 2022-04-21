@@ -9,6 +9,8 @@ import java.security.interfaces.ECPublicKey;
 import at.favre.lib.crypto.HKDF;
 
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -19,6 +21,8 @@ import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 
 public final class Crypto {
+
+    private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
     /**
      * File Master Key length in octets
@@ -67,11 +71,36 @@ public final class Crypto {
         return new SecretKeySpec(hhk, HMAC_SHA_256);
     }
 
+    private static KeyAgreement getKeyAgreement() throws NoSuchAlgorithmException {
+        Provider pkcs11Provider = Security.getProvider("SunPKCS11-OpenSC");
+        return  ((pkcs11Provider != null) && pkcs11Provider.isConfigured())
+                ? KeyAgreement.getInstance("ECDH", pkcs11Provider)
+                : KeyAgreement.getInstance("ECDH");
 
-    public static byte[] calcEcDhSharedSecret(ECPrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    }
 
-        KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+    public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
+            throws GeneralSecurityException {
+
+        Provider sunPKCS11Provider = Security.getProvider("SunPKCS11-OpenSC");
+        KeyAgreement keyAgreement;
+
+        // KeyAgreement instances (software and pkcs11) don't work with other provider private keys
+        // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
+        // ECPublicKey are basically all "soft" keys
+        if ((sunPKCS11Provider != null) && sunPKCS11Provider.isConfigured() && (!(ecPrivateKey instanceof ECPrivateKey))) {
+            keyAgreement = KeyAgreement.getInstance("ECDH", sunPKCS11Provider);
+        } else {
+            keyAgreement = KeyAgreement.getInstance("ECDH");
+        }
+
+        return calcEcDhSharedSecret(keyAgreement, ecPrivateKey, otherPublicKey);
+    }
+
+    public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
+            throws GeneralSecurityException {
+
+        log.debug("ECDH provider {}", ka.getProvider());
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
 
@@ -79,21 +108,34 @@ public final class Crypto {
         return ka.generateSecret();
     }
 
+
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
 
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, true);
     }
 
+//    public static byte[] deriveKeyEncryptionKey(KeyAgreement ka, KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
+//            throws GeneralSecurityException {
+//
+//        return deriveKek(ka, ecKeyPair, otherPublicKey, keyLen, true);
+//    }
+
     public static byte[] deriveKeyDecryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+            throws GeneralSecurityException {
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, false);
     }
 
-    private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+//    public static byte[] deriveKeyDecryptionKey(KeyAgreement ka, KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
+//            throws GeneralSecurityException {
+//        return deriveKek(ka, ecKeyPair, otherPublicKey, keyLen, false);
+//    }
 
-        byte[] ecdhSharedSecret = calcEcDhSharedSecret((ECPrivateKey) ecKeyPair.getPrivate(), otherPublicKey);
+
+    private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
+            throws GeneralSecurityException {
+
+        byte[] ecdhSharedSecret = calcEcDhSharedSecret(ecKeyPair.getPrivate(), otherPublicKey);
         byte[] kekPm = HKDF.fromHmacSha256()
                 .extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
 

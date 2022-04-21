@@ -4,6 +4,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
 
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -71,7 +72,7 @@ public final class Details {
          */
         public static List<EccRecipient> buildEccRecipients(byte[] fmk, KeyPair senderEcKeyPair,
                                                             List<ECPublicKey> recipients)
-                throws NoSuchAlgorithmException, InvalidKeyException {
+                throws GeneralSecurityException {
 
             if (fmk.length != Crypto.CEK_LEN_BYTES) {
                 throw new IllegalArgumentException("Invalid FMK len");
