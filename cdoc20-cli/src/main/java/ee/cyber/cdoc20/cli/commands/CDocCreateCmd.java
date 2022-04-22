@@ -1,7 +1,7 @@
 package ee.cyber.cdoc20.cli.commands;
 
 
-import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.EccPubKeyCDocBuilder;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +27,22 @@ public class CDocCreateCmd implements Callable<Void> {
     @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, required = true,
+    @Option(names = {"-k", "--key"}, required = false,
             paramLabel = "PEM", description = "EC private key PEM used to encrypt")
     File privKeyFile;
 
-    @Option(names = {"-p", "--pubkeys", "--recipients", "--receivers"}, required = true,
+    @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"}, required = true,
             paramLabel = "PEM", description = "recipient public key")
     File[] pubKeyFiles;
+
+    // Only secp384r1 supported, no point to expose this option to user
+    @Option (names = {"--curve"}, hidden = true, description = "Elliptic curve used, default secp384r1")
+    String curveName = ECKeys.SECP_384_R_1;
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 
+    // For testing only
     @Option(names = {"-ZZ"}, hidden = true,
             description = "inputFile will only be encrypted (inputFile is already tar.gz)")
     private boolean disableCompression = false;
@@ -52,17 +57,23 @@ public class CDocCreateCmd implements Callable<Void> {
             log.debug("create --file {} --key {} --pubkey {} {}",
                     cdocFile, privKeyFile, Arrays.toString(pubKeyFiles), Arrays.toString(inputFiles));
         }
-        KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
+
         List<ECPublicKey> recipients = ECKeys.loadECPubKeys(pubKeyFiles);
 
         if (disableCompression) {
             System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
         }
 
-        CDocBuilder cDocBuilder = new CDocBuilder()
-                .withSender(keyPair)
+        EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()
+                .withCurve(curveName)
                 .withRecipients(recipients)
                 .withPayloadFiles(Arrays.asList(inputFiles));
+
+        if (privKeyFile != null) {
+             cDocBuilder.withSender(ECKeys.loadFromPem(privKeyFile));
+        } else {
+             cDocBuilder.withGeneratedSender();
+        }
 
         cDocBuilder.buildToFile(cdocFile);
 

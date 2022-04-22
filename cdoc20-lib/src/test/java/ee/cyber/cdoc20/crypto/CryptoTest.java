@@ -50,8 +50,8 @@ class CryptoTest {
 
     @Test
     void testGenSharedSecret() throws GeneralSecurityException {
-        KeyPair keyPair = ECKeys.generateEcKeyPair();
-        KeyPair other = ECKeys.generateEcKeyPair();
+        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         byte[] ecdhSharedSecret =
                 Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
@@ -62,8 +62,8 @@ class CryptoTest {
     void testXorCrypto() throws GeneralSecurityException {
         log.trace("testXorCrypto()");
         byte[] fmk = Crypto.generateFileMasterKey();
-        KeyPair keyPair = ECKeys.generateEcKeyPair();
-        KeyPair other = ECKeys.generateEcKeyPair();
+        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
 
         byte[] kek = Crypto.deriveKeyEncryptionKey(keyPair, (ECPublicKey) other.getPublic(), fmk.length);
         byte[] encryptedFmk = Crypto.xor(fmk, kek);
@@ -91,8 +91,7 @@ class CryptoTest {
                 "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
                 "-----END EC PRIVATE KEY-----\n";
         KeyPair aliceKeyPair = ECKeys.loadFromPem(pem);
-        //KeyPair aliceKeyPair = Crypto.generateEcKeyPair();
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair bobKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
 
         byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);
         byte[] encryptedFmk = Crypto.xor(fmk, aliceKek);
