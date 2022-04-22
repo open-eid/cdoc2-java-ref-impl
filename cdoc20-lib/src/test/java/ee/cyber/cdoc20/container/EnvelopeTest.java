@@ -108,12 +108,14 @@ class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-
+        byte[] fmk = Crypto.generateFileMasterKey();
+        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
+        //Envelope senderEnvelope = Envelope.prepare(fmk, EllipticCurve.secp384r1, aliceKeyPair, recipients);
         Envelope senderEnvelope = Envelope.prepare(EllipticCurve.secp384r1, recipients);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(List.of(payloadFile), dst);

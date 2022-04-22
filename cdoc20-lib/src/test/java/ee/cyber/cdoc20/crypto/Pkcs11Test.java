@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -139,8 +140,7 @@ public class Pkcs11Test { //TODO: refactor into single test with soft and pcks11
     @Test
     void testContainerUsingPKCS11Key(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
         log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
-        byte[] fmkBuf =  Crypto.generateFileMasterKey();
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
+
         KeyPair bobKeyPair = loadPkcs11KeyPair();
 
         log.debug("Using hardware private key for decrypting: {}", Crypto.isPKCS11Key(bobKeyPair.getPrivate() ));
@@ -163,7 +163,7 @@ public class Pkcs11Test { //TODO: refactor into single test with soft and pcks11
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
+        Envelope senderEnvelope = Envelope.prepare(EllipticCurve.secp384r1, recipients);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(List.of(payloadFile), dst);
             byte[] cdocContainerBytes = dst.toByteArray();

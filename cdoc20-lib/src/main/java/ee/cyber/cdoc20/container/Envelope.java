@@ -101,11 +101,6 @@ public class Envelope {
             throw new InvalidKeyException("Invalid sender key");
         }
 
-        SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
-        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-
-
-
         List<Details.EccRecipient> eccRecipientList =
                 Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
 
@@ -120,7 +115,7 @@ public class Envelope {
         }
 
 
-        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
+        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
     }
 
     /**
@@ -132,25 +127,28 @@ public class Envelope {
      */
     public static Envelope prepare(EllipticCurve curve, List<ECPublicKey> recipients) throws GeneralSecurityException {
         byte[] fmk = Crypto.generateFileMasterKey();
-        SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
-        SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-        List<Details.EccRecipient> eccRecipientList = List.of();
+        KeyPair senderEcKeyPair = curve.generateEcKeyPair();
 
-        try {
-            for (ECPublicKey ecPublicKey : recipients) {
-                if (!curve.isValidKey(ecPublicKey)) {
-                    String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
-                    log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
-                    throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
-                }
-            }
-            eccRecipientList = Details.EccRecipient.buildEccRecipients(curve, fmk, recipients);
-        } finally {
-            //clean up fmk
-            Arrays.fill(fmk, (byte)0);
-        }
+        return prepare(fmk, curve, senderEcKeyPair, recipients);
 
-        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), hmacKey, cekKey);
+        //This code breakes unit tests:
+//        List<Details.EccRecipient> eccRecipientList = List.of();
+//
+//        try {
+//            for (ECPublicKey ecPublicKey : recipients) {
+//                if (!curve.isValidKey(ecPublicKey)) {
+//                    String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
+//                    log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
+//                    throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
+//                }
+//            }
+//            eccRecipientList = Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
+//        } finally {
+//            //clean up fmk
+//            Arrays.fill(fmk, (byte)0);
+//        }
+//
+//        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
     }
 
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs)
