@@ -5,7 +5,7 @@ Table 5-3 Supported algorithms
 https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html#GUID-C4ABFACB-B2C9-4E71-A313-79F881488BB9
 Table 5-1
 
-cat opensc-java.cfg
+
 cat /etc/opensc/opensc-java.cfg
 name=OpenSC
 library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so

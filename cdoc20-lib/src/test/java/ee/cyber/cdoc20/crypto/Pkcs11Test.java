@@ -1,12 +1,24 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.container.CDocParseException;
+import ee.cyber.cdoc20.container.Envelope;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.KeyAgreement;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.ProviderNotFoundException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -16,12 +28,16 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Pkcs11Test {
+public class Pkcs11Test { //TODO: refactor into single test with soft and pcks11 keys
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
     private static final String SUN_PKCS11_KEYSTORE_TYPE = "PKCS11";
@@ -51,29 +67,49 @@ public class Pkcs11Test {
 
     @BeforeAll
     static void initPkcs11() throws Exception {
-        String configName = "/etc/opensc/opensc-java.cfg";
-        sunPkcs11Provider = Security.getProvider("SunPKCS11");
-        sunPkcs11Provider = sunPkcs11Provider.configure(configName);
+        //String configName = "/etc/opensc/opensc-java.cfg";
+//        Path confPath = Crypto.createSunPkcsConfigurationFile(null, null, null);
+//        sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
+//
+//        log.debug("Provider name {}", sunPkcs11Provider.getName());
+//        log.debug("Provider info {}", sunPkcs11Provider.getInfo());
+//        log.debug("Provider properties: {} {}", sunPkcs11Provider.stringPropertyNames());
+//
+//        // print algorithms available
+//        //sunPkcs11Provider.getServices().forEach(s -> log.debug("{} {}",s.getAlgorithm(), s.getType()));
+//
+//        log.debug("PKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
+//                (Security.getProvider(sunPkcs11Provider.getName()) != null));
+//        Security.addProvider(sunPkcs11Provider);
+//        log.debug("PKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
+//                (Security.getProvider(sunPkcs11Provider.getName()) != null));
+//
+//
+//        log.debug("all providers {}", Arrays.asList(Security.getProviders()).stream().map(p-> p.getName()).toList());
+//
+//        log.debug("KeyStore.PKCS11 providers {}", Arrays.asList(Security.getProviders("KeyStore.PKCS11")).stream().map(p-> p.getName()).toList());
+//        log.debug("KeyAgreement.ECDH providers {}", Arrays.asList(Security.getProviders("KeyAgreement.ECDH")).stream().map(p-> p.getName()).toList());
+//
 
 
 
-        log.debug("Provider name {}", sunPkcs11Provider.getName());
-        log.debug("Provider info {}", sunPkcs11Provider.getInfo());
-
-        log.debug("Provider properties: {}", sunPkcs11Provider.stringPropertyNames());
-
-        //sunPkcs11Provider.getServices().forEach(s -> log.debug("{} {}",s.getAlgorithm(), s.getType()));
-
-        Security.addProvider(sunPkcs11Provider);
-
-        Provider sun = Security.getProvider("SunPKCS11-OpenSC");
-        log.debug("SunPKCS11-OpenSC provider isConfigured={}", sun.isConfigured());
+        Path confPath = Crypto.createSunPkcsConfigurationFile(null, null, null);
+        Crypto.initSunPkcs11(confPath);
+        Provider sun = Security.getProvider(Crypto.getPkcs11ProviderName());
+        log.debug("{} provider isConfigured={}", sun.getName(), sun.isConfigured());
+        log.debug("PKC11 {}", KeyStore.getInstance("PKCS11", Crypto.getPkcs11ProviderName()).getProvider());
+        log.debug("ECDH {}", KeyAgreement.getInstance("ECDH", Crypto.getPkcs11ProviderName()).getProvider());
     }
 
     KeyPair loadPkcs11KeyPair() throws GeneralSecurityException, IOException{
         String key1 = "Isikutuvastus";
         String pin1 = "3471";
-        KeyStore ks = KeyStore.getInstance("PKCS11", sunPkcs11Provider.getName());
+
+        if (Crypto.getPkcs11ProviderName() == null) {
+            throw new ProviderNotFoundException();
+        }
+
+        KeyStore ks = KeyStore.getInstance("PKCS11", Crypto.getPkcs11ProviderName());
         ks.load(null, pin1.toCharArray());
 
         ks.aliases().asIterator().forEachRemaining(alias -> {
@@ -84,80 +120,66 @@ public class Pkcs11Test {
             }
         });
 
-        //can't cast to ECPrivateKey
+        //can't cast to ECPrivateKey and key.getFormat() and key.getEncoded() return null
         PrivateKey key = (PrivateKey)ks.getKey(key1, pin1.toCharArray());
+
+        log.debug("key encoded: {}", Arrays.toString(key.getEncoded()));
+        log.debug("key format: {}", key.getFormat());
+        log.debug("key class: {}", key.getClass());
         X509Certificate cert = (X509Certificate)ks.getCertificate(key1);
 
-        log.debug("key: {} {}", key.getAlgorithm(), key);
+        log.debug("key: {}", key);
         log.debug("cert: {} ", cert.getSubjectX500Principal().getName());
 
 
-        KeyPair pkcs11KeyPair = new KeyPair(cert.getPublicKey(), key);
 
-        return pkcs11KeyPair;
-
+        return new KeyPair(cert.getPublicKey(), key);
     }
-
-
-//    @Test
-//    void testDeriveKeyEncryptionKey() throws GeneralSecurityException, IOException {
-//
-//        ECPublicKey otherPublicKey = ECKeys.loadECPublicKey(BOB_PUB_KEY);
-//
-//
-//        KeyPair pkcs11KeyPair = loadKeyPair();
-//
-//
-//
-//
-////        KeyAgreement ka = KeyAgreement.getInstance("ECDH", sunPkcs11Provider);
-////        ka.init(key);
-////        ka.doPhase(otherPublicKey, true);
-////        byte[] ecdhSharedSecret = ka.generateSecret();
-////        assertEquals(ECKeys.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
-//
-//        byte[] fmk = Crypto.generateFileMasterKey();
-//        //SecretKey secretKey = Crypto.deriveContentEncryptionKey(fmk);
-//
-//
-//        byte[] kek = Crypto.deriveKeyEncryptionKey(pkcs11KeyPair, otherPublicKey, fmk.length);
-//        byte[] encryptedFmk = Crypto.xor(fmk, kek);
-//        byte[] decrypted = Crypto.xor(encryptedFmk, kek);
-//
-//        log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
-//        log.debug("encrypted: {}", HexFormat.of().formatHex(encryptedFmk));
-//        log.debug("decrypted: {}", HexFormat.of().formatHex(decrypted));
-//    }
 
     @Test
-    void testFmkECCycle() throws GeneralSecurityException, IOException {
-        log.trace("testFmkECCycle()");
-        byte[] fmk = Crypto.generateFileMasterKey();
-        KeyPair aliceKeyPair = loadPkcs11KeyPair();
+    void testContainerUsingPKCS11Key(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
+        log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
+        byte[] fmkBuf =  Crypto.generateFileMasterKey();
+        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair bobKeyPair = loadPkcs11KeyPair();
 
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+        log.debug("Using hardware private key for decrypting: {}", Crypto.isPKCS11Key(bobKeyPair.getPrivate() ));
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+
+        String payloadData = "payload-" + uuid;
+
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
 
 
-//        Provider pkcs11Provider = Security.getProvider("SunPKCS11-OpenSC");
-//        KeyAgreement pkcs11Ka = KeyAgreement.getInstance("ECDH", pkcs11Provider);
-//        KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
+        List<ECPublicKey> recipients = List.of(recipientPubKey);
 
-        byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);
-        byte[] encryptedFmk = Crypto.xor(fmk, aliceKek);
+        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(List.of(payloadFile), dst);
+            byte[] cdocContainerBytes = dst.toByteArray();
 
-        byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), fmk.length);
-        byte[] decryptedFmk = Crypto.xor(encryptedFmk, bobKek);
+            assertTrue(cdocContainerBytes.length > 0);
 
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
+                List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
 
+                assertEquals(List.of(payloadFileName), filesExtracted);
+                Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
 
-        log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
-        log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
-        log.debug("encrypted: {}", HexFormat.of().formatHex(encryptedFmk));
-        log.debug("bob KEK:   {}", HexFormat.of().formatHex(bobKek));
-        log.debug("decrypted: {}", HexFormat.of().formatHex(decryptedFmk));
-
-        assertArrayEquals(aliceKek, bobKek);
-        assertArrayEquals(fmk, decryptedFmk);
+                assertEquals(payloadData, Files.readString(payloadPath));
+            }
+        }
     }
+
 
 }
