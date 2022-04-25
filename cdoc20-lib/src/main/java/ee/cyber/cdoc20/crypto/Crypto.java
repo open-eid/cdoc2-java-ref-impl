@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import at.favre.lib.crypto.HKDF;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,13 +119,13 @@ public final class Crypto {
      *   <li>For OSX, it could be /usr/local/lib/opensc-pkcs11.so
      * </ul>
      * @param name any string, default OpenSC
-     * @param library OpenSC library location, defaults above
+     * @param openScLibrary OpenSC library location, defaults above
      * @param slot Slot, default 0
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
 
-    public static Path createSunPkcsConfigurationFile(String name, String library, Integer slot) throws IOException {
+    public static Path createSunPkcsConfigurationFile(String name, String openScLibrary, Integer slot) throws IOException {
 //        name=OpenSC
 //        library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 //        slot=0
@@ -132,38 +133,57 @@ public final class Crypto {
 //            CKA_TOKEN = false
 //        }
 
-        String newLine = System.getProperty("line.separator");
 
+        String newLine = System.getProperty("line.separator");
         Path confPath = Path.of(System.getProperty("java.io.tmpdir")).resolve("opensc-java.cfg");
+
+        String library = openScLibrary;
+
+        if (library == null) {
+            library = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
+        }
+
+        if (library == null) {
+            OS os = getOS();
+            switch (os) {
+                case LINUX:
+                    library = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
+                    break;
+                case WINDOWS:
+                    library = "C:\\Windows\\SysWOW64\\opensc-pkcs11.dll";
+                    break;
+                case MAC:
+                    library = "/usr/local/lib/opensc-pkcs11.so";
+                    break;
+                default:
+                    log.info("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
+                    throw new IllegalStateException("Unknown OS");
+            }
+        }
+
+        if ((library == null) || !Files.isReadable(Path.of(library))) {
+            log.error("OpenSC library not found at {}, define {} System.property to overwrite ", library,
+                    CDocConfiguration.OPENSC_LIBRARY_PROPERTY);
+        }
+
+        String slotStr = "";
+        if (slot == null) {
+            slotStr = "-slot0";
+        } else {
+            slotStr = "-slot" + slot;
+        }
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(bos))) {
 
             if (name == null) {
-                writer.write("name=OpenSC");
+                writer.write("name=OpenSC" + slotStr);
             } else {
-                writer.write("name=" + name);
+                writer.write("name=" + name + slotStr);
             }
             writer.newLine();
 
-            if (library == null) {
-                OS os = getOS();
-                switch (os) {
-                    case LINUX:
-                        writer.write("library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so");
-                        break;
-                    case WINDOWS:
-                        writer.write("library=C:\\Windows\\SysWOW64\\opensc-pkcs11.dll");
-                        break;
-                    case MAC:
-                        writer.write("library=/usr/local/lib/opensc-pkcs11.so");
-                        break;
-                    default:
-                        log.info("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
-                        throw new IllegalStateException("Unknown OS");
-                }
-            } else {
-                writer.write("library=" + library);
-            }
+            writer.write("library=" + library);
             writer.newLine();
 
             if (slot != null) {
@@ -328,7 +348,7 @@ public final class Crypto {
     public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
 
-        log.debug("ECDH provider {}", ka.getProvider());
+        //log.debug("ECDH provider {}", ka.getProvider());
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
 

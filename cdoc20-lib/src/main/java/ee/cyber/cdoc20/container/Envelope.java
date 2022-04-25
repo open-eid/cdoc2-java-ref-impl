@@ -4,6 +4,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 
+import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
@@ -106,6 +107,9 @@ public class Envelope {
 
 
 
+
+
+
         for (ECPublicKey ecPublicKey: recipients) {
             if (!curve.isValidKey(ecPublicKey)) {
                 String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
@@ -113,6 +117,10 @@ public class Envelope {
                 throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
             }
         }
+
+        List<String> hexPubKeys = eccRecipientList.stream()
+                .map(r -> HexFormat.of().formatHex(r.getRecipientPubKeyTlsEncoded())).toList();
+        log.info("Added encrypted FMK for: {}", hexPubKeys);
 
 
         return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
@@ -291,13 +299,20 @@ public class Envelope {
 
         log.trace("Envelope::decrypt");
         log.debug("total available {}", cdocInputStream.available());
-        ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
-        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
 
+        ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
+
+        if (log.isInfoEnabled()) {
+            log.info("Finding encrypted FMK for pub key {}",
+                    HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(recipientPubKey)));
+        }
+
+        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
         List<Details.EccRecipient> details = parseHeader(cdocInputStream, fileHeaderOs);
 
         for (Details.EccRecipient detailsEccRecipient : details) {
             ECPublicKey senderPubKey = detailsEccRecipient.getSenderPubKey();
+
             if (recipientPubKey.equals(detailsEccRecipient.getRecipientPubKey())) {
                 byte[] kek = Crypto.deriveKeyDecryptionKey(recipientEcKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
                 byte[] fmk = Crypto.xor(kek, detailsEccRecipient.getEncryptedFileMasterKey());

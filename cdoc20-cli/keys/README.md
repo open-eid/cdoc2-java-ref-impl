@@ -1,5 +1,16 @@
 This directory contains pre-generate EC keys.
 
+## Convert X509 DER to PEM
+
+```
+openssl x509 -inform der -in 37101010021.der -out 37101010021.pem
+```
+
+## Print X509 cert info
+```
+openssl x509 -in 37101010021.pem -text
+```
+
 ## Generating EC keys
 
 Generate an EC private key, of size 384, and output it to a file named key.pem:

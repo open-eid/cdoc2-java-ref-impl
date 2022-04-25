@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.cli.commands;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import picocli.CommandLine;
@@ -10,6 +11,7 @@ import java.io.File;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 //S106 Standard outputs should not be used directly to log anything
@@ -22,9 +24,13 @@ public class CDocDecryptCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, required = true,
+    @Option(names = {"-k", "--key"}, required = false,
             paramLabel = "PEM", description = "EC private key PEM used to decrypt")
     File privKeyFile;
+
+    @Option (names = {"-s", "--slot"}, required = false,
+            description = "Key from smartcard slot used for decrypting. Default 0")
+    Integer slot = 0;
 
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
@@ -39,6 +45,13 @@ public class CDocDecryptCmd implements Callable<Void> {
     @Option(names = {"-ZZ"}, hidden = true, description = "decrypt CDOC content as tar.gz file (no uncompress)")
     private boolean disableCompression = false;
 
+    // allow -Dkey for setting System properties
+    @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
+    void setProperty(Map<String, String> props) {
+        props.forEach(System::setProperty);
+    }
+
+
 
     @Override
     public Void call() throws Exception {
@@ -47,7 +60,11 @@ public class CDocDecryptCmd implements Callable<Void> {
             System.setProperty("ee.cyber.cdoc20.cDocFile", cdocFile.getName());
         }
 
-        KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
+        String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
+
+
+        KeyPair keyPair = (privKeyFile != null) ? ECKeys.loadFromPem(privKeyFile)
+                : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
                 .withRecipient(keyPair)

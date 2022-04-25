@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-class EnvelopeTest {
+public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
     @SuppressWarnings("checkstyle:OperatorWrap")
@@ -91,8 +91,15 @@ class EnvelopeTest {
 
     }
 
+
     @Test
     void testContainer(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
+        testContainer(tempDir, bobKeyPair);
+    }
+
+
+    public void testContainer(Path tempDir, KeyPair bobKeyPair) throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -110,7 +117,7 @@ class EnvelopeTest {
 
         byte[] fmk = Crypto.generateFileMasterKey();
         KeyPair aliceKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
-        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
+
 
         ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of(recipientPubKey);
