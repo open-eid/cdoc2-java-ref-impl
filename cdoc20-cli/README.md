@@ -68,7 +68,7 @@ or
 To create:
 - Output file `/tmp/mydoc.cdoc`
 - with generated private key
-- to recipient certificate `keys/37101010021.cer`
+- to recipient with certificate `keys/37101010021.cer`
 - to encrypt file 'README.md'
 
 ```
@@ -96,4 +96,27 @@ specify its location by setting 'opensclibrary' property:
 java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dopensclibrary=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
 ```
 
-More tips for debugging ID-card related installation issues are provided in cdoc20-lib/pkcs11.README file
+More tips for debugging ID-card related issues are provided in cdoc20-lib/pkcs11.README file
+
+
+## Other configuration options
+
+Set with -D option
+
+```
+java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dee.cyber.cdoc20.overwrite=false -f mydoc.cdoc
+```
+
+
+#### ee.cyber.cdoc20.overwrite 
+When decrypting, is overwriting files allowed. Default is true
+
+#### opensclibrary
+OpenSC library location. Default is platform specific
+
+Common OpenSC library locations:
+
+* For Windows, it could be C:\Windows\SysWOW64\opensc-pkcs11.dll
+* For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
+* For OSX, it could be /usr/local/lib/opensc-pkcs11.so
+  
