@@ -6,6 +6,8 @@ Run from cdoc20_java parent directory
 mvn package
 ```
 
+Will create cdoc20-cli/target/cdoc20-cli-<version>.jar
+
 ## Running
 Run from cdoc20-cli directory
 
