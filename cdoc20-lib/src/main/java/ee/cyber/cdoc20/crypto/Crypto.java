@@ -2,7 +2,6 @@ package ee.cyber.cdoc20.crypto;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -10,13 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.*;
-import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import at.favre.lib.crypto.HKDF;
 
@@ -61,13 +56,13 @@ public final class Crypto {
 
 
     public enum OS {
-        WINDOWS, LINUX, MAC, SOLARIS
-    }// Operating systems.
+        WINDOWS, LINUX, MAC
+    } // Operating systems.
 
 
 
     public static OS getOS() {
-        log.debug("os.family: {}, os.name: {}",System.getProperty("os.family"), System.getProperty("os.name") );
+        log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
         OS os = null;
         String operSys = System.getProperty("os.name").toLowerCase();
         if (operSys.contains("win")) {
@@ -125,7 +120,8 @@ public final class Crypto {
      *     SunPKCS11 documentation Table 5-1</a>
      */
 
-    public static Path createSunPkcsConfigurationFile(String name, String openScLibrary, Integer slot) throws IOException {
+    public static Path createSunPkcsConfigurationFile(String name, String openScLibrary, Integer slot) throws
+            IOException {
 //        name=OpenSC
 //        library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 //        slot=0
@@ -156,7 +152,8 @@ public final class Crypto {
                     library = "/usr/local/lib/opensc-pkcs11.so";
                     break;
                 default:
-                    log.info("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
+                    log.info("os.family: {}, os.name: {}", System.getProperty("os.family"),
+                            System.getProperty("os.name"));
                     throw new IllegalStateException("Unknown OS");
             }
         }
@@ -193,10 +190,11 @@ public final class Crypto {
 
             //est-eid specific
             writer.write("attributes(*,CKO_SECRET_KEY,*) = {"
-                    + newLine +
-                    "  CKA_TOKEN = false"
-                    + newLine +
-                    "}");
+                    + newLine
+                    + "  CKA_TOKEN = false"
+                    + newLine
+                    + "}");
+            writer.newLine();
         }
 
 
@@ -207,7 +205,7 @@ public final class Crypto {
             Arrays.asList(confFileStr.split(newLine)).forEach(line -> log.debug(">>{}", line));
         }
 
-        try( BufferedWriter w = Files.newBufferedWriter(confPath, StandardCharsets.UTF_8,
+        try (BufferedWriter w = Files.newBufferedWriter(confPath, StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING
                 //StandardOpenOption.DELETE_ON_CLOSE
@@ -226,21 +224,28 @@ public final class Crypto {
      *      SunPKCS11 documentation Table 5-1</a>
      */
     public static boolean initSunPkcs11(Path confPath) {
+
         log.info("Configuring SunPKCS11 from {}", confPath.toString());
         Provider sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
 
         log.debug("Provider name {}", sunPkcs11Provider.getName());
         log.debug("Provider info {}", sunPkcs11Provider.getInfo());
-        log.debug("Provider properties: {}", sunPkcs11Provider.stringPropertyNames());
 
         // print algorithms available
+        //log.debug("Provider properties: {}", sunPkcs11Provider.stringPropertyNames());
         //sunPkcs11Provider.getServices().forEach(s -> log.debug("{} {}",s.getAlgorithm(), s.getType()));
 
-        log.debug("PKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
-                (Security.getProvider(sunPkcs11Provider.getName()) != null));
         Security.addProvider(sunPkcs11Provider);
-        log.debug("PKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
+        log.debug("SunPKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
                 (Security.getProvider(sunPkcs11Provider.getName()) != null));
+
+        try {
+            KeyStore ks = KeyStore.getInstance("PKCS11", sunPkcs11Provider);
+        } catch (KeyStoreException e) {
+            log.error("Successfully configured SunPKCS11, but PKCS11 not found. Is smartcard connected?");
+            return false;
+        }
+
 
         Provider p = getConfiguredPKCS11Provider();
         if (p != null) {
@@ -253,24 +258,25 @@ public final class Crypto {
     }
 
     public static String getPkcs11ProviderName() {
-        final String providerSystemProperty  = "ee.cyber.cdoc20.pkcs11.name";
 
         if (pkcs11ProviderName != null) {
             return pkcs11ProviderName;
         }
 
-        if (System.getProperties().containsKey(providerSystemProperty)) {
-            pkcs11ProviderName = System.getProperty(providerSystemProperty);
+        if (System.getProperties().containsKey(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY)) {
+            pkcs11ProviderName = System.getProperty(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY);
             return pkcs11ProviderName;
         }
 
         //[SunPKCS11-OpenSC]
-        List<String> pkcs11Providers = Arrays.stream(Security.getProviders("KeyStore.PKCS11"))
-                .map(Provider::getName).toList();
+        Provider[] pkcs11ProvidersArr = Security.getProviders("KeyStore.PKCS11");
+        List<String> pkcs11Providers = Arrays.stream((pkcs11ProvidersArr == null)
+                        ? new Provider[]{} : pkcs11ProvidersArr).map(Provider::getName).toList();
         log.debug("KeyStore.PKCS11 providers {}", pkcs11Providers);
 
         //[SunEC, SunPKCS11-OpenSC]
-        List<String> ecdhProviders = Arrays.stream(Security.getProviders("KeyAgreement.ECDH"))
+        Provider[] ecdhProvidersArr = Security.getProviders("KeyAgreement.ECDH");
+        List<String> ecdhProviders = Arrays.stream((ecdhProvidersArr == null) ? new Provider[]{} : ecdhProvidersArr)
                 .map(Provider::getName).toList();
         log.debug("KeyAgreement.ECDH {}", ecdhProviders);
 
@@ -282,7 +288,8 @@ public final class Crypto {
         } else if (common.size() > 1) {
             log.info("Several PKCS11 providers found that support \"KeyStore.PKCS11\" & \"KeyAgreement.ECDH\": {}",
                     common);
-            log.info("Choose correct one by setting system property {} to one of {}",providerSystemProperty, common);
+            log.info("Choose correct one by setting system property {} to one of {}",
+                    CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY, common);
         }
 
         log.error("PKCS11 provider not configured");
@@ -363,22 +370,10 @@ public final class Crypto {
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, true);
     }
 
-//    public static byte[] deriveKeyEncryptionKey(KeyAgreement ka, KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-//            throws GeneralSecurityException {
-//
-//        return deriveKek(ka, ecKeyPair, otherPublicKey, keyLen, true);
-//    }
-
     public static byte[] deriveKeyDecryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
             throws GeneralSecurityException {
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, false);
     }
-
-//    public static byte[] deriveKeyDecryptionKey(KeyAgreement ka, KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
-//            throws GeneralSecurityException {
-//        return deriveKek(ka, ecKeyPair, otherPublicKey, keyLen, false);
-//    }
-
 
     private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
             throws GeneralSecurityException {

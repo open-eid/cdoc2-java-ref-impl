@@ -99,7 +99,8 @@ public class EnvelopeTest {
     }
 
 
-    public void testContainer(Path tempDir, KeyPair bobKeyPair) throws IOException, GeneralSecurityException, CDocParseException {
+    public void testContainer(Path tempDir, KeyPair bobKeyPair)
+            throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";

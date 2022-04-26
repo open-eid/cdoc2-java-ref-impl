@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -262,9 +263,11 @@ public final class Tar {
                     + tarArchiveEntry.getName() + ")");
         }
 
-        Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName()).normalize();
-        if (!newPath.startsWith(outputDir)) {
-            throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + outputDir);
+        Path absOutDir = outputDir.normalize().toAbsolutePath();
+
+        Path newPath = Path.of(absOutDir.toString()).resolve(tarPath.getFileName()).normalize();
+        if (!newPath.startsWith(absOutDir)) {
+            throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + absOutDir);
         }
 
         if (!isOverWriteAllowed() && Files.exists(newPath)) {
@@ -340,8 +343,8 @@ public final class Tar {
 
     private static boolean isOverWriteAllowed() {
         boolean overwrite = DEFAULT_OVERWRITE;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.overwrite")) {
-            String overwriteStr = System.getProperty("ee.cyber.cdoc20.overwrite");
+        if (System.getProperties().containsKey(CDocConfiguration.OVERWRITE_PROPERTY)) {
+            String overwriteStr = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
 
             if (overwriteStr != null) {
                 //only "true" is considered as true

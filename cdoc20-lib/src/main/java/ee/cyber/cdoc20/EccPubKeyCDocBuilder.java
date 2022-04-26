@@ -177,7 +177,7 @@ public class EccPubKeyCDocBuilder {
                 || (!pubKeyOid.equals(this.curve.getOid()))) {
             log.error("Sender EC key curve validation failed. Curve={}, privKey={}, pubKey={}",
                     this.curve.getOid(), privKeyOid, pubKeyOid);
-            throw new CDocValidationException("Recipient oid doesn't match with curve " );
+            throw new CDocValidationException("Recipient oid doesn't match with curve ");
         }
 
     }

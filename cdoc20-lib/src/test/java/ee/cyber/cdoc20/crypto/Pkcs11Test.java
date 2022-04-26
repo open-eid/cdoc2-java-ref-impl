@@ -18,22 +18,23 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Tests here will fail without correct id-kaart
 @Isolated
 public class Pkcs11Test extends EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
     // CN=ŽAIKOVSKI\,IGOR\,37101010021
-    private char[] pin = {'3', '4', '7', '1'};
-    //private List<String> expectedCn = List.of("ŽAIKOVSKI", "IGOR", "37101010021");
-    private String id = "37101010021";
+    private final char[] pin = {'3', '4', '7', '1'};
+    private final String id = "37101010021";
 
     @Test
     void testLoadKeyInteractively() throws GeneralSecurityException, IOException {
+        // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
+        // so running this test with other tests doesn't make much sense
         KeyPair igorKeyPair = ECKeys.loadFromPKCS11Interactively(null, 0);
         assertTrue(Crypto.isPKCS11Key(igorKeyPair.getPrivate()));
         assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKeyPair(igorKeyPair));
@@ -47,11 +48,10 @@ public class Pkcs11Test extends EnvelopeTest {
 
         X509Certificate cert = pair.getValue();
 
-
         List<String> cn;
         try {
             cn = new LdapName(cert.getSubjectX500Principal().getName()).getRdns().stream()
-                            .filter(rdn-> rdn.getType().equalsIgnoreCase("cn"))
+                            .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
                             .map(rdn -> rdn.getValue().toString())
                     .toList();
         } catch (InvalidNameException e) {
@@ -61,13 +61,15 @@ public class Pkcs11Test extends EnvelopeTest {
 
         log.debug("CN {}", cn);
 
-        //assertTrue(cn.contains(id));
+        assertTrue(cn.size() == 1);
+        assertTrue(cn.get(0).contains(id));
     }
 
     @Test
-    void testContainerUsingPKCS11Key(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
-        log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
+    void testContainerUsingPKCS11Key(@TempDir Path tempDir)
+            throws IOException, GeneralSecurityException, CDocParseException {
 
+        log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
         KeyPair igorKeyPair = ECKeys.loadFromPKCS11(null, 0, pin);
 
         log.debug("Using hardware private key for decrypting: {}", Crypto.isPKCS11Key(igorKeyPair.getPrivate()));

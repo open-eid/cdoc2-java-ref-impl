@@ -9,9 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyAgreement;
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyManagementException;
@@ -46,7 +43,6 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.AbstractMap;
@@ -80,7 +76,7 @@ public final class ECKeys {
      * known elliptic curve names and oid's
      */
     public enum EllipticCurve {
-        UNKNOWN(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.UNKNOWN, null,null),
+        UNKNOWN(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.UNKNOWN, null, null),
         secp384r1(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1, SECP_384_R_1, SECP_384_OID);
 
         private final byte value;
@@ -142,7 +138,7 @@ public final class ECKeys {
             }
         }
 
-        public KeyPair generateEcKeyPair() throws GeneralSecurityException{
+        public KeyPair generateEcKeyPair() throws GeneralSecurityException {
             return ECKeys.generateEcKeyPair(this.getName());
         }
 
@@ -151,14 +147,14 @@ public final class ECKeys {
             if (SECP_384_R_1.equalsIgnoreCase(name)) {
                 return secp384r1;
             }
-            throw new IllegalArgumentException("Unknown curve name "+name);
+            throw new IllegalArgumentException("Unknown curve name " + name);
         }
 
         public static EllipticCurve forOid(String oid) {
             if (SECP_384_OID.equals(oid)) {
                 return secp384r1;
             }
-            throw new IllegalArgumentException("Unknown curve oid "+oid);
+            throw new IllegalArgumentException("Unknown curve oid " + oid);
         }
 
         public static EllipticCurve forValue(byte value) {
@@ -166,7 +162,7 @@ public final class ECKeys {
                 case ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1:
                     return secp384r1;
                 default:
-                    throw new IllegalArgumentException("Unknown curve value "+value);
+                    throw new IllegalArgumentException("Unknown curve value " + value);
             }
         }
 
@@ -229,7 +225,8 @@ public final class ECKeys {
     }
 
     private static ECPublicKey decodeSecP384R1EcPublicKeyFromTls(ByteBuffer encoded) throws GeneralSecurityException {
-        return decodeSecP384R1EcPublicKeyFromTls(Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
+        return decodeSecP384R1EcPublicKeyFromTls(
+                Arrays.copyOfRange(encoded.array(), encoded.position(), encoded.limit()));
     }
 
     /**
@@ -422,7 +419,8 @@ public final class ECKeys {
 
 
     /**
-     * Load KeyPair using automatically generated SunPKCS11 configuration and the default callback to get the pin
+     * Load KeyPair using automatically generated SunPKCS11 configuration and the default callback to get the pin.
+     * Not thread-safe
      *
      * Common openSC library locations:
      * <ul>
@@ -435,50 +433,45 @@ public final class ECKeys {
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
-    public static KeyPair loadFromPKCS11Interactively(String openScLibPath, Integer slot) throws GeneralSecurityException, IOException {
+    public static KeyPair loadFromPKCS11Interactively(String openScLibPath, Integer slot)
+            throws GeneralSecurityException, IOException {
+
         String pinPrompt;
         if (slot == null) {
             pinPrompt = "PIN1:";
         } else {
-            pinPrompt = "PIN" + (slot +1) + ":";
+            pinPrompt = "PIN" + (slot + 1) + ":";
         }
 
+        KeyStore.CallbackHandlerProtection cbHandlerProtection = new KeyStore.CallbackHandlerProtection(callbacks -> {
 
-        KeyStore.CallbackHandlerProtection cbHandlerProtection =
-                new KeyStore.CallbackHandlerProtection(new CallbackHandler() {
-                    @Override
-                    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+            for (Callback cp: callbacks) {
+                if (cp instanceof PasswordCallback) {
+                    // prompt the user for sensitive information
+                    PasswordCallback pc = (PasswordCallback)cp;
 
-                        for (Callback cp: callbacks) {
-                            if (cp instanceof PasswordCallback) {
-                                // prompt the user for sensitive information
-                                PasswordCallback pc = (PasswordCallback)cp;
+                    java.io.Console console = System.console();
+                    if (console != null) {
+                        char[] pin = console.readPassword(pinPrompt);
+                        pc.setPassword(pin);
+                    } else { //running from IDE, console is null
+                        JPasswordField pf = new JPasswordField();
+                        int okCxl = JOptionPane.showConfirmDialog(null, pf, pinPrompt,
+                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-                                java.io.Console console = System.console();
-                                if (console != null) {
-                                    System.out.print(pinPrompt);
-                                    System.out.flush();
-                                    char[] pin = console.readPassword(pinPrompt);
-                                    pc.setPassword(pin);
-                                } else { //running from IDE, console is null
-                                    JPasswordField pf = new JPasswordField();
-                                    int okCxl = JOptionPane.showConfirmDialog(null, pf, pinPrompt,
-                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                                    if (okCxl == JOptionPane.OK_OPTION) {
-                                        String password = new String(pf.getPassword());
-                                        pc.setPassword(password.toCharArray());
-                                    }
-                                }
-                            }
+                        if (okCxl == JOptionPane.OK_OPTION) {
+                            String password = new String(pf.getPassword());
+                            pc.setPassword(password.toCharArray());
                         }
                     }
-                });
+                }
+            }
+        });
         return loadFromPKCS11Interactively(openScLibPath, slot, cbHandlerProtection);
     }
 
     /**
-     * Load KeyPair using automatically generated SunPKCS11 configuration and callback to get the pin
+     * Load KeyPair using automatically generated SunPKCS11 configuration and callback to get the pin. Not thread-safe
      *
      * Common openSC library locations:
      * <ul>
@@ -500,7 +493,7 @@ public final class ECKeys {
     }
 
     /**
-     * Load KeyPair using automatically generated SunPKCS11 configuration and callback to get the pin
+     * Load KeyPair using automatically generated SunPKCS11 configuration and callback to get the pin. Not thread-safe
      *
      * Common openSC library locations:
      * <ul>
@@ -541,11 +534,12 @@ public final class ECKeys {
     }
 
     /**
-     * Load KeyPair using SunPKCS11 configuration and pin or CallbackHandlerProtection
+     * Load PrivateKey and Certificate using SunPKCS11 configuration and pin or CallbackHandlerProtection.
+     * Not thread-safe
      * @param sunPkcs11ConfPath SunPKCS11 configuration location
      * @param pin pin for reading key from PKCS11
      * @param cbHandlerProtection the CallbackHandlerProtection used to get if pin was provided
-     * @return the KeyPair loaded from PKCS11 device
+     * @return the KeyPair and X509Certificate loaded from PKCS11 device
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
@@ -558,9 +552,14 @@ public final class ECKeys {
             log.error("Failed to init SunPKCS11 from {}", sunPkcs11ConfPath);
             throw new KeyStoreException("Failed to init SunPKCS11");
         }
+
+        if (Crypto.getPkcs11ProviderName() == null) {
+            throw new KeyStoreException("SunPKCS11 not configured or smartcard missing");
+        }
+
         Provider sun = Security.getProvider(Crypto.getPkcs11ProviderName());
         log.debug("{} provider isConfigured={}", sun.getName(), sun.isConfigured());
-        log.debug("PKC11 {}", KeyStore.getInstance("PKCS11", Crypto.getPkcs11ProviderName()).getProvider());
+        log.debug("PKCS11 {}", KeyStore.getInstance("PKCS11", Crypto.getPkcs11ProviderName()).getProvider());
         log.debug("ECDH {}", KeyAgreement.getInstance("ECDH", Crypto.getPkcs11ProviderName()).getProvider());
 
         KeyStore ks;
@@ -574,11 +573,6 @@ public final class ECKeys {
             KeyStore.Builder builder =
                     KeyStore.Builder.newInstance("PKCS11", Crypto.getConfiguredPKCS11Provider(), cbHandlerProtection);
             ks = builder.getKeyStore();
-        }
-
-        if (ks == null) {
-            log.error("Unable to load PKCS11 Keystore for {}", Crypto.getPkcs11ProviderName());
-            throw new KeyStoreException("Unable to load PKCS11 KeyStore");
         }
 
         final List<String> entryNames = new LinkedList<>();
@@ -597,23 +591,24 @@ public final class ECKeys {
             } else {
                 log.error("Multiple keys found for {}:{}", Crypto.getPkcs11ProviderName(), entryNames);
             }
-            throw new KeyManagementException("");
+            throw new KeyManagementException("No keys or multiple keys found");
         }
 
         String keyAlias = entryNames.get(0);
-        KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) ks.getEntry(keyAlias, cbHandlerProtection);
-        if (privateKeyEntry == null ) {
+
+        log.info("Loading key \"{}\"", keyAlias);
+        KeyStore.PrivateKeyEntry privateKeyEntry =
+                (KeyStore.PrivateKeyEntry) ks.getEntry(keyAlias, cbHandlerProtection);
+        if (privateKeyEntry == null) {
             log.error("Entry not found {}", keyAlias);
-        } else {
-            log.info("Loading key \"{}\"", keyAlias);
+            throw new KeyStoreException("Key not found for " + keyAlias);
         }
+
 
         PrivateKey key = privateKeyEntry.getPrivateKey();
         X509Certificate cert = (X509Certificate) privateKeyEntry.getCertificate();
 
         log.debug("key class: {}", key.getClass());
-        //X509Certificate cert = (X509Certificate)ks.getCertificate(key1);
-
         log.debug("key: {}", key);
         log.debug("cert: {} ", cert.getSubjectX500Principal().getName());
 
@@ -712,6 +707,13 @@ public final class ECKeys {
         return list;
     }
 
+    /**
+     * Load EC public keys from certificate files
+     * @param certDerFiles x509 certificates in der (cer) format
+     * @return ECPublicKeys loaded from certificates
+     * @throws CertificateException if CertificateException happens
+     * @throws IOException if CertificateException happens
+     */
     public static List<ECPublicKey> loadCertKeys(File[] certDerFiles) throws CertificateException, IOException {
 
         List<ECPublicKey> list = new LinkedList<>();

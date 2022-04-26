@@ -90,7 +90,8 @@ public class Envelope {
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
     }
 
-    public static Envelope prepare(byte[] fmk, EllipticCurve curve,  KeyPair senderEcKeyPair, List<ECPublicKey> recipients)
+    public static Envelope prepare(byte[] fmk, EllipticCurve curve, KeyPair senderEcKeyPair,
+                                   List<ECPublicKey> recipients)
             throws GeneralSecurityException {
 
         log.trace("Envelope::prepare");
@@ -300,6 +301,8 @@ public class Envelope {
         log.trace("Envelope::decrypt");
         log.debug("total available {}", cdocInputStream.available());
 
+        Path outDir = outputDir.normalize().toAbsolutePath();
+
         ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
 
         if (log.isInfoEnabled()) {
@@ -331,10 +334,10 @@ public class Envelope {
                     if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")
                             && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
                         log.warn("disableCompression=true; Decrypting only without decompressing");
-                        return decryptTarGZip(outputDir, cis);
+                        return decryptTarGZip(outDir, cis);
                     }
 
-                    return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
+                    return Tar.processTarGz(cis, outDir, filesToExtract, extract);
                 }
             }
         }
