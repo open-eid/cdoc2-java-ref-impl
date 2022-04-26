@@ -517,7 +517,7 @@ public final class ECKeys {
 
 
     /**
-     * Load KeyPair using SunPKCS11 configuration and CallbackHandlerProtection
+     * Load KeyPair using SunPKCS11 configuration and CallbackHandlerProtection. Not thread-safe
      * @param sunPkcs11ConfPath SunPKCS11 configuration location
      * @param cbHandlerProtection the CallbackHandlerProtection used to get the pin interactively
      * @return the KeyPair loaded from PKCS11 device

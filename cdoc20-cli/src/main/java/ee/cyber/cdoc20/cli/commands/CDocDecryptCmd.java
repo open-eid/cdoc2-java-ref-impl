@@ -24,11 +24,11 @@ public class CDocDecryptCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, required = false,
+    @Option(names = {"-k", "--key"},
             paramLabel = "PEM", description = "EC private key PEM used to decrypt")
     File privKeyFile;
 
-    @Option (names = {"-s", "--slot"}, required = false,
+    @Option (names = {"-s", "--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
     Integer slot = 0;
 
