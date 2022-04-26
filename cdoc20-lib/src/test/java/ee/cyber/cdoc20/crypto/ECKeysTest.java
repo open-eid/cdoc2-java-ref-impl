@@ -1,11 +1,13 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -42,7 +44,7 @@ class ECKeysTest {
     void testEcPubKeyEncodeDecode() throws GeneralSecurityException {
         log.trace("testEcPubKeyEncodeDecode()");
 
-        KeyPair keyPair = ECKeys.generateEcKeyPair();
+        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
         byte[] encodedEcPubKey = ECKeys.encodeEcPubKeyForTls(ecPublicKey);
 
@@ -50,7 +52,7 @@ class ECKeysTest {
         assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
         assertEquals(0x04, encodedEcPubKey[0]);
 
-        ECPublicKey decoded = ECKeys.decodeEcPublicKeyFromTls(encodedEcPubKey);
+        ECPublicKey decoded = EllipticCurve.secp384r1.decodeFromTls(ByteBuffer.wrap(encodedEcPubKey));
         assertEquals(ecPublicKey.getW(), decoded.getW());
         assertEquals(ecPublicKey, decoded);
     }
