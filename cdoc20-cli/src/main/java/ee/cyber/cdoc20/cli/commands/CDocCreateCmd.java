@@ -3,6 +3,7 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.EccPubKeyCDocBuilder;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.util.LdapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -36,15 +37,19 @@ public class CDocCreateCmd implements Callable<Void> {
 
     // one of cert or pubkey must be specified
     @CommandLine.ArgGroup(exclusive = false, multiplicity = "1..*")
-    Dependent recipientFiles;
+    Dependent recipient;
     static class Dependent {
-        @Option(names = {"-p", "--pubkey", "--recipient", "--receiver"},
+        @Option(names = {"-p", "--pubkey"},
                 paramLabel = "PEM", description = "recipient public key as key pem")
-        File[] pubKey;
+        File[] pubKeys;
 
         @Option(names = {"-c", "--cert"},
                 paramLabel = "DER", description = "recipient as x509 certificate in der format")
-        File[] cert;
+        File[] certs;
+
+        @Option(names = {"-r", "--recipient", "--receiver"},
+                paramLabel = "isikukood", description = "recipient id code (isikukood)")
+        String[] identificationCodes;
     }
 
     // Only secp384r1 supported, no point to expose this option to user
@@ -72,14 +77,12 @@ public class CDocCreateCmd implements Callable<Void> {
     @Override
     public Void call() throws Exception {
 
-
-
         if (log.isDebugEnabled()) {
             log.debug("create --file {} --key {} --pubkey {} --cert {} {}",
                     cdocFile,
                     privKeyFile,
-                    Arrays.toString(recipientFiles.pubKey),
-                    Arrays.toString(recipientFiles.cert),
+                    Arrays.toString(recipient.pubKeys),
+                    Arrays.toString(recipient.certs),
                     Arrays.toString(inputFiles));
         }
 
@@ -87,8 +90,9 @@ public class CDocCreateCmd implements Callable<Void> {
             System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
         }
 
-        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(recipientFiles.pubKey);
-        recipients.addAll(ECKeys.loadCertKeys(recipientFiles.cert));
+        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(this.recipient.pubKeys);
+        recipients.addAll(ECKeys.loadCertKeys(this.recipient.certs));
+        recipients.addAll(LdapUtil.getCertKeys(this.recipient.identificationCodes));
 
 
         EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()

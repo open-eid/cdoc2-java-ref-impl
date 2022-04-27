@@ -50,6 +50,28 @@ java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar list --file /tmp/mydoc.cdoc -k ke
 
 ## ID-kaart (Est-id secure card)
 
+
+### Encrypting for ID-card owner
+
+cdoc20-cli can download authentication certificate (Isikutuvastus PIN1) from SK LDAP directory 
+https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/
+
+To create cdoc for recipient with id code 37101010021 use:
+```
+java -jar target/cdoc20-cli-0.0.5-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -r 37101010021 README.md
+```
+
+
+### Decrypting with ID-card
+
+To decrypt:
+- CDOC file mydoc.cdoc
+- use private key from ID-card slot 0 (Isikutuvastus PIN1)
+- Decrypt files from cdoc file into current directory
+```
+java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -f mydoc.cdoc
+```
+
 ### Certificate extraction
 
 * Run DigiDoc4 client
@@ -77,15 +99,6 @@ To create:
 java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -c keys/37101010021.cer README.md
 ```
 
-### Decrypting with ID-card
-
-To decrypt:
-- CDOC file mydoc.cdoc
-- use private key from ID-card slot 0 (Isikutuvastus PIN1)
-- Decrypt files from cdoc file into current directory
-```
-java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -f mydoc.cdoc
-```
 
 ### Troubleshooting ID-card
 
@@ -121,4 +134,16 @@ Common OpenSC library locations:
 * For Windows, it could be C:\Windows\SysWOW64\opensc-pkcs11.dll
 * For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 * For OSX, it could be /usr/local/lib/opensc-pkcs11.so
+
+#### ee.cyber.cdoc20.maxDiskUsagePercentage
+default 98
+
+Decrypting will be stopped if disk usage is over  maxDiskUsagePercentage
+
+
+#### ee.cyber.cdoc20.tarEntriesThreshold
+default 1000
+
+Decrypting will be stopped if container contains over tarEntriesThreshold entries (files)
+
   

@@ -1,0 +1,1 @@
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "c=EE" "(cn=KUSMAN,JANNO,37903130370)"

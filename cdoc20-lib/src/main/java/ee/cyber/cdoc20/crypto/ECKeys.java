@@ -711,8 +711,8 @@ public final class ECKeys {
      * Load EC public keys from certificate files
      * @param certDerFiles x509 certificates in der (cer) format
      * @return ECPublicKeys loaded from certificates
-     * @throws CertificateException if CertificateException happens
-     * @throws IOException if CertificateException happens
+     * @throws CertificateException if cert file format is invalid
+     * @throws IOException if error happens when reading certDerFiles
      */
     public static List<ECPublicKey> loadCertKeys(File[] certDerFiles) throws CertificateException, IOException {
 
