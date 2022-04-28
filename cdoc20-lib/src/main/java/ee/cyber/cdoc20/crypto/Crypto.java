@@ -302,21 +302,6 @@ public final class Crypto {
      * @return PKCS11 provider or null, if not found or configured
      */
     public static Provider getConfiguredPKCS11Provider() {
-        // provider name depends on name in configuration file provided for SunPKCS11 provider
-        // following code creates provider named "SunPKCS11-OpenSC" (note the name value in opensc-java.cfg)
-
-        //$ cat /etc/opensc/opensc-java.cfg
-        //name=OpenSC
-        //library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
-
-        //Provider p = Security.getProvider("SunPKCS11").configure("/etc/opensc/opensc-java.cfg");
-        //log.debug("Adding provider {}", p.getName());
-        //Security.addProvider(p);
-
-
-
-
-
 
         // Name depends on name parameter in configuration file used for initializing SunPKCS11 provider
         Provider sunPKCS11Provider = Security.getProvider(getPkcs11ProviderName());
@@ -335,7 +320,7 @@ public final class Crypto {
         // KeyAgreement instances (software and pkcs11) don't work with other provider private keys
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
-        if (isPKCS11Key(ecPrivateKey) && (getConfiguredPKCS11Provider() != null)) {
+        if (isECPKCS11Key(ecPrivateKey) && (getConfiguredPKCS11Provider() != null)) {
             keyAgreement = KeyAgreement.getInstance("ECDH", getConfiguredPKCS11Provider());
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");
@@ -344,12 +329,35 @@ public final class Crypto {
         return calcEcDhSharedSecret(keyAgreement, ecPrivateKey, otherPublicKey);
     }
 
-    public static boolean isPKCS11Key(PrivateKey key) {
+
+    /**
+     * If key is EC PKCS11 key (unextractable hardware key), that should only be used by the provider associated with
+     * that token
+     * @param key checked
+     * @return true if key is EC key from PKCS11 or other hardware provider. Note that !isECPKCS11Key doesn't mean that
+     *      the key is EC software key as key might be for some other algorithm
+     */
+    @SuppressWarnings("checkstyle:LineLength")
+    public static boolean isECPKCS11Key(PrivateKey key) {
         // might be manufacturer specif, this true for Manufacturer ID: AS Sertifitseerimiskeskus
         // accessed through opensc-pkcs11
         // .toString(): "SunPKCS11-OpenSC EC private key, 384 bitstoken object, sensitive, unextractable)"
         // .getClass(): sun.security.pkcs11.P11Key$P11PrivateKey
-        return (key.getFormat() == null) && (key.getEncoded() == null);
+
+        // https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html#GUID-508B5E3B-BF39-4E02-A1BD-523352D3AA12
+        // Software Key objects (or any Key object that has access to the actual key material) should implement
+        // the interfaces in the java.security.interfaces and javax.crypto.interfaces packages (such as DSAPrivateKey).
+        //
+        // Key objects representing unextractable token keys should only implement the relevant generic interfaces in
+        // the java.security and javax.crypto packages (PrivateKey, PublicKey, or SecretKey). Identification of
+        // the algorithm of a key should be performed using the Key.getAlgorithm() method.
+        // Note that a Key object for an unextractable token key can only be used by the provider associated with that
+        // token.
+
+
+
+        // algorithm is EC, but doesn't implement java.security.interfaces.ECKey
+        return ("EC".equals(key.getAlgorithm()) && !(key instanceof java.security.interfaces.ECKey));
     }
 
     public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)

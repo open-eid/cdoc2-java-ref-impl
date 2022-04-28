@@ -92,7 +92,7 @@ or
 To create:
 - Output file `/tmp/mydoc.cdoc`
 - with generated private key
-- to recipient with certificate `keys/37101010021.cer`
+- to recipient with certificate `keys/37101010021.cer` (DER or PEM formats are supported)
 - to encrypt file 'README.md'
 
 ```
@@ -122,10 +122,6 @@ Set with -D option
 java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dee.cyber.cdoc20.overwrite=false -f mydoc.cdoc
 ```
 
-
-#### ee.cyber.cdoc20.overwrite 
-When decrypting, is overwriting files allowed. Default is true
-
 #### opensclibrary
 OpenSC library location. Default is platform specific
 
@@ -135,8 +131,13 @@ Common OpenSC library locations:
 * For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 * For OSX, it could be /usr/local/lib/opensc-pkcs11.so
 
+
+
+#### ee.cyber.cdoc20.overwrite 
+When decrypting, is overwriting files allowed. Default is true
+
 #### ee.cyber.cdoc20.maxDiskUsagePercentage
-default 98
+default 98.0
 
 Decrypting will be stopped if disk usage is over  maxDiskUsagePercentage
 
@@ -145,5 +146,11 @@ Decrypting will be stopped if disk usage is over  maxDiskUsagePercentage
 default 1000
 
 Decrypting will be stopped if container contains over tarEntriesThreshold entries (files)
+
+
+#### ee.cyber.cdoc20.compressionThreshold
+default 10.0
+
+Decrypting will be stopped if compressed file compression ratio is over compressionThreshold
 
   

@@ -44,7 +44,7 @@ public class CDocCreateCmd implements Callable<Void> {
         File[] pubKeys;
 
         @Option(names = {"-c", "--cert"},
-                paramLabel = "DER", description = "recipient as x509 certificate in der format")
+                paramLabel = "CER", description = "recipient x509 certificate in DER or PEM format")
         File[] certs;
 
         @Option(names = {"-r", "--recipient", "--receiver"},

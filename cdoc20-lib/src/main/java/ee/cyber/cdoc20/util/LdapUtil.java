@@ -58,15 +58,6 @@ public final class LdapUtil {
             byte[] certBuf = (byte[]) attrs.get("userCertificate;binary").get();
             cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBuf));
             log.debug("Found cert for {}", identificationCode);
-//                for (Iterator<? extends Attribute> it = attrs.getAll().asIterator(); it.hasNext(); ) {
-//                    Attribute attr = it.next();
-//                    if (attr.getID().startsWith("userCertificate")) {
-//                        byte[] certBuf = (byte[]) attr.get();
-//                        cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(certBuf));
-//                    } else {
-//                        log.debug("{}: {}", attr.getID(), attr.get());
-//                    }
-//                }
         }
 
         if (answer.hasMore()) {

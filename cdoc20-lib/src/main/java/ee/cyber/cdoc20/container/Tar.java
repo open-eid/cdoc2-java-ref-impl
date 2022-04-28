@@ -18,6 +18,11 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
+
+import static ee.cyber.cdoc20.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc20.CDocConfiguration.GZIP_COMPRESSION_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
 
 
 /**
@@ -30,7 +35,9 @@ public final class Tar {
 
 
     private static final int DEFAULT_BUFFER_SIZE  = 8192;
-    private static final double MAX_COMPRESSION_RATIO = 10;
+
+    // gzip compression ratio threshold, normally less than 3, consider over 10 as zip bomb
+    private static final double DEFAULT_COMPRESSION_RATIO_THRESHOLD = 10;
 
     // disk space available percentage allowed
     private static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
@@ -171,7 +178,7 @@ public final class Tar {
              TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
 
 
-            int tarEntriesThreshold = getDefaultTarEntriesThresholdThreshold();
+            int tarEntriesThreshold = getTarEntriesThresholdThreshold();
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
@@ -298,13 +305,14 @@ public final class Tar {
                 out.write(buffer, 0, read);
                 written += read;
 
+                double compressionRatioThreshold = getCompressionRatioThreshold();
                 double compressionRatio = (double)gZipStatistics.getUncompressedCount()
                         / (double)gZipStatistics.getCompressedCount();
-                if (compressionRatio > MAX_COMPRESSION_RATIO) {
+                if (compressionRatio > compressionRatioThreshold) {
                     log.debug("Compression ratio for {} is {}", tarArchiveEntry.getName(), compressionRatio);
                     // ratio between compressed and uncompressed data is highly suspicious, looks like a Zip Bomb Attack
                     throw new IllegalStateException("Gzip compression ratio " + compressionRatio + " is over "
-                            + MAX_COMPRESSION_RATIO);
+                            + compressionRatioThreshold);
                 }
             }
         }
@@ -314,31 +322,32 @@ public final class Tar {
     }
 
     private static double getDiskUsedPercentageThreshold() {
-        double diskUsageThreshold = DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.maxDiskUsagePercentage")) {
-            String maxDiskUsagePercentageStr = System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
-            try {
-                diskUsageThreshold = Double.parseDouble(maxDiskUsagePercentageStr);
-            } catch (NumberFormatException nfe) {
-                log.warn("Invalid value {} for ee.cyber.cdoc20.maxDiskUsagePercentage. Using default {}",
-                        maxDiskUsagePercentageStr, DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD);
-            }
-        }
-        return diskUsageThreshold;
+        return getNumberPropertyValue(DISK_USAGE_THRESHOLD_PROPERTY, DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD,
+                Double::valueOf);
     }
 
-    private static int getDefaultTarEntriesThresholdThreshold() {
-        int tarEntriesThreshold = DEFAULT_TAR_ENTRIES_THRESHOLD;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.tarEntriesThreshold")) {
-            String tarEntriesThresholdStr = System.getProperty("ee.cyber.cdoc20.tarEntriesThreshold");
+    private static int getTarEntriesThresholdThreshold() {
+        return getNumberPropertyValue(TAR_ENTRIES_THRESHOLD_PROPERTY, DEFAULT_TAR_ENTRIES_THRESHOLD, Integer::valueOf);
+    }
+
+    private static double getCompressionRatioThreshold() {
+        return getNumberPropertyValue(GZIP_COMPRESSION_THRESHOLD_PROPERTY,
+                DEFAULT_COMPRESSION_RATIO_THRESHOLD, Double::valueOf);
+    }
+
+    private static <N extends Number> N getNumberPropertyValue(String propertyName, N defaultValue,
+                                                               Function<String, N> strToNumFunc) {
+        N value = defaultValue;
+        if (System.getProperties().containsKey(propertyName)) {
+            String propertyValueStr = System.getProperty(propertyName);
             try {
-                tarEntriesThreshold = Integer.parseInt(tarEntriesThresholdStr);
+                value = strToNumFunc.apply(propertyValueStr);
             } catch (NumberFormatException nfe) {
-                log.warn("Invalid value {} for ee.cyber.cdoc20.tarEntriesThreshold. Using default {}",
-                        tarEntriesThresholdStr, DEFAULT_TAR_ENTRIES_THRESHOLD);
+                log.warn("Invalid value {} for {}. Using default {}",
+                        propertyValueStr, propertyName, defaultValue);
             }
         }
-        return tarEntriesThreshold;
+        return value;
     }
 
     private static boolean isOverWriteAllowed() {

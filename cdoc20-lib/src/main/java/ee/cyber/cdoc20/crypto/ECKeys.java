@@ -548,9 +548,11 @@ public final class ECKeys {
             char[] pin,
             KeyStore.CallbackHandlerProtection cbHandlerProtection) throws IOException, GeneralSecurityException {
 
-        if (!Crypto.initSunPkcs11(sunPkcs11ConfPath)) {
-            log.error("Failed to init SunPKCS11 from {}", sunPkcs11ConfPath);
-            throw new KeyStoreException("Failed to init SunPKCS11");
+        if (Crypto.getPkcs11ProviderName() == null) {
+            if (!Crypto.initSunPkcs11(sunPkcs11ConfPath)) {
+                log.error("Failed to init SunPKCS11 from {}", sunPkcs11ConfPath);
+                throw new KeyStoreException("Failed to init SunPKCS11");
+            }
         }
 
         if (Crypto.getPkcs11ProviderName() == null) {
@@ -631,7 +633,7 @@ public final class ECKeys {
             return  isValidSecP384R1(ecPublicKey) && isEcSecp384r1Curve((ECKey) keyPair.getPrivate());
         } else {
             return isValidSecP384R1(ecPublicKey)
-                    && Crypto.isPKCS11Key(keyPair.getPrivate()); //can't get curve for PKCS11 keys
+                    && Crypto.isECPKCS11Key(keyPair.getPrivate()); //can't get curve for PKCS11 keys
         }
     }
 
@@ -709,7 +711,7 @@ public final class ECKeys {
 
     /**
      * Load EC public keys from certificate files
-     * @param certDerFiles x509 certificates in der (cer) format
+     * @param certDerFiles x509 certificates
      * @return ECPublicKeys loaded from certificates
      * @throws CertificateException if cert file format is invalid
      * @throws IOException if error happens when reading certDerFiles

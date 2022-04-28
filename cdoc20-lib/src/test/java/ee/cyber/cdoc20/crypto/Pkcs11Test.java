@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Pkcs11Test extends EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
+    // card specific data, checked from tests
     // CN=ŽAIKOVSKI\,IGOR\,37101010021
     private final char[] pin = {'3', '4', '7', '1'};
     private final String id = "37101010021";
@@ -36,7 +37,7 @@ public class Pkcs11Test extends EnvelopeTest {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
         // so running this test with other tests doesn't make much sense
         KeyPair igorKeyPair = ECKeys.loadFromPKCS11Interactively(null, 0);
-        assertTrue(Crypto.isPKCS11Key(igorKeyPair.getPrivate()));
+        assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
         assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKeyPair(igorKeyPair));
     }
 
@@ -72,9 +73,26 @@ public class Pkcs11Test extends EnvelopeTest {
         log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
         KeyPair igorKeyPair = ECKeys.loadFromPKCS11(null, 0, pin);
 
-        log.debug("Using hardware private key for decrypting: {}", Crypto.isPKCS11Key(igorKeyPair.getPrivate()));
-        assertTrue(Crypto.isPKCS11Key(igorKeyPair.getPrivate()));
+        log.debug("Using hardware private key for decrypting: {}", Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
+        assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
 
         testContainer(tempDir, igorKeyPair);
     }
+
+// DSS and cdoc4j style SunPKCS11 initialization through reflection fails on OpenJDK 17.0.2 with IllegalAccessException
+//    private Provider getProviderJavaGreaterOrEquals9(String configString)
+//      throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+//            Provider provider = Security.getProvider("SunPKCS11");
+//            Method configureMethod = provider.getClass().getMethod("configure", String.class);
+//            // "--" is permitted in the constructor sun.security.pkcs11.Config
+//            return (Provider) configureMethod.invoke(provider, "--" + configString);
+//    }
+//
+//    @Test
+//    void testGetProviderJavaGreaterOrEquals9()
+//    throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+//        Path confPath = Crypto.createSunPkcsConfigurationFile(null, null, null);
+//        String conf = Files.readString(confPath, StandardCharsets.UTF_8);
+//        Provider sunpkcs11 = getProviderJavaGreaterOrEquals9(conf);
+//    }
 }
