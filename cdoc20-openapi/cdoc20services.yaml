@@ -1,0 +1,79 @@
+openapi: 3.1.0
+info:
+  contact: 
+    url: http://cyber.ee
+  title: cdoc20services
+  version: '1.0'
+  description: API for securly exchanging keys
+  summary: cdoc2.0 services
+servers:
+  - url: 'https://localhost:3000'
+paths:
+  '/ecc-details/{transactionId}':
+    get:
+      summary: ''
+      description: Get Ecc details for transansactionId
+      tags:
+        - ecc-details
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerEccDetails'
+        '404':
+          description: 'Not Found. 404 is also returned, when recipient id in record doesn''t match with public key in client certificate '
+      operationId: getEccDetailsByTransactionId
+      security:
+        - mutualTLS: []
+    post:
+      summary: Add Ecc Details
+      description: Save ServerEccDetails and generate transaction id using secure random. Generated transactionId is returned in Location header
+      operationId: createEccDetails
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /ecc-details/TR0123456789ABCDEF
+              description: '/ecc-details/{transactionId}'
+        '409':
+          description: Already exists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerEccDetails'
+      security: []
+      tags:
+        - ecc-details
+    parameters:
+      - schema:
+          type: string
+        name: transactionId
+        in: path
+        required: true
+        description: transaction id from Details.ECCKeyServer
+components:
+  schemas:
+    ServerEccDetails:
+      title: Transaction
+      type: object
+      properties:
+        recipient_pub_key:
+          type: string
+          description: 'TLS format binary, base64 encoded'
+        sender_pub_key:
+          type: string
+          description: 'TLS format binary, base64 encoded'
+        ecc_curve:
+          type: integer
+          description: 'enum value from enum EllipticCurve:byte'
+  securitySchemes:
+    mutualTLS:
+      type: mutualTLS
+tags:
+  - name: ecc-details
