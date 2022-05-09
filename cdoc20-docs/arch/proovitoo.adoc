@@ -1,0 +1,92 @@
+:source-highlighter: rouge
+:table-caption: Tabel
+:figure-caption: Joonis
+:imagesdir: images
+:pdf-style: cyber-theme.yml
+:icons: font
+:classification: AVALIK
+:title-page-background-image: {pdf-stylesdir}/images/title_page_bg_Avalik.svg
+:title-page:
+:toclevels: 3
+:toc-title: Sisukord
+:version-label: Versioon
+:numbered:
+:docnumber:
+:author: Tehniline dokument
+:revdate: 27.04.2022
+:revnumber: 1.0
+:numbered:
+:docnumber: D-X-XXX
+:author: D-X-XXX
+
+= CDOC 2.0 võtmeedastusserveri arhitektuur
+
+== Sissejuhatus
+
+See dokument kirjeldab CDOC 2.0 võtmeedastusserveri arhitektuuri ja kasutatavaid tehnoloogiaid.
+
+CDOC 2.0 on failide salastamiseks mõeldud andmevorming. CDOC 2.0 konteinereid võib edastada üle avalike sidekanalite. Täiendava tulevikuturvalisuse saavutamiseks näeb CDOC 2.0 ette võimaluse eraldada failide dekrüpteerimiseks vajalik võtmekapsel üle avaliku võrgu liikuvast konteinerist ning edastada see vastuvõtjatele kasutades täiendavalt turvatud sidekanaleid.
+
+Võtmeedastusserver on CDOC 2.0 süsteemi komponent, mis loob võtmekapsli edastamiseks vajaliku täiendavalt turvatud sidekanali saatja ja vastuvõtja vahel.
+
+Võtmeedastusserver pakub saatjale teenust võtmeedastuskapsli üleslaadimiseks ning vastuvõtjale teenust võtmeedastuskapsli allalaadimiseks.
+
+Mõlemad teenused kasutavad HTTPS protokolli. Saatjale mõeldud teenus ei autendi saatjat -- seda saavad kasutada kõik. Vastuvõtjale mõeldud teenus autendib vastuvõtjat TLS kliendi autentimise abil -- seda saavad kasutada vaid toetatud eID vahendit (näiteks ID-kaart) omavad kasutajad.
+
+Võtmeedastusserver talletab töökindlalt saatjate poolt edastatud võtmekapslid oma andmebaasis. Võtmeedastusserver kustutab võtmekapslid määratud aja möödumisel, et vähendada võtmeserveri võimalikul kompromiteerumisel tekkivat kahju.
+
+[[sample]]
+.Näidis
+image::sample.png[]
+
+== Võtmeedastusserveri arhitektuur
+
+/siia peaks paname pildi arhitektuurist/
+
+[plantuml,MSGID001-arh,svg]
+.AES/NCTS5 komponendid
+....
+@startuml
+  skinparam  nodesep 50
+  skinparam  ranksep 70
+
+  database "PostgreSQL" as PG
+  [ESP]
+  [ESP adapter] as ESPADAPTER
+  [Liideste moodul] as INTF
+  cloud "MTA REST&SOAP teenused" as REST
+  [REACT veebilehitsejas] as REACT
+  [Kasutajaliidese moodul] as FRONTEND
+  [Jasperi moodul] as JASPER
+  database "Failiserver" {
+    folder "Jagatav failiruum" as SHAREDFILE
+    folder "Privaatne failiruum" as PRIVATEFILE
+  }
+  [Üleminekukomponent] as XROAD
+  [Talitlusreeglite moodul] as BRULES
+  [DSK liidestuse moodul] as DSK
+  [ETT]
+
+  INTF -up-> PG
+  INTF <-down-> ESPADAPTER
+  INTF <-up-> REST
+  XROAD --> PG
+  XROAD --> SHAREDFILE
+  XROAD --> PRIVATEFILE
+  JASPER -up-> PG
+  JASPER -up-> SHAREDFILE
+  FRONTEND --> PG
+  FRONTEND --> PRIVATEFILE
+  REACT -left-> ETT
+  REACT --> FRONTEND
+  BRULES --> PG
+  BRULES -up-> ETT
+  BRULES --> REST
+  DSK -up-> PG
+  ESPADAPTER <--> ESP
+@enduml
+....
+
+
+
+== Kasutatavad tehnoloogiad
