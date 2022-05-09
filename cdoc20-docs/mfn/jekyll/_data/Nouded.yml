@@ -23,14 +23,14 @@
     - nr: 3
       son: 'Aja esitamisel tekstikujul lähtuda standardist ISO 8601.'
       sel: '___Kuupäevad___ kirjutatakse kujul `AAAA-KK-PP`. Näide: `2. juuni 2012` kirjutada kujul `2012-06-02`.<br>___Kellaajad___ kirjutatakse kujul `hh:mm:ss`, kus `hh` järgib 24-tunnist kellaajaformaati.<br>Millisekundi täpsusega kellaaja teksti kujul esitamisel kasutatakse formaati `hh:mm:ss,nnnn`, kus `nnnn` on millisekundite arv.<br>Kuupäev ja kellaaeg samas andmeväljas esitatakse kujul, kus kuupäevavormingu ja kellaajavorming vahele lisatakse täht `T`.<br> <br>___Ajaintervallide___ kirjeldamiseks kasutatakse kahte sama täpsusega (kuupäev, kellaaeg või kuupäev ja kellaaeg) ajavormingut (algus ja lõpp), mis eraldatakse sümboliga `/`.<br>Vt ka [RFC 3339 Date and Time on the Internet: Timestamps](https://tools.ietf.org/html/rfc3339), kus määratletakse internetiprotokollidele sobiv ISO 8601 profiil. Märkus. Mõned standardid nõuavad aja esitamist [Unix epoch](https://en.wikipedia.org/wiki/Unix_time) vormingus, nt: 1) nt OpenID Connect ja 2) [W3C veebiliidesed](https://w3ctag.github.io/design-principles/#times-and-dates). Märkus. Aja esitamisel inimkasutajale kasutajaliidestes lähtuda vastavas kultuuris omaksvõetud vormingutest.' 
-      lah: 'OK. Süsteemis kasutatakse ISO 8601 standardit aja esitamisel tekstilisel kujul.'
+      lah: 'OK. Hetkel aega ei esitleta'
 - kategooria:
   nimetus: 'litsents'
   nouded:
     - nr: 1
       son: 'Tarkvara markeerida litsentsiga.'
       sel: 'Teose autoriõigused tuleb selgelt välja tuua. Standardseks vahendiks selleks on litsents. Litsents esitatakse ühel või mõlemal alljärgnevatest viisidest: 1) LICENCE-fail repos; 2) litsentsi tekst iga faili päises. RIA põhimõte on arendada tarkvara avatult ja avaldada tarkvara vaba litsentsiga. Erandid turva- jm õigusega pandud piirangute korral. Soovitatav on kasutada [MIT litsentsi](https://en.wikipedia.org/wiki/MIT_License) - nii tagatakse paremini tarkvarade litsentsiline ühtesobivus. Alternatiiv on [EUPL](https://en.wikipedia.org/wiki/European_Union_Public_Licence).'
-      lah: 'OK. LICENSE-fail repositooriumis.'
+      lah: 'MIT - Copyright (c) 2022 Estonian Information System Authority'
     - nr: 2
       son: 'Tarkvara arendamisel lähtutakse avatuse ja vaba lähtekoodi põhimõttest.'
       sel: 'Välja arvatud õigusest tulenevad piirangud (turvameetmed, andmekaitse, ärisaladuses).'
@@ -41,7 +41,7 @@
     - nr: 1
       son: 'Rakenduse välissõltuvused peavad olema ilmutatult, selgelt välja toodud.'
       sel: ''
-      lah: 'OK. Kasutatakse Golang sõltuvuste halduse süsteemi, sõltuvused on fikseeritud kindla versiooninumbriga.'
+      lah: 'OK. Kasutatakse Maven sõltuvuste halduse süsteemi, sõltuvused on fikseeritud kindla versiooninumbriga.'
     - nr: 2
       son: 'Rakendus peab olema väliste süsteemide tõrgete suhtes vastupanuvõimeline (_resilient_).'
       sel: 'Välise süsteemi tõrge tohib mõjutada ainult sellest otseselt sõltuvate kasutuslugude toimimist.'
@@ -61,14 +61,14 @@
     - nr: 6
       son: 'Rakenduse pakutav(ad) HTTP REST masinliidesed (API-d) kirjeldatakse masinloetavas OpenAPI vormingus.'
       sel: 'Masinloetav kirjeldus ei välista täiendavat, paremini inimloetavat vabavormilist kirjeldust.'
-      lah: '_TBD_'
+      lah: 'OK. API on kirjeldatud OpenAPI 3.0.3'
 - kategooria:
   nimetus: 'keel'
   nouded:
     - nr: 1
       son: 'Lähtekoodi dokumentatsioon, lähtekood ise ning logiteated peavad olema inglisekeelsed.'
       sel: ''
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'OK.'
     - nr: 2
       son: 'Rakendustes kasutatud eestikeelsetele tekstidele kehtivad infotehnoloogia reeglid Eesti keele ja kultuuri keskkonnas EVS 8:2008.'
       sel: ''
@@ -87,22 +87,22 @@
     - nr: 3
       son: 'Alates integratsioonitasemest peavad automaattestid olema parameteriseeritud.'
       sel: ''
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'TODO: hetkel integratsioonitestid puuduvad'
     - nr: 4
       son: 'Automaattestid peavad raporteerima tulemusi inim- ja masinloetaval kujul (näiteks JUnit XML ja HTML).'
       sel: ''
-      lah: 'OK. Vastavalt kasutatud tehnoloogiate võimalustele.'
+      lah: 'OK. Junit tulemused raporteeritakse XML ja teksti kujul.'
     - nr: 5
       son: 'Automaatteste käivitatakse RIA CI vahendi Jenkins vahendusel.'
       sel: ''
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'TODO: RIA Jenkinsi integratsioon puudub. Kuidas lahendada Id-kaardi seotud funktsionaalsuse testimist integreerimist?'
 - kategooria:
   nimetus: 'koodi kvaliteet'
   nouded:
     - nr: 1
       son: 'Lõplik kood peab olema läbinud staatilise koodianalüüsi.'
       sel: 'Kasutada otstarbekat tööriista: Java puhul [Checkstyle](https://github.com/checkstyle/checkstyle), [PMD](https://pmd.github.io/), [SonarQube](https://www.sonarqube.org/) vms; Javascripti puhul [ESLint](https://eslint.org/). Samuti kasutada arendusredaktoritesse sisseehitatud kontrollijaid.'
-      lah: 'OK. Kasutatakse Golang-spetsiifilisi tööriistu.'
+      lah: 'OK. Checkstyle on Maven ehituse protsessi integreeritud, SQ vastu on kontrollitud versiooni 0.0.3'
 - kategooria:
   nimetus: 'frontend'
   nouded:
@@ -158,11 +158,11 @@
     - nr: 1
       son: 'Vea- jm teated peavad oleva arusaadavad.'
       sel: 'Muuhulgas peab rakendus asendama vaikimisi veateate (`404` vms) lehekülje, kuid säilitama algse HTTP vastuskoodi.'
-      lah: 'OK. Vastavalt süsteemi disainile.'
+      lah: 'Mittekohalduv. '
     - nr: 2
       son: 'Veasituatsioonid tuleb varustada ___veakoodidega___. Kasutajale tuleb esitada koos veateatega ka veakood.'
       sel: ''
-      lah: 'OK. Vastavalt süsteemi disainile.'
+      lah: 'TODO: Veasituatsioonides puuduvad veakoodid'
     - nr: 3  
       son: 'Veateated tuleb logida.'
       sel: ''
@@ -177,7 +177,7 @@
     - nr: 2
       son: 'Rakendus ei tohi luua uut identiteedisüsteemi. Tuleb tugineda olemasolevatele riiklikele (ID-kaart) või põhiliste op-süsteemide süsteemidele (Kerberos jms).'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Kasutatakse id-kaarti ja selle infrastruktuuri (SK LDAP)'
     - nr: 3
       son: 'Rakendada aadressiandmete süsteemi nõudeid.'
       sel: 'Eesti aadressiandmete sisestamisel, kuvamisel ja hoidmisel lähtuda Vabariigi Valitsuse 8. oktoobri 2015. a määrusest nr 103 „Aadressiandmete süsteem“.'
@@ -220,19 +220,19 @@
     - nr: 1
       son: 'Andmebaasi kasutaval rakendusel on vähemalt kaks andmebaasikasutajat:<br>`<rakendus>` nimeline andmebaasi skeem kuulub andmebaasi kasutajale `<rakendus>` (roll `db owner`, skeemid ja seal paiknevad objektid kuuluvad sellele kasutajale).<br>`<rakendus>` nimelises andmebaasi skeemis on defineeritud `<rakendus>_app` nimeline kasutaja, kes omab ligipääsu (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) ainult rakenduse käitamiseks vajalikele tabelitele, protseduuridele või funktsioonidele.'
       sel: 'Nõue tuleneb eelkõige sellest, et vahel kasutame andmebaaside ""koosmajutamist" s.t erinevate süsteemide või ka ühe süsteemi erinevate komponentide (mikroteenuste) andmebaase hoiame ühes PostgreSQL instantsis. Sellisel juhul on vaja tagada eristatus: iga andmebaas peab olema eraldi skeemis; rakendus ei tohi teise rakenduse skeemile ligi pääseda (suheldakse API-de kaudu); rakendus ei tohi ise skeeme moodustada s.t skeemi tohib moodustada ainult paigaldusprotsess. Ka siis, kui koosmajutust hetkel ei kasutata, on eristamine hea praktika.'
-      lah: 'Mittekohalduv. Loodav süsteem ei kasuta andmebaasi andmete pikaajaliseks talletamiseks.'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 2
       son: 'Ühest andmetabelist teise viitamisel tuleb kasutada välisvõtmeid (_foreign key_). Kõik välisvõtmed peavad olema indekseeritud mitteunikaalse indeksiga ja välisvõtmetena kirjeldatud.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 3
       son: 'Kõigis andmebaasi tabelites peab olema defineeritud `integer`-tüüpi primaarvõti, mis on surrogaatvõti. Primaarvõtmena ei tohi kasutada reaalse eluga seotud andmevälju.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 4
       son: 'Kõik primaarvõtmed (_primary key_) peavad olema indekseeritud unikaalse indeksiga.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 5
       son: 'Kui andmebaasis olevate andmete ISKE tervikluse klass on 2 või kõrgem, siis tuleb kõik klass 2 infot sisaldavad andmebaasi kirjed versioneerida.'
       sel: ''
@@ -240,7 +240,7 @@
     - nr: 6
       son: 'Andmebaasi väljade pikkused tuleb andmekirjelduskeeles (DDL-is) kirjeldada sümbolites, mitte baitides.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 7
       son: 'Päringulaused ei tohi sisaldada konstantidena sisse kirjutatud  päringutingimuse võrdlusväärtusi.'
       sel: 'Kasutada päringumuutujaid (_variable binding_).'
@@ -248,65 +248,65 @@
     - nr: 8
       son: 'Andmebaasi objektide nimetused peavad olema inglisekeelsed. Nimetused tohivad sisaldada ainult Latin1 (ISO8859-1) kodeeringu tähti `a-z; A-Z`, numbreid `0-9`, ning alakriipsu `_`. Objektide nimetused ei tohi alata numbritega. Andmebaasiobjektide nimed peavad olema semantilised st. objekti tähendust avavad.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 9
       son: 'Rakendus peab olema tabelite [partitsioneerimise](http://en.wikipedia.org/wiki/Partition_%28database%29) suhtes agnostiline st. tabelite partitsioneerimisstruktuuride muutmine ei tohi mõjutada rakenduse tööd.'
       sel: ''
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
     - nr: 10
       son: 'Kasutada rakendusserveri (Tomcat) võimalusi andmebaasiühenduste (JDBC) puulimiseks.'
       sel: 'Rakendus ei puuli ise, vaid küsib JNDI abil rakendusserveri puuli aadressi. Nõude eesmärk on jõudluse parem hallatavus.'
-      lah: 'Mittekohalduv'
+      lah: 'OK. Hetkel andmebaas ei ole kasutuses'
 - kategooria:
   nimetus: 'logimine'
   nouded:
     - nr: 1
       son: 'Rakenduse logimine peab olema organiseeritud kasutades selleks ettenähtud standardseid vahendeid viisil, mis võimaldab rakenduse administraatoril määratleda ja muuta logide väljundit (vähemalt fail, andmebaas, `syslogd`), logimise taset ja logimise formaati.'
       sel: ''
-      lah: '_TBD_'
+      lah: 'OK. Logide väljundit saab muuta vastavalt Sl4j võimalustele'
     - nr: 2
       son: 'Java rakenduste korral logitakse [SLF4J](vt http://www.slf4j.org) raamistiku abil.'
       sel: 'Ühtlustatud selleks, et rakendusi saaks seadistada ühtemoodi.'
-      lah: 'Mittekohalduv. Loodav süsteem ei kasuta Java programmeerimiskeelt ega Java-põhiseid tehnoloogiaid.'
+      lah: 'OK. Kasutatakse SLF4J'
     - nr: 3
       son: 'Logid kirjutatakse inglise keeles (välja arvatud kasutajale näidatud teated).'
       sel: ''
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'OK.'
     - nr: 4
       son: 'Turvalisuse seisukohalt kriitilised sündmused (sisenemine, väljumine, rolli muut(u)mine) ning tegevused, mis toovad kaasa rahalisi või juriidilisi tagajärgi, logitakse eraldi konfigureeritavasse ___turvalogisse___.'
       sel: ''
-      lah: '_TBD_'
+      lah: 'TODO: Eraldi turvalogi puudub'
 - kategooria:
   nimetus: 'ehitamine'
   nouded:
     - nr: 1
       son: 'Rakenduse (RIA poolt hallatavasse serverisse) pakendamine, paigaldamine, uuendamine, muudatuse taastamine ja testide käivitamine peavad olema automatiseeritud standardse üldkasutatava vahendi abil.'
       sel: 'Kasutusel on Maven ja Jenkins.'
-      lah: 'OK. Arendaja/tarneinseneri vastutus.'
+      lah: 'TODO: Kasutusel Maven, integratsioon RIA Jenkinsiga puutub.'
     - nr: 2
       son: 'Ehitatud paki nimi peab sisaldama projekti nime ja paki versiooni ning tohib sisaldada ainult tähemärke `[a-z;0-9]` ja `-` (miinus) ja `_` (alakriips) (nt `projektinimi-1_0_23`).'
       sel: 'Pakk peab olema keskkonnaagnostiline s.t arendus-, toodangu- jm keskkondade jaoks normaalselt ei tehta eraldi pakke. Tarkvara muutub konkreetse keskkonna osaks pärast keskkonda paigaldamist ja keskkonnas seadistamist.'
-      lah: 'OK. Arendaja/tarneinseneri vastutus.'
+      lah: 'OK.'
     - nr: 3
       son: 'Rakendused ehitatakse ja paigaldatakse ainult lähtekoodihoidlast, selle üheselt viidatud harust.'
       sel: ''
-      lah: 'OK. Arendaja/tarneinseneri vastutus.'
+      lah: 'OK.'
     - nr: 4
       son: 'Kood tarnitakse RIA taristus olevasse reposse. Koodi võib tarnida GitHubi, juhul kui on seadistatud GitHubi repo peegeldamine RIA sisereposse. Kumba meetodit kasutatakse, määrab RIA.'
       sel: ''
-      lah: '_TBD_'
+      lah: 'TODO'
     - nr: 5
       son: 'Lähtekoodi kompileerimine peab olema teostatav ka välisvõrguühenduse puudumise korral. Selle nõude täitmise võimaldamiseks on RIAs kasutusel sisemised tarkvarakomponentide repod.'
       sel: 'Vt täpsemalt sisenõuete dokumendist.'
-      lah: 'OK. Arendaja/tarneinseneri vastutus. Golang pakub vastavaid võimalusi.'
+      lah: 'TODO: Kasutusel on avalikud Maveni repod, integratsioon RIA repodega puudub'
     - nr: 6
       son: 'Fat jar-id ei sobi (Java rakendustes).'
       sel: ''
-      lah: 'Mittekohalduv. Pole Java-rakendus.'
+      lah: 'OK. Kliendi käsurea liides ehitakse nii fat jar-i kui eraldi komponendina. Muud moodulid ainult eraldi komponentidena.'
     - nr: 7
       son: 'Java rakenduse tööks vajalikud teegid peavad olema rakenduse osa.'
       sel: 'Nt PostgreSQL JDBC ohjur.'
-      lah: 'Mittekohalduv. Pole Java-rakendus.'
+      lah: 'OK.'
     - nr: 8
       son: 'Fondid, laadilehed ja Javascripti failid serveerida rakendusest endast.'
       sel: ''
@@ -314,7 +314,7 @@
     - nr: 9
       son: 'Toodangusse evitatavas tarkvaras peavad sõltuvuste versioonid olema fikseeritud.'
       sel: 'Eesmärgiks on ehitamise korratavus (*repeatable build*). Näiteks: Node.js platvormil toodangusse evitatavate moodulite `package.json` failis, jaotises `dependencies` ei tohi olla versioonimärkeid `^`, `~`, `*`, `x`.'
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'OK.'
 - kategooria:
   nimetus: 'paigaldamine'
   nouded:
@@ -325,42 +325,42 @@
     - nr: 2
       son: 'Rakendus peab olema loodud sõltumatuna rakendusserveri tarkvarast.'
       sel: 'Rakendust peab olema võimalik konfiguratsioonimuudatuste abil paigaldada teisele samatüübilisele rakendusserverile. Kui see ei ole võimalik tuleb rakendusele luua sobituspaketid põhiliselt kasutatavate rakendusserverite jaoks.'
-      lah: 'Mittekohalduv. Kasutatav tehnoloogia (Golang) ei võimalda kasutada rakendusserverit.'
+      lah: 'OK. Kasutusel Spring Boost võimaldab paigaldada serverit erinevatele rakendusserveritele (TLS konfiguratsioon peab olema lahendatud väljaspool rakendusserverit - nt Nginx)'
     - nr: 3
       son: 'Kõik rakenduse versiooniuuendused (sealhulgas muudatused andmebaasi struktuuris ja koodis) peavad kuni järgmise versiooniuuenduseni olema täielikult tagasi pööratavad st. koos versiooni uuendusega peavad olema loodud vahendid ja kirjeldatud protseduurid versiooniuuenduse tagasi võtmiseks.'
       sel: ''
-      lah: 'OK. Arendaja/tarneinseneri vastutus.'
+      lah: 'OK.'
     - nr: 4
       son: 'Rakendus ei tohi eeldada paigalduskeskkonna turvalisust.'
       sel: ''
-      lah: 'OK. Osa lahenduse disainist.'
+      lah: '?'
     - nr: 5
       son: 'Rakendusservereid peab olema võimalik lisada teenust pakkuvasse klastrisse ja sealt eemaldada vastavalt vajadusele.'
       sel: ''
-      lah: 'Mittekohalduv. Rakendusservereid ei kasutata.'
+      lah: 'TODO: Arhitektuur pole veel lõplik'
     - nr: 6
       son: 'Rakendus ei tohi kasutada konfigureerimata viiteid failidele või välistele süsteemidele st. kõik viited peavad olema programmikoodi välised.'
       sel: ''
-      lah: 'OK. Arendaja vastutus.'
+      lah: 'OK.'
     - nr: 7
       son: 'Kõik andmebaasiühendused tuleb kirjeldada täispika URI abil. Java rakendustes kasutatakse JNDI ühendusi.'
       sel: ''
-      lah: 'Mittekohalduv. Loodav süsteem ei kasuta andmebaasi.'
+      lah: 'OK. Hetkel andmebaasi ei kasutata'
     - nr: 8
       son: ' Andmebaasi JNDI objekti Datasource-i nimetamisel tuleb kasutada prefiksit `jdbc` ning ühesõnaliste lühendite korral väiketähti. Nt: `jdbc/system1`, `jdbc/system2` jne.'
       sel: ''
-      lah: 'Mittekohalduv. Loodav süsteem ei kasuta andmebaasi.'
+      lah: 'OK. Andmebaasi veel ei kasutata'
     - nr: 9
       son: 'Rakenduse andmebaasi või andmeskeemi paigaldamine ei tohi nõuda punktis erilisi kasutajaõigusi.'
       sel: ''
-      lah: 'Mittekohalduv. Loodav süsteem ei kasuta andmebaasi.'
+      lah: '?'
 - kategooria:
   nimetus: 'infoturve'
   nouded:
     - nr: 1
       son: 'Kui ei ole määratud teisiti, peab rakendus olema kasutatav ISKE klassile `K2T2S2` vastavate süsteemide loomisel.'
       sel: 'Turvameetmetega tutvu [ISKE portaalis](https://iske.ria.ee).'
-      lah: '_TBD_'
+      lah: 'TODO'
     - nr: 2
       son: 'Süsteem ei tohi võimaldada kasutajale ligipääsu süsteemi toimimise informatsioonile, nagu failide täisnimed, kutsepinud (_stack trace_) jms.'
       sel: ''
@@ -372,7 +372,7 @@
     - nr: 4
       son: 'Vastavalt rakenduse olemusele ja riskianalüüsile rakendada meetmed OWASP ohuedetabelites (Top 10) jm tekstides antud soovituste järgimiseks.'
       sel: 'vt [OWASP](https://www.owasp.org) ja [OWASP Application Security Verification Standard (ASVS)](https://www.owasp.org/index.php/Category:OWASP_Application_Security_Verification_Standard_Project).'
-      lah: '_TBD_'
+      lah: 'TODO'
     - nr: 5  
       son: 'Kaitsta seansiküpsiseid (`secure` ja `http only` parameetrid).'
       sel: ''
@@ -380,7 +380,7 @@
     - nr: 6  
       son: 'Rakendada päringuvõltsimise (CSRF) vastast kaitset.'
       sel: ''
-      lah: 'Mittekohalduv. Loodav süsteem ei ole veebirakendus.'
+      lah: 'TODO: '
     - nr: 7  
       son: 'Sisendite kontroll nii front- kui ka backend-is.'
       sel: 'Olulised sisendid tuleb kontrollida (puhastada) (ka) serveri poolel.'
@@ -399,7 +399,7 @@
     - nr: 1
       son: 'Krüptograafiliste algoritmide ja meetodite valimisel lähtuda kehtivast RIA tellitud [krüptograafiliste algoritmide elutsükli uuringust](https://www.ria.ee/ee/kruptograafiliste-algoritmide-elutsukli-uuringud.html).'
       sel: ''
-      lah: '_TBD_'
+      lah: 'TODO'
     - nr: 2
       son: 'Krüptoalgoritme peab olema võimalik väikeste muudatustega vahetada'
       sel: ''
@@ -407,7 +407,7 @@
     - nr: 3
       son: 'Võtmete kaitsele tähelepanu!'
       sel: 'Juhtida tähelepanu ja rakendada meetmeid vältimaks võtmete lubamatut avalikukstulekut. Näiteid ohupraktikatest (mitteammendav loetelu): 1) võtme hoidmine versioonihalduse (git) all olevas koodirepos -> oht: push-takse avalikusse reposse -> kaitsemeede: `.gitignore` või võtmete hoidmine üldse eraldi; 2) võtmete seisundi ja omaduste ebaselgus -> võtmete segiminek, sellest tulenev kompromiteerumine või kaitse langus -> kaitsemeede: läbimõeldud võtmehalduse protseduur; 3) näite-seadistusfailides ei markeerita näitevõtmeid -> oht: näitevõtmed jõuavad toodangusse. Võtmeid tuleb reeglina kaitsta juba test- ja arenduskeskkondades. Ligipääs võtmetele korraldada teadmisvajaduse (_need to know_) põhimõttel. Võtmed, mida enam ei vajata, koheselt hävitada. Kirjandus: [NIST SP-800-57 Key Management Guidelines](https://csrc.nist.gov/Projects/Key-Management/Key-Management-Guidelines); European Payments Council (2017) [Guidelines on cryptographic algorithms usage and key management](https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/guidelines-cryptographic-algorithms-usage-and-key-management).'
-      lah: 'OK. Rakendatakse vastavaid meetmeid, mis selguvad projekti käigus.'
+      lah: 'TODO: Ühiktestid kasutavad näidisvõtmeid. Lõplik serveri TLS võtmete haldamine sõltub lõplikust arhitektuurist.'
 - kategooria:
   nimetus: 'andmekaitse'
   nouded:
@@ -429,15 +429,15 @@
     - nr: 2
       son: 'Kõrgkäideldavuse võimekus. Kui ei lepita kokku eraldi, peab iga eraldipaigaldatav tarkvarakomponent olema paigaldatav mitmes eksemplaris.'
       sel: ''
-      lah: 'OK. Võtmeservereid on võimalik paigaldata mitu instantsi.'
+      lah: 'TODO: Arhitektuur ei kokku lepitud.'
     - nr: 3
       son: 'Kõrgkäideldavate rakenduste puhul tuleb seansihalduse lahendus kokku leppida kohe arendusprojekti algul. Seansi hoidmine jagatud failisüsteemis (nt. NFS) ei ole lubatud.'
       sel: ''
-      lah: '_TBD_'
+      lah: 'TODO: Arhitektuur ei kokku lepitud.'
 - kategooria:
   nimetus: 'monitooring'
   nouded:
     - nr: 1
       son: 'Süsteemi iga eraldi paigaldatav osa peab väljastama  RIA monitooringusüsteemile (näiteks aadressilt `heartbeat.json`) masinloetaval kujul oma nime ja versiooninumbri, oluliste väliste süsteemide oleku, viimase käivitamise aja, pakendamise aja ning serveriaja.'
       sel: ''
-      lah: '_TBD_'
+      lah: 'TODO: monitoorimisnõuded ei ole kokku lepitud'
