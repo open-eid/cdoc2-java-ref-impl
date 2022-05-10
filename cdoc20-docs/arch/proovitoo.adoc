@@ -53,10 +53,11 @@ interface "TLS\n POST /ecc-details" as tls
 frame "RIA" {
 [cdoc20-server] as server
 [TLS / LoadBalancer] as broker
-broker --> server: GET /ecc-details/{id}\n+eID certificate
 broker --> server: POST /ecc-details
+broker --> server: GET /ecc-details/{id}\n+eID certificate
+
 interface "heartbeat\n(monitoring)" as hr #grey
-hr -- server
+hr -right- server
 mtls -- broker
 tls -- broker
 
