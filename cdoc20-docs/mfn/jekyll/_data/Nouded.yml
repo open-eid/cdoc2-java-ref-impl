@@ -429,11 +429,11 @@
     - nr: 2
       son: 'Kõrgkäideldavuse võimekus. Kui ei lepita kokku eraldi, peab iga eraldipaigaldatav tarkvarakomponent olema paigaldatav mitmes eksemplaris.'
       sel: ''
-      lah: 'TODO: Arhitektuur ei kokku lepitud.'
+      lah: 'TODO: Arhitektuur ei ole kokku lepitud.'
     - nr: 3
       son: 'Kõrgkäideldavate rakenduste puhul tuleb seansihalduse lahendus kokku leppida kohe arendusprojekti algul. Seansi hoidmine jagatud failisüsteemis (nt. NFS) ei ole lubatud.'
       sel: ''
-      lah: 'TODO: Arhitektuur ei kokku lepitud.'
+      lah: 'TODO: Arhitektuur ei ole kokku lepitud.'
 - kategooria:
   nimetus: 'monitooring'
   nouded:
