@@ -81,14 +81,54 @@ public final class Details {
             List<EccRecipient> result = new ArrayList<>(recipients.size());
 
             for (ECPublicKey otherPubKey : recipients) {
-                byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
-                byte[] encryptedFmk = Crypto.xor(fmk, kek);
-                EccRecipient eccRecipient =
-                        new EccRecipient(curve, otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+                EccRecipient eccRecipient = buildEccRecipient(curve, senderEcKeyPair, otherPubKey, fmk);
                 result.add(eccRecipient);
             }
             return result;
         }
+
+        /**
+         *
+         * @param curve EC curve that sender and recipient must use
+         * @param senderEcKeyPair
+         * @param recipientPubKey
+         * @param fmk plain file master key (not encrypted)
+         * @return EccRecipient with sender and recipient public key and fmk encrypted with sender private and recipient public key
+         * @throws GeneralSecurityException
+         */
+        public static EccRecipient buildEccRecipient(EllipticCurve curve, KeyPair senderEcKeyPair, ECPublicKey recipientPubKey, byte[] fmk) throws GeneralSecurityException {
+            byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, recipientPubKey, Crypto.CEK_LEN_BYTES);
+            byte[] encryptedFmk = Crypto.xor(fmk, kek);
+            return new EccRecipient(curve, recipientPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+        }
+
+
+        /**
+         * Generate sender key pair for each recipient. Encrypt fmk with generated sender private key and recipient public key
+         * @param fmk file master key (plain)
+         * @param recipients
+         * @return
+         * @throws GeneralSecurityException
+         */
+        public static List<EccRecipient> buildEccRecipients(byte[] fmk, List<ECPublicKey> recipients)
+                throws GeneralSecurityException {
+
+            if (fmk.length != Crypto.CEK_LEN_BYTES) {
+                throw new IllegalArgumentException("Invalid FMK len");
+            }
+
+            List<EccRecipient> result = new ArrayList<>(recipients.size());
+            for (ECPublicKey recipientPubKey : recipients) {
+                String oid = ECKeys.getCurveOid(recipientPubKey);
+                EllipticCurve curve = EllipticCurve.forOid(oid);
+                KeyPair senderEcKeyPair = curve.generateEcKeyPair();
+                EccRecipient eccRecipient = buildEccRecipient(curve, senderEcKeyPair, recipientPubKey, fmk);
+                result.add(eccRecipient);
+            }
+
+            return result;
+        }
+
 
 //        /**
 //         * Create EccRecipient list, that contains fmk encrypted with recipient pub key and generated EC key pair (for

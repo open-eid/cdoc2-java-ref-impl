@@ -392,7 +392,7 @@
     - nr: 9
       son: 'Eraldipaigaldatavate komponentide vahelistel liidestel peab olema TLS võimekus (vastastikune autentimine sertide abil). Vastavad konfigureerimisjuhised peavad sisalduma rakenduse paigaldusjuhendis.'
       sel: ''
-      lah: 'OK. Kirjeldatakse üksikasjalikult liideste spetsifikatsioonis ja paigaldusjuhendites.'
+      lah: 'TODO: TLS võimekus on, puuduvad juhendid'
 - kategooria:
   nimetus: 'krüpto'
   nouded:

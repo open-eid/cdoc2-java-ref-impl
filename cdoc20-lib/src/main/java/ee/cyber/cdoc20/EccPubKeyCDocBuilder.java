@@ -91,7 +91,7 @@ public class EccPubKeyCDocBuilder {
 
         try {
             Envelope envelope = (this.generateSenderKeyPair)
-                    ? Envelope.prepare(this.curve, recipients)
+                    ? Envelope.prepare(recipients)
                     : Envelope.prepare(Crypto.generateFileMasterKey(), this.curve, senderKeyPair, recipients);
             envelope.encrypt(this.payloadFiles, outputStream);
         } catch (GeneralSecurityException ex) {

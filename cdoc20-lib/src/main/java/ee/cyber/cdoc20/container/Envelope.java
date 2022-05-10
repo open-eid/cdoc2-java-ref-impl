@@ -106,11 +106,6 @@ public class Envelope {
         List<Details.EccRecipient> eccRecipientList =
                 Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
 
-
-
-
-
-
         for (ECPublicKey ecPublicKey: recipients) {
             if (!curve.isValidKey(ecPublicKey)) {
                 String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
@@ -130,15 +125,20 @@ public class Envelope {
     /**
      * Prepare Envelope for ECPublicKey recipients. For each recipient, sender key pair is generated. Single generated
      * File Master Key (FMK) is used for all recipients.
-     * @param curve
      * @param recipients
      * @return Envelope ready for payload
      */
-    public static Envelope prepare(EllipticCurve curve, List<ECPublicKey> recipients) throws GeneralSecurityException {
+    public static Envelope prepare(List<ECPublicKey> recipients) throws GeneralSecurityException {
         byte[] fmk = Crypto.generateFileMasterKey();
-        KeyPair senderEcKeyPair = curve.generateEcKeyPair();
 
-        return prepare(fmk, curve, senderEcKeyPair, recipients);
+
+        List<Details.EccRecipient> eccRecipientList =
+                Details.EccRecipient.buildEccRecipients(fmk, recipients);
+
+        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[eccRecipientList.size()]), fmk);
+
+
+
 
         //This code breakes unit tests:
 //        List<Details.EccRecipient> eccRecipientList = List.of();

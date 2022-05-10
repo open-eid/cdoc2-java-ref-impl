@@ -150,11 +150,11 @@ public final class ECKeys {
             throw new IllegalArgumentException("Unknown curve name " + name);
         }
 
-        public static EllipticCurve forOid(String oid) {
+        public static EllipticCurve forOid(String oid) throws NoSuchAlgorithmException{
             if (SECP_384_OID.equals(oid)) {
                 return secp384r1;
             }
-            throw new IllegalArgumentException("Unknown curve oid " + oid);
+            throw new NoSuchAlgorithmException("Unknown curve oid " + oid);
         }
 
         public static EllipticCurve forValue(byte value) {

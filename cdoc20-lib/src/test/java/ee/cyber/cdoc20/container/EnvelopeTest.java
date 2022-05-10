@@ -124,7 +124,7 @@ public class EnvelopeTest {
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
         //Envelope senderEnvelope = Envelope.prepare(fmk, EllipticCurve.secp384r1, aliceKeyPair, recipients);
-        Envelope senderEnvelope = Envelope.prepare(EllipticCurve.secp384r1, recipients);
+        Envelope senderEnvelope = Envelope.prepare(recipients);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(List.of(payloadFile), dst);
             byte[] cdocContainerBytes = dst.toByteArray();
