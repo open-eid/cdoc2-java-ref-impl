@@ -30,11 +30,6 @@ public class CDocCreateCmd implements Callable<Void> {
     @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"},
-            paramLabel = "PEM", description = "EC private key PEM used to encrypt")
-    File privKeyFile;
-
-
     // one of cert or pubkey must be specified
     @CommandLine.ArgGroup(exclusive = false, multiplicity = "1..*")
     Dependent recipient;
@@ -51,11 +46,6 @@ public class CDocCreateCmd implements Callable<Void> {
                 paramLabel = "isikukood", description = "recipient id code (isikukood)")
         String[] identificationCodes;
     }
-
-    // Only secp384r1 supported, no point to expose this option to user
-    @Option (names = {"--curve"}, hidden = true, defaultValue = "secp384r1",
-            description = "Elliptic curve used, default secp384r1")
-    String curveName = ECKeys.SECP_384_R_1;
 
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
@@ -78,9 +68,8 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --key {} --pubkey {} --cert {} {}",
+            log.debug("create --file {} --pubkey {} --cert {} {}",
                     cdocFile,
-                    privKeyFile,
                     Arrays.toString(recipient.pubKeys),
                     Arrays.toString(recipient.certs),
                     Arrays.toString(inputFiles));
@@ -96,15 +85,8 @@ public class CDocCreateCmd implements Callable<Void> {
 
 
         EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()
-                .withCurve(curveName)
                 .withRecipients(recipients)
                 .withPayloadFiles(Arrays.asList(inputFiles));
-
-        if (privKeyFile != null) {
-             cDocBuilder.withSender(ECKeys.loadFromPem(privKeyFile));
-        } else {
-             cDocBuilder.withGeneratedSender();
-        }
 
         cDocBuilder.buildToFile(cdocFile);
 

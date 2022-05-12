@@ -79,6 +79,12 @@ public class Pkcs11Test extends EnvelopeTest {
         testContainer(tempDir, igorKeyPair);
     }
 
+
+    // override to get rid of skipped test warning twice
+    void testLongHeader(@TempDir Path tempDir) {
+
+    }
+
 // DSS and cdoc4j style SunPKCS11 initialization through reflection fails on OpenJDK 17.0.2 with IllegalAccessException
 //    private Provider getProviderJavaGreaterOrEquals9(String configString)
 //      throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {

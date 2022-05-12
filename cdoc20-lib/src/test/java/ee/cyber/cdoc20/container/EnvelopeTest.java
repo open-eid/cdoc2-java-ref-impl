@@ -2,10 +2,8 @@ package ee.cyber.cdoc20.container;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ee.cyber.cdoc20.crypto.Crypto;
+
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,14 +29,6 @@ public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
     @SuppressWarnings("checkstyle:OperatorWrap")
-    private final String aliceKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
-            "MIGkAgEBBDAlhCJUAcquXTQoZ73awJa7izsXqUhjcPxXP0ybTDFJYuGMeJ5qCGRw\n" +
-            "0RHaMUEJIPagBwYFK4EEACKhZANiAASV2VitdXFvs7OYIsnXMxe5I0boJlg4/shi\n" +
-            "FW6PgwFWgARITC7ABMOmYKC4I9KRMVNhwU42287/N+IOt2GtEHvL1OmfJvI9283o\n" +
-            "wiYVMt6Qq/6Fv4kO3IXqSVsV1ylA4jQ=\n" +
-            "-----END EC PRIVATE KEY-----\n";
-
-    @SuppressWarnings("checkstyle:OperatorWrap")
     private final String bobKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
             "MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL\n" +
             "mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B\n" +
@@ -46,19 +36,10 @@ public class EnvelopeTest {
             "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
             "-----END EC PRIVATE KEY-----\n";
 
-
-    byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
-
-    @BeforeEach
-    public void initInputData()
-            throws GeneralSecurityException, IOException {
-        this.fmkBuf = Crypto.generateFileMasterKey();
-    }
-
     // Mainly flatbuffers and friends
     @Test
     void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
-        KeyPair senderKeyPair = ECKeys.loadFromPem(aliceKeyPem);
+
         KeyPair recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
 
@@ -72,7 +53,7 @@ public class EnvelopeTest {
         List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
 
-        Envelope envelope = Envelope.prepare(fmkBuf, EllipticCurve.secp384r1, senderKeyPair, recipients);
+        Envelope envelope = Envelope.prepare(recipients);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
 
@@ -88,7 +69,7 @@ public class EnvelopeTest {
         assertEquals(1, details.size());
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
-        assertEquals(senderKeyPair.getPublic(), details.get(0).getSenderPubKey());
+
     }
 
 
@@ -218,7 +199,7 @@ public class EnvelopeTest {
     }
 
     // test that near max size header can be created and parsed
-    @Disabled("testLongHeader is disabled as running it takes ~20seconds.")
+    @Disabled("testLongHeader is disabled as running it takes ~30seconds.")
     @Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
@@ -236,7 +217,6 @@ public class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair aliceKeyPair = ECKeys.loadFromPem(aliceKeyPem);
         KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
@@ -258,14 +238,12 @@ public class EnvelopeTest {
 
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                Envelope.prepare(fmkBuf, EllipticCurve.secp384r1, aliceKeyPair,
-                        Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
+                Envelope.prepare(Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
 
         assertTrue(exception.getMessage().contains("Header serialization failed"));
 
         Instant start = Instant.now();
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, EllipticCurve.secp384r1,
-                aliceKeyPair, Collections.nCopies((copies), bobPubKey));
+        Envelope senderEnvelope = Envelope.prepare(Collections.nCopies((copies), bobPubKey));
         Instant end = Instant.now();
         log.debug("Ran: {}s", end.getEpochSecond() - start.getEpochSecond());
 

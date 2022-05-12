@@ -83,37 +83,6 @@ public class Envelope {
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
     }
 
-    public static Envelope prepare(byte[] fmk, EllipticCurve curve, KeyPair senderEcKeyPair,
-                                   List<ECPublicKey> recipients)
-            throws GeneralSecurityException {
-
-        log.trace("Envelope::prepare");
-        if (fmk.length != Crypto.FMK_LEN_BYTES) {
-            throw new IllegalArgumentException("Invalid FMK len");
-        }
-
-        if (!curve.isValidKeyPair(senderEcKeyPair)) {
-            throw new InvalidKeyException("Invalid sender key");
-        }
-
-        List<Details.EccRecipient> eccRecipientList =
-                Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
-
-        for (ECPublicKey ecPublicKey: recipients) {
-            if (!curve.isValidKey(ecPublicKey)) {
-                String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
-                log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
-                throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
-            }
-        }
-
-        List<String> hexPubKeys = eccRecipientList.stream()
-                .map(r -> HexFormat.of().formatHex(r.getRecipientPubKeyTlsEncoded())).toList();
-        log.info("Added encrypted FMK for: {}", hexPubKeys);
-
-
-        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
-    }
 
     /**
      * Prepare Envelope for ECPublicKey recipients. For each recipient, sender key pair is generated. Single generated
@@ -125,10 +94,10 @@ public class Envelope {
         byte[] fmk = Crypto.generateFileMasterKey();
 
 
-        List<Details.EccRecipient> eccRecipientList =
-                Details.EccRecipient.buildEccRecipients(fmk, recipients);
+        Details.EccRecipient[] eccRecipients =
+                buildEccRecipients(fmk, recipients);
 
-        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[eccRecipientList.size()]), fmk);
+        return new Envelope(eccRecipients, fmk);
     }
 
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs)
@@ -224,6 +193,59 @@ public class Envelope {
         bb.put(header);
         bb.put(headerHMAC);
         return bb.array();
+    }
+
+    /**
+     * @param curve EC curve that sender and recipient must use
+     * @param senderEcKeyPair
+     * @param recipientPubKey
+     * @param fmk plain file master key (not encrypted)
+     * @return EccRecipient with sender and recipient public key and fmk encrypted with sender private
+     *         and recipient public key
+     * @throws GeneralSecurityException
+     */
+    private static Details.EccRecipient buildEccRecipient(EllipticCurve curve, KeyPair senderEcKeyPair,
+                                                         ECPublicKey recipientPubKey, byte[] fmk)
+            throws GeneralSecurityException {
+
+        byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, recipientPubKey, Crypto.CEK_LEN_BYTES);
+        byte[] encryptedFmk = Crypto.xor(fmk, kek);
+        return new Details.EccRecipient(
+                curve, recipientPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
+    }
+
+    /**
+     * Generate sender key pair for each recipient. Encrypt fmk with KEK derived from generated sender private key
+     * and recipient public key
+     * @param fmk file master key (plain)
+     * @param recipients  list of recipients public keys
+     * @return
+     * @throws GeneralSecurityException
+     */
+    private static Details.EccRecipient[] buildEccRecipients(byte[] fmk, List<ECPublicKey> recipients)
+            throws GeneralSecurityException {
+
+        if (fmk.length != Crypto.CEK_LEN_BYTES) {
+            throw new IllegalArgumentException("Invalid FMK len");
+        }
+
+        List<Details.EccRecipient> result = new ArrayList<>(recipients.size());
+        for (ECPublicKey recipientPubKey : recipients) {
+            String oid = ECKeys.getCurveOid(recipientPubKey);
+            EllipticCurve curve;
+            try {
+                curve = EllipticCurve.forOid(oid);
+            } catch (NoSuchAlgorithmException nsae) {
+                String x509encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
+                log.error("Invalid recipient key: {}, EC curve {} not supported", x509encoded, oid);
+                throw new InvalidKeyException("Unsupported EC curve " + oid);
+            }
+            KeyPair senderEcKeyPair = curve.generateEcKeyPair();
+            Details.EccRecipient eccRecipient = buildEccRecipient(curve, senderEcKeyPair, recipientPubKey, fmk);
+            result.add(eccRecipient);
+        }
+
+        return result.toArray(new Details.EccRecipient[result.size()]);
     }
 
     public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException, GeneralSecurityException {
@@ -441,13 +463,13 @@ public class Envelope {
         return decrypt(cdocInputStream, recipientEcKeyPair, null, null, false);
     }
 
-    byte[] serializeHeader() throws IOException {
+    byte[] serializeHeader() throws IOException, NoSuchAlgorithmException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         serializeHeader(baos);
         return baos.toByteArray();
     }
 
-    void serializeHeader(OutputStream os) throws IOException {
+    void serializeHeader(OutputStream os) throws IOException, NoSuchAlgorithmException {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int[] recipients = new int[eccRecipients.length];
 

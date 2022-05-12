@@ -143,26 +143,26 @@ public final class ECKeys {
         }
 
 
-        public static EllipticCurve forName(String name) {
+        public static EllipticCurve forName(String name) throws NoSuchAlgorithmException {
             if (SECP_384_R_1.equalsIgnoreCase(name)) {
                 return secp384r1;
             }
-            throw new IllegalArgumentException("Unknown curve name " + name);
+            throw new NoSuchAlgorithmException("Unknown curve name " + name);
         }
 
         public static EllipticCurve forOid(String oid) throws NoSuchAlgorithmException {
             if (SECP_384_OID.equals(oid)) {
                 return secp384r1;
             }
-            throw new NoSuchAlgorithmException("Unknown curve oid " + oid);
+            throw new NoSuchAlgorithmException("Unknown EC curve oid " + oid);
         }
 
-        public static EllipticCurve forValue(byte value) {
+        public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
             switch (value) {
                 case ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1:
                     return secp384r1;
                 default:
-                    throw new IllegalArgumentException("Unknown curve value " + value);
+                    throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
             }
         }
 
