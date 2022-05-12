@@ -87,8 +87,6 @@ public class EnvelopeTest {
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
         assertEquals(senderKeyPair.getPublic(), details.get(0).getSenderPubKey());
-
-
     }
 
 
@@ -98,47 +96,58 @@ public class EnvelopeTest {
         testContainer(tempDir, bobKeyPair);
     }
 
+    /**
+     * Creates payloadFile, adds payloadData to payloadFile and creates encrypted container for recipientPubKey
+     * @param payloadFile input payload file to be created and added to contaier
+     * @param payloadData data to be written to payloadFile
+     * @param recipientPubKey created container can be decrypted with recipientPubKey private part
+     * @return created container as byte[]
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public byte[] createContainer(File payloadFile, byte[] payloadData, ECPublicKey recipientPubKey) throws IOException, GeneralSecurityException {
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData);
+        }
+
+        List<ECPublicKey> recipients = List.of(recipientPubKey);
+
+        byte[] cdocContainerBytes;
+        Envelope senderEnvelope = Envelope.prepare(recipients);
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(List.of(payloadFile), dst);
+            cdocContainerBytes = dst.toByteArray();
+        }
+        assertNotNull(cdocContainerBytes);
+        assertTrue(cdocContainerBytes.length > 0);
+        return cdocContainerBytes;
+    }
 
     public void testContainer(Path tempDir, KeyPair bobKeyPair)
             throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
-
         String payloadData = "payload-" + uuid;
-
         File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
-            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
-        }
 
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        byte[] fmk = Crypto.generateFileMasterKey();
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        byte[] cdocContainerBytes = createContainer(payloadFile,
+                payloadData.getBytes(StandardCharsets.UTF_8), (ECPublicKey) bobKeyPair.getPublic());
 
+        assertTrue(cdocContainerBytes.length > 0);
 
-        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
-        List<ECPublicKey> recipients = List.of(recipientPubKey);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
+            List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
 
-        //Envelope senderEnvelope = Envelope.prepare(fmk, EllipticCurve.secp384r1, aliceKeyPair, recipients);
-        Envelope senderEnvelope = Envelope.prepare(recipients);
-        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
-            senderEnvelope.encrypt(List.of(payloadFile), dst);
-            byte[] cdocContainerBytes = dst.toByteArray();
+            assertEquals(List.of(payloadFileName), filesExtracted);
+            Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
 
-            assertTrue(cdocContainerBytes.length > 0);
-
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
-                List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
-
-                assertEquals(List.of(payloadFileName), filesExtracted);
-                Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
-
-                assertEquals(payloadData, Files.readString(payloadPath));
-            }
+            assertEquals(payloadData, Files.readString(payloadPath));
         }
     }
 

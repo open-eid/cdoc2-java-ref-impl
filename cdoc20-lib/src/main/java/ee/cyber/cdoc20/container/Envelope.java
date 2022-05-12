@@ -77,13 +77,6 @@ public class Envelope {
     private final SecretKey hmacKey;
     private final SecretKey cekKey;
 
-
-//    private Envelope(Details.EccRecipient[] recipients, SecretKey hmacKey, SecretKey cekKey) {
-//        this.eccRecipients = recipients;
-//        this.hmacKey = hmacKey;
-//        this.cekKey = cekKey;
-//    }
-
     private Envelope(Details.EccRecipient[] recipients, byte[] fmk) {
         this.eccRecipients = recipients;
         this.hmacKey = Crypto.deriveHeaderHmacKey(fmk);
@@ -136,28 +129,6 @@ public class Envelope {
                 Details.EccRecipient.buildEccRecipients(fmk, recipients);
 
         return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[eccRecipientList.size()]), fmk);
-
-
-
-
-        //This code breakes unit tests:
-//        List<Details.EccRecipient> eccRecipientList = List.of();
-//
-//        try {
-//            for (ECPublicKey ecPublicKey : recipients) {
-//                if (!curve.isValidKey(ecPublicKey)) {
-//                    String x509encoded = Base64.getEncoder().encodeToString(ecPublicKey.getEncoded());
-//                    log.error("Invalid {} recipient key: {}", curve.getName(), x509encoded);
-//                    throw new InvalidKeyException("Invalid recipient key for curve " + curve.getName());
-//                }
-//            }
-//            eccRecipientList = Details.EccRecipient.buildEccRecipients(curve, fmk, senderEcKeyPair, recipients);
-//        } finally {
-//            //clean up fmk
-//            Arrays.fill(fmk, (byte)0);
-//        }
-//
-//        return new Envelope(eccRecipientList.toArray(new Details.EccRecipient[0]), fmk);
     }
 
     static List<Details.EccRecipient> parseHeader(InputStream envelopeIs, ByteArrayOutputStream outHeaderOs)
