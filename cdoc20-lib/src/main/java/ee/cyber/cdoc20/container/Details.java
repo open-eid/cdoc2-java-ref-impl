@@ -93,10 +93,14 @@ public final class Details {
          * @param senderEcKeyPair
          * @param recipientPubKey
          * @param fmk plain file master key (not encrypted)
-         * @return EccRecipient with sender and recipient public key and fmk encrypted with sender private and recipient public key
+         * @return EccRecipient with sender and recipient public key and fmk encrypted with sender private
+         *         and recipient public key
          * @throws GeneralSecurityException
          */
-        public static EccRecipient buildEccRecipient(EllipticCurve curve, KeyPair senderEcKeyPair, ECPublicKey recipientPubKey, byte[] fmk) throws GeneralSecurityException {
+        public static EccRecipient buildEccRecipient(EllipticCurve curve, KeyPair senderEcKeyPair,
+                                                     ECPublicKey recipientPubKey, byte[] fmk)
+                throws GeneralSecurityException {
+
             byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, recipientPubKey, Crypto.CEK_LEN_BYTES);
             byte[] encryptedFmk = Crypto.xor(fmk, kek);
             return new EccRecipient(curve, recipientPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);

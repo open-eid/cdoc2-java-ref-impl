@@ -173,29 +173,26 @@ public final class Tar {
         }
 
         List<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
-        List<File> extractedFiles = new LinkedList<>();
+        List<File> createdFiles = new LinkedList<>();
         try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
              TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
-
 
             int tarEntriesThreshold = getTarEntriesThresholdThreshold();
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
-                    if (extract) { //extract
-                        File extractedFile = copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
-                                filesToExtract);
-                        if (extractedFile != null) {
+                    //extract
+                    if (extract &&  ((filesToExtract == null) || filesToExtract.contains(tarArchiveEntry.getName()))) {
 
-                            extractedArchiveEntries.add(tarArchiveEntry);
-                            extractedFiles.add(extractedFile);
+                        Path destPath = pathFromTarEntry(outputDir, tarArchiveEntry, true);
+                        createdFiles.add(destPath.toFile());
+                        copyTarEntryToFile(destPath, tarInputStream, tarArchiveEntry, gZipIs);
 
-                            if (extractedArchiveEntries.size() > tarEntriesThreshold) {
-                                log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
-                                throw new IllegalStateException("Tar entries threshold exceeded. Aborting.");
-                            }
-
+                        extractedArchiveEntries.add(tarArchiveEntry);
+                        if (extractedArchiveEntries.size() > tarEntriesThreshold) {
+                            log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
+                            throw new IllegalStateException("Tar entries threshold exceeded. Aborting.");
                         }
                     } else { //list
                         extractedArchiveEntries.add(tarArchiveEntry);
@@ -205,8 +202,8 @@ public final class Tar {
                 }
             }
         } catch (Throwable t) {
-            log.info("Exception {}. Deleting already extracted files {}", t, extractedFiles);
-            deleteFiles(extractedFiles);
+            log.info("Exception {}. Deleting already extracted files {}", t, createdFiles);
+            deleteFiles(createdFiles);
             throw t;
         }
 
@@ -224,39 +221,14 @@ public final class Tar {
     }
 
     /**
-     *
+     * Return Path from tarArchiveEntry under outputDir. Checks for different zip/tar file attacks.
      * @param outputDir output directory where files are extracted
-     * @param tarInputStream tar InputStream to process
      * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
-     * @param gZipStatistics InputStreamStatistics from GZip stream
-     * @param filesToExtract if not null, extract specified files otherwise all files
-     * @return File extracted from tarArchiveEntry or null if File was not created
-     * @throws IOException if an I/O error has occurred
+     * @param createFile whether to create path returned
+     * @return Path, if outputDir and tarArchiveEntry are valid
+     * @throws IOException if path cannot be created from tarArchiveEntry under outputDir
      */
-    private static File copyTarEntryToDirectory(Path outputDir,
-                                                   TarArchiveInputStream tarInputStream,
-                                                   TarArchiveEntry tarArchiveEntry,
-                                                   InputStreamStatistics gZipStatistics,
-                                                   List<String> filesToExtract)
-            throws IOException {
-
-        if ((filesToExtract == null) || filesToExtract.contains(tarArchiveEntry.getName())) {
-            return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
-        }
-        return null;
-    }
-
-    /**
-     * Extract tar entry as File in outputDir
-     * @param outputDir directory where file will be created
-     * @param tarInputStream read file contents from tarInputStream
-     * @param tarArchiveEntry tarArchiveEntry to extract
-     * @param gZipStatistics wrapping compression statistics
-     * @return File created from tar
-     * @throws IOException if an I/O error has occurred
-     */
-    private static File copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
-                                                TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
+    private static Path pathFromTarEntry(Path outputDir, TarArchiveEntry tarArchiveEntry, boolean createFile)
             throws IOException {
 
         if (tarArchiveEntry.getName() == null) {
@@ -282,19 +254,40 @@ public final class Tar {
             throw new FileAlreadyExistsException(newPath.toAbsolutePath().toString());
         }
 
+        if (createFile && !Files.exists(newPath)) {
+            boolean created = newPath.toFile().createNewFile();
+            if (!created) {
+                log.warn("Failed to create {}", newPath);
+            }
+        }
+
+        return newPath;
+    }
+
+    /**
+     * Copy contents of tar entry to file
+     * @param destPath Path where tar entry contents are saved
+     * @param tarInputStream tar InputStream to process
+     * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
+     * @param gZipStatistics InputStreamStatistics from GZip stream
+     * @return File size created
+     * @throws IOException if an I/O error has occurred
+     */
+    private static long copyTarEntryToFile(Path destPath, TarArchiveInputStream tarInputStream,
+                                                TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
+        throws IOException {
+
         double diskUsageThreshold = getDiskUsedPercentageThreshold();
-
-
         long written = 0;
         // truncate and overwrite an existing file, or create the file if
         // it doesn't initially exist
-        try (OutputStream out = Files.newOutputStream(newPath)) {
+        try (OutputStream out = Files.newOutputStream(destPath)) {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int read;
             while ((read = tarInputStream.read(buffer, 0, DEFAULT_BUFFER_SIZE)) >= 0) {
 
-                double usedPercentage = (double)outputDir.toFile().getUsableSpace()
-                        / (double)outputDir.toFile().getTotalSpace() * 100;
+                double usedPercentage = (double)destPath.toFile().getUsableSpace()
+                        / (double)destPath.toFile().getTotalSpace() * 100;
 
                 if (usedPercentage >= diskUsageThreshold) {
                     String err = String.format("More than  %.2f%% disk space used. Aborting", diskUsageThreshold);
@@ -317,8 +310,8 @@ public final class Tar {
             }
         }
 
-        log.debug("Created {} {}B", newPath, written);
-        return newPath.toFile();
+        log.debug("Created {} {}B", destPath, written);
+        return written;
     }
 
     private static double getDiskUsedPercentageThreshold() {
