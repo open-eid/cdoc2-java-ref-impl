@@ -197,12 +197,12 @@ public class Envelope {
 
     /**
      * @param curve EC curve that sender and recipient must use
-     * @param senderEcKeyPair
-     * @param recipientPubKey
+     * @param senderEcKeyPair sender EC key pair, must have EC curve specified in curve
+     * @param recipientPubKey recipient EC public key, must have EC curve specified in curve
      * @param fmk plain file master key (not encrypted)
      * @return EccRecipient with sender and recipient public key and fmk encrypted with sender private
      *         and recipient public key
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException if security/crypto exception happens
      */
     private static Details.EccRecipient buildEccRecipient(EllipticCurve curve, KeyPair senderEcKeyPair,
                                                          ECPublicKey recipientPubKey, byte[] fmk)
@@ -219,7 +219,8 @@ public class Envelope {
      * and recipient public key
      * @param fmk file master key (plain)
      * @param recipients  list of recipients public keys
-     * @return
+     * @return For each recipient create EccRecipient with generated sender and recipient public key and
+     *          fmk encrypted with sender private and recipient public key
      * @throws InvalidKeyException if recipient key is not suitable
      * @throws GeneralSecurityException if other crypto related exceptions happen
      */
@@ -346,14 +347,13 @@ public class Envelope {
 
     /**
      * Check that hmac read from cdocInputStream and hmac calculated from headerBytes match
-     * @param cdocInputStream
-     * @param headerBytes
-     * @param hmacKey
-     * @return
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
-     * @throws CDocParseException if hmacs don't match
+     * @param cdocInputStream InputStream pointing to hmac
+     * @param headerBytes header bytes
+     * @param hmacKey header HMAC key, derived from FMK
+     * @return hmac read from cdocInputStream
+     * @throws IOException if an I/O error has occurred
+     * @throws GeneralSecurityException  if security/crypto error has occurred
+     * @throws CDocParseException if calculated HMAC doesn't match with HMAC in header
      */
     private static byte[] checkHmac(InputStream cdocInputStream, byte[] headerBytes, SecretKey hmacKey)
             throws IOException, GeneralSecurityException, CDocParseException {
@@ -435,13 +435,13 @@ public class Envelope {
 
     /**
      * Decrypt and extract all files from cdocInputStream
-     * @param cdocInputStream
-     * @param recipientEcKeyPair
-     * @param outputDir
-     * @return
-     * @throws GeneralSecurityException
-     * @throws IOException
-     * @throws CDocParseException
+     * @param cdocInputStream InputStream from where CDOC is read
+     * @param recipientEcKeyPair decrypt CDOC using recipient EC key pair
+     * @param outputDir extract decrypted files to output dir
+     * @return file names extracted
+     * @throws GeneralSecurityException if security/crypto error has occurred
+     * @throws IOException if an I/O error has occurred
+     * @throws CDocParseException if cdocInputStream is invalid format
      */
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir)
             throws GeneralSecurityException, IOException, CDocParseException {
@@ -523,7 +523,8 @@ public class Envelope {
     }
 
     //CHECKSTYLE:OFF - generated code
-    @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126", "PatternVariableCanBeUsed", "RedundantIfStatement"})
+    @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126", "PatternVariableCanBeUsed",
+            "RedundantIfStatement"})
     @Override
     public boolean equals(Object o) {
         if (o == this) {
