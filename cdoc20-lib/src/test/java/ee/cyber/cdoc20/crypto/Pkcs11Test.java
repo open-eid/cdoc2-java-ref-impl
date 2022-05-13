@@ -80,9 +80,17 @@ public class Pkcs11Test extends EnvelopeTest {
     }
 
 
-    // override to get rid of skipped test warning twice
+    // override EnvelopeTest tests so that they are not executed twice
     void testLongHeader(@TempDir Path tempDir) {
+    }
 
+    void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws IOException, GeneralSecurityException {
+    }
+
+    void testContainer(@TempDir Path tempDir) {
+    }
+
+    void testHeaderSerializationParse() {
     }
 
 // DSS and cdoc4j style SunPKCS11 initialization through reflection fails on OpenJDK 17.0.2 with IllegalAccessException

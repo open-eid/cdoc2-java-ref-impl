@@ -119,6 +119,8 @@ public class EnvelopeTest {
                 bobKeyPair, List.of(payloadFileName), payloadFileName, payloadData));
 
         assertInstanceOf(javax.crypto.AEADBadTagException.class, ex.getCause());
+
+        //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
 
 
