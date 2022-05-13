@@ -2,10 +2,10 @@ package ee.cyber.cdoc20.container;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ee.cyber.cdoc20.crypto.Crypto;
+
 import ee.cyber.cdoc20.crypto.ECKeys;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -18,20 +18,15 @@ import java.nio.file.Path;
 import java.security.*;
 import java.security.interfaces.ECPublicKey;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
-class EnvelopeTest {
+public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
-
-    @SuppressWarnings("checkstyle:OperatorWrap")
-    private final String aliceKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
-            "MIGkAgEBBDAlhCJUAcquXTQoZ73awJa7izsXqUhjcPxXP0ybTDFJYuGMeJ5qCGRw\n" +
-            "0RHaMUEJIPagBwYFK4EEACKhZANiAASV2VitdXFvs7OYIsnXMxe5I0boJlg4/shi\n" +
-            "FW6PgwFWgARITC7ABMOmYKC4I9KRMVNhwU42287/N+IOt2GtEHvL1OmfJvI9283o\n" +
-            "wiYVMt6Qq/6Fv4kO3IXqSVsV1ylA4jQ=\n" +
-            "-----END EC PRIVATE KEY-----\n";
 
     @SuppressWarnings("checkstyle:OperatorWrap")
     private final String bobKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
@@ -41,23 +36,12 @@ class EnvelopeTest {
             "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
             "-----END EC PRIVATE KEY-----\n";
 
-
-    byte[] fmkBuf =  new byte[Crypto.FMK_LEN_BYTES];
-    KeyPair senderKeyPair;
-    KeyPair recipientKeyPair;
-
-
-    @BeforeEach
-    public void initInputData()
-            throws GeneralSecurityException, IOException {
-        this.fmkBuf = Crypto.generateFileMasterKey();
-        this.recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
-        this.senderKeyPair = ECKeys.loadFromPem(aliceKeyPem);
-    }
-
     // Mainly flatbuffers and friends
     @Test
     void testHeaderSerializationParse() throws IOException, GeneralSecurityException, CDocParseException {
+
+        KeyPair recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
+
 
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-" + UUID.randomUUID() + ".txt");
         payloadFile.deleteOnExit();
@@ -68,7 +52,8 @@ class EnvelopeTest {
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
         List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
 
-        Envelope envelope = Envelope.prepare(fmkBuf, senderKeyPair, recipients);
+
+        Envelope envelope = Envelope.prepare(recipients);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
 
@@ -84,54 +69,139 @@ class EnvelopeTest {
         assertEquals(1, details.size());
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
-        assertEquals(senderKeyPair.getPublic(), details.get(0).getSenderPubKey());
-
 
     }
 
+
     @Test
     void testContainer(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
+        testContainer(tempDir, bobKeyPair);
+    }
 
+
+
+    @Test
+    @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
+    void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws IOException, GeneralSecurityException {
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
-
         String payloadData = "payload-" + uuid;
-
         File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
-            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = new byte[1024];
+
+
+        int bytesWanted = 8 * 1024;
+        // create bigger file, so that payload file is written to disk, before MAC check
+        File biggerFile = tempDir.resolve("biggerFile").toFile();
+        try (OutputStream os = Files.newOutputStream(biggerFile.toPath())) {
+            for (int i = 0; i <= bytesWanted; i++) {
+                new Random().nextBytes(bytes);
+                os.write(bytes);
+            }
         }
 
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+        byte[] cdocContainerBytes = createContainer(payloadFile, payloadData.getBytes(StandardCharsets.UTF_8),
+                (ECPublicKey) bobKeyPair.getPublic(), List.of(biggerFile));
 
-        ECPublicKey recipientPubKey = (ECPublicKey) bobKeyPair.getPublic();
+        log.debug("cdoc size: {}", cdocContainerBytes.length);
+
+        //last 16 bytes are Poly1305 MAC, corrupt that
+        cdocContainerBytes[cdocContainerBytes.length - 1] = (byte) 0xff;
+        cdocContainerBytes[cdocContainerBytes.length - 2] = (byte) 0xfe;
+
+        IOException ex = assertThrows(IOException.class, () -> checkContainerDecrypt(cdocContainerBytes, outDir,
+                bobKeyPair, List.of(payloadFileName), payloadFileName, payloadData));
+
+        assertInstanceOf(javax.crypto.AEADBadTagException.class, ex.getCause());
+
+        //extracted files were deleted
+        assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
+
+
+
+    }
+
+    /**
+     * Creates payloadFile, adds payloadData to payloadFile and creates encrypted container for recipientPubKey
+     * @param payloadFile input payload file to be created and added to contaier
+     * @param payloadData data to be written to payloadFile
+     * @param recipientPubKey created container can be decrypted with recipientPubKey private part
+     * @param additionalFiles optional additional file to add
+     * @return created container as byte[]
+     * @throws IOException if IOException happens
+     * @throws GeneralSecurityException if GeneralSecurityException happens
+     */
+    public byte[] createContainer(File payloadFile, byte[] payloadData, ECPublicKey recipientPubKey,
+                                  List<File> additionalFiles) throws IOException, GeneralSecurityException {
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData);
+        }
+
         List<ECPublicKey> recipients = List.of(recipientPubKey);
 
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, recipients);
-        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
-            senderEnvelope.encrypt(List.of(payloadFile), dst);
-            byte[] cdocContainerBytes = dst.toByteArray();
-
-            assertTrue(cdocContainerBytes.length > 0);
-
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
-                List<String> filesExtracted = Envelope.decrypt(bis, bobKeyPair, outDir);
-
-                assertEquals(List.of(payloadFileName), filesExtracted);
-                Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
-
-                assertEquals(payloadData, Files.readString(payloadPath));
-            }
+        List<File> files = new LinkedList<>();
+        files.add(payloadFile);
+        if (additionalFiles != null) {
+            files.addAll(additionalFiles);
         }
+
+        byte[] cdocContainerBytes;
+        Envelope senderEnvelope = Envelope.prepare(recipients);
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(files, dst);
+            cdocContainerBytes = dst.toByteArray();
+        }
+        assertNotNull(cdocContainerBytes);
+        assertTrue(cdocContainerBytes.length > 0);
+        return cdocContainerBytes;
+    }
+
+    public void testContainer(Path tempDir, KeyPair bobKeyPair)
+            throws IOException, GeneralSecurityException, CDocParseException {
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        byte[] cdocContainerBytes = createContainer(payloadFile,
+                payloadData.getBytes(StandardCharsets.UTF_8), (ECPublicKey) bobKeyPair.getPublic(), null);
+
+        assertTrue(cdocContainerBytes.length > 0);
+
+        checkContainerDecrypt(cdocContainerBytes, outDir, bobKeyPair,
+                List.of(payloadFileName), payloadFileName, payloadData);
+    }
+
+    public void checkContainerDecrypt(byte[] cdocBytes, Path outDir, KeyPair recipientKeyPair,
+                                      List<String> expectedFilesExtracted,
+                                      String payloadFileName, String expectedPayloadData)
+            throws IOException, GeneralSecurityException, CDocParseException {
+
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
+            List<String> filesExtracted = Envelope.decrypt(bis, recipientKeyPair, outDir);
+
+            assertEquals(expectedFilesExtracted, filesExtracted);
+            Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
+
+            assertEquals(expectedPayloadData, Files.readString(payloadPath));
+        }
+
     }
 
     // test that near max size header can be created and parsed
-    @Disabled("running this test takes ~20seconds.")
+    @Disabled("testLongHeader is disabled as running it takes ~30seconds.")
     @Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
@@ -149,8 +219,7 @@ class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair aliceKeyPair = ECKeys.generateEcKeyPair();
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair();
+        KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
 
@@ -171,12 +240,12 @@ class EnvelopeTest {
 
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-                Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
+                Envelope.prepare(Collections.nCopies((copies + 1), bobPubKey)).serializeHeader());
 
         assertTrue(exception.getMessage().contains("Header serialization failed"));
 
         Instant start = Instant.now();
-        Envelope senderEnvelope = Envelope.prepare(fmkBuf, aliceKeyPair, Collections.nCopies((copies), bobPubKey));
+        Envelope senderEnvelope = Envelope.prepare(Collections.nCopies((copies), bobPubKey));
         Instant end = Instant.now();
         log.debug("Ran: {}s", end.getEpochSecond() - start.getEpochSecond());
 

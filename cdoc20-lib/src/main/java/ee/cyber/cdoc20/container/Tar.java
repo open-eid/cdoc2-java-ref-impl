@@ -1,11 +1,12 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream; //zlib
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
 import org.apache.commons.compress.utils.InputStreamStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,11 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
+
+import static ee.cyber.cdoc20.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc20.CDocConfiguration.GZIP_COMPRESSION_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
 
 
 /**
@@ -29,7 +35,9 @@ public final class Tar {
 
 
     private static final int DEFAULT_BUFFER_SIZE  = 8192;
-    private static final double MAX_COMPRESSION_RATIO = 10;
+
+    // gzip compression ratio threshold, normally less than 3, consider over 10 as zip bomb
+    private static final double DEFAULT_COMPRESSION_RATIO_THRESHOLD = 10;
 
     // disk space available percentage allowed
     private static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
@@ -82,7 +90,7 @@ public final class Tar {
             throw new IllegalArgumentException("Files with same basename not supported: " + duplicateFiles);
         }
 
-        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
             tos.setAddPaxHeadersForNonAsciiNames(true);
             for (File file : files) {
@@ -99,7 +107,7 @@ public final class Tar {
      * @throws IOException if an I/O error has occurred
      */
     public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
-        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
@@ -125,7 +133,7 @@ public final class Tar {
     public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
             throws IOException {
 
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GzipCompressorInputStream(
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new DeflateCompressorInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
@@ -165,29 +173,26 @@ public final class Tar {
         }
 
         List<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
-        List<File> extractedFiles = new LinkedList<>();
-        try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
+        List<File> createdFiles = new LinkedList<>();
+        try (DeflateCompressorInputStream zLibIs = new DeflateCompressorInputStream(new BufferedInputStream(tarGZipIs));
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(zLibIs)) {
 
-
-            int tarEntriesThreshold = getDefaultTarEntriesThresholdThreshold();
+            int tarEntriesThreshold = getTarEntriesThresholdThreshold();
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
                 if (tarArchiveEntry.isFile()) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
-                    if (extract) { //extract
-                        File extractedFile = copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipIs,
-                                filesToExtract);
-                        if (extractedFile != null) {
+                    //extract
+                    if (extract &&  ((filesToExtract == null) || filesToExtract.contains(tarArchiveEntry.getName()))) {
 
-                            extractedArchiveEntries.add(tarArchiveEntry);
-                            extractedFiles.add(extractedFile);
+                        Path destPath = pathFromTarEntry(outputDir, tarArchiveEntry, true);
+                        createdFiles.add(destPath.toFile());
+                        copyTarEntryToFile(destPath, tarInputStream, tarArchiveEntry, zLibIs);
 
-                            if (extractedArchiveEntries.size() > tarEntriesThreshold) {
-                                log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
-                                throw new IllegalStateException("Tar entries threshold exceeded. Aborting.");
-                            }
-
+                        extractedArchiveEntries.add(tarArchiveEntry);
+                        if (extractedArchiveEntries.size() > tarEntriesThreshold) {
+                            log.error("Tar entries threshold ({}) exceeded.", tarEntriesThreshold);
+                            throw new IllegalStateException("Tar entries threshold exceeded. Aborting.");
                         }
                     } else { //list
                         extractedArchiveEntries.add(tarArchiveEntry);
@@ -197,8 +202,8 @@ public final class Tar {
                 }
             }
         } catch (Throwable t) {
-            log.info("Exception {}. Deleting already extracted files {}", t, extractedFiles);
-            deleteFiles(extractedFiles);
+            log.info("Exception {}. Deleting already extracted files {}", t, createdFiles);
+            deleteFiles(createdFiles);
             throw t;
         }
 
@@ -216,39 +221,14 @@ public final class Tar {
     }
 
     /**
-     *
+     * Return Path from tarArchiveEntry under outputDir. Checks for different zip/tar file attacks.
      * @param outputDir output directory where files are extracted
-     * @param tarInputStream tar InputStream to process
      * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
-     * @param gZipStatistics InputStreamStatistics from GZip stream
-     * @param filesToExtract if not null, extract specified files otherwise all files
-     * @return File extracted from tarArchiveEntry or null if File was not created
-     * @throws IOException if an I/O error has occurred
+     * @param createFile whether to create path returned
+     * @return Path, if outputDir and tarArchiveEntry are valid
+     * @throws IOException if path cannot be created from tarArchiveEntry under outputDir
      */
-    private static File copyTarEntryToDirectory(Path outputDir,
-                                                   TarArchiveInputStream tarInputStream,
-                                                   TarArchiveEntry tarArchiveEntry,
-                                                   InputStreamStatistics gZipStatistics,
-                                                   List<String> filesToExtract)
-            throws IOException {
-
-        if ((filesToExtract == null) || filesToExtract.contains(tarArchiveEntry.getName())) {
-            return copyTarEntryToDirectory(outputDir, tarInputStream, tarArchiveEntry, gZipStatistics);
-        }
-        return null;
-    }
-
-    /**
-     * Extract tar entry as File in outputDir
-     * @param outputDir directory where file will be created
-     * @param tarInputStream read file contents from tarInputStream
-     * @param tarArchiveEntry tarArchiveEntry to extract
-     * @param gZipStatistics wrapping compression statistics
-     * @return File created from tar
-     * @throws IOException if an I/O error has occurred
-     */
-    private static File copyTarEntryToDirectory(Path outputDir, TarArchiveInputStream tarInputStream,
-                                                TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
+    private static Path pathFromTarEntry(Path outputDir, TarArchiveEntry tarArchiveEntry, boolean createFile)
             throws IOException {
 
         if (tarArchiveEntry.getName() == null) {
@@ -262,9 +242,11 @@ public final class Tar {
                     + tarArchiveEntry.getName() + ")");
         }
 
-        Path newPath = Path.of(outputDir.toString()).resolve(tarPath.getFileName()).normalize();
-        if (!newPath.startsWith(outputDir)) {
-            throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + outputDir);
+        Path absOutDir = outputDir.normalize().toAbsolutePath();
+
+        Path newPath = Path.of(absOutDir.toString()).resolve(tarPath.getFileName()).normalize();
+        if (!newPath.startsWith(absOutDir)) {
+            throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + absOutDir);
         }
 
         if (!isOverWriteAllowed() && Files.exists(newPath)) {
@@ -272,19 +254,40 @@ public final class Tar {
             throw new FileAlreadyExistsException(newPath.toAbsolutePath().toString());
         }
 
+        if (createFile && !Files.exists(newPath)) {
+            boolean created = newPath.toFile().createNewFile();
+            if (!created) {
+                log.warn("Failed to create {}", newPath);
+            }
+        }
+
+        return newPath;
+    }
+
+    /**
+     * Copy contents of tar entry to file
+     * @param destPath Path where tar entry contents are saved
+     * @param tarInputStream tar InputStream to process
+     * @param tarArchiveEntry TarArchiveEntry read from TarArchiveInputStream and currently under processing
+     * @param gZipStatistics InputStreamStatistics from GZip stream
+     * @return File size created
+     * @throws IOException if an I/O error has occurred
+     */
+    private static long copyTarEntryToFile(Path destPath, TarArchiveInputStream tarInputStream,
+                                                TarArchiveEntry tarArchiveEntry, InputStreamStatistics gZipStatistics)
+        throws IOException {
+
         double diskUsageThreshold = getDiskUsedPercentageThreshold();
-
-
         long written = 0;
         // truncate and overwrite an existing file, or create the file if
         // it doesn't initially exist
-        try (OutputStream out = Files.newOutputStream(newPath)) {
+        try (OutputStream out = Files.newOutputStream(destPath)) {
             byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
             int read;
             while ((read = tarInputStream.read(buffer, 0, DEFAULT_BUFFER_SIZE)) >= 0) {
 
-                double usedPercentage = (double)outputDir.toFile().getUsableSpace()
-                        / (double)outputDir.toFile().getTotalSpace() * 100;
+                double usedPercentage = (double)destPath.toFile().getUsableSpace()
+                        / (double)destPath.toFile().getTotalSpace() * 100;
 
                 if (usedPercentage >= diskUsageThreshold) {
                     String err = String.format("More than  %.2f%% disk space used. Aborting", diskUsageThreshold);
@@ -295,53 +298,55 @@ public final class Tar {
                 out.write(buffer, 0, read);
                 written += read;
 
+                double compressionRatioThreshold = getCompressionRatioThreshold();
                 double compressionRatio = (double)gZipStatistics.getUncompressedCount()
                         / (double)gZipStatistics.getCompressedCount();
-                if (compressionRatio > MAX_COMPRESSION_RATIO) {
+                if (compressionRatio > compressionRatioThreshold) {
                     log.debug("Compression ratio for {} is {}", tarArchiveEntry.getName(), compressionRatio);
                     // ratio between compressed and uncompressed data is highly suspicious, looks like a Zip Bomb Attack
                     throw new IllegalStateException("Gzip compression ratio " + compressionRatio + " is over "
-                            + MAX_COMPRESSION_RATIO);
+                            + compressionRatioThreshold);
                 }
             }
         }
 
-        log.debug("Created {} {}B", newPath, written);
-        return newPath.toFile();
+        log.debug("Created {} {}B", destPath, written);
+        return written;
     }
 
     private static double getDiskUsedPercentageThreshold() {
-        double diskUsageThreshold = DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.maxDiskUsagePercentage")) {
-            String maxDiskUsagePercentageStr = System.getProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
-            try {
-                diskUsageThreshold = Double.parseDouble(maxDiskUsagePercentageStr);
-            } catch (NumberFormatException nfe) {
-                log.warn("Invalid value {} for ee.cyber.cdoc20.maxDiskUsagePercentage. Using default {}",
-                        maxDiskUsagePercentageStr, DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD);
-            }
-        }
-        return diskUsageThreshold;
+        return getNumberPropertyValue(DISK_USAGE_THRESHOLD_PROPERTY, DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD,
+                Double::valueOf);
     }
 
-    private static int getDefaultTarEntriesThresholdThreshold() {
-        int tarEntriesThreshold = DEFAULT_TAR_ENTRIES_THRESHOLD;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.tarEntriesThreshold")) {
-            String tarEntriesThresholdStr = System.getProperty("ee.cyber.cdoc20.tarEntriesThreshold");
+    private static int getTarEntriesThresholdThreshold() {
+        return getNumberPropertyValue(TAR_ENTRIES_THRESHOLD_PROPERTY, DEFAULT_TAR_ENTRIES_THRESHOLD, Integer::valueOf);
+    }
+
+    private static double getCompressionRatioThreshold() {
+        return getNumberPropertyValue(GZIP_COMPRESSION_THRESHOLD_PROPERTY,
+                DEFAULT_COMPRESSION_RATIO_THRESHOLD, Double::valueOf);
+    }
+
+    private static <N extends Number> N getNumberPropertyValue(String propertyName, N defaultValue,
+                                                               Function<String, N> strToNumFunc) {
+        N value = defaultValue;
+        if (System.getProperties().containsKey(propertyName)) {
+            String propertyValueStr = System.getProperty(propertyName);
             try {
-                tarEntriesThreshold = Integer.parseInt(tarEntriesThresholdStr);
+                value = strToNumFunc.apply(propertyValueStr);
             } catch (NumberFormatException nfe) {
-                log.warn("Invalid value {} for ee.cyber.cdoc20.tarEntriesThreshold. Using default {}",
-                        tarEntriesThresholdStr, DEFAULT_TAR_ENTRIES_THRESHOLD);
+                log.warn("Invalid value {} for {}. Using default {}",
+                        propertyValueStr, propertyName, defaultValue);
             }
         }
-        return tarEntriesThreshold;
+        return value;
     }
 
     private static boolean isOverWriteAllowed() {
         boolean overwrite = DEFAULT_OVERWRITE;
-        if (System.getProperties().containsKey("ee.cyber.cdoc20.overwrite")) {
-            String overwriteStr = System.getProperty("ee.cyber.cdoc20.overwrite");
+        if (System.getProperties().containsKey(CDocConfiguration.OVERWRITE_PROPERTY)) {
+            String overwriteStr = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
 
             if (overwriteStr != null) {
                 //only "true" is considered as true

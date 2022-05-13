@@ -1,19 +1,21 @@
 package ee.cyber.cdoc20.cli.commands;
 
 
-import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.EccPubKeyCDocBuilder;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.util.LdapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
-import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 //S106 - Standard outputs should not be used directly to log anything
@@ -22,22 +24,39 @@ import java.util.concurrent.Callable;
 @Command(name = "create", aliases = {"c", "encrypt"})
 public class CDocCreateCmd implements Callable<Void> {
 
+
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
 
     @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, required = true,
-            paramLabel = "PEM", description = "EC private key PEM used to encrypt")
-    File privKeyFile;
+    // one of cert or pubkey must be specified
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "1..*")
+    Dependent recipient;
+    static class Dependent {
+        @Option(names = {"-p", "--pubkey"},
+                paramLabel = "PEM", description = "recipient public key as key pem")
+        File[] pubKeys;
 
-    @Option(names = {"-p", "--pubkeys", "--recipients", "--receivers"}, required = true,
-            paramLabel = "PEM", description = "recipient public key")
-    File[] pubKeyFiles;
+        @Option(names = {"-c", "--cert"},
+                paramLabel = "CER", description = "recipient x509 certificate in DER or PEM format")
+        File[] certs;
+
+        @Option(names = {"-r", "--recipient", "--receiver"},
+                paramLabel = "isikukood", description = "recipient id code (isikukood)")
+        String[] identificationCodes;
+    }
+
+    // allow -Dkey for setting System properties
+    @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
+    void setProperty(Map<String, String> props) {
+        props.forEach(System::setProperty);
+    }
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
     File[] inputFiles;
 
+    // For testing only
     @Option(names = {"-ZZ"}, hidden = true,
             description = "inputFile will only be encrypted (inputFile is already tar.gz)")
     private boolean disableCompression = false;
@@ -49,18 +68,23 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --key {} --pubkey {} {}",
-                    cdocFile, privKeyFile, Arrays.toString(pubKeyFiles), Arrays.toString(inputFiles));
+            log.debug("create --file {} --pubkey {} --cert {} {}",
+                    cdocFile,
+                    Arrays.toString(recipient.pubKeys),
+                    Arrays.toString(recipient.certs),
+                    Arrays.toString(inputFiles));
         }
-        KeyPair keyPair = ECKeys.loadFromPem(privKeyFile);
-        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(pubKeyFiles);
 
         if (disableCompression) {
             System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
         }
 
-        CDocBuilder cDocBuilder = new CDocBuilder()
-                .withSender(keyPair)
+        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(this.recipient.pubKeys);
+        recipients.addAll(ECKeys.loadCertKeys(this.recipient.certs));
+        recipients.addAll(LdapUtil.getCertKeys(this.recipient.identificationCodes));
+
+
+        EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()
                 .withRecipients(recipients)
                 .withPayloadFiles(Arrays.asList(inputFiles));
 

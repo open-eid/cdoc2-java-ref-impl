@@ -5,18 +5,20 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc20.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
 import static java.nio.charset.StandardCharsets.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,8 +54,8 @@ class TarGzTest {
 
         Set<String> entries = new HashSet<>();
 
-        try (TarArchiveInputStream tar = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(
-                new FileInputStream(tarGZipFile))))) {
+        try (TarArchiveInputStream tar = new TarArchiveInputStream(new DeflateCompressorInputStream(
+                new BufferedInputStream(new FileInputStream(tarGZipFile))))) {
 
             TarArchiveEntry entry;
             while ((entry = tar.getNextTarEntry()) != null) {
@@ -134,8 +136,8 @@ class TarGzTest {
         Path bombPath =  tempDir.resolve("bomb.tgz");
         //bombPath.toFile().deleteOnExit();
 
-        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
-                Files.newOutputStream(bombPath))))) {
+        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(bombPath))))) {
             tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry("A");
@@ -172,50 +174,20 @@ class TarGzTest {
     @Test
     void testCheckDiskSpaceAvailable(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
-        System.setProperty("ee.cyber.cdoc20.maxDiskUsagePercentage", "0.1");
+        System.setProperty(DISK_USAGE_THRESHOLD_PROPERTY, "0.1");
 
         assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
 
-        System.clearProperty("ee.cyber.cdoc20.maxDiskUsagePercentage");
+        System.clearProperty(DISK_USAGE_THRESHOLD_PROPERTY);
     }
 
     @Test
     void testMaxExtractEntries(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
-        System.setProperty("ee.cyber.cdoc20.tarEntriesThreshold", "1");
+        System.setProperty(CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY, "1");
 
         assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
 
-        System.clearProperty("ee.cyber.cdoc20.tarEntriesThreshold");
+        System.clearProperty(CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY);
     }
-
-
-    void checkFileName(File outDir, String fileName) throws IOException {
-        Path p = Path.of(outDir.getCanonicalPath(), fileName);
-        log.debug("{}", p);
-        p = p.normalize();
-        log.debug("{}", p);
-        log.debug("{}", p.getParent());
-        log.debug("{}", p.getFileName());
-    }
-
-    @Test
-    void testFileName(@TempDir Path tempDir) throws IOException {
-        //File outDir = tempDir.resolve("out").toFile();
-        File outDir = tempDir.toFile();
-        //String fileName = "fi:l*e/p\"a?t>h|.t<xt";
-        String fileName = "../a.txt";
-
-        Path p = Path.of("a.txt");
-        assertNull(p.getParent());
-
-        checkFileName(outDir, fileName);
-
-        //checkFileName(outDir, "a");
-
-
-    }
-
-
-
 }

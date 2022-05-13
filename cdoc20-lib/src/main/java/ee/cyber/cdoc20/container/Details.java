@@ -1,22 +1,21 @@
 package ee.cyber.cdoc20.container;
 
-import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
+import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public final class Details {
 
     private Details() {
     }
 
+    /**
+     * ECC recipient using ECCPublicKey. POJO of
+     * {@link ee.cyber.cdoc20.fbs.recipients.ECCPublicKey recipients.ECCPublicKey} in CDOC header.
+     */
     public static class EccRecipient {
 
         byte ellipticCurve;
@@ -24,16 +23,14 @@ public final class Details {
         private final ECPublicKey senderPubKey;
         private final byte[] encryptedFmk;
 
-        public EccRecipient(ECPublicKey recipientPubKey, ECPublicKey senderPubKey, byte[] encryptedFmk) {
-            this(EllipticCurve.secp384r1, recipientPubKey, senderPubKey, encryptedFmk);
-        }
-
-        public EccRecipient(byte eccCurve, ECPublicKey recipientPubKey, ECPublicKey senderPubKey, byte[] encryptedFmk) {
+        public EccRecipient(EllipticCurve eccCurve, ECPublicKey recipientPubKey, ECPublicKey senderPubKey,
+                            byte[] encryptedFmk) {
             this.recipientPubKey = recipientPubKey;
             this.senderPubKey = senderPubKey;
-            this.ellipticCurve = eccCurve;
+            this.ellipticCurve = eccCurve.getValue();
             this.encryptedFmk = encryptedFmk;
         }
+
 
         public ECPublicKey getRecipientPubKey() {
             return recipientPubKey;
@@ -42,8 +39,8 @@ public final class Details {
         /**
          * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
          */
-        public byte[] getRecipientPubKeyTlsEncoded() {
-            return ECKeys.encodeEcPubKeyForTls(this.recipientPubKey);
+        public byte[] getRecipientPubKeyTlsEncoded() throws NoSuchAlgorithmException {
+            return ECKeys.encodeEcPubKeyForTls(EllipticCurve.forValue(this.ellipticCurve), this.recipientPubKey);
         }
 
         public ECPublicKey getSenderPubKey() {
@@ -53,40 +50,12 @@ public final class Details {
         /**
          * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
          */
-        public byte[] getSenderPubKeyTlsEncoded() {
-            return ECKeys.encodeEcPubKeyForTls(this.senderPubKey);
+        public byte[] getSenderPubKeyTlsEncoded()  throws NoSuchAlgorithmException {
+            return ECKeys.encodeEcPubKeyForTls(EllipticCurve.forValue(this.ellipticCurve), this.senderPubKey);
         }
 
         public byte[] getEncryptedFileMasterKey() {
             return this.encryptedFmk;
-        }
-
-        /**
-         * Create EccReipient list, that contains fmk encrypted with recipient pub key and sender priv key
-         *
-         * @param fmk             file master key
-         * @param senderEcKeyPair EC key pair used to encrypt fmk
-         * @param recipients      list of recipients public keys
-         * @return List of EccRecipients
-         */
-        public static List<EccRecipient> buildEccRecipients(byte[] fmk, KeyPair senderEcKeyPair,
-                                                            List<ECPublicKey> recipients)
-                throws NoSuchAlgorithmException, InvalidKeyException {
-
-            if (fmk.length != Crypto.CEK_LEN_BYTES) {
-                throw new IllegalArgumentException("Invalid FMK len");
-            }
-
-            List<EccRecipient> result = new ArrayList<>(recipients.size());
-
-            for (ECPublicKey otherPubKey : recipients) {
-                byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, otherPubKey, Crypto.CEK_LEN_BYTES);
-                byte[] encryptedFmk = Crypto.xor(fmk, kek);
-                EccRecipient eccRecipient =
-                        new EccRecipient(otherPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk);
-                result.add(eccRecipient);
-            }
-            return result;
         }
 
         //CHECKSTYLE:OFF - generated code

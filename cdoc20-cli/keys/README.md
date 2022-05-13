@@ -1,4 +1,15 @@
-This directory contains pre-generate EC keys.
+This directory contains pre-generate EC keys and downloaded id-card certificates.
+
+## Convert X509 Certificate DER to PEM
+.der and .cer are the same binary format. 
+```
+openssl x509 -inform der -in 37101010021.der -out 37101010021.pem
+```
+
+## Print X509 cert info
+```
+openssl x509 -in 37101010021.pem -text
+```
 
 ## Generating EC keys
 

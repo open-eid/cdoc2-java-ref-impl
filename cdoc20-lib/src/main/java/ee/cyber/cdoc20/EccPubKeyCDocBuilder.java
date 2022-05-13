@@ -1,43 +1,38 @@
 package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.Envelope;
-import ee.cyber.cdoc20.crypto.Crypto;
+import ee.cyber.cdoc20.crypto.ECKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
+import java.util.Base64;
 import java.util.List;
 
-public class CDocBuilder {
-    private static final Logger log = LoggerFactory.getLogger(CDocBuilder.class);
+/**
+ * CDocBuilder for building CDOCs using ECC public keys.
+ */
+public class EccPubKeyCDocBuilder {
+    private static final Logger log = LoggerFactory.getLogger(EccPubKeyCDocBuilder.class);
 
     private List<File> payloadFiles;
     private List<ECPublicKey> recipients;
-    private KeyPair senderKeyPair;
 
     @SuppressWarnings("checkstyle:HiddenField")
-    public CDocBuilder withPayloadFiles(List<File> payloadFiles) {
+    public EccPubKeyCDocBuilder withPayloadFiles(List<File> payloadFiles) {
         this.payloadFiles = payloadFiles;
         return this;
     }
 
-    public CDocBuilder withRecipients(List<ECPublicKey> recipientsPubKeys) {
+    public EccPubKeyCDocBuilder withRecipients(List<ECPublicKey> recipientsPubKeys) {
         this.recipients = recipientsPubKeys;
         return this;
     }
 
-    /**
-     *
-     * @param sender senders EC key pair
-     * @return this builder
-     */
-    public CDocBuilder withSender(KeyPair sender) {
-        this.senderKeyPair = sender;
-        return this;
-    }
+
 
     public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
         try (OutputStream outputStream = new FileOutputStream(outputCDocFile)) {
@@ -51,7 +46,7 @@ public class CDocBuilder {
         validate();
 
         try {
-            Envelope envelope = Envelope.prepare(Crypto.generateFileMasterKey(), senderKeyPair, recipients);
+            Envelope envelope = Envelope.prepare(recipients);
             envelope.encrypt(this.payloadFiles, outputStream);
         } catch (GeneralSecurityException ex) {
             throw new CDocException(ex);
@@ -59,26 +54,41 @@ public class CDocBuilder {
     }
 
     public void validate() throws CDocValidationException {
-        validatePayloadFiles();
-        validateSender();
         validateRecipients();
+        validatePayloadFiles();
     }
 
     void validateRecipients() throws CDocValidationException {
         if (this.recipients == null || this.recipients.isEmpty()) {
             throw new CDocValidationException("Must provide at least one recipient");
         }
+
+        for (ECPublicKey recipientPubKey : recipients) {
+            String oid;
+            String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
+            try {
+                oid = ECKeys.getCurveOid(recipientPubKey);
+                ECKeys.EllipticCurve curve;
+                try {
+                    curve = ECKeys.EllipticCurve.forOid(oid);
+                } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
+                    log.error("EC pub key curve ({}) is not supported. EC public key={}",
+                            oid, encoded);
+                    throw new CDocValidationException("Invalid recipient key with key " + oid);
+                }
+
+                if (!curve.isValidKey(recipientPubKey)) {
+                    log.error("EC pub key is not valid for curve {}. EC public key={}",
+                            curve.getName(), encoded);
+                    throw new CDocValidationException("Recipient key not valid");
+                }
+            } catch (GeneralSecurityException gse) {
+                throw new CDocValidationException("Invalid recipient " + encoded, gse);
+            }
+
+        }
     }
 
-    void validateSender() throws CDocValidationException {
-        if (this.senderKeyPair == null) {
-            throw new CDocValidationException("Must provide sender key pair");
-        }
-
-        if (!(this.senderKeyPair.getPublic() instanceof ECPublicKey)) {
-            throw new CDocValidationException("Sender key pair must be EC key pair");
-        }
-    }
 
     void validatePayloadFiles() throws CDocValidationException {
         if ((payloadFiles == null) || (payloadFiles.isEmpty())) {
