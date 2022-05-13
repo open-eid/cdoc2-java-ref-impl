@@ -5,8 +5,8 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream; //zlib
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
 import org.apache.commons.compress.utils.InputStreamStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +90,7 @@ public final class Tar {
             throw new IllegalArgumentException("Files with same basename not supported: " + duplicateFiles);
         }
 
-        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
             tos.setAddPaxHeadersForNonAsciiNames(true);
             for (File file : files) {
@@ -107,7 +107,7 @@ public final class Tar {
      * @throws IOException if an I/O error has occurred
      */
     public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
-        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GzipCompressorOutputStream(
+        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(dest)))) {
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
@@ -133,7 +133,7 @@ public final class Tar {
     public static long extractTarEntry(InputStream tarGZipInputStream, OutputStream outputStream, String tarEntryName)
             throws IOException {
 
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new GzipCompressorInputStream(
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new DeflateCompressorInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
             while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
@@ -174,8 +174,8 @@ public final class Tar {
 
         List<ArchiveEntry> extractedArchiveEntries = new LinkedList<>();
         List<File> createdFiles = new LinkedList<>();
-        try (GzipCompressorInputStream gZipIs = new GzipCompressorInputStream(new BufferedInputStream(tarGZipIs));
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gZipIs)) {
+        try (DeflateCompressorInputStream zLibIs = new DeflateCompressorInputStream(new BufferedInputStream(tarGZipIs));
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(zLibIs)) {
 
             int tarEntriesThreshold = getTarEntriesThresholdThreshold();
             TarArchiveEntry tarArchiveEntry;
@@ -187,7 +187,7 @@ public final class Tar {
 
                         Path destPath = pathFromTarEntry(outputDir, tarArchiveEntry, true);
                         createdFiles.add(destPath.toFile());
-                        copyTarEntryToFile(destPath, tarInputStream, tarArchiveEntry, gZipIs);
+                        copyTarEntryToFile(destPath, tarInputStream, tarArchiveEntry, zLibIs);
 
                         extractedArchiveEntries.add(tarArchiveEntry);
                         if (extractedArchiveEntries.size() > tarEntriesThreshold) {

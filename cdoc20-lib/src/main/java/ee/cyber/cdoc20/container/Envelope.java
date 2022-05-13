@@ -245,7 +245,7 @@ public class Envelope {
             if (!curve.isValidKey(recipientPubKey)) {
                 String x509encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
                 log.error("Invalid recipient key: {}, key not valid for {}", x509encoded, curve.getName());
-                throw new InvalidKeyException("Key not valid for "+curve.getName());
+                throw new InvalidKeyException("Key not valid for " + curve.getName());
             }
 
             KeyPair senderEcKeyPair = curve.generateEcKeyPair();

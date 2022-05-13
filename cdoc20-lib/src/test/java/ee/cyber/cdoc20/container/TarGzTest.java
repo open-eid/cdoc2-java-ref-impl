@@ -5,13 +5,13 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -54,8 +54,8 @@ class TarGzTest {
 
         Set<String> entries = new HashSet<>();
 
-        try (TarArchiveInputStream tar = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(
-                new FileInputStream(tarGZipFile))))) {
+        try (TarArchiveInputStream tar = new TarArchiveInputStream(new DeflateCompressorInputStream(
+                new BufferedInputStream(new FileInputStream(tarGZipFile))))) {
 
             TarArchiveEntry entry;
             while ((entry = tar.getNextTarEntry()) != null) {
@@ -136,8 +136,8 @@ class TarGzTest {
         Path bombPath =  tempDir.resolve("bomb.tgz");
         //bombPath.toFile().deleteOnExit();
 
-        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new GZIPOutputStream(new BufferedOutputStream(
-                Files.newOutputStream(bombPath))))) {
+        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(bombPath))))) {
             tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry("A");
