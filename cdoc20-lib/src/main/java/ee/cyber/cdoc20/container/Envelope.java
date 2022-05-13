@@ -86,17 +86,17 @@ public class Envelope {
 
     /**
      * Prepare Envelope for ECPublicKey recipients. For each recipient, sender key pair is generated. Single generated
-     * File Master Key (FMK) is used for all recipients.
-     * @param recipients
+     * File Master Key (FMK) is used for all recipients and encrypted with recipient public key and generated sender
+     * private key.
+     * @param recipients list of recipients public keys
      * @return Envelope ready for payload
+     * @throws InvalidKeyException if recipient key is not suitable
+     * @throws GeneralSecurityException if other crypto related exceptions happen
      */
     public static Envelope prepare(List<ECPublicKey> recipients) throws GeneralSecurityException {
+
         byte[] fmk = Crypto.generateFileMasterKey();
-
-
-        Details.EccRecipient[] eccRecipients =
-                buildEccRecipients(fmk, recipients);
-
+        Details.EccRecipient[] eccRecipients = buildEccRecipients(fmk, recipients);
         return new Envelope(eccRecipients, fmk);
     }
 
@@ -220,10 +220,11 @@ public class Envelope {
      * @param fmk file master key (plain)
      * @param recipients  list of recipients public keys
      * @return
-     * @throws GeneralSecurityException
+     * @throws InvalidKeyException if recipient key is not suitable
+     * @throws GeneralSecurityException if other crypto related exceptions happen
      */
     private static Details.EccRecipient[] buildEccRecipients(byte[] fmk, List<ECPublicKey> recipients)
-            throws GeneralSecurityException {
+            throws InvalidKeyException, GeneralSecurityException {
 
         if (fmk.length != Crypto.CEK_LEN_BYTES) {
             throw new IllegalArgumentException("Invalid FMK len");
@@ -238,8 +239,15 @@ public class Envelope {
             } catch (NoSuchAlgorithmException nsae) {
                 String x509encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
                 log.error("Invalid recipient key: {}, EC curve {} not supported", x509encoded, oid);
-                throw new InvalidKeyException("Unsupported EC curve " + oid);
+                throw new InvalidKeyException("Unsupported EC curve oid " + oid);
             }
+
+            if (!curve.isValidKey(recipientPubKey)) {
+                String x509encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
+                log.error("Invalid recipient key: {}, key not valid for {}", x509encoded, curve.getName());
+                throw new InvalidKeyException("Key not valid for "+curve.getName());
+            }
+
             KeyPair senderEcKeyPair = curve.generateEcKeyPair();
             Details.EccRecipient eccRecipient = buildEccRecipient(curve, senderEcKeyPair, recipientPubKey, fmk);
             result.add(eccRecipient);
