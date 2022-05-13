@@ -18,13 +18,13 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 5. Sender derives content encryption key (CEK) and hmac key from FMK using HKDF algorithm
 6. Sender encrypts CEK with KEK (xor)
 7. Sender adds KEK and senders and recipients public keys to CDoc header[^2]
-8. Sender calculates header hmac using hmac key and adds calculated hmac to CDoc
+8. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
 9. Sender encrypts content[^3] with CEK (ChaCha20-Poly1305 with AAD)
 10. Sender sends CDoc to Recipient 
 11. Recipient finds recipients public key from CDoc
 12. Recipient derives key encryption key (KEK) using ECDH (from recipient private key on id-kaart and sender public key) and decrypts FMK
-13. Recipient derives CEK and hmac key from FMK using HKDF algorithm
-14. Recipient check hmac in CDoc using hmac key
+13. Recipient derives CEK and HHK from FMK using HKDF algorithm
+14. Recipient calculates hmac and checks it against hmac in CDoc 
 15. Recipient decrypts content using CEK
 
 [^1]: Current specification defines only SecP384R1 Elliptic Curve for key agreement, but in future other EC curves or algorithms can be added, see flatbuffers schemas in cdoc20-schema
