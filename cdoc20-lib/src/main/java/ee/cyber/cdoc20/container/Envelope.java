@@ -161,7 +161,7 @@ public class Envelope {
                 }
 
                 try {
-                    EllipticCurve curve = EllipticCurve.forValue(r.fmkEncryptionMethod());
+                    EllipticCurve curve = EllipticCurve.forValue(detailsEccPublicKey.curve());
                     ECPublicKey recipientPubKey =
                             curve.decodeFromTls(detailsEccPublicKey.recipientPublicKeyAsByteBuffer());
                     ECPublicKey senderPubKey =
