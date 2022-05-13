@@ -47,7 +47,7 @@ public class Envelope {
     //   curve: 1
     //   sender_public_key: 97
     //   receiver_public_key:97
-    // encrypted_fmk: 48 //secp384 curve
+    // encrypted_fmk: 48 //secp384r1 curve
     // fmk_encryption_method: 1
     //
     // per header:
@@ -253,7 +253,7 @@ public class Envelope {
             result.add(eccRecipient);
         }
 
-        return result.toArray(new Details.EccRecipient[result.size()]);
+        return result.toArray(new Details.EccRecipient[0]);
     }
 
     public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException, GeneralSecurityException {
@@ -302,10 +302,7 @@ public class Envelope {
         log.trace("Envelope::decrypt");
         log.debug("total available {}", cdocInputStream.available());
 
-        Path outDir = outputDir.normalize().toAbsolutePath();
-
         ECPublicKey recipientPubKey = (ECPublicKey) recipientEcKeyPair.getPublic();
-
         if (log.isInfoEnabled()) {
             log.info("Finding encrypted FMK for pub key {}",
                     HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(recipientPubKey)));
@@ -335,10 +332,10 @@ public class Envelope {
                     if (System.getProperties().containsKey("ee.cyber.cdoc20.disableCompression")
                             && System.getProperties().containsKey("ee.cyber.cdoc20.cDocFile")) {
                         log.warn("disableCompression=true; Decrypting only without decompressing");
-                        return decryptTarGZip(outDir, cis);
+                        return decryptTarGZip(outputDir, cis);
                     }
 
-                    return Tar.processTarGz(cis, outDir, filesToExtract, extract);
+                    return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
                 }
             }
         }
@@ -526,7 +523,7 @@ public class Envelope {
     }
 
     //CHECKSTYLE:OFF - generated code
-    @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126"})
+    @SuppressWarnings({"java:S3776", "java:S1119", "java:S6201", "java:S117", "java:S1126", "PatternVariableCanBeUsed", "RedundantIfStatement"})
     @Override
     public boolean equals(Object o) {
         if (o == this) {
