@@ -14,6 +14,7 @@ import picocli.CommandLine.Command;
 import java.io.File;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -79,7 +80,8 @@ public class CDocCreateCmd implements Callable<Void> {
             System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
         }
 
-        List<ECPublicKey> recipients = ECKeys.loadECPubKeys(this.recipient.pubKeys);
+        List<ECPublicKey> recipients = new LinkedList<>();
+        recipients.addAll(ECKeys.loadECPubKeys(this.recipient.pubKeys));
         recipients.addAll(ECKeys.loadCertKeys(this.recipient.certs));
         recipients.addAll(LdapUtil.getCertKeys(this.recipient.identificationCodes));
 

@@ -93,6 +93,9 @@ public final class LdapUtil {
 
 
     public static List<ECPublicKey> getCertKeys(String[] ids) throws NamingException, CertificateException {
+        if (ids == null) {
+            return List.of();
+        }
         DirContext ctx = initDirContext();
         LinkedList<ECPublicKey> keys = new LinkedList<>();
         try {
