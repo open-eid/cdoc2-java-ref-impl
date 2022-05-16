@@ -76,6 +76,8 @@ See `cdoc20-cli/README.md`
 
 ## Releasing
 
+First update CHANGELOG.md
+
 Will create tag with version v{x.y.z} in git
 ```
 mvn clean

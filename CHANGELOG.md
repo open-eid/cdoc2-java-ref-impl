@@ -9,7 +9,7 @@
   besides secp384r1. No actual support for other curves implemented yet.
 * Generate sender key pair to for recipient public key. Remove option to use pre-generated sender key pair
 * Support for decrypting with private decryption key from PKCS11 (support for id-kaart)
-* Support to download recipient esteid certificate from 
+* Support for downloading recipient Esteid certificate from 
   [SK LDAP](https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/)
 * Documentation updates
 * First version server OpenAPI specification
