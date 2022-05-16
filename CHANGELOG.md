@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.5] (2022-05-13)
+## [0.0.5] PKCS11, LDAP and generated sender keys (2022-05-13)
 
 
 ### Features
