@@ -54,7 +54,7 @@ public class CDocCreateCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
-    @Parameters(paramLabel = "FILE", description = "one or more files to encrypt")
+    @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     File[] inputFiles;
 
     // For testing only
