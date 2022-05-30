@@ -1,0 +1,156 @@
+:source-highlighter: rouge
+:table-caption: Tabel
+:figure-caption: Joonis
+:imagesdir: images
+:pdf-style: cyber-theme.yml
+:icons: font
+:classification: AVALIK
+:title-page-background-image: {pdf-stylesdir}/images/title_page_bg_Avalik.svg
+:title-page:
+:toclevels: 3
+:toc-title: Sisukord
+:version-label: Versioon
+:numbered:
+:docnumber:
+:author: Tehniline dokument
+:revdate: 30.05.2022
+:revnumber: 1.0
+:numbered:
+:docnumber: D-X-XXX
+:author: D-X-XXX
+
+= CDOC 2.0 võtmeedastusserveri testiplaan
+
+== Sissejuhatus
+
+=== Dokumendi eesmärk
+
+Käesoleva testiplaani eesmärk on anda ülevaade CDOC2.0 võtmeedastusserveri testimise tegevustest, rakendatavatest testidest ja testimise käigus tekkivatest tulemitest.
+
+Tulenevalt testitava võtmeedastusserveri funktsionaalsuse piiratusest on testiplaanis kirjas ka planeeritavad testistsenaariumid.
+
+=== Viited
+
+#kas neid on kasutatud/viidatud?#
+
+* #Kasutusmallid#
+* #CDOC 2.0 spetsifikatsioon#
+
+== Testimise eesmärk ja ulatus
+
+Käesolev testiplaan kirjeldab CDOC 2.0 võtmeedastusserveri (Server) testimisega seotud tegevusi. Käesolev testiplaan ei kata CDOC 2.0 kliendipoolseid komponente ning keskendub vaid serverile.
+
+Käesoleva testiplaani raames on Serveri testimisel kaks peamist eesmärki:
+
+* funktsionaalse testimisega selgitada välja kas Serveri realiseeritud funktsionaalsus vastab dokumentatsioonis kirjeldatule ning kas Server suudab täita seatud eesmärke
+*	koormustestidega teha kindlaks serveri toimimine ja käitumine erinevate kasutusmahtude ja -mustrite korral.
+
+=== Funktsionaalne testimine
+
+Funktsionaalse testimise eesmärk on teha kindlaks, kas Serveri realiseeritud funktsionaalsus vastab dokumentatsioonis kirjeldatule ning kas Server suudab täita seatud eesmärgid.
+
+Funktsionaalse testimise puhul kasutatakse arendajate poolt kirjutatavaid ühikteste ning automatiseeritud API teste, mis katavad ära serveri kasutusmallides kirjeldatud stsenaariumid ning võimalikud API veasituatsioonid.
+
+=== Koormustestimine
+
+Serveri võimekusele otseselt nõudmisi esitatud ei ole, kuid sellegipoolest on oluline teada loodud tarkvara võimete piire mingil kindlal olemasoleval platvormil.
+Selle info hankimiseks kasutatakse koormusteste, millega otsitakse vastuseid alljärgnevatele küsimustele:
+
+*	Milline on süsteemi vasteaeg kasutajale erinevate süsteemi koormuste juures?
+*	Kui palju kasutajaid korraga suudab süsteem teenindada kokkulepitud vasteaga ületamata?
+*	Kuidas käitub süsteem piirsituatsioonides (väga palju kasutajaid korraga, väga palju võtmeosakuid baasis) ?
+*	Kuidas taastub süsteem tippkoormuse taandumisel?
+*	Kuidas käitub süsteem pikemaajalise mõõduka või suurema koormuse korral?
+
+== Testimise korraldus ja tulemid
+
+Testimise planeerimine on jätkuv tegevus mida korratakse projekti jooksul korduvalt uue täiendava olulise info lisandumisel. Testimise planeerimise tulemiks on testiplaan (käesolev dokument).
+
+Funktsionaalne testimine on võtmeedastusserveri puhul kaetud ühiktestidega ning Serveri API vastu rakendatud API testidega.
+
+Ühiktestid on loodud arendajate poolt ning kasutatavad nii arendajate poolt kui ka pidevkooste (_continuous integration_) keskkonnas. Testide käivitamise tulemuseks on nii inim- kui masinloetav testiraport. Ühiktestide koodi hallatakse koos Serveri koodiga ning neile rakendatakse samu põhimõtteid, mis rakenduse koodilegi.
+
+Võtmeedastusserveri API testid on planeeritud realiseerida sarnaselt ühiktestidele samuti automaattestidena, et nende käivitamine oleks võimalikult lihtne ja vähese vaevaga korratav. Funktsionaalsete testide käivitamise kohta genereeritakse kasutatava vahendi poolt testiraport.
+
+API testide loomiseks valitakse vahendid selliselt, et loodavad testid oleksid võimalikult lihtsasti hallatavad ning nende kood oleks hallatav koos rakenduse koodiga ning samade põhimõtete kohaselt.
+
+Serveri suutlikkuse tuvastamiseks kasutatavad testid realiseeritakse samuti automaatsete testidena sobilikumat testimisvahendit kasutades. Sobivaim vahend selgitatakse välja testide arenduse käigus, arvestades järgnevaid asjaolusid:
+
+* testide loomine ei tohi olla arendajale ebamõistlikult keerukas
+* soovitud koormuste tekitamise seadistamine ei tohi nõuda arendaja oskusi
+* pakutav testiraport peab olema hõlpsasti saadav ning mõistetav
+
+Koormustestide puhul peab arvestama, et testide loomise skoobis on süsteemi koormamise võimekus ning koormustestid ei kata süsteemi monitoorimise lahendust koormustestide ajal. Süsteemi monitoorimiseks kasutada selleks mõeldud vahendeid.
+
+Koormustestide tulemuseks on testiraport, mis sisaldab informatsiooni koormustestide peatükis kirjeldatud küsimustele vastamiseks. Raport sisaldab nii Serverile rakendatavate koormuste infot kui päringute teenindamiseks vajaminevate süsteemsete ressursside kasutust (mälumaht, protsessori koormus, salvestusruumi kasutus)
+
+== Planeeritud testimise stsenaariumid
+
+Tavapäraselt ei ole testiideed ning stsenaariumid otseselt testiplaani osa. Võtmeedastusserveri puhul on aga tegemist piiratud funktsionaalsusega rakendusega, mille puhul ei ole otstarbekas testistsenaariumite haldamiseks luua eraldi dokumenti. Samuti on selles peatükis kirjeldatud ka koormustestide puhul kasutada planeeritavad stsenaariumid.
+
+=== Võtmeedastusserveri API funktsionaalsed testid
+
+Serveri funktsionaalsust testitakse läbi Serveri API liideste lõppkasutaja kliendirakendust emuleerides.
+
+Positiivsed stsenaariumid:
+
+*	Saatjal õnnestub võtmekapsli edastamine Serverile
+*	Saatja on juba võtmekapsli edastanud ja saadab uuesti Serverile
+*	Vastuvõtjal õnnestub võtmekapsli pärimine
+*	Edukas võtmekapsli edastamine mitme-õlgse süsteemi puhul -- kapsli võtab vastu üks süsteemi õlg ning väljastab teine õlg
+*	Saatja edastab serverile suvalise baidijada, mis ei ületa ettenähtud mahupiirangut
+
+Negatiivsed stsenaariumid
+
+*	Saatja saadab liiga suure võtmekapsli
+*	Vastuvõtja pärib võtmekapslit korrektse mitteeksisteeriva transaktsiooni identifikaatoriga
+*	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga
+*	Vastuvõtja pärib võtmekapslit korrektse transaktsiooni identifikaatoriga, aga vastuvõtja avalik võti ei klapi sellega
+
+=== Serveri koormustestid
+
+Serveri käitumise kohta info hankimiseks on vaja serverit koormata päringutega, mis võimalikult täpselt püüavad jäljendada võimalikku reaalelulist kasutajate käitumismustrit.
+
+Võtmeedastusserveri koormuse tekitamiseks saab kasutada kahte erinevat teoreetilist stsenaariumit - planeeritult positiivsete vastustega päringud ja kombinatsioon positiivse vastusega ning veaga lõppevastest päringutest
+
+==== Stsenaarium A
+
+Serverit koormatakse seadistatava aja jooksul tippkoormuseni tõusva ning seadistatava aja jooksul stabiilselt püsiva tippkoormusega eeldatavalt positiivseid vastuseid saavate päringutega.
+
+*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli saatmise päringuid
+*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli pärimise päringuid
+
+==== Stsenaarium B
+
+Serverit koormatakse seadistatava aja jooksul tippkoormuseni tõusva ning seadistatava aja jooksul stabiilselt püsiva tippkoormusega seadistatava osakaaluga nii positiivseid vastuseid kui veateateid saavate päringutega.
+
+*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli saatmise päringuid
+*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli pärimise päringuid
+*	kasutaja poolt seadistatav hulk samaaegseid veaga lõppevaid võtmekapsli saatmise päringuid
+*	kasutaja poolt seadistatav hulk samaaegseid võtmekapsli küsimise päringuid korrektse transaktsiooni identifikaatoriga, mille vastuvõtja avalik võti ei klapi
+*	kasutaja poolt seadistatav hulk samaaegseid võtmekapsli küsimise päringuid mitteeksisteeriva transaktsiooni identifikaatoriga
+
+==== Stsenaariumite rakendamine koormustestides
+
+* Milline on süsteemi vasteaeg kasutajale erinevate süsteemi koormuste juures?
+* Kui palju kasutajaid korraga suudab süsteem teenindada kokkulepitud vasteaga ületamata?
+
+Nendele küsimustele vastuste leidmiseks saab kasutada lihtsamat *stsenaariumit A* erinevate koormuste juures.
+
+* Kuidas käitub süsteem piirsituatsioonides -- väga palju kasutajaid korraga, väga palju võtmeosakuid baasis?
+
+Sellise testi puhul püütakse süsteem viia piirsituatsiooni või üle selle ning jälgitakse süsteemi käitumist sellistes oludes. Piirsituatsioonide kompamisel võiks kasutada *stsenaariumi B*. Piirsituatsioonid tekivad tõenäoliselt rünnete tagajärjel ning sisaldavad oletatavasti märkimisväärsel hulgal ka mittekorrektseid päringuid.
+
+* Milline on süsteemi taastumise võime peale piirkoormuse taandumist?
+
+Selle testi puhul kogutakse infot tipukoormusest taastumise võime kohta. Sellegi küsimuse vastuse otsimisel on asjakohane kasutada *stsenaariumi B*.
+
+* Kuidas käitub süsteem pikemaajalise mõõduka või suurema koormuse korral?
+
+Süsteemi käitatakse pikema aja jooksul ühtlase mõõduka koormusega ning püütakse leida anomaaliaid või vigu, mis võivad ilmneda süsteemi pikemaajalisel tööl (väikesed mälulekked jne). Pikemaajalist koormamist võib rakendada nii *stsenaariumi A kui B*.
+
+== Testkeskkond
+
+Võtmeedastusserver on Linux platvormil töötama planeeritud serverrakendus. Serveri testimisel kasutatakse uusimat Java LTS versiooni, mis testiplaani kirjutamise hetkel on Java versioon 17.
+
+Detailne kasutatud testkeskkonda puudutav info kajastatakse koostatavas testiraportis.
