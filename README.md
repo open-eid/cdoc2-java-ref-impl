@@ -15,9 +15,9 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 2. Sender finds recipient's certificate that contains EC public key from SK LDAP
 3. Sender derives key encryption key (KEK) using ECDH (from sender EC private key and recipient EC public key)  
 4. Sender generates file master key (FMK) from secure random
-5. Sender derives content encryption key (CEK) and hmac key from FMK using HKDF algorithm
-6. Sender encrypts CEK with KEK (xor)
-7. Sender adds KEK and senders and recipients public keys to CDoc header[^2]
+5. Sender derives content encryption key (CEK) and hmac key (HHK) from FMK using HKDF algorithm
+6. Sender encrypts FMK with KEK (xor)
+7. Sender adds encrypted FMK with senders and recipients public keys to CDoc header[^2]
 8. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
 9. Sender encrypts content[^3] with CEK (ChaCha20-Poly1305 with AAD)
 10. Sender sends CDoc to Recipient 
