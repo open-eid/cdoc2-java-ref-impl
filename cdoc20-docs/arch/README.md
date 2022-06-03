@@ -10,5 +10,5 @@ sudo gem install asciidoctor
 
 ### HTML Generation
 ```
-asciidoctor -r asciidoctor-diagram proovitoo.adoc
+asciidoctor -r asciidoctor-diagram arhitektuur.adoc
 ```
