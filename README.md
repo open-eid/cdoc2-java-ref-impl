@@ -45,8 +45,7 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 8. Recipient authenticates himself against key transfer server using certificate on id-kaart (mutual TLS)
 9. Recipient queries the server with transaction id [^4]
 10. If recipient certificate public key and recipient public key in transaction record match, then server answers with sender public key
-11. Server deletes transaction record
-12. *Follow steps from previous steps 12-15*
+11. *Follow steps from previous steps 12-15*
 
 
 Key transfer server benefits:
