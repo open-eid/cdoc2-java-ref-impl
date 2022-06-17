@@ -1,1 +1,3 @@
 ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "c=EE" "(cn=KUSMAN,JANNO,37903130370)"
+
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38207162766)"

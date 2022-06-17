@@ -32,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -163,6 +164,33 @@ public final class ECKeys {
                     return secp384r1;
                 default:
                     throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
+            }
+        }
+
+        public static EllipticCurve forPubKey(PublicKey publicKey)
+                throws NoSuchAlgorithmException, InvalidParameterSpecException, NoSuchProviderException,
+                InvalidKeyException {
+
+            if (publicKey instanceof ECPublicKey) {
+                ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
+                return forOid(getCurveOid(ecPublicKey));
+            } else {
+                throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
+            }
+        }
+
+        /**
+         * Check if public key is supported by CDOC lib
+         * @param publicKey to check for encryption by CDOC
+         * @return if publicKey is supported for encryption by CDOC
+         */
+        public static boolean isSupported(PublicKey publicKey) {
+            try {
+                EllipticCurve curve = forPubKey(publicKey);
+                return curve.isValidKey((ECPublicKey) publicKey);
+            } catch (GeneralSecurityException ge) {
+                log.info("Unsupported public key {}", ge.toString());
+                return false;
             }
         }
 

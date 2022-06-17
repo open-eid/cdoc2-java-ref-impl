@@ -56,7 +56,7 @@ public class CDocCliTest {
         Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
         int exitCode = cmd.execute("create",
                 "--pubkey=keys/bob_pub.pem",
-                "--file="+cdocFile,
+                "--file=" + cdocFile,
                 cdocCliPath.resolve("README.md").toString()
         );
 
@@ -67,7 +67,7 @@ public class CDocCliTest {
         assertEquals(0, exitCode);
 
         assertNotNull(out);
-        assertTrue(out.toString().startsWith("Created "+cdocFile));
+        assertTrue(out.toString().startsWith("Created " + cdocFile));
 
         assertTrue(cdocFile.toFile().exists());
 
@@ -80,9 +80,9 @@ public class CDocCliTest {
         err.reset();
 
         int decryptExitCode = cmd.execute("decrypt",
-                "--file="+cdocFile,
+                "--file=" + cdocFile,
                 "--key=keys/bob.pem",
-                "--output="+outPath
+                "--output=" + outPath
         );
 
         log.debug("Output was: {}", out);
@@ -90,9 +90,9 @@ public class CDocCliTest {
 
         assertEquals(0, decryptExitCode);
 
-        log.debug("Expected: {}", "Decrypting "+cdocFile.toFile()+" "+outPath);
+        log.debug("Expected: {}", "Decrypting " + cdocFile.toFile() + " " + outPath);
 
-        assertTrue(out.toString().startsWith("Decrypting "+cdocFile.toFile()+" to "+outPath));
+        assertTrue(out.toString().startsWith("Decrypting " + cdocFile.toFile() + " to " + outPath));
         assertTrue(out.toString().contains("README.md"));
     }
 }
