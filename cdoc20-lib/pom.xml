@@ -46,14 +46,7 @@
             <version>1.7.32</version>
         </dependency>
 
-        <!--equals and hashcode generation ~2MB -->
-        <!--dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.22</version>
-        </dependency-->
-
-        <!-- tar -->
+        <!-- tar and zlib -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
@@ -79,6 +72,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>

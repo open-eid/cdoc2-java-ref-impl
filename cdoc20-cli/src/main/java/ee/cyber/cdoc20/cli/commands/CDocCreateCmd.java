@@ -83,7 +83,13 @@ public class CDocCreateCmd implements Callable<Void> {
         List<ECPublicKey> recipients = new LinkedList<>();
         recipients.addAll(ECKeys.loadECPubKeys(this.recipient.pubKeys));
         recipients.addAll(ECKeys.loadCertKeys(this.recipient.certs));
-        recipients.addAll(LdapUtil.getCertKeys(this.recipient.identificationCodes));
+
+        List<ECPublicKey> ldapKeys = LdapUtil.getCertKeys(this.recipient.identificationCodes).stream()
+                .filter(ECKeys.EllipticCurve::isSupported)
+                .map(publicKey -> (ECPublicKey)publicKey)
+                .toList();
+
+        recipients.addAll(ldapKeys);
 
 
         EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()

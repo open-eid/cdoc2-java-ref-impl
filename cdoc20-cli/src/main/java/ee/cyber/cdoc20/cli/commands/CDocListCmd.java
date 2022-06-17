@@ -25,7 +25,7 @@ public class CDocListCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
 
-    @Option(names = {"-k", "--key"}, required = true,
+    @Option(names = {"-k", "--key"},
             paramLabel = "PEM", description = "EC private key PEM used to decrypt")
     File privKeyFile;
 

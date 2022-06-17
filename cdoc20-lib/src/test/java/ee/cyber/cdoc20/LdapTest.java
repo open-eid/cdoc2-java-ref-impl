@@ -7,16 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
-import javax.naming.ldap.LdapName;
-import java.security.GeneralSecurityException;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LdapTest {
@@ -27,36 +24,20 @@ public class LdapTest {
     private static final String id = "37903130370";
 
     @Test
-    void testFindCert() throws NamingException, CertificateException {
+    void testFindAuthenticationCerts() throws NamingException, CertificateException {
+        List<PublicKey> keys =  LdapUtil.getCertKeys(new String[]{id, "38207162766"});
 
-        X509Certificate cert = LdapUtil.findEstEIDCertificate(id);
-        assertNotNull(cert);
-
-        List<String> cn;
-        try {
-            cn = new LdapName(cert.getSubjectX500Principal().getName()).getRdns().stream()
-                    .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
-                    .map(rdn -> rdn.getValue().toString())
-                    .toList();
-        } catch (InvalidNameException e) {
-            cn = List.of();
-            log.error("InvalidNameException", e);
-        }
-
-        log.debug("CN {}", cn);
-
-        assertTrue(cn.size() == 1);
-        assertTrue(cn.get(0).contains(id));
-    }
-
-    @Test
-    void testGetCertKeys() throws NamingException, GeneralSecurityException {
-        List<ECPublicKey> keys =  LdapUtil.getCertKeys(new String[]{id});
-
+        // Since testing against external service, then can't be really sure what is returned
+        // if something is returned then consider it success
         assertTrue(!keys.isEmpty());
 
-        ECPublicKey ecPublicKey = keys.get(0);
-        assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKey(ecPublicKey));
+        List<ECPublicKey> ecPublicKeys = keys.stream()
+                .filter(ECKeys.EllipticCurve::isSupported)
+                .map(publicKey -> (ECPublicKey)publicKey)
+                .toList();
+
+        // all returned keys were supported by cdoc
+        assertEquals(keys.size(), ecPublicKeys.size());
     }
 
 }
