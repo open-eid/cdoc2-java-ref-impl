@@ -29,12 +29,12 @@ Käesoleva testiplaani eesmärk on anda ülevaade CDOC2.0 võtmeedastusserveri t
 
 Tulenevalt testitava võtmeedastusserveri funktsionaalsuse piiratusest on testiplaanis kirjas ka planeeritavad testistsenaariumid.
 
-=== Viited
+=== Kasutatud dokumentatsioon
 
-#kas neid on kasutatud/viidatud?#
+Testiplaani koostamise aluseks on CDOC 2.0 projekti dokumentatsioon, mille põhjal tuvastati testimisvajadus ning planeeriti testid
 
-* #Kasutusmallid#
-* #CDOC 2.0 spetsifikatsioon#
+* CDOC 2.0 kasutusmallimudel
+* CDOC 2.0 spetsifikatsioon
 
 == Testimise eesmärk ja ulatus
 
