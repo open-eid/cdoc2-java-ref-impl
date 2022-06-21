@@ -1,3 +1,6 @@
+Moved to https://confluence.ria.ee/x/o4NWDQ
+
+<del>
 <!-- 0 -->
 |  |  |  |  |  |
 |---|---|---|---|---|
@@ -98,3 +101,4 @@
 |monitooring|24.1|Süsteemi iga eraldi paigaldatav osa peab väljastama  RIA monitooringusüsteemile (näiteks aadressilt `heartbeat.json`) masinloetaval kujul oma nime ja versiooninumbri, oluliste väliste süsteemide oleku, viimase käivitamise aja, pakendamise aja ning serveriaja.||TODO: monitoorimisnõuded ei ole kokku lepitud|
 
 93 nõuet.
+</del>

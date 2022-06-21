@@ -1,3 +1,6 @@
+Moved to https://confluence.ria.ee/x/o4NWDQ
+
+<del>
 # RIA MFN ja nende lahendamine CDOC 2.0 projektis
 
 MFN on algselt defineeritud https://e-gov.github.io/MFN
@@ -23,3 +26,4 @@ Markdown formaadis MFN dokumendi genereerimiseks vajalikud tööriistad:
 Genereerimiseks käivita `generate.sh` või käsud:
 1. `jekyll b -s jekyll -d jekyll/_site`
 1. `mv jekyll/_site/index.html ./MFN.md`
+</del>
