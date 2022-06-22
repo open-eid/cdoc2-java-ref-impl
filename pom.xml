@@ -19,6 +19,9 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <!-- by default exclude slow and pcks11 tests are excluded from running-->
+        <tests>!(pkcs11 | slow)</tests>
+
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
@@ -28,7 +31,33 @@
 
     </properties>
     <profiles>
+
+
     <profile>
+        <id>allTests</id>
+        <properties>
+            <!-- empty, means all tests-->
+            <tests></tests>
+        </properties>
+    </profile>
+
+    <profile>
+        <id>excludeSlowTests</id>
+        <properties>
+            <tests>!slow</tests>
+        </properties>
+    </profile>
+
+
+    <profile>
+        <id>excludePkcs11AndSlowTests</id>
+        <properties>
+            <tests>!(pkcs11 | slow)</tests>
+        </properties>
+    </profile>
+
+
+        <profile>
     <id>coverage</id>
 
     <build>
@@ -140,6 +169,7 @@
                     <version>2.22.0</version>
                     <configuration>
                         <trimStackTrace>false</trimStackTrace>
+                        <groups>${tests}</groups>
                     </configuration>
                 </plugin>
                 <plugin>

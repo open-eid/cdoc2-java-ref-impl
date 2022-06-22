@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 import ee.cyber.cdoc20.crypto.ECKeys;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -201,7 +201,8 @@ public class EnvelopeTest {
     }
 
     // test that near max size header can be created and parsed
-    @Disabled("testLongHeader is disabled as running it takes ~30seconds.")
+    //@Disabled("testLongHeader is disabled as running it takes ~30seconds.")
+    @Tag("slow")
     @Test
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 

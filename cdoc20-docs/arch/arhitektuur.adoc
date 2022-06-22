@@ -35,10 +35,6 @@ Mõlemad teenused kasutavad HTTPS protokolli. Saatjale mõeldud teenus ei autend
 
 Võtmeedastusserver talletab töökindlalt saatjate poolt edastatud võtmekapslid oma andmebaasis. Võtmeedastusserver kustutab võtmekapslid määratud aja möödumisel, et vähendada võtmeserveri võimalikul kompromiteerumisel tekkivat kahju.
 
-[[sample]]
-.Näidis
-image::sample.png[]
-
 == Võtmeedastusserveri arhitektuur
 
 [plantuml, target=diagram-classes, format=svg]
