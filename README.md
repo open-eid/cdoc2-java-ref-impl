@@ -9,7 +9,8 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 
 ## TL;DR CDoc 2.0 without server scenario 
 
-**Warning**: This description is simplification to give general idea, details and **final truth is in [CDOC 2.0 specification](https://overleaf.cloud.cyber.ee/project/61f2b8994efa0a0086c3329d)**.
+**Warning**: This description is simplification to give general idea, details and **final truth is in 
+[CDOC 2.0 specification](https://overleaf.cloud.cyber.ee/project/61f2b8994efa0a0086c3329d)**.
 
 1. Sender generates EC (elliptic curve) key pair [^1]
 2. Sender finds recipient's certificate that contains EC public key from SK LDAP
@@ -22,7 +23,8 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 9. Sender encrypts content[^3] with CEK (ChaCha20-Poly1305 with AAD)
 10. Sender sends CDoc to Recipient 
 11. Recipient finds recipients public key from CDoc
-12. Recipient derives key encryption key (KEK) using ECDH (from recipient private key on id-kaart and sender public key) and decrypts FMK
+12. Recipient derives key encryption key (KEK) using ECDH (from recipient private key on id-kaart and sender public key)
+    and decrypts FMK
 13. Recipient derives CEK and HHK from FMK using HKDF algorithm
 14. Recipient calculates hmac and checks it against hmac in CDoc 
 15. Recipient decrypts content using CEK
@@ -67,6 +69,18 @@ CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4
 
 ```
 mvn clean install
+```
+
+## Testing
+By default tests that require smart-card are excluded from running. To execute all tests enable allTests maven profile
+```
+mvn -PallTests test
+```
+
+For more control set `tests` maven property directly. For more info see 
+[Junit5 Tag Expression](https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions)
+```
+mvn -Dtests='!(slow | pkcs11)'
 ```
 
 ## Running

@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.EnvelopeTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -32,6 +33,7 @@ public class Pkcs11Test extends EnvelopeTest {
     private final char[] pin = {'3', '4', '7', '1'};
     private final String id = "37101010021";
 
+    @Tag("pkcs11")
     @Test
     void testLoadKeyInteractively() throws GeneralSecurityException, IOException {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
@@ -41,6 +43,7 @@ public class Pkcs11Test extends EnvelopeTest {
         assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKeyPair(igorKeyPair));
     }
 
+    @Tag("pkcs11")
     @Test
     void testLoadCert() throws IOException, GeneralSecurityException {
         Path sunpkcs11Conf = Crypto.createSunPkcsConfigurationFile(null, null, 0);
@@ -66,6 +69,7 @@ public class Pkcs11Test extends EnvelopeTest {
         assertTrue(cn.get(0).contains(id));
     }
 
+    @Tag("pkcs11")
     @Test
     void testContainerUsingPKCS11Key(@TempDir Path tempDir)
             throws IOException, GeneralSecurityException, CDocParseException {
