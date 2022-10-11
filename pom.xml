@@ -106,8 +106,8 @@
     </profiles>
 
     <scm>
-        <developerConnection>scm:git:gogs@collab.cyber.ee:jkusman/cdoc20_java.git</developerConnection>
-        <url>https://collab.cyber.ee/gogs/jkusman/cdoc20_java</url>
+        <developerConnection>scm:git:git@gitlab.cyber.ee:cdoc-2.0/cdoc20_java</developerConnection>
+        <url>git@gitlab.cyber.ee:cdoc-2.0/cdoc20_java</url>
       <tag>v0.0.1</tag>
   </scm>
 
