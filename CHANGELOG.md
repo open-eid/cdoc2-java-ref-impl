@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.6] server scenario implementation (2022-10-11)
+
+### Features
+
+* Key exchange server implementation
+* CLI and libary support for key scenario
+* Server OpenAPI changes (more strict string format for recipient_pub_key and server_pub_key fields)
+
 ## [0.0.5] PKCS11, LDAP and generated sender keys (2022-05-13)
 
 
