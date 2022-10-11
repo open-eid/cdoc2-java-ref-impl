@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
 
-    <version>0.0.6</version>
+    <version>0.0.7-SNAPSHOT</version>
     <groupId>ee.cyber.cdoc20</groupId>
     <artifactId>cdoc20</artifactId>
     <description>CDOC 2.0 reference implementation </description>
