@@ -2,12 +2,14 @@ package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.util.KeyServerClientFactory;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.List;
+
 
 
 public class CDocDecrypter {
@@ -19,6 +21,8 @@ public class CDocDecrypter {
     private File cDocFile;
 
     private List<String> filesToExtract;
+
+    private KeyServerClientFactory keyServerClientFactory;
 
     @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withRecipient(KeyPair recipientKeyPair) {
@@ -45,18 +49,25 @@ public class CDocDecrypter {
         return this;
     }
 
+    public CDocDecrypter withKeyServers(KeyServerClientFactory clientFactory) {
+        this.keyServerClientFactory = clientFactory;
+        return this;
+    }
+
+
 
     public List<String> decrypt() throws IOException, CDocException {
         //TODO: validate
 
+
         try {
             if ((filesToExtract == null) || (filesToExtract.isEmpty())) {
-                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath());
+                return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(),
+                        keyServerClientFactory);
             } else {
                 return Envelope.decrypt(cDocInputStream, recipientKeyPair, destinationDirectory.toPath(),
-                        filesToExtract);
+                        filesToExtract, keyServerClientFactory);
             }
-
         } catch (GeneralSecurityException | CDocParseException ex) {
             String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
             throw new CDocException("Error decrypting " + fileName, ex);
@@ -69,12 +80,11 @@ public class CDocDecrypter {
      */
     public List<ArchiveEntry> list() throws IOException, CDocException {
         try {
-            return Envelope.list(cDocInputStream, recipientKeyPair);
-
-
+            return Envelope.list(cDocInputStream, recipientKeyPair, keyServerClientFactory);
         } catch (GeneralSecurityException | CDocParseException ex) {
             String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
             throw new CDocException("Error decrypting " + fileName, ex);
         }
     }
+
 }

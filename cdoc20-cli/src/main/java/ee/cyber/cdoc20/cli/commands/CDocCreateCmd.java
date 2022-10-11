@@ -4,6 +4,7 @@ package ee.cyber.cdoc20.cli.commands;
 import ee.cyber.cdoc20.EccPubKeyCDocBuilder;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.util.LdapUtil;
+import ee.cyber.cdoc20.util.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 
 //S106 - Standard outputs should not be used directly to log anything
@@ -27,6 +29,9 @@ public class CDocCreateCmd implements Callable<Void> {
 
 
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
+
+    // default server configuration disabled, until public key server is up and running
+    //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost.properties";
 
     @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
     File cdocFile;
@@ -53,6 +58,16 @@ public class CDocCreateCmd implements Callable<Void> {
     void setProperty(Map<String, String> props) {
         props.forEach(System::setProperty);
     }
+
+    @Option(names = {"-S", "--server"},
+            paramLabel = "FILE.properties",
+            description = "Key server connection properties file"
+            // default server configuration disabled, until public key server is up and running
+            //, arity = "0..1"
+            //, fallbackValue = DEFAULT_SERVER_PROPERTIES
+    )
+    String keyServerPropertiesFile;
+
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     File[] inputFiles;
@@ -95,6 +110,12 @@ public class CDocCreateCmd implements Callable<Void> {
         EccPubKeyCDocBuilder cDocBuilder = new EccPubKeyCDocBuilder()
                 .withRecipients(recipients)
                 .withPayloadFiles(Arrays.asList(inputFiles));
+
+        if (keyServerPropertiesFile != null) {
+            Properties p = new Properties();
+            p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
+            cDocBuilder.withServerProperties(p);
+        }
 
         cDocBuilder.buildToFile(cdocFile);
 

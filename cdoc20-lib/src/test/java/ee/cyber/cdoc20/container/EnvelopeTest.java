@@ -1,21 +1,36 @@
 package ee.cyber.cdoc20.container;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 
+import ee.cyber.cdoc20.container.recipients.EccRecipient;
+import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.util.ExtApiException;
+import ee.cyber.cdoc20.util.KeyServerClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.time.Instant;
 import java.util.Arrays;
@@ -25,6 +40,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+@ExtendWith(MockitoExtension.class)
 public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
@@ -35,6 +51,10 @@ public class EnvelopeTest {
             "LqnEv1cUVHROnhw3hAW63F3H2PI93ZzB/BT6+C+gOLt3XkCT/H3C9X1ZktCd5lS2\n" +
             "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
             "-----END EC PRIVATE KEY-----\n";
+
+    @Mock KeyServerClient keyServerClientMock;
+
+
 
     // Mainly flatbuffers and friends
     @Test
@@ -64,12 +84,60 @@ public class EnvelopeTest {
         ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
 
         //no exception is also good indication that parsing worked
-        List<Details.EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
+        List<EccRecipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
 
         assertEquals(1, details.size());
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
 
+    }
+
+    @Test
+    void testEccServerSerialization(@TempDir Path tempDir) throws IOException, GeneralSecurityException,
+            CDocParseException, ExtApiException {
+        KeyPair recipientKeyPair = ECKeys.loadFromPem(bobKeyPem);
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
+        List<ECPublicKey> recipients = List.of((ECPublicKey) recipientKeyPair.getPublic());
+
+        when(keyServerClientMock.getServerIdentifier()).thenReturn("mock");
+        when(keyServerClientMock.storeSenderKey(any(), any())).thenReturn("SD1234567890");
+
+        Envelope envelope = Envelope.prepare(recipients, keyServerClientMock);
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        envelope.encrypt(List.of(payloadFile), dst);
+
+        byte[] resultBytes = dst.toByteArray();
+
+        assertTrue(resultBytes.length > 0);
+
+        ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
+
+        //no exception is also good indication that parsing worked
+        List<EccRecipient> eccRecipients =
+                Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
+
+        assertEquals(1, eccRecipients.size());
+
+
+
+        assertInstanceOf(EccServerKeyRecipient.class, eccRecipients.get(0));
+
+        EccServerKeyRecipient details = (EccServerKeyRecipient) eccRecipients.get(0);
+
+        assertEquals(recipientPubKey, details.getRecipientPubKey());
+
+        assertEquals("mock", details.getKeyServerId());
+        assertEquals("SD1234567890", details.getTransactionId());
     }
 
 
@@ -78,8 +146,6 @@ public class EnvelopeTest {
         KeyPair bobKeyPair = ECKeys.loadFromPem(bobKeyPem);
         testContainer(tempDir, bobKeyPair);
     }
-
-
 
     @Test
     @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
@@ -91,7 +157,6 @@ public class EnvelopeTest {
         File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
         byte[] bytes = new byte[1024];
-
 
         int bytesWanted = 8 * 1024;
         // create bigger file, so that payload file is written to disk, before MAC check
@@ -202,8 +267,8 @@ public class EnvelopeTest {
 
     // test that near max size header can be created and parsed
     //@Disabled("testLongHeader is disabled as running it takes ~30seconds.")
-    @Tag("slow")
     @Test
+    @Tag("slow")
     void testLongHeader(@TempDir Path tempDir) throws IOException, GeneralSecurityException, CDocParseException {
 
         UUID uuid = UUID.randomUUID();
