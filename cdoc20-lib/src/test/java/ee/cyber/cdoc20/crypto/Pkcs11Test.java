@@ -33,8 +33,8 @@ public class Pkcs11Test extends EnvelopeTest {
     private final char[] pin = {'3', '4', '7', '1'};
     private final String id = "37101010021";
 
-    @Tag("pkcs11")
     @Test
+    @Tag("pkcs11")
     void testLoadKeyInteractively() throws GeneralSecurityException, IOException {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
         // so running this test with other tests doesn't make much sense
@@ -43,8 +43,8 @@ public class Pkcs11Test extends EnvelopeTest {
         assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKeyPair(igorKeyPair));
     }
 
-    @Tag("pkcs11")
     @Test
+    @Tag("pkcs11")
     void testLoadCert() throws IOException, GeneralSecurityException {
         Path sunpkcs11Conf = Crypto.createSunPkcsConfigurationFile(null, null, 0);
         AbstractMap.SimpleEntry<PrivateKey, X509Certificate> pair =
@@ -69,8 +69,8 @@ public class Pkcs11Test extends EnvelopeTest {
         assertTrue(cn.get(0).contains(id));
     }
 
-    @Tag("pkcs11")
     @Test
+    @Tag("pkcs11")
     void testContainerUsingPKCS11Key(@TempDir Path tempDir)
             throws IOException, GeneralSecurityException, CDocParseException {
 

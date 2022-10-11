@@ -1,16 +1,5 @@
 package ee.cyber.cdoc20.crypto;
 
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.crypto.KeyAgreement;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +43,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.crypto.KeyAgreement;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * EC keys loading, decoding and encoding. Currently, supports only secp384r1 EC keys.
@@ -205,8 +205,6 @@ public final class ECKeys {
     private static final ECCurve SECP_384_R_1_CURVE = new SecP384R1Curve();
 
 
-
-
     private static final Logger log = LoggerFactory.getLogger(ECKeys.class);
 
     private ECKeys() {
@@ -218,6 +216,12 @@ public final class ECKeys {
         return keyPairGenerator.generateKeyPair();
     }
 
+    /**
+     * Encode EcPublicKey in TLS 1.3 format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2
+     * @param curve EC curve that this ecPublicKey uses. Used to get curve key length.
+     * @param ecPublicKey EC public key
+     * @return ecPublicKey encoded in TLS 1.3 EC pub key format
+     */
     public static byte[] encodeEcPubKeyForTls(EllipticCurve curve, ECPublicKey ecPublicKey) {
         int keyLength = curve.getKeyLength();
         return encodeEcPubKeyForTls(ecPublicKey, keyLength);
@@ -445,6 +449,36 @@ public final class ECKeys {
         return pair;
     }
 
+    /**
+     * Get KeyStore.ProtectionParameter that gets KeyStore.ProtectionParameter value from user interactively
+     * @param prompt Prompt value displayed to user when asking protectionParameter value (ex `PIN:`)
+     * @return KeyStore.ProtectionParameter that interactively communicates with user
+     */
+    public static KeyStore.CallbackHandlerProtection getKeyStoreCallbackProtectionParameter(String prompt) {
+       return new KeyStore.CallbackHandlerProtection(callbacks -> {
+            for (Callback cp: callbacks) {
+                if (cp instanceof PasswordCallback) {
+                    // prompt the user for sensitive information
+                    PasswordCallback pc = (PasswordCallback)cp;
+
+                    java.io.Console console = System.console();
+                    if (console != null) {
+                        char[] pin = console.readPassword(prompt);
+                        pc.setPassword(pin);
+                    } else { //running from IDE, console is null
+                        JPasswordField pf = new JPasswordField();
+                        int okCxl = JOptionPane.showConfirmDialog(null, pf, prompt,
+                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+                        if (okCxl == JOptionPane.OK_OPTION) {
+                            String password = new String(pf.getPassword());
+                            pc.setPassword(password.toCharArray());
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     /**
      * Load KeyPair using automatically generated SunPKCS11 configuration and the default callback to get the pin.
@@ -471,30 +505,7 @@ public final class ECKeys {
             pinPrompt = "PIN" + (slot + 1) + ":";
         }
 
-        KeyStore.CallbackHandlerProtection cbHandlerProtection = new KeyStore.CallbackHandlerProtection(callbacks -> {
-
-            for (Callback cp: callbacks) {
-                if (cp instanceof PasswordCallback) {
-                    // prompt the user for sensitive information
-                    PasswordCallback pc = (PasswordCallback)cp;
-
-                    java.io.Console console = System.console();
-                    if (console != null) {
-                        char[] pin = console.readPassword(pinPrompt);
-                        pc.setPassword(pin);
-                    } else { //running from IDE, console is null
-                        JPasswordField pf = new JPasswordField();
-                        int okCxl = JOptionPane.showConfirmDialog(null, pf, pinPrompt,
-                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                        if (okCxl == JOptionPane.OK_OPTION) {
-                            String password = new String(pf.getPassword());
-                            pc.setPassword(password.toCharArray());
-                        }
-                    }
-                }
-            }
-        });
+        KeyStore.CallbackHandlerProtection cbHandlerProtection = getKeyStoreCallbackProtectionParameter(pinPrompt);
         return loadFromPKCS11Interactively(openScLibPath, slot, cbHandlerProtection);
     }
 
@@ -516,6 +527,7 @@ public final class ECKeys {
     public static KeyPair loadFromPKCS11Interactively(String openScLibPath, Integer slot,
                                                       KeyStore.CallbackHandlerProtection cbHandlerProtection)
             throws IOException, GeneralSecurityException {
+        //needs refactor to
         Path confPath = Crypto.createSunPkcsConfigurationFile(null, openScLibPath, slot);
         return loadFromPKCS11Interactively(confPath, cbHandlerProtection);
     }
@@ -541,6 +553,62 @@ public final class ECKeys {
         AbstractMap.SimpleEntry<PrivateKey, X509Certificate> pair =
                 loadFromPKCS11(confPath, pin, null);
         return new KeyPair(pair.getValue().getPublicKey(), pair.getKey());
+    }
+
+
+    /**
+     * Configure SunPKCS11 Provider using configuration file.
+     * @param confPath SunPKCS11 configuration file path
+     * @return SunPKCS11 Provider initialized from configuration file
+     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
+     *      SunPKCS11 documentation Table 5-1</a>
+     */
+    public static Provider initSunPkcs11Provider(Path confPath) {
+        log.debug("ECKeys.initSunPkcs11Provider({})", confPath);
+        log.info("Configuring SunPKCS11 from {}", confPath.toString());
+        Provider sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
+
+        log.debug("Provider name {}", sunPkcs11Provider.getName());
+        log.debug("Provider info {}", sunPkcs11Provider.getInfo());
+
+        log.debug("Adding provider {}", sunPkcs11Provider);
+        Security.addProvider(sunPkcs11Provider);
+        log.info("SunPKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
+                (Security.getProvider(sunPkcs11Provider.getName()) != null));
+
+        return sunPkcs11Provider;
+    }
+
+
+    /**
+     * Init OpenSC based KeyStore (like EST-EID). OpenSC must be installed. Creates configuration file for SunPKCS11,
+     * configures SunPkcs11 Provider and loads and configures PKCS11 KeyStore from SunPkcs11 Provider.
+     *
+     * Common openSC library locations:
+     * <ul>
+     *   <li>For Windows, it could be C:\Windows\SysWOW64\opensc-pkcs11.dll,
+     *   <li>For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so,
+     *   <li>For OSX, it could be /usr/local/lib/opensc-pkcs11.so
+     * </ul>
+     * @param openScLibPath OpenSC library location, defaults above if null
+     * @param slot Slot, default 0
+     * @param ksProtection {@link java.security.KeyStore.ProtectionParameter KeyStore.ProtectionParameter},
+     *                     example for password: <code>new KeyStore.PasswordProtection("1234".toCharArray())</code> or
+     *                     interactive {@link #getKeyStoreCallbackProtectionParameter(String)}
+     * @return Configured PKCS11 KeyStore
+     * @throws IOException when SunPKCS configuration file creation fails
+     * @throws KeyStoreException when KeyStore initialization fails
+     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
+     *     SunPKCS11 documentation Table 5-1</a>
+     */
+    public static KeyStore initPKCS11KeysStore(String openScLibPath, Integer slot,
+                                               KeyStore.ProtectionParameter ksProtection)
+            throws IOException, KeyStoreException {
+        log.trace("initPKCS11KeysStore");
+        Path sunPkcsConPath = Crypto.createSunPkcsConfigurationFile(null, openScLibPath, slot);
+        Provider sunPkcs11Provider = initSunPkcs11Provider(sunPkcsConPath);
+
+        return KeyStore.Builder.newInstance("PKCS11", sunPkcs11Provider, ksProtection).getKeyStore();
     }
 
 
@@ -575,6 +643,8 @@ public final class ECKeys {
             Path sunPkcs11ConfPath,
             char[] pin,
             KeyStore.CallbackHandlerProtection cbHandlerProtection) throws IOException, GeneralSecurityException {
+
+        //needs refactor, initPKCS11KeysStore is much cleaner implementation
 
         if (Crypto.getPkcs11ProviderName() == null) {
             if (!Crypto.initSunPkcs11(sunPkcs11ConfPath)) {
@@ -692,7 +762,6 @@ public final class ECKeys {
      * @throws IOException
      */
     public static String readAll(File file) throws IOException {
-
         return Files.readString(file.toPath());
     }
 

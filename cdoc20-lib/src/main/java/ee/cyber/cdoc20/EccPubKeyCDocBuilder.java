@@ -2,6 +2,7 @@ package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * CDocBuilder for building CDOCs using ECC public keys.
@@ -20,6 +22,7 @@ public class EccPubKeyCDocBuilder {
 
     private List<File> payloadFiles;
     private List<ECPublicKey> recipients;
+    private Properties serverProperties;
 
     @SuppressWarnings("checkstyle:HiddenField")
     public EccPubKeyCDocBuilder withPayloadFiles(List<File> payloadFiles) {
@@ -29,6 +32,11 @@ public class EccPubKeyCDocBuilder {
 
     public EccPubKeyCDocBuilder withRecipients(List<ECPublicKey> recipientsPubKeys) {
         this.recipients = recipientsPubKeys;
+        return this;
+    }
+
+    public EccPubKeyCDocBuilder withServerProperties(Properties p) {
+        this.serverProperties = p;
         return this;
     }
 
@@ -45,8 +53,14 @@ public class EccPubKeyCDocBuilder {
 
         validate();
 
+
         try {
-            Envelope envelope = Envelope.prepare(recipients);
+            Envelope envelope;
+            if (serverProperties == null) {
+                envelope = Envelope.prepare(recipients);
+            } else {
+                envelope = Envelope.prepare(recipients, KeyServerPropertiesClient.create(serverProperties));
+            }
             envelope.encrypt(this.payloadFiles, outputStream);
         } catch (GeneralSecurityException ex) {
             throw new CDocException(ex);

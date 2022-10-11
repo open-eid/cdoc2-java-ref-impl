@@ -12,8 +12,9 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 **Warning**: This description is simplification to give general idea, details and **final truth is in 
 [CDOC 2.0 specification](https://overleaf.cloud.cyber.ee/project/6322f8bcf962db0089c4cd08)**.
 
-1. Sender generates EC (elliptic curve) key pair [^1]
-2. Sender finds recipient's certificate that contains EC public key from SK LDAP
+1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
+   EC public key.
+2. Sender generates EC (elliptic curve) key pair using the same EC curve as in recipient EC public key [^1]
 3. Sender derives key encryption key (KEK) using ECDH (from sender EC private key and recipient EC public key)  
 4. Sender generates file master key (FMK) from secure random
 5. Sender derives content encryption key (CEK) and hmac key (HHK) from FMK using HKDF algorithm
@@ -60,9 +61,12 @@ Key transfer server benefits:
 
 ## Structure
 
-- cdoc20-schema - flatbuffers schemas and code generation
-- cdoc20-lib    - CDOC 2.0 creation and processing library
-- cdoc20-cli    - Command line utility to create/process CDOC 2.0 files
+- cdoc20-schema  - flatbuffers schemas and code generation
+- cdoc20-lib     - CDOC 2.0 creation and processing library
+- cdoc20-cli     - Command line utility to create/process CDOC 2.0 files
+- cdoc20-openapi - OpenAPI definitions for server and client generation
+- cdoc20-server  - Optional server backend for securely exchanging keys
+- cdoc20-client  - Optional client for server backend
 
 ## Building
 CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4
@@ -81,6 +85,15 @@ For more control set `tests` maven property directly. For more info see
 [Junit5 Tag Expression](https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions)
 ```
 mvn -Dtests='!(slow | pkcs11)'
+```
+
+In case the tests run slowly (probably due to waiting on entropy generation),
+using an entropy source (e.g `haveged`) may help on Linux:
+
+```
+apt-get install haveged
+update-rc.d haveged defaults
+service haveged start
 ```
 
 ## Running

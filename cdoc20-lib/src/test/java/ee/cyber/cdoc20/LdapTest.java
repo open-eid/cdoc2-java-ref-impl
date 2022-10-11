@@ -2,6 +2,7 @@ package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.util.LdapUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,9 @@ public class LdapTest {
     //private static final String id = "37101010021";//Igor
     private static final String id = "37903130370";
 
+
     @Test
+    @Tag("ldap")
     void testFindAuthenticationCerts() throws NamingException, CertificateException {
         List<PublicKey> keys =  LdapUtil.getCertKeys(new String[]{id, "38207162766"});
 

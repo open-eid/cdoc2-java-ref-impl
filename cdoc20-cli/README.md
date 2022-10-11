@@ -3,10 +3,10 @@
 ## Building
 Run from cdoc20_java parent directory
 ```
-mvn package
+mvn clean package
 ```
 
-Will create cdoc20-cli/target/cdoc20-cli-<version>.jar
+Will create `cdoc20-cli/target/cdoc20-cli-<version>.jar`
 
 ## Running
 Run from cdoc20-cli directory
@@ -26,7 +26,36 @@ To create:
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc --p keys/bob_pub.pem README.md
+java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.pem README.md
+```
+
+### Encryption with server stored keys
+Server must be running, see cdoc20-server/README.md for starting the server
+
+To store keys in key server, specify addition `--server` option:
+
+```
+java -jar target/cdoc20-cli-0.0.6-SNAPSHOT.jar create --server=server_localhost.properties -f /tmp/server_id-kaart.cdoc -r 37903130370  README.md
+```
+
+server_localhost.properties:
+```
+cdoc20.client.server.baseurl.post=https://localhost:8443
+
+# trusted certificates by client
+cdoc20.client.ssl.trust-store.type=JKS
+cdoc20.client.ssl.trust-store=../cdoc20-server/keys/clienttruststore.jks
+# or from classpath
+#cdoc20.client.ssl.trust-store=classpath:keystore/clienttruststore.jks
+cdoc20.client.ssl.trust-store-password=passwd
+
+# client private certificate for mutual TLS
+# client public certificate must be in server trust store
+cdoc20.client.ssl.client-store.type=PKCS12
+cdoc20.client.ssl.client-store=../cdoc20-server/keys/cdoc20client.p12
+# alternatively load from classpath
+#cdoc20.client.ssl.client-store=classpath:keystore/cdoc20client.p12
+cdoc20.client.ssl.client-store-password=passwd
 ```
 
 
@@ -38,6 +67,38 @@ To decrypt:
 
 ```
 java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
+```
+
+### Decrypting with server scenario
+Server must be running, see cdoc20-server/README.md for starting the server
+
+To decrypt CDOC document that has its keys distributed through key server, cdoc-cli must have `--server` option:
+
+```
+java -jar target/cdoc20-cli-0.0.6-SNAPSHOT.jar decrypt -f /tmp/server_id-kaart.cdoc --server=localhost_pkcs11.properties -o /tmp/
+```
+
+localhost_pkcs11.properties:
+```
+cdoc20.client.server.baseurl.post=https://localhost:8443
+
+# trusted certificates by client
+cdoc20.client.ssl.trust-store.type=JKS
+# path to client trust store (relative or full)
+cdoc20.client.ssl.trust-store=../cdoc20-server/keys/clienttruststore.jks
+# or path to file in classpath (jar)
+#cdoc20.client.ssl.trust-store=classpath:keystore/clienttruststore.jks
+cdoc20.client.ssl.trust-store-password=passwd
+
+# mutual TLS with cert from smart-card (EST-ID certificates are trusted by the server)
+cdoc20.client.ssl.client-store.type=PKCS11
+# if ssl.client-store-password.prompt is set, then ask user interactively
+cdoc20.client.ssl.client-store-password.prompt=PIN1
+# otherwise use password value
+#cdoc20.client.ssl.client-store-password=3471
+
+#OpenSCLibrary location, if not found in default location
+#opensclibrary=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 ```
 
 ### List

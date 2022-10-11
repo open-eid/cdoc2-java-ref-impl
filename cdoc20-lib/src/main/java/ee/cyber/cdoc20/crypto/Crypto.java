@@ -224,7 +224,7 @@ public final class Crypto {
      *      SunPKCS11 documentation Table 5-1</a>
      */
     public static boolean initSunPkcs11(Path confPath) {
-
+        log.trace("Crypto.initSunPkcs11({})", confPath);
         log.info("Configuring SunPKCS11 from {}", confPath.toString());
         Provider sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
 

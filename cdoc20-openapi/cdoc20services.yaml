@@ -1,20 +1,62 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
-  contact: 
+  contact:
     url: http://cyber.ee
   title: cdoc20services
   version: '1.0'
-  description: API for securly exchanging keys
-  summary: cdoc2.0 services
+  description: |
+    # API for securely exchanging keys
+    
+    Usage example (server requires mutual TLS and client certificate must be trusted by server):
+    
+    ```
+    curl -i -X 'POST' \
+    'https://localhost:8443/ecc-details' \
+    --cert-type 'P12' \
+    --cert 'cdoc20client.p12:passwd' \
+    --cacert 'server-certificate.pem' \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json' \
+    -d '{
+    "recipient_pub_key":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==",
+    "sender_pub_key":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==",
+    "ecc_curve": 1}' 
+    ```
+    Response:
+    ```
+    HTTP/1.1 201 
+    Location: /ecc-details/SD6efa76980f591f0cfb4966a2229505cb
+    ```
+    
+    Copy transaction id from Location header
+    
+    ```
+    curl --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8443/ecc-details/SD6efa76980f591f0cfb4966a2229505cb
+    ```
+    Response:
+    ```
+    {"recipient_pub_key":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==","sender_pub_key":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==","ecc_curve":1}
+    ```
+
 servers:
-  - url: 'https://localhost:3000'
+  - url: 'https://localhost:8080'
+  - url: 'https://localhost:8443'
 paths:
   '/ecc-details/{transactionId}':
     get:
       summary: ''
-      description: Get Ecc details for transansactionId
+      description: Get Ecc details for transactionId
       tags:
         - ecc-details
+      parameters:
+        - name: transactionId
+          in: path
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 34
+          required: true
+          description: transaction id from Details.ECCKeyServer
       responses:
         '200':
           description: OK
@@ -27,6 +69,7 @@ paths:
       operationId: getEccDetailsByTransactionId
       security:
         - mutualTLS: []
+  '/ecc-details':
     post:
       summary: Add Ecc Details
       description: Save ServerEccDetails and generate transaction id using secure random. Generated transactionId is returned in Location header
@@ -38,10 +81,10 @@ paths:
             Location:
               schema:
                 type: string
-                example: /ecc-details/TR0123456789ABCDEF
-              description: '/ecc-details/{transactionId}'
-        '409':
-          description: Already exists
+                example: /ecc-details/SD0123456789ABCDEF
+              description: 'URI of created resource. TransactionId can be extracted from URI as it follows pattern /ecc-details/{transactionId}'
+        '400':
+          description: 'Bad request. Client error.'
       requestBody:
         content:
           application/json:
@@ -50,30 +93,94 @@ paths:
       security: []
       tags:
         - ecc-details
-    parameters:
-      - schema:
-          type: string
-        name: transactionId
-        in: path
-        required: true
-        description: transaction id from Details.ECCKeyServer
 components:
   schemas:
     ServerEccDetails:
-      title: Transaction
+      title: Server ECC Details
+      description: |
+        Server ECC Details contains two EC public keys that are binaries in TLS format https://datatracker.ietf.org/doc/html/rfc8446#section-4.2.8.2. 
+        
+        To extract EC public key from client-certificate.pem :
+        ```
+        -----BEGIN CERTIFICATE-----
+        MIICWTCCAd+gAwIBAgIJAIGzuV1v0kYtMAoGCCqGSM49BAMEMHQxCzAJBgNVBAYT
+        AkVFMRAwDgYDVQQIEwdVbmtub3duMRAwDgYDVQQHEwdVbmtub3duMRcwFQYDVQQK
+        Ew5DeWJlcm5ldGljYSBBUzEQMA4GA1UECxMHVW5rbm93bjEWMBQGA1UEAxMNY2Rv
+        YzIwLWNsaWVudDAeFw0yMjA1MDIxMTQ5MjZaFw0yMjA3MzExMTQ5MjZaMHQxCzAJ
+        BgNVBAYTAkVFMRAwDgYDVQQIEwdVbmtub3duMRAwDgYDVQQHEwdVbmtub3duMRcw
+        FQYDVQQKEw5DeWJlcm5ldGljYSBBUzEQMA4GA1UECxMHVW5rbm93bjEWMBQGA1UE
+        AxMNY2RvYzIwLWNsaWVudDB2MBAGByqGSM49AgEGBSuBBAAiA2IABFR25IttEoB7
+        fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgr
+        j70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7e6M9MDswHQYD
+        VR0OBBYEFGZcVZHppMn0R9RJOpYYE3VbPnz6MBoGA1UdEQQTMBGHBH8AAAGCCWxv
+        Y2FsaG9zdDAKBggqhkjOPQQDBANoADBlAjEA3d+oUUShWb2DHPpyIY4y6/Fk25ow
+        Dy5oHThaRh5/6GY0APVFIp/kd6lm3fY/JmORAjAO7+sHJ2fsUzNq5o1cPK65roDJ
+        glqz1a3PNEiYGQJhduVaJ5Qqu4GeyxmWr4oiw+U=
+        -----END CERTIFICATE-----
+        ```
+        
+        Extract EC public key from certificate
+        ```
+        openssl x509 -pubkey -noout -in client-certificate.pem  > pubkey.pem
+        ```
+        
+        Display EC public key (in TLS format)
+        ```
+        openssl ec -pubin -in pubkey.pem -text -noout
+        read EC key
+        Public-Key: (384 bit)
+        pub:
+            04:54:76:e4:8b:6d:12:80:7b:7f:0c:c9:8b:92:8e:
+            69:53:13:36:b7:c6:81:79:42:fd:28:a5:12:55:6e:
+            6d:7f:21:98:62:f8:a2:b6:2a:fe:83:f9:8c:fe:9d:
+            11:10:fb:16:7c:38:5d:49:3b:49:08:2b:8f:bd:26:
+            a1:7f:4a:fb:70:88:49:a7:d0:54:4b:c4:8e:18:60:
+            96:30:4b:57:d8:d2:89:9b:81:da:dc:2b:92:60:4d:
+            ee:28:4b:1a:28:3b:7b
+        ASN1 OID: secp384r1
+        NIST CURVE: P-384
+        ```
+        
+        Base64 encode EC public key
+        ```
+        openssl ec -pubin -in pubkey.pem -text -noout 2>/dev/null|grep '    '|sed s/://g|xxd -r -p -|base64|tr -d '\n' && echo ''
+        BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==
+        ```
+
+
       type: object
       properties:
         recipient_pub_key:
           type: string
-          description: 'TLS format binary, base64 encoded'
+          format: byte
+          maxLength: 132
+          example: BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==
+          description: 'Recipient public key in [TLS format](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.8.2) binary. Must match with public key in mTLS client certificate.'
         sender_pub_key:
           type: string
-          description: 'TLS format binary, base64 encoded'
+          format: byte
+          maxLength: 132
+          example: BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==
+          description: >
+            Sender public key in [TLS format](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.8.2) binary. Must be 
+            EC key with the same EC curve as recipient_public_key. Sender public key is usually generated and is 
+            required for decrypting CDOC2.0 documents.
+            
+
         ecc_curve:
           type: integer
-          description: 'enum value from enum EllipticCurve:byte'
+          description: 'EC curve for both keys. For secp384r1 curve value is 1 (currently only supported curve). The value comes from enum value defined in flatbuffers enum EllipticCurve:byte'
+          example: 1
+      required:
+        - recipient_pub_key
+        - sender_pub_key
+        - ecc_curve
   securitySchemes:
     mutualTLS:
-      type: mutualTLS
+      # since mutualTLS is not supported by OAS 3.0.x, then define it as http basic auth. MutualTLS must be implemented
+      # manually anyway
+      #type: mutualTLS
+      type: http
+      scheme: basic
 tags:
   - name: ecc-details
