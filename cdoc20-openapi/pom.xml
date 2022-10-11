@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>cdoc20</artifactId>
         <groupId>ee.cyber.cdoc20</groupId>
-        <version>0.0.6-SNAPSHOT</version>
+        <version>0.0.6</version>
     </parent>
 
     <artifactId>cdoc20-openapi</artifactId>
@@ -196,7 +194,7 @@
                         <delegatePattern>true</delegatePattern>
                         <dateLibrary>java8-localdatetime</dateLibrary>
                         <hateoas>false</hateoas>
-                        <oas3>true</oas3>>
+                        <oas3>true</oas3>&gt;
                         <useOptional>true</useOptional>
                         <bigDecimalAsString>true</bigDecimalAsString>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>

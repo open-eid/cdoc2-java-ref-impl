@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.6.7</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
 	<artifactId>cdoc20-server</artifactId>
 	<groupId>ee.cyber.cdoc20</groupId>
-	<version>0.0.6-SNAPSHOT</version>
+	<version>0.0.6</version>
 	<name>cdoc20-server</name>
 	<description>Cdoc 2.0 server in Spring</description>
 	<properties>
@@ -24,7 +23,7 @@
 			<id>allTests</id>
 			<properties>
 				<!-- empty, means all tests-->
-				<tests></tests>
+				<tests />
 			</properties>
 		</profile>
 
@@ -39,19 +38,19 @@
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-lib</artifactId>
-			<version>0.0.6-SNAPSHOT</version>
+			<version>0.0.6</version>
 		</dependency>
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-openapi</artifactId>
-			<version>0.0.6-SNAPSHOT</version>
+			<version>0.0.6</version>
 			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-client</artifactId>
-			<version>0.0.6-SNAPSHOT</version>
+			<version>0.0.6</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -207,10 +206,10 @@
 						</goals>
 						<configuration>
 							<target>
-								<delete file="${basedir}/src/test/resources/test.properties"/>
-								<delete file="${basedir}/src/test/resources/keystore/servertruststore.jks"/>
-								<delete file="${basedir}/src/test/resources/keystore/cdoc20server.p12"/>
-								<delete dir="${basedir}/src/test/resources/db"/>
+								<delete file="${basedir}/src/test/resources/test.properties" />
+								<delete file="${basedir}/src/test/resources/keystore/servertruststore.jks" />
+								<delete file="${basedir}/src/test/resources/keystore/cdoc20server.p12" />
+								<delete dir="${basedir}/src/test/resources/db" />
 							</target>
 						</configuration>
 					</execution>
@@ -244,4 +243,8 @@
 		</plugins>
 	</build>
 
+
+  <scm>
+    <tag>v0.0.6</tag>
+  </scm>
 </project>
