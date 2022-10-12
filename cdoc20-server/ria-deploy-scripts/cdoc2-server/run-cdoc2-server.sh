@@ -10,7 +10,7 @@ docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 
 # decrease thread count (default 250) to run on machine with 1 GB RAM
-docker run -d --name $CONTAINER_NAME --user "$(id -u):$(id -g)" \
+docker run -d --restart unless-stopped --name $CONTAINER_NAME --user "$(id -u):$(id -g)" \
   -p 8443:8443 \
   -v $PWD/conf:/conf \
   --env BPL_JVM_THREAD_COUNT=100 \
