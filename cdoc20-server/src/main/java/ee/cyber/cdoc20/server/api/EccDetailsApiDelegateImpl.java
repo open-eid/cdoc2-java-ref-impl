@@ -211,5 +211,4 @@ public class EccDetailsApiDelegateImpl implements EccDetailsApiDelegate {
         return modelMapperInstance;
     }
 
-
 }

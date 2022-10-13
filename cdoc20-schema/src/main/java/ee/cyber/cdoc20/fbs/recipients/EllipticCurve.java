@@ -2,6 +2,7 @@
 
 package ee.cyber.cdoc20.fbs.recipients;
 
+@SuppressWarnings("unused")
 public final class EllipticCurve {
   private EllipticCurve() { }
   public static final byte UNKNOWN = 0;

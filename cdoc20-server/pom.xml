@@ -23,7 +23,7 @@
 			<id>allTests</id>
 			<properties>
 				<!-- empty, means all tests-->
-				<tests />
+				<tests/>
 			</properties>
 		</profile>
 
@@ -75,7 +75,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.24</version>
+			<version>${lombok.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.modelmapper</groupId>
@@ -169,7 +169,6 @@
 							</resources>
 						</configuration>
 					</execution>
-
 					<execution>
 						<!-- junit test create DB based on liquibase automatically, copy liquibase conf files-->
 						<id>copy-liquibase-configuration-to-test</id>
@@ -189,8 +188,6 @@
 							</resources>
 						</configuration>
 					</execution>
-
-
 				</executions>
 			</plugin>
 			<plugin>
@@ -243,8 +240,8 @@
 		</plugins>
 	</build>
 
-
   <scm>
     <tag>v0.0.6</tag>
   </scm>
+
 </project>

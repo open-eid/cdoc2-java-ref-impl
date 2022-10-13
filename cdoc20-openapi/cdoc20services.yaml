@@ -65,7 +65,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerEccDetails'
         '404':
-          description: 'Not Found. 404 is also returned, when recipient id in record doesn''t match with public key in client certificate '
+          description: 'Not Found. 404 is also returned, when recipient id in record does not match with public key in client certificate '
       operationId: getEccDetailsByTransactionId
       security:
         - mutualTLS: []

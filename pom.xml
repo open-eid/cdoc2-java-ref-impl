@@ -3,15 +3,12 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-
     <version>0.0.7-SNAPSHOT</version>
     <groupId>ee.cyber.cdoc20</groupId>
     <artifactId>cdoc20</artifactId>
     <description>CDOC 2.0 reference implementation </description>
 
     <packaging>pom</packaging>
-
-
 
     <properties>
         <java.version>17</java.version>
@@ -24,12 +21,16 @@
         <tests>!(pkcs11 | slow | ldap)</tests>
 
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <lombok.version>1.18.24</lombok.version>
+        <logback-classic.version>1.2.11</logback-classic.version>
+        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+        <bouncycastle.version>1.70</bouncycastle.version>
+
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
             ${project.basedir}/cdoc20-schema/target/site/jacoco-aggregate/jacoco.xml,
             ${project.basedir}/cdoc20-cli/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
-
     </properties>
 
     <repositories>
@@ -118,6 +119,7 @@
         <module>cdoc20-openapi</module>
         <module>cdoc20-server</module>
         <module>cdoc20-client</module>
+        <module>gatling-tests</module>
     </modules>
 
     <dependencyManagement>
@@ -131,7 +133,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
 
 
     <dependencies>

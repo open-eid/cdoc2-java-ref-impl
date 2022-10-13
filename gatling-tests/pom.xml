@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>cdoc20</artifactId>
+        <groupId>ee.cyber.cdoc20</groupId>
+        <version>0.0.7-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>gatling-tests</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>ee.cyber.cdoc20</groupId>
+            <artifactId>cdoc20-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>3.7.6</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-classic.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${bouncycastle.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>4.1.6</version>
+            </plugin>
+
+            <!-- task to generate key store files to use in gatling tests -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <configuration>
+                    <mainClass>ee.cyber.cdoc20.server.datagen.KeyStoreGenerator</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <!-- the folder where the generated files will be written -->
+                            <key>output-dir</key>
+                            <value>${basedir}/src/test/resources/keys/test-clients</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- the password for the generated keystores -->
+                            <key>keystore-password</key>
+                            <value>secret</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- the key alias for the generated entry in the keystore -->
+                            <key>key-alias</key>
+                            <value>client-key</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- location of the root keystore to use to sign certificate in the generated keystore -->
+                            <key>root-keystore</key>
+                            <value>${basedir}/src/test/resources/keys/gatling-ca.p12</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- the root keystore type -->
+                            <key>root-keystore-type</key>
+                            <value>pkcs12</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- the key alias for the entry in the root keystore to use for signing -->
+                            <key>root-key-alias</key>
+                            <value>gatling-ca</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <!-- the root keystore password -->
+                            <key>root-keystore-password</key>
+                            <value>secret</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

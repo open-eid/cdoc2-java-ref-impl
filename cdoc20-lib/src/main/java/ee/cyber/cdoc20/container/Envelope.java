@@ -225,7 +225,7 @@ public class Envelope {
 
     static Header deserializeHeader(byte[] buf) {
         ByteBuffer byteBuffer = ByteBuffer.wrap(buf);
-        return  Header.getRootAsHeader(byteBuffer);
+        return Header.getRootAsHeader(byteBuffer);
     }
 
     /**Get additional data used to initialize ChaChaCipher AAD*/
