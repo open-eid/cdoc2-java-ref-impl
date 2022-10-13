@@ -2,6 +2,7 @@
 
 package ee.cyber.cdoc20.fbs.header;
 
+@SuppressWarnings("unused")
 public final class Details {
   private Details() { }
   public static final byte NONE = 0;

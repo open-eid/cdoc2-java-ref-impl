@@ -23,8 +23,11 @@ buildNumber.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+# IDE project files
 /.idea/
-/cdoc20-lib/cdoc20-lib.iml
+*.iml
+
+
 /doc/
 /cdoc20-server/src/main/resources/keystore/cdoc20server.p12
 /cdoc20-server/src/main/resources/keystore/servertruststore.jks

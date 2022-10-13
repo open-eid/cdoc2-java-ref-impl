@@ -1,0 +1,37 @@
+# CDOC2.0 Gatling tests configuration
+
+server {
+  # the base url of the server for sending requests
+  base-url = "https://localhost:8443"
+}
+
+
+# key stores to use in communicating with the server
+client-keystores {
+    # absolute path to the folder containing client keystore files
+    path = "/home/user/cdoc20_java/gatling-tests/src/test/resources/keys/test-clients"
+    # keystore password (must be the same for all keystores)
+    password = "secret"
+    # alias for the key entry
+    alias = "client-key"
+}
+
+# Load test configuration
+# See https://gatling.io/docs/gatling/reference/current/core/injection/#incrementuserspersec
+# for details.
+load-test {
+    create-capsule {
+        start-users-per-second = 10
+        increment-users-per-second = 10
+        increment-cycles = 3
+        cycle-duration-seconds = 10
+    }
+    get-capsule {
+        start-users-per-second = 10
+        increment-users-per-second = 10
+        increment-cycles = 3
+        cycle-duration-seconds = 10
+        # wait for some capsules to be created for get capsule input
+        initial-delay-seconds = 5
+    }
+}

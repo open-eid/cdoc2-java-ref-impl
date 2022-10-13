@@ -179,7 +179,7 @@
                         <delegatePattern>false</delegatePattern>
                         <dateLibrary>java8-localdatetime</dateLibrary>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
-                        <oas3>true</oas3>&gt;
+                        <oas3>true</oas3>
                         <useOptional>true</useOptional>
                         <bigDecimalAsString>true</bigDecimalAsString>
                         <legacyDiscriminatorBehavior>false</legacyDiscriminatorBehavior>

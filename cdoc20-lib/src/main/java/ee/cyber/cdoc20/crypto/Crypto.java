@@ -35,17 +35,17 @@ public final class Crypto {
     /**
      * File Master Key length in octets
      */
-    public static final  int FMK_LEN_BYTES = 256 / 8;
+    public static final int FMK_LEN_BYTES = 256 / 8;
 
     /**
      * Content Encryption Key length in octets
      */
-    public static final  int CEK_LEN_BYTES = 256 / 8;
+    public static final int CEK_LEN_BYTES = 256 / 8;
 
     /**
      * Header HMAC Key length in octets
      */
-    public static final  int HHK_LEN_BYTES = 256 / 8; //SHA-256
+    public static final int HHK_LEN_BYTES = 256 / 8; //SHA-256
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
 

@@ -9,7 +9,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class RecipientRecord extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
   public static RecipientRecord getRootAsRecipientRecord(ByteBuffer _bb) { return getRootAsRecipientRecord(_bb, new RecipientRecord()); }
   public static RecipientRecord getRootAsRecipientRecord(ByteBuffer _bb, RecipientRecord obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -26,15 +26,15 @@ public final class RecipientRecord extends Table {
   public byte fmkEncryptionMethod() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createRecipientRecord(FlatBufferBuilder builder,
-      byte details_type,
+      byte detailsType,
       int detailsOffset,
-      int encrypted_fmkOffset,
-      byte fmk_encryption_method) {
+      int encryptedFmkOffset,
+      byte fmkEncryptionMethod) {
     builder.startTable(4);
-    RecipientRecord.addEncryptedFmk(builder, encrypted_fmkOffset);
+    RecipientRecord.addEncryptedFmk(builder, encryptedFmkOffset);
     RecipientRecord.addDetails(builder, detailsOffset);
-    RecipientRecord.addFmkEncryptionMethod(builder, fmk_encryption_method);
-    RecipientRecord.addDetailsType(builder, details_type);
+    RecipientRecord.addFmkEncryptionMethod(builder, fmkEncryptionMethod);
+    RecipientRecord.addDetailsType(builder, detailsType);
     return RecipientRecord.endRecipientRecord(builder);
   }
 

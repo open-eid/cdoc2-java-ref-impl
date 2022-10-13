@@ -2,6 +2,7 @@
 
 package ee.cyber.cdoc20.fbs.header;
 
+@SuppressWarnings("unused")
 public final class PayloadEncryptionMethod {
   private PayloadEncryptionMethod() { }
   public static final byte UNKNOWN = 0;

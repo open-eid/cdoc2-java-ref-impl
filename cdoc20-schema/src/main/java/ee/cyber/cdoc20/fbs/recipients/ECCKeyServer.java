@@ -9,7 +9,7 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class ECCKeyServer extends Table {
-  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_0(); }
+  public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
   public static ECCKeyServer getRootAsECCKeyServer(ByteBuffer _bb) { return getRootAsECCKeyServer(_bb, new ECCKeyServer()); }
   public static ECCKeyServer getRootAsECCKeyServer(ByteBuffer _bb, ECCKeyServer obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
@@ -31,13 +31,13 @@ public final class ECCKeyServer extends Table {
 
   public static int createECCKeyServer(FlatBufferBuilder builder,
       byte curve,
-      int recipient_public_keyOffset,
-      int keyserver_idOffset,
-      int transaction_idOffset) {
+      int recipientPublicKeyOffset,
+      int keyserverIdOffset,
+      int transactionIdOffset) {
     builder.startTable(4);
-    ECCKeyServer.addTransactionId(builder, transaction_idOffset);
-    ECCKeyServer.addKeyserverId(builder, keyserver_idOffset);
-    ECCKeyServer.addRecipientPublicKey(builder, recipient_public_keyOffset);
+    ECCKeyServer.addTransactionId(builder, transactionIdOffset);
+    ECCKeyServer.addKeyserverId(builder, keyserverIdOffset);
+    ECCKeyServer.addRecipientPublicKey(builder, recipientPublicKeyOffset);
     ECCKeyServer.addCurve(builder, curve);
     return ECCKeyServer.endECCKeyServer(builder);
   }

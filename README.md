@@ -68,6 +68,10 @@ Key transfer server benefits:
 - cdoc20-server  - Optional server backend for securely exchanging keys
 - cdoc20-client  - Optional client for server backend
 
+## Preconditions for building
+* Java 17
+* Docker available and running
+
 ## Building
 CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4
 

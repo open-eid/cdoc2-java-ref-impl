@@ -194,7 +194,7 @@
                         <delegatePattern>true</delegatePattern>
                         <dateLibrary>java8-localdatetime</dateLibrary>
                         <hateoas>false</hateoas>
-                        <oas3>true</oas3>&gt;
+                        <oas3>true</oas3>
                         <useOptional>true</useOptional>
                         <bigDecimalAsString>true</bigDecimalAsString>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
