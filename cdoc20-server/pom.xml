@@ -11,7 +11,7 @@
 
 	<artifactId>cdoc20-server</artifactId>
 	<groupId>ee.cyber.cdoc20</groupId>
-	<version>0.0.7</version>
+	<version>0.0.8-SNAPSHOT</version>
 	<name>cdoc20-server</name>
 	<description>Cdoc 2.0 server in Spring</description>
 	<properties>
@@ -38,19 +38,19 @@
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-lib</artifactId>
-			<version>0.0.7</version>
+			<version>0.0.8-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-openapi</artifactId>
-			<version>0.0.7</version>
+			<version>0.0.8-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-client</artifactId>
-			<version>0.0.7</version>
+			<version>0.0.8-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -241,7 +241,7 @@
 	</build>
 
   <scm>
-    <tag>v0.0.7</tag>
+    <tag>v0.0.6</tag>
   </scm>
 
 </project>
