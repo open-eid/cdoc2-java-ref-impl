@@ -6,6 +6,7 @@
 * Minimal support for Recipient.KeyLabel in FBS header (field is present in FB header, but lib is not filling its value
   with info from recipient certificate)
 * Upgrade flatbuffers-java to version 2.0.8
+* Move gatling-tests to main branch
 
 ## [0.0.6] server scenario implementation (2022-10-11)
 
@@ -16,7 +17,6 @@
 * Server OpenAPI changes (more strict string format for recipient_pub_key and server_pub_key fields)
 
 ## [0.0.5] PKCS11, LDAP and generated sender keys (2022-05-13)
-
 
 ### Features
 

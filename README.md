@@ -67,7 +67,7 @@ Key transfer server benefits:
 - cdoc20-openapi - OpenAPI definitions for server and client generation
 - cdoc20-server  - Optional server backend for securely exchanging keys
 - cdoc20-client  - Optional client for server backend
-- gatling-test   - Functional and load tests for cdoc20-server
+- gatling-tests  - Functional and load tests for cdoc20-server
 
 ## Preconditions for building
 * Java 17
