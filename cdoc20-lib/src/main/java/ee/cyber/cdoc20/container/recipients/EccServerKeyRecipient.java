@@ -14,11 +14,17 @@ public class EccServerKeyRecipient extends EccRecipient {
     private final String transactionId;
 
 
-    public EccServerKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, String keyServerId,
-                                 String transactionId, byte[] encryptedFmk) {
-        super(eccCurve, recipientPubKey, encryptedFmk);
+    public EccServerKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey,
+                                 String keyServerId, String transactionId, byte[] encryptedFmk,
+                                 String recipientPubKeyLabel) {
+        super(eccCurve, recipientPubKey, recipientPubKeyLabel, encryptedFmk);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
+    }
+
+    public EccServerKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey,
+                                 String keyServerId, String transactionId, byte[] encryptedFmk) {
+        this(eccCurve, recipientPubKey, keyServerId, transactionId, encryptedFmk, "");
     }
 
     public byte[] getRecipientPubKeyTlsEncoded() {

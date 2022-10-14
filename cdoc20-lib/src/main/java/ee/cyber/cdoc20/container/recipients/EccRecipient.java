@@ -12,12 +12,15 @@ import java.util.Objects;
 public class EccRecipient {
 
     protected final ECPublicKey recipientPubKey;
+    protected final String recipientPubKeyLabel;
     protected final byte[] encryptedFmk;
     protected ECKeys.EllipticCurve ellipticCurve;
 
-    public EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, byte[] encryptedFmk) {
+    public EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, String recipientPubKeyLabel,
+                        byte[] encryptedFmk) {
         this.ellipticCurve = eccCurve;
         this.recipientPubKey = recipientPubKey;
+        this.recipientPubKeyLabel = recipientPubKeyLabel;
         this.encryptedFmk = encryptedFmk;
     }
 
@@ -28,6 +31,11 @@ public class EccRecipient {
     public ECPublicKey getRecipientPubKey() {
         return recipientPubKey;
     }
+
+    public String getRecipientPubKeyLabel() {
+        return recipientPubKeyLabel;
+    }
+
 
     /**
      * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
@@ -46,13 +54,14 @@ public class EccRecipient {
         if (o == null || getClass() != o.getClass()) return false;
         EccRecipient that = (EccRecipient) o;
         return Objects.equals(recipientPubKey, that.recipientPubKey)
+                && Objects.equals(recipientPubKeyLabel, that.recipientPubKeyLabel)
                 && Arrays.equals(encryptedFmk, that.encryptedFmk)
                 && ellipticCurve == that.ellipticCurve;
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(recipientPubKey, ellipticCurve);
+        int result = Objects.hash(recipientPubKey, recipientPubKeyLabel, ellipticCurve);
         result = 31 * result + Arrays.hashCode(encryptedFmk);
         return result;
     }

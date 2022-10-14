@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.7] Minimal support for Recipient.KeyLabel field (2022-10-14)
+
+### Features
+* Minimal support for Recipient.KeyLabel in FBS header (field is present in FB header, but lib is not filling its value
+  with info from recipient certificate)
+* Upgrade flatbuffers-java to version 2.0.8
+
 ## [0.0.6] server scenario implementation (2022-10-11)
 
 ### Features

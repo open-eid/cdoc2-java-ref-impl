@@ -23,3 +23,9 @@ table ECCKeyServer {
     keyserver_id:          string (required);
     transaction_id:        string (required);
 }
+
+
+// symmetric long term crypto
+table SymmetricKeyDetails {
+    salt:                 [ubyte] (required);
+}

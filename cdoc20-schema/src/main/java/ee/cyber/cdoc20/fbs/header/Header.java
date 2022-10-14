@@ -2,10 +2,13 @@
 
 package ee.cyber.cdoc20.fbs.header;
 
-import java.nio.*;
-import java.lang.*;
-import java.util.*;
-import com.google.flatbuffers.*;
+import com.google.flatbuffers.BaseVector;
+import com.google.flatbuffers.Constants;
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.flatbuffers.Table;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
 public final class Header extends Table {
@@ -15,11 +18,11 @@ public final class Header extends Table {
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public Header __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public ee.cyber.cdoc20.fbs.header.RecipientRecord recipients(int j) { return recipients(new ee.cyber.cdoc20.fbs.header.RecipientRecord(), j); }
-  public ee.cyber.cdoc20.fbs.header.RecipientRecord recipients(ee.cyber.cdoc20.fbs.header.RecipientRecord obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public RecipientRecord recipients(int j) { return recipients(new RecipientRecord(), j); }
+  public RecipientRecord recipients(RecipientRecord obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int recipientsLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ee.cyber.cdoc20.fbs.header.RecipientRecord.Vector recipientsVector() { return recipientsVector(new ee.cyber.cdoc20.fbs.header.RecipientRecord.Vector()); }
-  public ee.cyber.cdoc20.fbs.header.RecipientRecord.Vector recipientsVector(ee.cyber.cdoc20.fbs.header.RecipientRecord.Vector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public RecipientRecord.Vector recipientsVector() { return recipientsVector(new RecipientRecord.Vector()); }
+  public RecipientRecord.Vector recipientsVector(RecipientRecord.Vector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public byte payloadEncryptionMethod() { int o = __offset(6); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createHeader(FlatBufferBuilder builder,

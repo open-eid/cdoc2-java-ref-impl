@@ -14,10 +14,16 @@ public class EccPubKeyRecipient extends EccRecipient {
     private final ECPublicKey senderPubKey;
 
     public EccPubKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, ECPublicKey senderPubKey,
-                              byte[] encryptedFmk) {
-        super(eccCurve, recipientPubKey, encryptedFmk);
+                              byte[] encryptedFmk, String recipientPubKeyLabel) {
+        super(eccCurve, recipientPubKey, recipientPubKeyLabel, encryptedFmk);
         this.senderPubKey = senderPubKey;
     }
+
+    public EccPubKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, ECPublicKey senderPubKey,
+                              byte[] encryptedFmk) {
+        this(eccCurve, recipientPubKey, senderPubKey, encryptedFmk, "");
+    }
+
 
 
     public ECPublicKey getSenderPubKey() {
