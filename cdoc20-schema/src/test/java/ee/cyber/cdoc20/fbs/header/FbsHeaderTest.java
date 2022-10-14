@@ -7,15 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-//import java.io.FileNotFoundException;
-//import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-//import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 class FbsHeaderTest {
-
 
     public static final int KEYLEN_BYTES = 256 / 8;
 
@@ -45,6 +41,8 @@ class FbsHeaderTest {
         senderPubKeyBuf[2] = 'n';
         senderPubKeyBuf[senderPubKeyBuf.length - 1]  = (byte)0xfc;
 
+        String keyLabel = "id-kaart";
+
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int recipientPubKeyOffset = builder.createByteVector(recipientPubKeyBuf);
         int senderPubKeyOffset = builder.createByteVector(senderPubKeyBuf);
@@ -56,12 +54,17 @@ class FbsHeaderTest {
 
         int encFmkOffset = RecipientRecord.createEncryptedFmkVector(builder, fmkBuf);
 
+        int keyLabelOffset = builder.createString(keyLabel);
+
         RecipientRecord.startRecipientRecord(builder);
         RecipientRecord.addDetailsType(builder, Details.recipients_ECCPublicKey);
         RecipientRecord.addDetails(builder, eccPubKeyOffset);
 
+        RecipientRecord.addKeyLabel(builder, keyLabelOffset);
+
         RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
         RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
+
 
 
         // endRecipientRecord will return RecipientRecord offset value
@@ -99,10 +102,9 @@ class FbsHeaderTest {
         Assertions.assertNotNull(recipient.encryptedFmkAsByteBuffer());
         Assertions.assertEquals(fmkBuf.length, recipient.encryptedFmkLength());
 
+        Assertions.assertEquals(keyLabel, recipient.keyLabel());
 
         Assertions.assertEquals(fmkBuf[0], (byte)recipient.encryptedFmk(0));
-
-
 
         //whole underlying bytebuffer, with position() set to start of fmkBuf and limit() at end of fmkBuf
         ByteBuffer byteBuffer = recipient.encryptedFmkAsByteBuffer();

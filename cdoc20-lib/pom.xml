@@ -15,7 +15,6 @@
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
-
     <dependencies>
         <dependency>
             <groupId>ee.cyber.cdoc20</groupId>

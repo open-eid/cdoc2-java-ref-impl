@@ -8,8 +8,9 @@ public final class Details {
   public static final byte NONE = 0;
   public static final byte recipients_ECCPublicKey = 1;
   public static final byte recipients_ECCKeyServer = 2;
+  public static final byte recipients_SymmetricKeyDetails = 3;
 
-  public static final String[] names = { "NONE", "recipients_ECCPublicKey", "recipients_ECCKeyServer", };
+  public static final String[] names = { "NONE", "recipients_ECCPublicKey", "recipients_ECCKeyServer", "recipients_SymmetricKeyDetails", };
 
   public static String name(int e) { return names[e]; }
 }

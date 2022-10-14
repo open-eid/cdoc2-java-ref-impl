@@ -89,7 +89,8 @@ public class EnvelopeTest {
         assertEquals(1, details.size());
 
         assertEquals(recipientPubKey, details.get(0).getRecipientPubKey());
-
+        assertNotNull(details.get(0).getRecipientPubKeyLabel());
+        assertTrue(details.get(0).getRecipientPubKeyLabel().startsWith("ec_pub_key"));
     }
 
     @Test
@@ -138,6 +139,9 @@ public class EnvelopeTest {
 
         assertEquals("mock", details.getKeyServerId());
         assertEquals("SD1234567890", details.getTransactionId());
+        assertNotNull(details.getRecipientPubKeyLabel());
+        assertTrue(details.getRecipientPubKeyLabel().startsWith("ec_pub_key"));
+
     }
 
 

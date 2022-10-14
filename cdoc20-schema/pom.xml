@@ -16,7 +16,12 @@
         <fbs.sources>${basedir}/src/main/fbs</fbs.sources>
         <fbs.generated.sources>${project.build.directory}/generated-sources/java</fbs.generated.sources>
 
+        <!-- flatbuffers flatc compiler (native binary) version -->
         <flatbuffers-compiler.version>2.0.8</flatbuffers-compiler.version>
+
+        <!-- flatbuffers-java (java) library. Must be supported by flatbuffers-compiler-->
+        <!-- see https://github.com/davidmoten/flatbuffers for supported versions -->
+        <flatbuffers-java.version>2.0.8</flatbuffers-java.version>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../cdoc20-schema/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
@@ -119,7 +124,8 @@
                     <execution>
                         <goals>
                             <!-- temporary disable flatc execution -->
-                            <!-- goal>exec</goal-->
+                            <!-- as installation on RIA build servers fails -->
+                            <!--goal>exec</goal-->
                         </goals>
                         <phase>generate-sources</phase>
                     </execution>

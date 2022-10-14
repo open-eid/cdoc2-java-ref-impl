@@ -177,6 +177,7 @@ public class Envelope {
             ByteBuffer encryptedFmkBuf = r.encryptedFmkAsByteBuffer();
             byte[] encryptedFmkBytes = Arrays.copyOfRange(encryptedFmkBuf.array(),
                     encryptedFmkBuf.position(), encryptedFmkBuf.limit());
+            String keyLabel = r.keyLabel();
 
             if (r.detailsType() == recipients_ECCPublicKey) {
                 ECCPublicKey detailsEccPublicKey = (ECCPublicKey) r.details(new ECCPublicKey());
@@ -192,7 +193,7 @@ public class Envelope {
                             curve.decodeFromTls(detailsEccPublicKey.senderPublicKeyAsByteBuffer());
 
                     eccRecipientList.add(new EccPubKeyRecipient(curve, recipientPubKey, senderPubKey,
-                            encryptedFmkBytes));
+                            encryptedFmkBytes, keyLabel));
                 } catch (IllegalArgumentException illegalArgumentException) {
                     throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
                 }
@@ -210,7 +211,7 @@ public class Envelope {
                     String transactionId = detailsEccKeyServer.transactionId();
 
                     eccRecipientList.add(new EccServerKeyRecipient(curve, recipientPubKey, keyServerId,
-                            transactionId, encryptedFmkBytes));
+                            transactionId, encryptedFmkBytes, keyLabel));
 
                 } catch (IllegalArgumentException illegalArgumentException) {
                     throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
@@ -653,14 +654,10 @@ public class Envelope {
             int encFmkOffset =
                     RecipientRecord.createEncryptedFmkVector(builder, eccRecipient.getEncryptedFileMasterKey());
 
-            RecipientRecord.startRecipientRecord(builder);
-            RecipientRecord.addDetailsType(builder, recipients_ECCPublicKey);
-            RecipientRecord.addDetails(builder, eccPubKeyOffset);
+            int keyLabelOffset = builder.createString(getKeyLabelValue(eccRecipient)); //required field
 
-            RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
-            RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
-
-            int recipientOffset = RecipientRecord.endRecipientRecord(builder);
+            int recipientOffset = fillRecipientRecord(builder, recipients_ECCPublicKey,
+                    eccPubKeyOffset, keyLabelOffset, encFmkOffset);
 
             recipients[i] = recipientOffset;
         }
@@ -682,6 +679,29 @@ public class Envelope {
         }
         os.write(buf.array(), buf.position(), bufLen);
         return os.toByteArray();
+    }
+
+    /**
+     * Get value for FBS RecipientRecord.key_label
+     * @param recipient recipient to generate key label from
+     * @return key label that describes recipient
+     */
+    private static String getKeyLabelValue(EccRecipient recipient) {
+        // KeyLabel is UI specific field, so its value is not specified in the Spec.
+        // Required to be filled or deserialization will fail.
+        // DigiDoc4-Client uses this field to hint user what type of eID was used for encryption
+        // https://github.com
+        // /open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3116dff450/client/SslCertificate.cpp#L302
+        // https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
+
+        final int numOfBytes = 16;
+        if (recipient.getRecipientPubKeyTlsEncoded() != null) {
+            byte[] pubKeyTlsEncoded = recipient.getRecipientPubKeyTlsEncoded();
+            return "ec_pub_key: "
+                    + HexFormat.of().formatHex(pubKeyTlsEncoded, 0, Math.min(numOfBytes, pubKeyTlsEncoded.length));
+        } else {
+            return "";
+        }
     }
 
     static byte[] serializeEccServerRecipientsHeader(EccServerKeyRecipient[] eccServerRecipients) {
@@ -707,14 +727,10 @@ public class Envelope {
             int encFmkOffset =
                     RecipientRecord.createEncryptedFmkVector(builder, eccServerRecipient.getEncryptedFileMasterKey());
 
-            RecipientRecord.startRecipientRecord(builder);
-            RecipientRecord.addDetailsType(builder, recipients_ECCKeyServer);
-            RecipientRecord.addDetails(builder, detailsOffset);
+            int keyLabelOffset = builder.createString(getKeyLabelValue(eccServerRecipient)); //required field
 
-            RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
-            RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
-
-            int recipientOffset = RecipientRecord.endRecipientRecord(builder);
+            int recipientOffset = fillRecipientRecord(builder, recipients_ECCKeyServer,
+                    detailsOffset, keyLabelOffset, encFmkOffset);
 
             recipients[i] = recipientOffset;
         }
@@ -735,5 +751,28 @@ public class Envelope {
         }
         baos.write(buf.array(), buf.position(), bufLen);
         return baos.toByteArray();
+    }
+
+    /**
+     * Add RecipientRecord to the end of {@link FlatBufferBuilder builder}
+     * @param builder builder to be updated
+     * @param detailsType from {@link ee.cyber.cdoc20.fbs.header.Details}
+     * @param detailsOffset detailsOffset in builder
+     * @param keyLabelOffset keyLabelOffset in builder
+     * @return recipientRecord offset in builder
+     */
+    private static int fillRecipientRecord(FlatBufferBuilder builder, byte detailsType, int detailsOffset,
+                                           int keyLabelOffset, int encFmkOffset) {
+
+        RecipientRecord.startRecipientRecord(builder);
+        RecipientRecord.addDetailsType(builder, detailsType);
+        RecipientRecord.addDetails(builder, detailsOffset);
+
+        RecipientRecord.addKeyLabel(builder, keyLabelOffset);
+
+        RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
+        RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
+
+        return RecipientRecord.endRecipientRecord(builder);
     }
 }
