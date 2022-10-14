@@ -113,7 +113,7 @@ Will create tag with version v{x.y.z} in git
 ```
 mvn clean
 mvn release:prepare
-mvn release:perform
+mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 
 As maven repository doesn't exist yet, then maven deploy is not performed 
