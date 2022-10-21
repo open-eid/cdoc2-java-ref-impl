@@ -9,9 +9,32 @@
     </mirrors>
     <servers>
         <server>
-            <id>credentials</id>
+            <id>nexus</id>
             <username>${NEXUS_user}</username>
             <password>${NEXUS_pass}</password>
         </server>
     </servers>
+
+    <profiles>
+        <profile>
+            <id>RIA</id>
+
+            <repositories>
+                <repository>
+                    <id>maven-group</id>
+                    <url>https://nexus.riaint.ee/repository/maven-public/</url>
+                </repository>
+            </repositories>
+
+            <properties>
+                <altDeploymentRepository>nexus::https://nexus.riaint.ee/repository/maven-public/</altDeploymentRepository>
+            </properties>
+
+        </profile>
+    </profiles>
+
+    <activeProfiles>
+        <activeProfile>RIA</activeProfile>
+    </activeProfiles>
+
 </settings>
