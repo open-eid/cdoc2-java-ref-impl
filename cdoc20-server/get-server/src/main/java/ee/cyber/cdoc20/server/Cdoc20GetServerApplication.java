@@ -22,11 +22,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 @EnableWebSecurity
 @EnableJpaAuditing
 @Slf4j
-public class Cdoc20ServerApplication extends WebSecurityConfigurerAdapter {
-    private int httpPort;
+public class Cdoc20GetServerApplication extends WebSecurityConfigurerAdapter {
 
     public static void main(String[] args) {
-        SpringApplication.run(Cdoc20ServerApplication.class, args);
+        SpringApplication.run(Cdoc20GetServerApplication.class, args);
     }
 
     @Override

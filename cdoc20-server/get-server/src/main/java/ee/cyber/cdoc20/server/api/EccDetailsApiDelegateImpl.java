@@ -203,12 +203,9 @@ public class EccDetailsApiDelegateImpl implements EccDetailsApiDelegate {
                 }
             };
 
-
             modelMapperInstance.addConverter(byteArrayToBase64Converter);
             modelMapperInstance.addConverter(base64ToByteArrayConverter);
         }
-
         return modelMapperInstance;
     }
-
 }

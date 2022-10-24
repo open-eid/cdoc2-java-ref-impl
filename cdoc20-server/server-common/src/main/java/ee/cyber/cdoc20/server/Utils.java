@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Utils {
+public final class Utils {
+
+    private Utils() {
+    }
+
     /**
      * Fix OpenApi generator broken base url. Return only Path and Query part of the URI
      */
@@ -29,9 +33,9 @@ public class Utils {
             if (m.find()) {
                 String gibberish = uriStr.substring(m.start(), m.end());
 
-                String[] splited = gibberish.split("/");
-                if (splited.length > 1) {
-                    basePath = splited[splited.length - 1];
+                String[] split = gibberish.split("/");
+                if (split.length > 1) {
+                    basePath = split[split.length - 1];
                     if (basePath.endsWith("%7D")) {
                         basePath = basePath.substring(0, basePath.indexOf("%7D"));
                     }
@@ -50,6 +54,5 @@ public class Utils {
         } else {
             return new URI(uri.getPath());
         }
-
     }
 }

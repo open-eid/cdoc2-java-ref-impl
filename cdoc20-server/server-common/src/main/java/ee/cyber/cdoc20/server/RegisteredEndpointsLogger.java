@@ -13,11 +13,7 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * On server start-up lists registered endpoints and their handler classes (DEBUG). Example:
- * <pre>
- * {GET [/ecc-details/{transactionId}], produces [application/json]}: ee.cyber.cdoc20.server.api.EccDetailsApiController#getEccDetailsByTransactionId(String)
- * {POST [/ecc-details], consumes [application/json]}: ee.cyber.cdoc20.server.api.EccDetailsApiController#createEccDetails(ServerEccDetails)
- * </pre>
+ * On server start-up lists registered endpoints and their handler classes (DEBUG)
  */
 @Component
 public class RegisteredEndpointsLogger implements ApplicationListener<ContextRefreshedEvent> {
