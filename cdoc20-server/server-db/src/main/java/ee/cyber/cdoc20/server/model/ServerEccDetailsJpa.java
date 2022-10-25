@@ -28,7 +28,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 public class ServerEccDetailsJpa {
 
     @PrePersist
-    private void genTransactionId() {
+    private void generateTransactionId() {
         byte[] sRnd = new byte[16];
         try {
             if (this.transactionId == null) {

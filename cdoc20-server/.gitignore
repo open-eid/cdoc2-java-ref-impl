@@ -4,9 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-get-server/logs
-get-server/src/test/resources/keystore/
-get-server/src/test/resources/test.properties
+**/logs
+**/src/test/resources/keystore/
+**/src/test/resources/test.properties
 
 
 ### STS ###
