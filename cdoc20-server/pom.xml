@@ -14,6 +14,7 @@
 
 	<modules>
 		<module>server-common</module>
+		<module>server-db</module>
 		<module>get-server</module>
 	</modules>
 
