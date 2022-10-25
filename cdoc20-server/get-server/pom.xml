@@ -84,11 +84,7 @@
 			<artifactId>modelmapper</artifactId>
 			<version>3.1.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.liquibase</groupId>
-			<artifactId>liquibase-core</artifactId>
-			<version>4.11.0</version>
-		</dependency>
+
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
@@ -101,12 +97,7 @@
 			<version>1.17.2</version>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>42.3.6</version>
-			<scope>runtime</scope>
-		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-test</artifactId>
@@ -159,22 +150,6 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-			<plugin>
-				<groupId>org.liquibase</groupId>
-				<artifactId>liquibase-maven-plugin</artifactId>
-				<version>4.11.0</version>
-				<configuration>
-					<propertyFile>${basedir}/src/main/resources/liquibase-localhost.properties</propertyFile>
-					<changeLogFile>${basedir}/src/main/resources/db/changelog/db.changelog-master.yaml</changeLogFile>
-				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.postgresql</groupId>
-						<artifactId>postgresql</artifactId>
-						<version>42.3.6</version>
-					</dependency>
-				</dependencies>
-			</plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -201,25 +176,6 @@
 							</resources>
 						</configuration>
 					</execution>
-					<execution>
-						<!-- junit test create DB based on liquibase automatically, copy liquibase conf files-->
-						<id>copy-liquibase-configuration-to-test</id>
-						<phase>generate-test-resources</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${basedir}/src/test/resources</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${basedir}/src/main/resources</directory>
-									<includes>
-										<include>db/changelog/**</include>
-									</includes>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -238,7 +194,6 @@
 								<delete file="${basedir}/src/test/resources/test.properties" />
 								<delete file="${basedir}/src/test/resources/keystore/servertruststore.jks" />
 								<delete file="${basedir}/src/test/resources/keystore/cdoc20server.p12" />
-								<delete dir="${basedir}/src/test/resources/db" />
 							</target>
 						</configuration>
 					</execution>

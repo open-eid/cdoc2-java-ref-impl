@@ -12,7 +12,7 @@ docker start cdoc20-psql
 ```
 
 ### Create DB
-From cdoc20-server directory run:
+From server-db directory run:
 ```
 mvn liquibase:update
 ```
