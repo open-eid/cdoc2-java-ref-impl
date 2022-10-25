@@ -81,10 +81,14 @@ public class EccDetailsApiDelegateImpl implements EccDetailsApiDelegate {
                     getModelMapperInstance().map(serverEccDetails, ServerEccDetailsJpa.class);
             var saved = jpaRepository.save(jpaModel);
 
-            log.debug("serverEccDetails   : {} {}", Base64.getEncoder().encodeToString(serverEccDetails.getRecipientPubKey()),
-                    HexFormat.of().formatHex(serverEccDetails.getRecipientPubKey()));
-            log.debug("ServerEccDetailsJpa: {} {}",jpaModel.getRecipientPubKey(),
-                    HexFormat.of().formatHex(Base64.getDecoder().decode(jpaModel.getRecipientPubKey())));
+            log.debug("serverEccDetails   : {} {}",
+                Base64.getEncoder().encodeToString(serverEccDetails.getRecipientPubKey()),
+                HexFormat.of().formatHex(serverEccDetails.getRecipientPubKey())
+            );
+            log.debug("ServerEccDetailsJpa: {} {}",
+                jpaModel.getRecipientPubKey(),
+                HexFormat.of().formatHex(Base64.getDecoder().decode(jpaModel.getRecipientPubKey()))
+            );
 
             URI created = getResourceLocation(saved.getTransactionId());
 
@@ -119,22 +123,28 @@ public class EccDetailsApiDelegateImpl implements EccDetailsApiDelegate {
 
             Optional<ServerEccDetailsJpa> detailsJpa = Optional.empty();
             if ("EC".equals(clientPubKey.getAlgorithm())
-                    && ECKeys.isEcSecp384r1Curve((ECPublicKey) clientPubKey)
-                    && (detailsJpa = jpaRepository.findById(transactionId)).isPresent()) {
+                    && ECKeys.isEcSecp384r1Curve((ECPublicKey) clientPubKey)) {
+                detailsJpa = jpaRepository.findById(transactionId);
+                if (detailsJpa.isPresent()) {
+                    ServerEccDetails details = getModelMapperInstance().map(detailsJpa.get(), ServerEccDetails.class);
 
-                ServerEccDetails details = getModelMapperInstance().map(detailsJpa.get(), ServerEccDetails.class);
+                    log.debug("Recipient pub key: {}",
+                        Base64.getEncoder().encodeToString(details.getRecipientPubKey())
+                    );
 
-                log.debug("Recipient pub key: {}", Base64.getEncoder().encodeToString(details.getRecipientPubKey()));
-
-                if (Arrays.equals(details.getRecipientPubKey(), ECKeys.encodeEcPubKeyForTls((ECPublicKey) clientPubKey))) {
-                    log.info("Found {} for {} and client certificate", detailsJpa.get(), transactionId);
-                    return ResponseEntity.ok(details);
-                } else {
-                    log.info("Client certificate {} doesn't match to recipient public key {}",
-                            clientCert.getSubjectDN().getName(), Base64.getEncoder().encodeToString(details.getRecipientPubKey()));
+                    if (Arrays.equals(
+                            details.getRecipientPubKey(),
+                            ECKeys.encodeEcPubKeyForTls((ECPublicKey) clientPubKey))) {
+                        log.info("Found {} for {} and client certificate", detailsJpa.get(), transactionId);
+                        return ResponseEntity.ok(details);
+                    } else {
+                        log.info("Client certificate {} doesn't match to recipient public key {}",
+                            clientCert.getSubjectDN().getName(),
+                            Base64.getEncoder().encodeToString(details.getRecipientPubKey())
+                        );
+                    }
                 }
             }
-
             log.info("Certificate {} doesn't contain valid public key or no details found for {}",
                     clientCert.getSubjectDN().getName(), transactionId);
             log.debug("Details for {}: {}", transactionId, detailsJpa);
@@ -154,7 +164,9 @@ public class EccDetailsApiDelegateImpl implements EccDetailsApiDelegate {
      * @throws URISyntaxException
      */
     private static URI getResourceLocation(String id) throws URISyntaxException {
-        return fixOABrokenBaseURL(linkTo(methodOn(EccDetailsApiController.class).getEccDetailsByTransactionId(id)).toUri());
+        return fixOABrokenBaseURL(
+            linkTo(methodOn(EccDetailsApiController.class).getEccDetailsByTransactionId(id)).toUri()
+        );
     }
 
     private boolean isValid(ServerEccDetails sd) {

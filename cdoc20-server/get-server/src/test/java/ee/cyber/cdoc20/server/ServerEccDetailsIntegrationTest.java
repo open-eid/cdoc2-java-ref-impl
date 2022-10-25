@@ -1,6 +1,12 @@
 package ee.cyber.cdoc20.server;
 
-
+import ee.cyber.cdoc20.client.ServerEccDetailsClient;
+import ee.cyber.cdoc20.client.model.ServerEccDetails;
+import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
+import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
+import ee.cyber.cdoc20.util.ExtApiException;
+import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -16,10 +22,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.random.RandomGenerator;
-
-
-import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
-import org.junit.jupiter.api.Assertions;
+import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,17 +40,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ee.cyber.cdoc20.client.ServerEccDetailsClient;
-import ee.cyber.cdoc20.util.ExtApiException;
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
-import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
-
-import javax.validation.ConstraintViolationException;
-
 import static ee.cyber.cdoc20.client.ServerEccDetailsClient.SERVER_DETAILS_PREFIX;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Starts server on https with mutual TLS configured (client must use correct client certificate)
 // Starts PostgreSQL running on docker
@@ -114,7 +111,7 @@ class ServerEccDetailsIntegrationTest {
         Throwable cause = assertThrows(Throwable.class, () -> jpaRepository.save(model));
 
         //check that exception is or is caused by ConstraintViolationException
-        while(cause.getCause() != null) {
+        while (cause.getCause() != null) {
             cause = cause.getCause();
         }
 
@@ -180,7 +177,7 @@ class ServerEccDetailsIntegrationTest {
         var details = new ServerEccDetails();
 
         // Client public key TLS encoded and base64 encoded from client-certificate.pem
-        File[] certs = new File[] { getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile() };
+        File[] certs = {getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile()};
         ECPublicKey recipientKey = ECKeys.loadCertKeys(certs).get(0);
         ECKeys.EllipticCurve curve = ECKeys.EllipticCurve.forPubKey(recipientKey);
         details.recipientPubKey(ECKeys.encodeEcPubKeyForTls(curve, recipientKey));
@@ -195,7 +192,7 @@ class ServerEccDetailsIntegrationTest {
         String id = client.createEccDetails(details);
 
         assertNotNull(id);
-        Assertions.assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
+        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         var serverDetails = client.getEccDetailsByTransactionId(id);
 
@@ -230,7 +227,11 @@ class ServerEccDetailsIntegrationTest {
 
         ECPublicKey senderPubKey = (ECPublicKey) ECKeys.EllipticCurve.secp384r1.generateEcKeyPair().getPublic();
 
-        log.debug("Sender pub key: {}", Base64.getEncoder().encodeToString(ECKeys.encodeEcPubKeyForTls(ECKeys.EllipticCurve.secp384r1, senderPubKey)));
+        log.debug("Sender pub key: {}",
+            Base64.getEncoder().encodeToString(
+                ECKeys.encodeEcPubKeyForTls(ECKeys.EllipticCurve.secp384r1, senderPubKey)
+            )
+        );
 
         assertNotNull(client.getServerIdentifier());
 
@@ -246,15 +247,15 @@ class ServerEccDetailsIntegrationTest {
 
     @Test
     @Tag("pkcs11")
-    void testKeyServerPropertiesClientPKCS11Passwd() throws ExtApiException, GeneralSecurityException, IOException {
+    void testKeyServerPropertiesClientPKCS11Passwd() throws Exception {
         testKeyServerPropertiesClientPKCS11(false);
     }
 
     @Test
     @Tag("pkcs11")
-    @Disabled("Requires user interaction. Needs to be run separately from other PKCS11 tests as SunPKCS11 caches " +
-            "passwords ")
-    void testKeyServerPropertiesClientPKCS11Prompt() throws ExtApiException, GeneralSecurityException, IOException {
+    @Disabled("Requires user interaction. Needs to be run separately from other PKCS11 tests as SunPKCS11 caches "
+            + "passwords ")
+    void testKeyServerPropertiesClientPKCS11Prompt() throws Exception {
         if (System.console() == null) {
             //SpringBootTest sets headless to true and causes graphic dialog to fail, when running inside IDE
             System.setProperty("java.awt.headless", "false");
@@ -263,9 +264,7 @@ class ServerEccDetailsIntegrationTest {
         testKeyServerPropertiesClientPKCS11(true);
     }
 
-
-
-    void testKeyServerPropertiesClientPKCS11(boolean interactive) throws ExtApiException, GeneralSecurityException, IOException {
+    void testKeyServerPropertiesClientPKCS11(boolean interactive) throws Exception {
         String prop = "cdoc20.client.server.baseurl.post=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
@@ -308,7 +307,7 @@ class ServerEccDetailsIntegrationTest {
 
     @Test
     @Tag("pkcs11")
-    void testPKCS11Client() throws GeneralSecurityException, ExtApiException, IOException, ee.cyber.cdoc20.client.api.ApiException {
+    void testPKCS11Client() throws Exception {
 
         //PIN1 for 37101010021 test id-kaart
         var protectionParameter = new KeyStore.PasswordProtection("3471".toCharArray());

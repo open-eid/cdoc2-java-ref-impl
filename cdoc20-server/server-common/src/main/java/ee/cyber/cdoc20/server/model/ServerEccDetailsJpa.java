@@ -22,7 +22,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 
 @Data
 @Entity
-@Table(name="server_ecc_details")
+@Table(name = "server_ecc_details")
 @Slf4j
 @EntityListeners(AuditingEntityListener.class)
 public class ServerEccDetailsJpa {
@@ -43,17 +43,17 @@ public class ServerEccDetailsJpa {
 
     @Id
     @Column(length = 34)
-    @Size(max=34)
+    @Size(max = 34)
     private String transactionId;
 
     @NotNull
     @Column(nullable = false)
-    @Size(max=132) //secp384r1 base64 TLS encoded (97bytes) EC public key
+    @Size(max = 132) //secp384r1 base64 TLS encoded (97bytes) EC public key
     private String recipientPubKey;
 
     @NotNull
     @Column(nullable = false)
-    @Size(max=132) //secp384r1 base64 TLS encoded (97bytes) EC public key
+    @Size(max = 132) //secp384r1 base64 TLS encoded (97bytes) EC public key
     private String senderPubKey;
 
     @Column(columnDefinition = "SMALLINT", nullable = false)
