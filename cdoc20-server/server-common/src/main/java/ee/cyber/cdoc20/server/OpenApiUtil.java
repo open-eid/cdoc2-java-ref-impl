@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public final class Utils {
+/**
+ * OpenApi specific utilities.
+ */
+public final class OpenApiUtil {
 
-    private Utils() {
+    private OpenApiUtil() {
     }
 
     /**

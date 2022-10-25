@@ -27,7 +27,7 @@ import ee.cyber.cdoc20.server.model.ServerEccDetails;
 import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
 import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
 
-import static ee.cyber.cdoc20.server.Utils.fixOABrokenBaseURL;
+import static ee.cyber.cdoc20.server.OpenApiUtil.fixOABrokenBaseURL;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
