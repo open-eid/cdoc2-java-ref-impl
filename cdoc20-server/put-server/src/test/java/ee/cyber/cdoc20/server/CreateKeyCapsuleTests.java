@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.server;
 
 import ee.cyber.cdoc20.client.ServerEccDetailsClient;
+import ee.cyber.cdoc20.client.api.ApiException;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
@@ -120,22 +121,9 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         this.checkCapsuleExistsInDb(id, details);
-    }
 
-    private void checkCapsuleExistsInDb(String txId, ServerEccDetails expected) {
-        var dbCapsuleOpt = this.jpaRepository.findById(txId);
-        assertTrue(dbCapsuleOpt.isPresent());
-        var dbCapsule = dbCapsuleOpt.get();
-
-        assertEquals(expected.getEccCurve(), dbCapsule.getEccCurve());
-        assertEquals(
-            Base64.getEncoder().encodeToString(expected.getRecipientPubKey()),
-            dbCapsule.getRecipientPubKey()
-        );
-        assertEquals(
-            Base64.getEncoder().encodeToString(expected.getSenderPubKey()),
-            dbCapsule.getSenderPubKey()
-        );
+        // getting the capsule must not succeed without client auth
+        assertThrows(ApiException.class, () -> noAuthClient.getEccDetailsByTransactionId(id));
     }
 
     @Test
@@ -293,5 +281,21 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         this.checkCapsuleExistsInDb(id, details);
+    }
+
+    private void checkCapsuleExistsInDb(String txId, ServerEccDetails expected) {
+        var dbCapsuleOpt = this.jpaRepository.findById(txId);
+        assertTrue(dbCapsuleOpt.isPresent());
+        var dbCapsule = dbCapsuleOpt.get();
+
+        assertEquals(expected.getEccCurve(), dbCapsule.getEccCurve());
+        assertEquals(
+            Base64.getEncoder().encodeToString(expected.getRecipientPubKey()),
+            dbCapsule.getRecipientPubKey()
+        );
+        assertEquals(
+            Base64.getEncoder().encodeToString(expected.getSenderPubKey()),
+            dbCapsule.getSenderPubKey()
+        );
     }
 }

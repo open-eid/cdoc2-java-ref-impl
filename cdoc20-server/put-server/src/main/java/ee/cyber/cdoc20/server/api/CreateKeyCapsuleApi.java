@@ -95,7 +95,7 @@ public class CreateKeyCapsuleApi implements EccDetailsApiDelegate {
 
     @Override
     public ResponseEntity<ServerEccDetails> getEccDetailsByTransactionId(String transactionId) {
-        log.error("getEccDetailsByTransactionId() method not supported on key capsule put server");
+        log.error("getEccDetailsByTransactionId() operation not supported on key capsule put server");
         return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
     }
 
