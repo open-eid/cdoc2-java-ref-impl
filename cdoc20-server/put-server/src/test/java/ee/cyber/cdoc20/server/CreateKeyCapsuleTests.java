@@ -4,8 +4,6 @@ import ee.cyber.cdoc20.client.ServerEccDetailsClient;
 import ee.cyber.cdoc20.client.api.ApiException;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +16,11 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Properties;
-import java.util.random.RandomGenerator;
-import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import static ee.cyber.cdoc20.client.ServerEccDetailsClient.SERVER_DETAILS_PREFIX;
 import static ee.cyber.cdoc20.server.TestData.getKeysDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,56 +36,6 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         "passwd"
     );
 
-    @Autowired
-    private ServerEccDetailsJpaRepository jpaRepository;
-
-    @Test
-    void testJpaConstraints() {
-        ServerEccDetailsJpa model = new ServerEccDetailsJpa();
-
-        model.setEccCurve(1);
-        model.setSenderPubKey("123");
-        byte[] rnd = new byte[255];
-        RandomGenerator.getDefault().nextBytes(rnd);
-        model.setRecipientPubKey(Base64.getEncoder().encodeToString(rnd));
-
-        Throwable cause = assertThrows(Throwable.class, () -> jpaRepository.save(model));
-
-        //check that exception is or is caused by ConstraintViolationException
-        while (cause.getCause() != null) {
-            cause = cause.getCause();
-        }
-
-        assertEquals(ConstraintViolationException.class, cause.getClass());
-        assertNotNull(cause.getMessage());
-        assertTrue(cause.getMessage().contains("'size must be between 0 and 132', propertyPath=recipientPubKey"));
-    }
-
-    @Test
-    void testJpaSaveAndFindById() {
-        assertTrue(postgresContainer.isRunning());
-
-        // test that jpa is up and running (expect no exceptions)
-        jpaRepository.count();
-
-        ServerEccDetailsJpa model = new ServerEccDetailsJpa();
-        model.setEccCurve(1);
-
-        model.setRecipientPubKey("123");
-        model.setSenderPubKey("345");
-        ServerEccDetailsJpa saved = jpaRepository.save(model);
-
-        assertNotNull(saved);
-        assertNotNull(saved.getTransactionId());
-
-        log.debug("Created {}", saved.getTransactionId());
-        Optional<ServerEccDetailsJpa> retrieved = jpaRepository.findById(saved.getTransactionId());
-        assertTrue(retrieved.isPresent());
-        assertNotNull(retrieved.get().getTransactionId()); // transactionId was generated
-        assertTrue(retrieved.get().getTransactionId().startsWith("SD"));
-        assertNotNull(retrieved.get().getCreatedAt()); // createdAt field was filled
-        log.debug("Retrieved {}", retrieved.get());
-    }
 
     @Test
     void testPKCS12Client() throws Exception {

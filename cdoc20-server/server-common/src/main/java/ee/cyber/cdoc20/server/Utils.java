@@ -2,16 +2,25 @@ package ee.cyber.cdoc20.server;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.modelmapper.AbstractConverter;
+import org.modelmapper.Converter;
+import org.modelmapper.ModelMapper;
 
 /**
- * OpenApi specific utilities.
+ * Server utilities.
  */
-public final class OpenApiUtil {
+public final class Utils {
 
-    private OpenApiUtil() {
+    /**
+     * ModelMapper to convert between dto and jpa models
+     */
+    public static final ModelMapper MODEL_MAPPER = getModelMapper();
+
+    private Utils() {
     }
 
     /**
@@ -57,5 +66,25 @@ public final class OpenApiUtil {
         } else {
             return new URI(uri.getPath());
         }
+    }
+
+    private static ModelMapper getModelMapper() {
+        var mapper = new ModelMapper();
+        Converter<byte[], String> byteArrayToBase64Converter = new AbstractConverter<>() {
+            @Override
+            protected String convert(byte[] bytes) {
+                return Base64.getEncoder().encodeToString(bytes);
+            }
+        };
+
+        Converter<String, byte[]> base64ToByteArrayConverter = new AbstractConverter<>() {
+            @Override
+            protected byte[] convert(String base64) {
+                return Base64.getDecoder().decode(base64);
+            }
+        };
+        mapper.addConverter(byteArrayToBase64Converter);
+        mapper.addConverter(base64ToByteArrayConverter);
+        return mapper;
     }
 }

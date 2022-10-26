@@ -16,7 +16,7 @@
 		<module>server-common</module>
 		<module>server-db</module>
 		<module>put-server</module>
-		<!--module>get-server</module-->
+		<module>get-server</module>
 	</modules>
 
 </project>

@@ -1,6 +1,6 @@
 #Running locally (dev)
 
-This file describes how to run cdoc20-server in your local development machine, without external dependencies
+This file describes how to run cdoc20 key servers in your local development machine, without external dependencies
 
 ## Installing and creating PostgreSQL DB in Docker
 
@@ -17,7 +17,7 @@ From server-db directory run:
 mvn liquibase:update
 ```
 
-## Compiling the server
+## Compiling the servers
 From cdoc20-server directory run:
 ```
 mvn clean package
@@ -25,11 +25,19 @@ mvn clean package
 
 ## Running
 (psql in docker must be running)
-From cdoc20-server directory run:
+
+From cdoc20-server/put-server directory run:
 ```
-java -jar -Dspring.config.location=config/application-local.properties target/cdoc20-server-0.0.6-SNAPSHOT.jar
+java -jar -Dspring.config.location=config/application-local.properties target/cdoc20-put-server-VER.jar
 ```
-where cdoc20-server-0.0.6-SNAPSHOT.jar is package built by mvn package
+
+and from cdoc20-server/get-server directory run:
+```
+java -jar -Dspring.config.location=config/application-local.properties target/cdoc20-get-server-VER.jar
+```
+
+where VER is the version of the package built by mvn package previously.
+
 
 #Testing
 ## Create ServerDetails
@@ -38,10 +46,8 @@ Run from cdoc20-server/keys directory or adjust paths to certificates and keys
 recipient_pub_key is public key extracted from certificate in cdoc20client.p12 file.
 sender_pub_key is any EC public key with same curve as recipient_pub_key (can be reused from example below)
 ```
-curl -v -X 'POST' \
+curl -v -k -X 'POST' \
 'https://localhost:8443/ecc-details' \
---cert-type 'P12' \
---cert 'cdoc20client.p12:passwd' \
 --cacert 'server-certificate.pem' \
 -H 'Content-Type: application/json' \
 -H 'Accept: application/json' \
@@ -59,7 +65,7 @@ Location: /ecc-details/SD6efa76980f591f0cfb4966a2229505cb
 Copy transaction id from Location header
 
 ```
-curl --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8443/ecc-details/SD6eab12a4e1900e58cc8da0975e8cc394
+curl -k --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8444/ecc-details/SD6eab12a4e1900e58cc8da0975e8cc394
 ```
 Response:
 ```

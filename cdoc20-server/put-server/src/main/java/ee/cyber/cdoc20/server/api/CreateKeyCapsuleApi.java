@@ -14,15 +14,14 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.AbstractConverter;
-import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.NativeWebRequest;
-import static ee.cyber.cdoc20.server.OpenApiUtil.fixOABrokenBaseURL;
+import static ee.cyber.cdoc20.server.Utils.MODEL_MAPPER;
+import static ee.cyber.cdoc20.server.Utils.fixOABrokenBaseURL;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -71,8 +70,7 @@ public class CreateKeyCapsuleApi implements EccDetailsApiDelegate {
         }
 
         try {
-            ServerEccDetailsJpa jpaModel =
-                    getModelMapperInstance().map(serverEccDetails, ServerEccDetailsJpa.class);
+            ServerEccDetailsJpa jpaModel = MODEL_MAPPER.map(serverEccDetails, ServerEccDetailsJpa.class);
             var saved = jpaRepository.save(jpaModel);
 
             log.debug("serverEccDetails   : {} {}",
@@ -137,29 +135,5 @@ public class CreateKeyCapsuleApi implements EccDetailsApiDelegate {
         return false;
     }
 
-    /**
-     * ModelMapper to convert between {@link ServerEccDetails} and {@link ServerEccDetailsJpa} models
-     */
-    static ModelMapper getModelMapperInstance() {
-        if (modelMapperInstance == null) {
-            modelMapperInstance = new ModelMapper();
-            Converter<byte[], String> byteArrayToBase64Converter = new AbstractConverter<>() {
-                @Override
-                protected String convert(byte[] bytes) {
-                    return Base64.getEncoder().encodeToString(bytes);
-                }
-            };
 
-            Converter<String, byte[]> base64ToByteArrayConverter = new AbstractConverter<>() {
-                @Override
-                protected byte[] convert(String base64) {
-                    return Base64.getDecoder().decode(base64);
-                }
-            };
-
-            modelMapperInstance.addConverter(byteArrayToBase64Converter);
-            modelMapperInstance.addConverter(base64ToByteArrayConverter);
-        }
-        return modelMapperInstance;
-    }
 }
