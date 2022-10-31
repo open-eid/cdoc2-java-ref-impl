@@ -25,6 +25,8 @@
         <logback-classic.version>1.2.11</logback-classic.version>
         <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
         <bouncycastle.version>1.70</bouncycastle.version>
+        <spring-boot.version>2.6.7</spring-boot.version>
+        <spring.version>5.3.19</spring.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
@@ -33,77 +35,56 @@
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>maven-group</id>
-            <url>https://nexus.riaint.ee/repository/maven-public/</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <uniqueVersion>false</uniqueVersion>
-            <id>RIA</id>
-            <name>RIA nexus</name>
-            <url>https://nexus.riaint.ee/repository/maven-public/</url>
-        </repository>
-    </distributionManagement>
-
     <profiles>
-    <profile>
-        <id>allTests</id>
-        <properties>
-            <!-- empty, means all tests-->
-            <tests />
-        </properties>
-    </profile>
-
-    <profile>
-        <id>excludeSlowTests</id>
-        <properties>
-            <tests>!slow</tests>
-        </properties>
-    </profile>
-
-
-    <profile>
-        <id>excludePkcs11AndSlowTests</id>
-        <properties>
-            <tests>!(pkcs11 | slow)</tests>
-        </properties>
-    </profile>
-
+        <profile>
+            <id>allTests</id>
+            <properties>
+                <!-- empty, means all tests-->
+                <tests />
+            </properties>
+        </profile>
 
         <profile>
-    <id>coverage</id>
+            <id>excludeSlowTests</id>
+            <properties>
+                <tests>!slow</tests>
+            </properties>
+        </profile>
 
-    <build>
-    <plugins>
-        <plugin>
-            <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+        <profile>
+            <id>excludePkcs11AndSlowTests</id>
+            <properties>
+                <tests>!(pkcs11 | slow)</tests>
+            </properties>
+        </profile>
 
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.7</version>
-
-            <executions>
-                <execution>
-                    <id>prepare-agent</id>
-                    <goals>
-                        <goal>prepare-agent</goal>
-                    </goals>
-                </execution>
-                <execution>
-                    <id>report</id>
-                    <goals>
-                        <goal>report</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-    </build>
-    </profile>
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.7</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <scm>

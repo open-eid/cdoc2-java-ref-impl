@@ -6,14 +6,10 @@ info:
   version: '1.0'
   description: |
     # API for securely exchanging keys
-    
-    Usage example (server requires mutual TLS and client certificate must be trusted by server):
-    
+
     ```
-    curl -i -X 'POST' \
+    curl -i -k -X 'POST' \
     'https://localhost:8443/ecc-details' \
-    --cert-type 'P12' \
-    --cert 'cdoc20client.p12:passwd' \
     --cacert 'server-certificate.pem' \
     -H 'Content-Type: application/json' \
     -H 'Accept: application/json' \
@@ -29,9 +25,10 @@ info:
     ```
     
     Copy transaction id from Location header
+    Sserver requires mutual TLS and client certificate must be trusted by server):
     
     ```
-    curl --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8443/ecc-details/SD6efa76980f591f0cfb4966a2229505cb
+    curl --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8444/ecc-details/SD6efa76980f591f0cfb4966a2229505cb
     ```
     Response:
     ```
@@ -39,8 +36,8 @@ info:
     ```
 
 servers:
-  - url: 'https://localhost:8080'
   - url: 'https://localhost:8443'
+  - url: 'https://localhost:8444'
 paths:
   '/ecc-details/{transactionId}':
     get:

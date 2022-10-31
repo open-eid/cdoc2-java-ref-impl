@@ -1,5 +1,10 @@
 package ee.cyber.cdoc20.client;
 
+import ee.cyber.cdoc20.client.api.ApiClient;
+import ee.cyber.cdoc20.client.api.ApiException;
+import ee.cyber.cdoc20.client.api.ApiResponse;
+import ee.cyber.cdoc20.client.api.EccDetailsApi;
+import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -11,19 +16,14 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
-import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import javax.ws.rs.client.ClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ee.cyber.cdoc20.client.api.ApiClient;
-import ee.cyber.cdoc20.client.api.ApiException;
-import ee.cyber.cdoc20.client.api.ApiResponse;
-import ee.cyber.cdoc20.client.api.EccDetailsApi;
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
 
 /**
  * Client for creating and getting ServerEccDetails from key server. Provides Builder to initialize mutual TLS
@@ -140,10 +140,9 @@ public final class ServerEccDetailsClient {
                 throw new IllegalStateException("TrustKeyStore cannot be null");
             }
 
-            if (clientKeyStore == null) {
-                throw new IllegalStateException("ClientKeyStore cannot be null");
+            if (clientKeyStore != null && clientKeyStoreProtectionParameter == null) {
+                throw new IllegalStateException("ClientKeyStoreProtectionParameter cannot be null");
             }
-
         }
 
         public ServerEccDetailsClient build() throws GeneralSecurityException, IOException {
@@ -176,32 +175,41 @@ public final class ServerEccDetailsClient {
                 KeyStoreException, KeyManagementException {
             SSLContext sslContext = null;
             try {
-                KeyManagerFactory clientKeyManagerFactory =
-                        KeyManagerFactory.getInstance("PKIX"); //only PKIX supports ManagerFactoryParameters
-                log.debug("client key store type: {}", clientKeyStore.getType());
-
-                KeyStore.Builder clientKeyStoreBuilder = ("PKCS11".equals(clientKeyStore.getType()))
-                        ? KeyStore.Builder.newInstance("PKCS11",
-                                clientKeyStore.getProvider(), clientKeyStoreProtectionParameter)
-                        : KeyStore.Builder.newInstance(clientKeyStore, clientKeyStoreProtectionParameter);
-
-                ManagerFactoryParameters clientKeyStoreFactoryParameters =
-                        new KeyStoreBuilderParameters(clientKeyStoreBuilder);
-
-                clientKeyManagerFactory.init(clientKeyStoreFactoryParameters);
-
                 TrustManagerFactory trustManagerFactory =
                         TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
                 trustManagerFactory.init(trustKeyStore);
 
                 sslContext = SSLContext.getInstance("TLSv1.3");
-                sslContext.init(clientKeyManagerFactory.getKeyManagers(),
-                        trustManagerFactory.getTrustManagers(), SecureRandom.getInstanceStrong());
+                sslContext.init(
+                    getClientKeyManager().orElse(null),
+                    trustManagerFactory.getTrustManagers(),
+                    SecureRandom.getInstanceStrong()
+                );
             } catch (GeneralSecurityException gse) {
                 log.error("Error initializing SSLContext", gse);
                 throw gse;
             }
             return sslContext;
+        }
+
+        private Optional<KeyManager[]> getClientKeyManager() throws NoSuchAlgorithmException,
+                InvalidAlgorithmParameterException {
+            if (clientKeyStore == null) {
+                return Optional.empty();
+            }
+
+            KeyManagerFactory clientKeyManagerFactory =
+                KeyManagerFactory.getInstance("PKIX"); //only PKIX supports ManagerFactoryParameters
+            log.debug("client key store type: {}", this.clientKeyStore.getType());
+
+            KeyStore.Builder clientKeyStoreBuilder = ("PKCS11".equals(clientKeyStore.getType()))
+                ? KeyStore.Builder.newInstance("PKCS11",
+                    clientKeyStore.getProvider(), clientKeyStoreProtectionParameter)
+                : KeyStore.Builder.newInstance(clientKeyStore, clientKeyStoreProtectionParameter);
+
+            var params = new KeyStoreBuilderParameters(clientKeyStoreBuilder);
+            clientKeyManagerFactory.init(params);
+            return Optional.of(clientKeyManagerFactory.getKeyManagers());
         }
     }
 

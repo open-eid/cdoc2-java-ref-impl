@@ -47,8 +47,6 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
             p.forEach((key, value) -> log.debug("{}={}", key, value));
         }
 
-
-
         KeyStore clientKeyStore = loadClientKeyStore(p);
 
         String baseUrl = p.getProperty("cdoc20.client.server.baseurl.post");
