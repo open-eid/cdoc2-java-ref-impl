@@ -11,7 +11,7 @@
 
 	<artifactId>cdoc20-get-server</artifactId>
 	<groupId>ee.cyber.cdoc20</groupId>
-	<version>0.0.8-SNAPSHOT</version>
+	<version>0.0.8</version>
 	<packaging>jar</packaging>
 
 	<name>cdoc20-get-server</name>
@@ -42,33 +42,33 @@
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-common-server</artifactId>
-			<version>0.0.8-SNAPSHOT</version>
+			<version>0.0.8</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-server-db</artifactId>
-			<version>0.0.8-SNAPSHOT</version>
+			<version>0.0.8</version>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-openapi</artifactId>
-			<version>0.0.8-SNAPSHOT</version>
+			<version>0.0.8</version>
 			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-client</artifactId>
-			<version>0.0.8-SNAPSHOT</version>
+			<version>0.0.8</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-common-server</artifactId>
-			<version>0.0.8-SNAPSHOT</version>
+			<version>0.0.8</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
@@ -229,7 +229,7 @@
 	</build>
 
   <scm>
-    <tag>v0.0.6</tag>
+    <tag>v0.0.8</tag>
   </scm>
 
 </project>
