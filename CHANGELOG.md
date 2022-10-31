@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.8] Two key capsule server instances (2022-10-31)
+
+### Features
+* The key server is composed of 2 server instances, each with its own configuration.
+* The API for creating key capsules does not require client authentication (mTLS).
+
 ## [0.0.7] Minimal support for Recipient.KeyLabel field (2022-10-14)
 
 ### Features
