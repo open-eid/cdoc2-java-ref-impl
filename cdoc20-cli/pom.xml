@@ -4,7 +4,7 @@
     <parent>
         <artifactId>cdoc20</artifactId>
         <groupId>ee.cyber.cdoc20</groupId>
-        <version>0.0.8</version>
+        <version>0.0.9-SNAPSHOT</version>
     </parent>
 
 
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>ee.cyber.cdoc20</groupId>
             <artifactId>cdoc20-lib</artifactId>
-            <version>0.0.8</version>
+            <version>0.0.9-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
