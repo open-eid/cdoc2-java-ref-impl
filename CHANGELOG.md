@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.9-SNAPSHOT] RSA-OAEP support (2022-11-02)
+
+### Features
+* Support for creating and decrypting CDOC2 documents with RSA keys
+* Improved Recipient.KeyLabel field support in cdoc20-lib (PublicKey used for encryption is paired with keyLabel)
+* Removed cdoc20-cli -ZZ hidden feature (disable compression for payload)
+
+
 ## [0.0.8] Two key capsule server instances (2022-10-31)
 
 ### Features
