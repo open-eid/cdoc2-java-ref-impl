@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import javax.crypto.KeyAgreement;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
@@ -231,6 +232,9 @@ public final class ECKeys {
      * @return ecPublicKey encoded in TLS 1.3 EC pub key format
      */
     public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) throws GeneralSecurityException {
+        if (ecPublicKey.getW() == ECPoint.POINT_INFINITY) {
+            throw new IllegalArgumentException("Cannot encode infinity ECPoint");
+        }
         EllipticCurve curve = EllipticCurve.forOid(ECKeys.getCurveOid(ecPublicKey));
         int keyLength = curve.getKeyLength();
         return encodeEcPubKeyForTls(ecPublicKey, keyLength);
@@ -299,6 +303,7 @@ public final class ECKeys {
     }
 
     private static byte[] toUnsignedByteArray(BigInteger bigInteger, int len) {
+        Objects.requireNonNull(bigInteger, "Cannot convert null bigInteger to byte[]");
         //https://stackoverflow.com/questions/4407779/biginteger-to-byte
         byte[] array = bigInteger.toByteArray();
         if ((array[0] == 0) && (array.length == len + 1)) {
@@ -646,6 +651,18 @@ public final class ECKeys {
     }
 
     public static boolean isValidSecP384R1(ECPublicKey ecPublicKey) throws GeneralSecurityException {
+
+        if (ecPublicKey == null) {
+            log.debug("EC pub key is null");
+            return false;
+        }
+
+        // it is not possible to create other instance of ECPoint.POINT_INFINITY
+        if (ECPoint.POINT_INFINITY.equals(ecPublicKey.getW())) {
+            log.debug("EC pub key is infinity");
+            return false;
+        }
+
         if (!isEcSecp384r1Curve(ecPublicKey)) {
             log.debug("EC pub key curve OID {} is not secp384r1", getCurveOid(ecPublicKey));
             return false;

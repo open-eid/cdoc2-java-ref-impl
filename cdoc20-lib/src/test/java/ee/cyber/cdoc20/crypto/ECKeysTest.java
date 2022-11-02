@@ -16,13 +16,19 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.InvalidParameterSpecException;
 import java.util.HexFormat;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ECKeysTest {
@@ -245,4 +251,55 @@ class ECKeysTest {
 
         assertEquals("\u017DAIKOVSKI,IGOR,37101010021", label);
     }
+
+
+    public static ECPublicKey getInfinityPublicKey() throws InvalidParameterSpecException, NoSuchAlgorithmException {
+        AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
+        params.init(new ECGenParameterSpec(ECKeys.SECP_384_R_1));
+
+        ECParameterSpec ecParameterSpec = params.getParameterSpec(ECParameterSpec.class);
+
+        ECPublicKey infinityPublicKey = new ECPublicKey() {
+            @Override
+            public ECPoint getW() {
+                return ECPoint.POINT_INFINITY;
+            }
+
+            @Override
+            public String getAlgorithm() {
+                return "EC";
+            }
+
+            @Override
+            public String getFormat() {
+                return null;
+            }
+
+            @Override
+            public byte[] getEncoded() {
+                return new byte[0];
+            }
+
+            @Override
+            public ECParameterSpec getParams() {
+                return ecParameterSpec;
+            }
+        };
+
+        return infinityPublicKey;
+    }
+
+    @Test
+    void testInfinityPublicKeyValidity() throws GeneralSecurityException {
+
+        ECPublicKey infinityPublicKey = getInfinityPublicKey();
+        assertFalse(ECKeys.isValidSecP384R1(infinityPublicKey));
+    }
+
+    @Test
+    void testEncodeInfinityPubKey() throws GeneralSecurityException {
+        ECPublicKey infinityPublicKey = getInfinityPublicKey();
+        assertThrows(IllegalArgumentException.class, () -> ECKeys.encodeEcPubKeyForTls(infinityPublicKey));
+    }
+
 }
