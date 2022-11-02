@@ -26,8 +26,8 @@ import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
 
 
 /**
- * Utility class for dealing with tar gz stream/files. Only supports regular files (no directories/special files) inside
- * tar. Concatenated gzip streams are not supported.
+ * Utility class for dealing with tar zlib stream/files. Only supports regular files (no directories/special files)
+ * inside the tar. Concatenated gzip streams are not supported.
  */
 public final class Tar {
 
@@ -69,6 +69,12 @@ public final class Tar {
         tarArchiveOutputStream.closeArchiveEntry();
     }
 
+    /**
+     * Create tar archive of files and compress that with zlib.
+     * @param dest Compressed tar is written to dest
+     * @param files to archive
+     * @throws IOException
+     */
     public static void archiveFiles(OutputStream dest, Iterable<File> files)
             throws IOException {
 
@@ -100,7 +106,7 @@ public final class Tar {
     }
 
     /**
-     * Create an archive with single entry.
+     * Create a compressed (zlib) archive with single entry.
      * @param dest destination stream where created archive will be written
      * @param inputStream data added to archive
      * @param tarEntryName entry name (file name) for data

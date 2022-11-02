@@ -5,16 +5,22 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.util.HexFormat;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,13 +37,8 @@ class ECKeysTest {
         byte[] pos128 = new BigInteger("128").toByteArray(); // 0x00, 0x80
         byte[] pos = new BigInteger("255").toByteArray(); // 0x00, 0xff
 
-
-
-
         assertEquals(new BigInteger("255"), new BigInteger(1, new byte[] {(byte)0xff}));
         assertEquals(new BigInteger("255"), new BigInteger(1, new byte[] {(byte)0x00, (byte)0xff}));
-
-
     }
 
     @Test
@@ -56,7 +57,6 @@ class ECKeysTest {
         assertEquals(ecPublicKey.getW(), decoded.getW());
         assertEquals(ecPublicKey, decoded);
     }
-
 
     @Test
     void testLoadEcPrivKey() throws GeneralSecurityException, IOException {
@@ -97,7 +97,7 @@ class ECKeysTest {
 
 
     @Test
-    void testLoadEcPubKey() throws GeneralSecurityException {
+    void testLoadEcPubKey() throws GeneralSecurityException, IOException {
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
         @SuppressWarnings("checkstyle:OperatorWrap")
@@ -106,7 +106,6 @@ class ECKeysTest {
                 "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii\n" +
                 "3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw\n" +
                 "-----END PUBLIC KEY-----\n";
-
 
 //        openssl ec -in key.pem -text -noout
 //        read EC key
@@ -130,9 +129,12 @@ class ECKeysTest {
                 + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
                 + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
-        ECPublicKey ecPublicKey = ECKeys.loadECPublicKey(pubKeyPem);
+        PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
+        assertEquals("EC", publicKey.getAlgorithm());
 
-        assertEquals("EC", ecPublicKey.getAlgorithm());
+        ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
+
+
         assertTrue(ECKeys.isEcSecp384r1Curve(ecPublicKey));
 
         log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams().toString());
@@ -175,7 +177,7 @@ class ECKeysTest {
                 + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
                 + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
-        KeyPair keyPair = ECKeys.loadFromPem(privKeyPem);
+        KeyPair keyPair = PemTools.loadFromPem(privKeyPem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 
@@ -189,21 +191,58 @@ class ECKeysTest {
         log.debug("{} oid {}", params.getProvider(), params.getParameterSpec(ECGenParameterSpec.class).getName());
         assertTrue(ECKeys.isEcSecp384r1Curve(ecPrivKey));
 
-
-
         assertEquals("EC", ecPublicKey.getAlgorithm());
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
 
-//    Test that pubKeyEncode always returns encoded key with size of 97 bytes
-//    @Test
-//    void testEcPubKeyEncodeDecodeLoop() throws GeneralSecurityException {
-//        log.trace("testEcPubKeyEncodeDecodeLoop()");
-//
-//        for (int i=0; i< 100; i++) {
-//            testEcPubKeyEncodeDecode();
-//        }
-//    }
+    @Test
+    void testLoadCertWithLabel() throws CertificateException, IOException {
+
+        @SuppressWarnings("checkstyle:OperatorWrap")
+        final String igorCertificate =
+                "-----BEGIN CERTIFICATE-----\n" +
+                "MIIGPjCCBCagAwIBAgIQWh4k6BI9wW9aAwcOMosU6DANBgkqhkiG9w0BAQsFADBr\n" +
+                "MQswCQYDVQQGEwJFRTEiMCAGA1UECgwZQVMgU2VydGlmaXRzZWVyaW1pc2tlc2t1\n" +
+                "czEXMBUGA1UEYQwOTlRSRUUtMTA3NDcwMTMxHzAdBgNVBAMMFlRFU1Qgb2YgRVNU\n" +
+                "RUlELVNLIDIwMTUwHhcNMTcxMTA4MTMzMDU0WhcNMjIxMTA3MjE1OTU5WjCBlzEL\n" +
+                "MAkGA1UEBhMCRUUxDzANBgNVBAoMBkVTVEVJRDEXMBUGA1UECwwOYXV0aGVudGlj\n" +
+                "YXRpb24xJDAiBgNVBAMMG8W9QUlLT1ZTS0ksSUdPUiwzNzEwMTAxMDAyMTETMBEG\n" +
+                "A1UEBAwKxb1BSUtPVlNLSTENMAsGA1UEKgwESUdPUjEUMBIGA1UEBRMLMzcxMDEw\n" +
+                "MTAwMjEwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAATlalHxt8gcK5Asvap7DqJQI6PU\n" +
+                "Tkoz0/FWBJwZGuzK733wy5RV2D+scuj6NsinEW4rQBxQegm3ASU1aNcRTiSO9sCv\n" +
+                "GtGiptdt5w+9f7ddo855Lc/7C0vW0gG4tRLvob+jggJdMIICWTAJBgNVHRMEAjAA\n" +
+                "MA4GA1UdDwEB/wQEAwIDiDCBiQYDVR0gBIGBMH8wcwYJKwYBBAHOHwMBMGYwLwYI\n" +
+                "KwYBBQUHAgEWI2h0dHBzOi8vd3d3LnNrLmVlL3JlcG9zaXRvb3JpdW0vQ1BTMDMG\n" +
+                "CCsGAQUFBwICMCcMJUFpbnVsdCB0ZXN0aW1pc2Vrcy4gT25seSBmb3IgdGVzdGlu\n" +
+                "Zy4wCAYGBACPegECMCIGA1UdEQQbMBmBF2lnb3IuemFpa292c2tpQGVlc3RpLmVl\n" +
+                "MB0GA1UdDgQWBBRWH+VJhoWaZU4WgnVNJCoDJNSRfTBhBggrBgEFBQcBAwRVMFMw\n" +
+                "UQYGBACORgEFMEcwRRY/aHR0cHM6Ly9zay5lZS9lbi9yZXBvc2l0b3J5L2NvbmRp\n" +
+                "dGlvbnMtZm9yLXVzZS1vZi1jZXJ0aWZpY2F0ZXMvEwJFTjAgBgNVHSUBAf8EFjAU\n" +
+                "BggrBgEFBQcDAgYIKwYBBQUHAwQwHwYDVR0jBBgwFoAUScDyRDll1ZtGOw04YIOx\n" +
+                "1i0ohqYwgYMGCCsGAQUFBwEBBHcwdTAsBggrBgEFBQcwAYYgaHR0cDovL2FpYS5k\n" +
+                "ZW1vLnNrLmVlL2VzdGVpZDIwMTUwRQYIKwYBBQUHMAKGOWh0dHBzOi8vc2suZWUv\n" +
+                "dXBsb2FkL2ZpbGVzL1RFU1Rfb2ZfRVNURUlELVNLXzIwMTUuZGVyLmNydDBBBgNV\n" +
+                "HR8EOjA4MDagNKAyhjBodHRwOi8vd3d3LnNrLmVlL2NybHMvZXN0ZWlkL3Rlc3Rf\n" +
+                "ZXN0ZWlkMjAxNS5jcmwwDQYJKoZIhvcNAQELBQADggIBAG71HyOLLR7yUiEp18eK\n" +
+                "vtmOLx4sd9rnvqgxtCy5AqoKkPirqJ9FRlg07GxZ4ReQCCLNLufsXzVbLCMCPzK6\n" +
+                "UBJxeO+LwzGgsNSUQ4UbbETaA5M9zqq8GvuAdqFC+gipCcwyVmlCQ45gV5w2fV39\n" +
+                "aZVjZjW9sJSlUubgxBRqfUsaIr/Ft1z1zmf/2cWWtOijP/iXTakJWQCrqM70EPWo\n" +
+                "pFUWea8Ak7UHSETF8S6zvxigW9Fveufk0JZ76+iDFD+fKqCGurAveKJQxj3yVHIL\n" +
+                "kFIhn1/8l6HterApbnwribJs3sCmgVd13na3cXideUG/SNLD3sQsS7UXS7E3Ksx7\n" +
+                "5ZgQmAJ388lD5ouGo7XmOGJQFsahlANIwPlHSr30eofYxt8rzELXy1lcSNsiGXj1\n" +
+                "xz1zkayfjiifHRurieeETm2hW/gla90CGUVHduHDxniQmbQOPbL/sr/0mebo+3j4\n" +
+                "IlFpIqJXO72sM0e3hIw59aJSHwQf2WTPkVm+Sm8XZ8UOHNpkLJbQj/cT58myWVM9\n" +
+                "bL0dJj7FoY0fgO9iDsHtAaNvsF3gq9Tz9pTNE1PYrAhrFDP/tw2JrruvoHXLyCbz\n" +
+                "Tv/YlZk9raKUO4GtUgcGbBdrKEhzMzLkPpgsnjyyPwjdi2Umbmbs9trOQ5uL2ap+\n" +
+                "A2FOma3WzswqJuVKeVIQx3O1\n" +
+                "-----END CERTIFICATE-----";
 
 
+        InputStream certStream = new ByteArrayInputStream(igorCertificate.getBytes(StandardCharsets.UTF_8));
+        Map.Entry<PublicKey, String> keyLabel =  PemTools.loadCertKeyWithLabel(certStream);
+
+        String label = keyLabel.getValue();
+
+        assertEquals("\u017DAIKOVSKI,IGOR,37101010021", label);
+    }
 }

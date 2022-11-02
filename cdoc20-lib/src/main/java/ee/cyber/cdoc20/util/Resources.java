@@ -7,6 +7,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Utility class for loading resources (ex. properties files) from classpath
+ */
 public final class Resources {
 
     private Resources() { }

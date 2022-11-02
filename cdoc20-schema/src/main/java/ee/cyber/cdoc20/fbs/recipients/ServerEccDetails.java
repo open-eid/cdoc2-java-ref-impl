@@ -12,12 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
-public final class ECCKeyServer extends Table {
+public final class ServerEccDetails extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
-  public static ECCKeyServer getRootAsECCKeyServer(ByteBuffer _bb) { return getRootAsECCKeyServer(_bb, new ECCKeyServer()); }
-  public static ECCKeyServer getRootAsECCKeyServer(ByteBuffer _bb, ECCKeyServer obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static ServerEccDetails getRootAsServerEccDetails(ByteBuffer _bb) { return getRootAsServerEccDetails(_bb, new ServerEccDetails()); }
+  public static ServerEccDetails getRootAsServerEccDetails(ByteBuffer _bb, ServerEccDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
-  public ECCKeyServer __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public ServerEccDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte curve() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public int recipientPublicKey(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
@@ -26,47 +26,33 @@ public final class ECCKeyServer extends Table {
   public ByteVector recipientPublicKeyVector(ByteVector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer recipientPublicKeyAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer recipientPublicKeyInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
-  public String keyserverId() { int o = __offset(8); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer keyserverIdAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
-  public ByteBuffer keyserverIdInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
-  public String transactionId() { int o = __offset(10); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer transactionIdAsByteBuffer() { return __vector_as_bytebuffer(10, 1); }
-  public ByteBuffer transactionIdInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 1); }
 
-  public static int createECCKeyServer(FlatBufferBuilder builder,
+  public static int createServerEccDetails(FlatBufferBuilder builder,
       byte curve,
-      int recipientPublicKeyOffset,
-      int keyserverIdOffset,
-      int transactionIdOffset) {
-    builder.startTable(4);
-    ECCKeyServer.addTransactionId(builder, transactionIdOffset);
-    ECCKeyServer.addKeyserverId(builder, keyserverIdOffset);
-    ECCKeyServer.addRecipientPublicKey(builder, recipientPublicKeyOffset);
-    ECCKeyServer.addCurve(builder, curve);
-    return ECCKeyServer.endECCKeyServer(builder);
+      int recipientPublicKeyOffset) {
+    builder.startTable(2);
+    ServerEccDetails.addRecipientPublicKey(builder, recipientPublicKeyOffset);
+    ServerEccDetails.addCurve(builder, curve);
+    return ServerEccDetails.endServerEccDetails(builder);
   }
 
-  public static void startECCKeyServer(FlatBufferBuilder builder) { builder.startTable(4); }
+  public static void startServerEccDetails(FlatBufferBuilder builder) { builder.startTable(2); }
   public static void addCurve(FlatBufferBuilder builder, byte curve) { builder.addByte(0, curve, 0); }
   public static void addRecipientPublicKey(FlatBufferBuilder builder, int recipientPublicKeyOffset) { builder.addOffset(1, recipientPublicKeyOffset, 0); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startRecipientPublicKeyVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
-  public static void addKeyserverId(FlatBufferBuilder builder, int keyserverIdOffset) { builder.addOffset(2, keyserverIdOffset, 0); }
-  public static void addTransactionId(FlatBufferBuilder builder, int transactionIdOffset) { builder.addOffset(3, transactionIdOffset, 0); }
-  public static int endECCKeyServer(FlatBufferBuilder builder) {
+  public static int endServerEccDetails(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 6);  // recipient_public_key
-    builder.required(o, 8);  // keyserver_id
-    builder.required(o, 10);  // transaction_id
     return o;
   }
 
   public static final class Vector extends BaseVector {
     public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
 
-    public ECCKeyServer get(int j) { return get(new ECCKeyServer(), j); }
-    public ECCKeyServer get(ECCKeyServer obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+    public ServerEccDetails get(int j) { return get(new ServerEccDetails(), j); }
+    public ServerEccDetails get(ServerEccDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

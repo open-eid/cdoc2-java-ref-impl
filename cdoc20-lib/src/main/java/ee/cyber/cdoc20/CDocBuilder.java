@@ -9,38 +9,37 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
- * CDocBuilder for building CDOCs using ECC public keys.
+ * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys.
  */
-public class EccPubKeyCDocBuilder {
-    private static final Logger log = LoggerFactory.getLogger(EccPubKeyCDocBuilder.class);
+public class CDocBuilder {
+    private static final Logger log = LoggerFactory.getLogger(CDocBuilder.class);
 
     private List<File> payloadFiles;
-    private List<ECPublicKey> recipients;
+    private Map<PublicKey, String> recipients;
     private Properties serverProperties;
 
-    @SuppressWarnings("checkstyle:HiddenField")
-    public EccPubKeyCDocBuilder withPayloadFiles(List<File> payloadFiles) {
-        this.payloadFiles = payloadFiles;
+    public CDocBuilder withPayloadFiles(List<File> files) {
+        this.payloadFiles = files;
         return this;
     }
 
-    public EccPubKeyCDocBuilder withRecipients(List<ECPublicKey> recipientsPubKeys) {
+    public CDocBuilder withRecipients(Map<PublicKey, String> recipientsPubKeys) {
         this.recipients = recipientsPubKeys;
         return this;
     }
 
-    public EccPubKeyCDocBuilder withServerProperties(Properties p) {
+    public CDocBuilder withServerProperties(Properties p) {
         this.serverProperties = p;
         return this;
     }
-
-
 
     public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
         try (OutputStream outputStream = new FileOutputStream(outputCDocFile)) {
@@ -50,14 +49,12 @@ public class EccPubKeyCDocBuilder {
 
     public void buildToOutputStream(OutputStream outputStream)
             throws CDocException, CDocValidationException, IOException {
-
         validate();
-
 
         try {
             Envelope envelope;
             if (serverProperties == null) {
-                envelope = Envelope.prepare(recipients);
+                envelope = Envelope.prepare(recipients, null);
             } else {
                 envelope = Envelope.prepare(recipients, KeyServerPropertiesClient.create(serverProperties));
             }
@@ -77,35 +74,38 @@ public class EccPubKeyCDocBuilder {
             throw new CDocValidationException("Must provide at least one recipient");
         }
 
-        for (ECPublicKey recipientPubKey : recipients) {
+        for (Map.Entry<PublicKey, String> keyLabel : recipients.entrySet()) {
             String oid;
-            String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
-            try {
-                oid = ECKeys.getCurveOid(recipientPubKey);
-                ECKeys.EllipticCurve curve;
+            PublicKey publicKey = keyLabel.getKey();
+
+            if ("EC".equals(publicKey.getAlgorithm())) {
+                ECPublicKey recipientPubKey = (ECPublicKey) publicKey;
+                String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
                 try {
-                    curve = ECKeys.EllipticCurve.forOid(oid);
-                } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
-                    log.error("EC pub key curve ({}) is not supported. EC public key={}",
-                            oid, encoded);
-                    throw new CDocValidationException("Invalid recipient key with key " + oid);
-                }
+                    oid = ECKeys.getCurveOid(recipientPubKey);
+                    ECKeys.EllipticCurve curve;
+                    try {
+                        curve = ECKeys.EllipticCurve.forOid(oid);
+                    } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
+                        log.error("EC pub key curve ({}) is not supported. EC public key={}",
+                                oid, encoded);
+                        throw new CDocValidationException("Invalid recipient key with key " + oid);
+                    }
 
-                if (!curve.isValidKey(recipientPubKey)) {
-                    log.error("EC pub key is not valid for curve {}. EC public key={}",
-                            curve.getName(), encoded);
-                    throw new CDocValidationException("Recipient key not valid");
+                    if (!curve.isValidKey(recipientPubKey)) {
+                        log.error("EC pub key is not valid for curve {}. EC public key={}",
+                                curve.getName(), encoded);
+                        throw new CDocValidationException("Recipient key not valid");
+                    }
+                } catch (GeneralSecurityException gse) {
+                    throw new CDocValidationException("Invalid recipient " + encoded, gse);
                 }
-            } catch (GeneralSecurityException gse) {
-                throw new CDocValidationException("Invalid recipient " + encoded, gse);
             }
-
         }
     }
 
-
     void validatePayloadFiles() throws CDocValidationException {
-        if ((payloadFiles == null) || (payloadFiles.isEmpty())) {
+        if (payloadFiles == null || payloadFiles.isEmpty()) {
             log.error("Must contain at least one payload file");
             throw new CDocValidationException("Must contain at least one payload file");
         }

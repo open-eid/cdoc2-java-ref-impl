@@ -1,7 +1,9 @@
 package ee.cyber.cdoc20.fbs.header;
 
-import ee.cyber.cdoc20.fbs.recipients.ECCPublicKey;
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
+import ee.cyber.cdoc20.fbs.recipients.KeyServerDetails;
+import ee.cyber.cdoc20.fbs.recipients.ServerDetailsUnion;
+import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +12,8 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
+import static ee.cyber.cdoc20.fbs.header.Details.recipients_KeyServerDetails;
 
 class FbsHeaderTest {
 
@@ -34,7 +38,6 @@ class FbsHeaderTest {
         recipientPubKeyBuf[recipientPubKeyBuf.length - 1] = (byte)0xfe;
 
 
-
         byte[] senderPubKeyBuf = new byte[KEYLEN_BYTES];
         senderPubKeyBuf[0] = 's';
         senderPubKeyBuf[1] = 'e';
@@ -45,26 +48,36 @@ class FbsHeaderTest {
 
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int recipientPubKeyOffset = builder.createByteVector(recipientPubKeyBuf);
-        int senderPubKeyOffset = builder.createByteVector(senderPubKeyBuf);
-        int eccPubKeyOffset = ECCPublicKey.createECCPublicKey(builder,
+
+        int serverEccDetailsOffset = ServerEccDetails.createServerEccDetails(builder,
                 EllipticCurve.secp384r1,
-                recipientPubKeyOffset,
-                senderPubKeyOffset
+                recipientPubKeyOffset
         );
+
+        int keyServerOffset = builder.createString("keyserver");
+        int transactionIdOffset = builder.createString("SD1234567890");
+
+
+        int detailsOffset  = KeyServerDetails.createKeyServerDetails(builder,
+                ServerDetailsUnion.ServerEccDetails,
+                serverEccDetailsOffset,
+                keyServerOffset,
+                transactionIdOffset
+        );
+
 
         int encFmkOffset = RecipientRecord.createEncryptedFmkVector(builder, fmkBuf);
 
         int keyLabelOffset = builder.createString(keyLabel);
 
         RecipientRecord.startRecipientRecord(builder);
-        RecipientRecord.addDetailsType(builder, Details.recipients_ECCPublicKey);
-        RecipientRecord.addDetails(builder, eccPubKeyOffset);
+        RecipientRecord.addDetailsType(builder, recipients_KeyServerDetails);
+        RecipientRecord.addDetails(builder, detailsOffset);
 
         RecipientRecord.addKeyLabel(builder, keyLabelOffset);
 
         RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
         RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
-
 
 
         // endRecipientRecord will return RecipientRecord offset value
@@ -99,6 +112,28 @@ class FbsHeaderTest {
         RecipientRecord recipient = header.recipients(0);
 
 
+        Assertions.assertEquals(recipients_KeyServerDetails, recipient.detailsType());
+
+        KeyServerDetails keyServerDetails = (KeyServerDetails) recipient.details(new KeyServerDetails());
+        Assertions.assertNotNull(keyServerDetails);
+        Assertions.assertEquals(ServerDetailsUnion.ServerEccDetails, keyServerDetails.recipientKeyDetailsType());
+
+        ServerEccDetails serverEccDetails =
+                (ServerEccDetails) keyServerDetails.recipientKeyDetails(new ServerEccDetails());
+        Assertions.assertNotNull(serverEccDetails);
+        Assertions.assertEquals(EllipticCurve.secp384r1, serverEccDetails.curve());
+        Assertions.assertEquals(recipientPubKeyBuf.length, serverEccDetails.recipientPublicKeyLength());
+
+        Assertions.assertNotNull(serverEccDetails.recipientPublicKeyAsByteBuffer());
+
+        byte[] recipientPubKeyBytesOut = new byte[recipientPubKeyBuf.length];
+        serverEccDetails.recipientPublicKeyAsByteBuffer().get(
+                serverEccDetails.recipientPublicKeyAsByteBuffer().position(),
+                recipientPubKeyBytesOut);
+
+        Assertions.assertArrayEquals(recipientPubKeyBuf, recipientPubKeyBytesOut );
+
+
         Assertions.assertNotNull(recipient.encryptedFmkAsByteBuffer());
         Assertions.assertEquals(fmkBuf.length, recipient.encryptedFmkLength());
 
@@ -118,10 +153,5 @@ class FbsHeaderTest {
         Assertions.assertArrayEquals(fmkBuf, fmkArray);
         Assertions.assertArrayEquals(fmkBuf, fmkBytes);
         Assertions.assertEquals(ByteBuffer.wrap(fmkBuf), byteBuffer.slice());
-
-        //TODO: check recipients
-
-
-
     }
 }

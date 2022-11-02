@@ -182,6 +182,18 @@
                             <apiPackage>ee.cyber.cdoc20.server.api</apiPackage>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>generate-cdoc20-capsules</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/cdoc20-key-capsules.yaml</inputSpec>
+                            <apiPackage>ee.cyber.cdoc20.server.api</apiPackage>
+                        </configuration>
+                    </execution>
+
                 </executions>
                 <configuration>
                     <generatorName>spring</generatorName>
