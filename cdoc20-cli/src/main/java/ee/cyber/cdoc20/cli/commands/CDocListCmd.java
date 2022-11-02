@@ -3,6 +3,7 @@ package ee.cyber.cdoc20.cli.commands;
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.PemTools;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -52,7 +53,7 @@ public class CDocListCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
-        KeyPair keyPair = (privKeyFile != null) ? ECKeys.loadFromPem(privKeyFile)
+        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadFromPem(privKeyFile)
                 : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

@@ -1,13 +1,14 @@
 package ee.cyber.cdoc20.container.recipients;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
 
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
 /**
  * ECC recipient using ECCServerKey. POJO of
- * {@link ee.cyber.cdoc20.fbs.recipients.ECCKeyServer recipients.ECCKeyServer} in CDOC header.
+ * {@link ServerEccDetails recipients.ECCKeyServer} in CDOC header.
  */
 public class EccServerKeyRecipient extends EccRecipient {
     private final String keyServerId;
@@ -24,7 +25,7 @@ public class EccServerKeyRecipient extends EccRecipient {
 
     public EccServerKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey,
                                  String keyServerId, String transactionId, byte[] encryptedFmk) {
-        this(eccCurve, recipientPubKey, keyServerId, transactionId, encryptedFmk, "");
+        this(eccCurve, recipientPubKey, keyServerId, transactionId, encryptedFmk, null);
     }
 
     public byte[] getRecipientPubKeyTlsEncoded() {

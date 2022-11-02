@@ -4,7 +4,12 @@ include "recipients.fbs";
 namespace ee.cyber.cdoc20.fbs.header;
 
 // Union for communicating the recipient type
-union Details { recipients.ECCPublicKey, recipients.ECCKeyServer, recipients.SymmetricKeyDetails }
+union Details {
+    recipients.ECCPublicKeyDetails,
+    recipients.RSAPublicKeyDetails,
+    recipients.KeyServerDetails,
+    recipients.SymmetricKeyDetails
+}
 
 // FMK encryption method enum.
 enum FMKEncryptionMethod:byte { 
@@ -23,7 +28,7 @@ enum PayloadEncryptionMethod:byte {
 // Thus it is better to have an an array of tables that 
 // contains the union as a field.
 table RecipientRecord {
-    details:Details;
+    details:                Details;
     key_label:              string (required);
     encrypted_fmk:          [ubyte] (required);
     fmk_encryption_method:  FMKEncryptionMethod = UNKNOWN;

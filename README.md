@@ -7,7 +7,7 @@ CDOC 2.0 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06
 
 Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and second with optional server backend.
 
-## TL;DR CDoc 2.0 without server scenario 
+## TL;DR CDoc 2.0 ECDH scenario
 
 **Warning**: This description is simplification to give general idea, details and **final truth is in 
 [CDOC 2.0 specification](https://overleaf.cloud.cyber.ee/project/6322f8bcf962db0089c4cd08)**.
@@ -16,8 +16,8 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
    EC public key.
 2. Sender generates EC (elliptic curve) key pair using the same EC curve as in recipient EC public key [^1]
 3. Sender derives key encryption key (KEK) using ECDH (from sender EC private key and recipient EC public key)  
-4. Sender generates file master key (FMK) from secure random
-5. Sender derives content encryption key (CEK) and hmac key (HHK) from FMK using HKDF algorithm
+4. Sender generates file master key (FMK) using HKDF extract algorithm
+5. Sender derives content encryption key (CEK) and hmac key (HHK) from FMK using HKDF expand algorithm
 6. Sender encrypts FMK with KEK (xor)
 7. Sender adds encrypted FMK with senders and recipients public keys to CDoc header[^2]
 8. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
@@ -36,7 +36,7 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 
 [^3]: Content is zlib compressed tar archive
 
-## TL;DR CDoc 2.0 with optional server scenario
+## TL;DR CDoc 2.0 ECDH with optional server scenario
 
 1. *Follow steps from previous scenario 1-6*
 2. Sender chooses key transaction server (preconfigured list)
@@ -52,12 +52,34 @@ Current CDoc 2.0 supports two scenarios, one similar to original CDoc 1.0 and se
 
 
 Key transfer server benefits:
-* After the key has been deleted from the key transfer server, the document can't be decrypted even when keys on recipient id-kaart have been compromised
+* After the key has been deleted from the key transfer server, the document cannot be decrypted even when keys on recipient's id-kaart have been compromised.
 * Other scenarios can be implemented like expiring CDoc2.0 documents by deleting expired keys from key transfer server. 
 
 [^4]: key transfer server protocol is defined in cdoc20-openapi module
 
+## TL;DR CDoc 2.0 RSA-OAEP
 
+RSA-OAEP is similar to ECDH scenario, with difference that KEK is generated from secure random (not ECDH) and
+KEK is encrypted with recipient RSA public key and included into CDOC header (instead of
+sender public key).
+
+1. Sender downloads recipient's certificate from SK LDAP using recipient id (TODO: company id?). Recipient certificate
+   contains recipient RSA public key.
+2. Sender generates file master key (FMK) using HKDF extract algorithm.
+3. Sender generates encryption key (KEK) using secure random.
+4. Sender derives content encryption key (CEK) and hmac key (HHK) from FMK using HKDF expand algorithm.
+5. Sender encrypts FMK with KEK (xor).
+6. Sender encrypts KEK with recipient's RSA public key.
+7. Sender adds encrypted FMK and encrypted KEK with recipient's public key to CDoc header.
+8. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc.
+9. Sender encrypts content with CEK (ChaCha20-Poly1305 with AAD).
+10. Sender sends CDoc to recipient.
+11. Recipient finds recipient's public key from CDoc
+12. Recipient decrypts key encryption key (KEK) using recipient's RSA private key.
+13. Recipient decrypts FMK using KEK.
+14. Recipient derives CEK and HHK from FMK using HKDF algorithm.
+15. Recipient calculates hmac and checks it against hmac in CDoc.
+16. Recipient decrypts content using CEK.
 
 ## Structure
 

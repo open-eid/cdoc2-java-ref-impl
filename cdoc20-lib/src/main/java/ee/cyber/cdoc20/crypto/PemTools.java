@@ -1,0 +1,191 @@
+package ee.cyber.cdoc20.crypto;
+
+import ee.cyber.cdoc20.util.SkLdapUtil;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.file.Files;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Utility class to deal with EC and RSA keys and certificates in PEM format.
+ */
+public final class PemTools {
+    private static final Logger log = LoggerFactory.getLogger(PemTools.class);
+
+    private PemTools() {
+    }
+
+
+    /**
+     * Load EC or RSA pub key from PEM
+     *
+     * EC key:
+     * openssl ec -in key.pem -pubout -out public.pem
+     * <code>
+     * -----BEGIN PUBLIC KEY-----
+     * MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO
+     * IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii
+     * 3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw
+     * -----END PUBLIC KEY-----
+     * <code/>
+     *
+     * ASN.1:
+     * <pre>
+     SEQUENCE (2 elem)
+     SEQUENCE (2 elem)
+     OBJECT IDENTIFIER 1.2.840.10045.2.1 ecPublicKey (ANSI X9.62 public key type)
+     OBJECT IDENTIFIER 1.3.132.0.34 secp384r1 (SECG (Certicom) named elliptic curve)
+     BIT STRING (776 bit) 0000010001111001011000011010011100101001101001111001000111111000011010…
+     * </pre>
+     *
+     * RSA is standard PEM encoded RSA public key
+     * @param pem
+     * @return public key
+     */
+    public static PublicKey loadPublicKey(String pem) throws IOException {
+
+        Object parsed = new PEMParser(new StringReader(pem)).readObject();
+        SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(parsed);
+
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+        return converter.getPublicKey(publicKeyInfo);
+    }
+
+    /**
+     * Load key pair (EC or RSA) from OpenSSL generated PEM file:
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * Example key PEM:
+     * <pre>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </pre>
+     * Decoded PEM has ASN.1 structure:
+     * <pre>
+     SEQUENCE (4 elem)
+     INTEGER 1
+     OCTET STRING (48 byte) 61D54013F37D8D876657BDD73925B36FDC1704652624F747AC52448F1668365C4BA803…
+     [0] (1 elem)
+     OBJECT IDENTIFIER 1.3.132.0.34 secp384r1 (SECG (Certicom) named elliptic curve)
+     [1] (1 elem)
+     BIT STRING (776 bit) 0000010010000100010001100101110101101011000011111110011011100110110110…
+     </pre>
+     *
+     * @param pem OpenSSL generated private key in PEM
+     * @return KeyPair decoded from PEM
+     * @throw InvalidKeyException if key is not supported by CDOC2 lib
+     */
+    public static KeyPair loadFromPem(String pem) throws GeneralSecurityException, IOException {
+
+        Object parsed = new PEMParser(new StringReader(pem)).readObject();
+        KeyPair pair = new JcaPEMKeyConverter().getKeyPair((org.bouncycastle.openssl.PEMKeyPair)parsed);
+
+        PublicKey publicKey = pair.getPublic();
+        if (publicKey == null) {
+            throw new IllegalArgumentException("No public key found");
+        }
+        if ("EC".equals(publicKey.getAlgorithm())) {
+            if (!ECKeys.isECSecp384r1(pair)) {
+                throw new InvalidKeyException("Not EC keypair with secp384r1 curve");
+            }
+        } else if ("RSA".equals(publicKey.getAlgorithm())) {
+            // all RSA keys are considered good. Shorter will fail during encryption as OAEP takes some space
+            RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
+            // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
+            if (rsaPublicKey.getModulus().bitLength() <= 512) {
+                new InvalidKeyException("RSA key doesn't meat length requirements");
+            }
+        } else {
+            throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
+        }
+        return pair;
+    }
+
+    /**
+     * Load EC key pair from OpenSSL generated PEM file:
+     * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+     * Example key PEM:
+     * <pre>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+     * 4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+     * C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+     * yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+     * -----END EC PRIVATE KEY-----
+     * </pre>
+     * @param pemFile OpenSSL generated EC private key in PEM
+     * @return EC KeyPair decoded from PEM
+     */
+    public static KeyPair loadFromPem(File pemFile) throws GeneralSecurityException, IOException {
+        return loadFromPem(ECKeys.readAll(pemFile));
+    }
+
+    public static Map<PublicKey, String> loadPubKeysWithKeyLabel(File[] pubPemFiles) throws IOException {
+        Map<PublicKey, String> map = new LinkedHashMap<>();
+        if (pubPemFiles != null) {
+            for (File f : pubPemFiles) {
+                map.put(loadPublicKey(ECKeys.readAll(f)), "file: " + f);
+            }
+        }
+        return map;
+    }
+
+    /**
+     * Load public key (EC or RSA) from InputStream
+     * @param certIs Certificate InputStream in PEM (.cer) format
+     * @return public key paired with key label {@link SkLdapUtil#getKeyLabel(X509Certificate)}
+     * @throws CertificateException
+     */
+    public static Map.Entry<PublicKey, String> loadCertKeyWithLabel(InputStream certIs) throws CertificateException {
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        X509Certificate cert = (X509Certificate) certFactory.generateCertificate(certIs);
+        PublicKey publicKey = cert.getPublicKey();
+        String label = SkLdapUtil.getKeyLabel(cert);
+        return Map.entry(publicKey, label);
+    }
+
+    /**
+     * Parse public keys (EC or RSA) from certificate files
+     * @param certFiles Array of certificates files in PEM (.cer) format
+     * @return public keys parsed from certFiles. Public keys are paired with key label
+     *          {@link SkLdapUtil#getKeyLabel(X509Certificate)}
+     * @throws CertificateException
+     * @throws IOException
+     */
+    public static Map<PublicKey, String> loadCertKeysWithLabel(File[] certFiles)
+            throws CertificateException, IOException {
+
+        Map<PublicKey, String> map = new LinkedHashMap<>();
+
+        if (certFiles != null) {
+            for (File f : certFiles) {
+                InputStream in = Files.newInputStream(f.toPath());
+                Map.Entry<PublicKey, String> keyLabelEntry = loadCertKeyWithLabel(in);
+                map.put(keyLabelEntry.getKey(), keyLabelEntry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+}

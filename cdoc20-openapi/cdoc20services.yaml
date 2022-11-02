@@ -6,7 +6,7 @@ info:
   version: '1.0'
   description: |
     # API for securely exchanging keys
-
+    
     ```
     curl -i -k -X 'POST' \
     'https://localhost:8443/ecc-details' \
@@ -162,7 +162,6 @@ components:
             Sender public key in [TLS format](https://www.rfc-editor.org/rfc/rfc8446#section-4.2.8.2) binary. Must be 
             EC key with the same EC curve as recipient_public_key. Sender public key is usually generated and is 
             required for decrypting CDOC2.0 documents.
-            
 
         ecc_curve:
           type: integer

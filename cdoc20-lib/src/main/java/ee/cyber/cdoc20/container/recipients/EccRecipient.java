@@ -3,25 +3,21 @@ package ee.cyber.cdoc20.container.recipients;
 import ee.cyber.cdoc20.crypto.ECKeys;
 
 import java.security.interfaces.ECPublicKey;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Base class for ECC based recipients {@link EccPubKeyRecipient} and {@link EccServerKeyRecipient}.
  */
-public class EccRecipient {
+public class EccRecipient extends Recipient {
 
-    protected final ECPublicKey recipientPubKey;
-    protected final String recipientPubKeyLabel;
-    protected final byte[] encryptedFmk;
+    // recipient.ECCPublicKeyDetails fields
     protected ECKeys.EllipticCurve ellipticCurve;
+    protected final ECPublicKey recipientPubKey;
 
-    public EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey, String recipientPubKeyLabel,
-                        byte[] encryptedFmk) {
+    public EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipient, String recipientLabel, byte[] encFmk) {
+        super(encFmk, recipientLabel);
         this.ellipticCurve = eccCurve;
-        this.recipientPubKey = recipientPubKey;
-        this.recipientPubKeyLabel = recipientPubKeyLabel;
-        this.encryptedFmk = encryptedFmk;
+        this.recipientPubKey = recipient;
     }
 
     public ECKeys.EllipticCurve getEllipticCurve() {
@@ -32,11 +28,6 @@ public class EccRecipient {
         return recipientPubKey;
     }
 
-    public String getRecipientPubKeyLabel() {
-        return recipientPubKeyLabel;
-    }
-
-
     /**
      * Recipient ECC public key in TLS 1.3 format (specified in RFC 8446) in bytes
      */
@@ -44,25 +35,26 @@ public class EccRecipient {
         return ECKeys.encodeEcPubKeyForTls(this.ellipticCurve, this.recipientPubKey);
     }
 
-    public byte[] getEncryptedFileMasterKey() {
-        return this.encryptedFmk;
+    /**
+     *
+     * @return recipient EC public key.
+     */
+    @Override
+    public Object getRecipientId() {
+        return getRecipientPubKey();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
         EccRecipient that = (EccRecipient) o;
-        return Objects.equals(recipientPubKey, that.recipientPubKey)
-                && Objects.equals(recipientPubKeyLabel, that.recipientPubKeyLabel)
-                && Arrays.equals(encryptedFmk, that.encryptedFmk)
-                && ellipticCurve == that.ellipticCurve;
+        return ellipticCurve == that.ellipticCurve && Objects.equals(recipientPubKey, that.recipientPubKey);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(recipientPubKey, recipientPubKeyLabel, ellipticCurve);
-        result = 31 * result + Arrays.hashCode(encryptedFmk);
-        return result;
+        return Objects.hash(super.hashCode(), ellipticCurve, recipientPubKey);
     }
 }
