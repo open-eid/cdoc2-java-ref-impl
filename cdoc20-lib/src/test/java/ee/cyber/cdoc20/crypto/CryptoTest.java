@@ -90,7 +90,7 @@ class CryptoTest {
                 "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
                 "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
                 "-----END EC PRIVATE KEY-----\n";
-        KeyPair aliceKeyPair = ECKeys.loadFromPem(pem);
+        KeyPair aliceKeyPair = PemTools.loadFromPem(pem);
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
 
         byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);

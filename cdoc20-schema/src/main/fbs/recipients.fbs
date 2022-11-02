@@ -1,25 +1,48 @@
 
 namespace ee.cyber.cdoc20.fbs.recipients;
 
+//server recipient type
+union ServerDetailsUnion {
+    ServerEccDetails, ServerRsaDetails
+}
+
 // Elliptic curve type enum for ECCPublicKey recipient
-enum EllipticCurve:byte { 
+enum EllipticCurve:byte {
     UNKNOWN,
     secp384r1
 }
 
+// recipient type for RSA
+table ServerRsaDetails {
+    //RSA pub key in DER
+    recipient_public_key:          [ubyte] (required);
+}
+
+// recipient type for EC
+table ServerEccDetails {
+     // Elliptic curve type enum
+     curve:                 EllipticCurve = UNKNOWN;
+
+     //EC pub key in TLS format (for secp384r1 curve: 0x04 + X coord 48 bytes + Y coord 48 bytes)
+     recipient_public_key:  [ubyte] (required);
+}
+
 // ECC public key recipient
-table ECCPublicKey {
+table ECCPublicKeyDetails {
     curve:                 EllipticCurve = UNKNOWN;
-
     recipient_public_key:  [ubyte] (required);
-
     sender_public_key:     [ubyte] (required);
 }
 
-// Keyserver recipient
-table ECCKeyServer {
-    curve:                 EllipticCurve = UNKNOWN;
+table RSAPublicKeyDetails {
     recipient_public_key:  [ubyte] (required);
+    encrypted_kek:         [ubyte] (required);
+}
+
+// recipient where ephemeral key material is download from server (server scenarios)
+table KeyServerDetails {
+    // recipient id - key type specific. For public key cryptography this is usually recipient public key
+    recipient_key_details: ServerDetailsUnion;
     keyserver_id:          string (required);
     transaction_id:        string (required);
 }

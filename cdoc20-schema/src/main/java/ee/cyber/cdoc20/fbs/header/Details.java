@@ -6,11 +6,12 @@ package ee.cyber.cdoc20.fbs.header;
 public final class Details {
   private Details() { }
   public static final byte NONE = 0;
-  public static final byte recipients_ECCPublicKey = 1;
-  public static final byte recipients_ECCKeyServer = 2;
-  public static final byte recipients_SymmetricKeyDetails = 3;
+  public static final byte recipients_ECCPublicKeyDetails = 1;
+  public static final byte recipients_RSAPublicKeyDetails = 2;
+  public static final byte recipients_KeyServerDetails = 3;
+  public static final byte recipients_SymmetricKeyDetails = 4;
 
-  public static final String[] names = { "NONE", "recipients_ECCPublicKey", "recipients_ECCKeyServer", "recipients_SymmetricKeyDetails", };
+  public static final String[] names = { "NONE", "recipients_ECCPublicKeyDetails", "recipients_RSAPublicKeyDetails", "recipients_KeyServerDetails", "recipients_SymmetricKeyDetails", };
 
   public static String name(int e) { return names[e]; }
 }

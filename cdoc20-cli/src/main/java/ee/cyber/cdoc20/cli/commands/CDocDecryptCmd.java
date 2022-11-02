@@ -3,6 +3,7 @@ package ee.cyber.cdoc20.cli.commands;
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.KeyServerClientFactory;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
 import ee.cyber.cdoc20.util.Resources;
@@ -55,9 +56,6 @@ public class CDocDecryptCmd implements Callable<Void> {
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
-    @Option(names = {"-ZZ"}, hidden = true, description = "decrypt CDOC content as tar.gz file (no uncompress)")
-    private boolean disableCompression = false;
-
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
     void setProperty(Map<String, String> props) {
@@ -68,10 +66,6 @@ public class CDocDecryptCmd implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        if (disableCompression) {
-            System.setProperty("ee.cyber.cdoc20.disableCompression", "true");
-            System.setProperty("ee.cyber.cdoc20.cDocFile", cdocFile.getName());
-        }
 
         String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
         Properties p = null;
@@ -85,7 +79,7 @@ public class CDocDecryptCmd implements Callable<Void> {
         }
 
 
-        KeyPair keyPair = (privKeyFile != null) ? ECKeys.loadFromPem(privKeyFile)
+        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadFromPem(privKeyFile)
                 : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

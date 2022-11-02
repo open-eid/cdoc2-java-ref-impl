@@ -1,7 +1,16 @@
 package ee.cyber.cdoc20.crypto;
 
-import ee.cyber.cdoc20.container.CDocParseException;
-import ee.cyber.cdoc20.container.EnvelopeTest;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.AbstractMap;
+import java.util.List;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,17 +18,7 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import java.io.IOException;
-import java.nio.file.Path;
-
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import java.util.AbstractMap;
-import java.util.List;
+import ee.cyber.cdoc20.container.EnvelopeTest;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,8 +70,7 @@ public class Pkcs11Test extends EnvelopeTest {
 
     @Test
     @Tag("pkcs11")
-    void testContainerUsingPKCS11Key(@TempDir Path tempDir)
-            throws IOException, GeneralSecurityException, CDocParseException {
+    void testContainerUsingPKCS11Key(@TempDir Path tempDir) throws Exception {
 
         log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
         KeyPair igorKeyPair = ECKeys.loadFromPKCS11(null, 0, pin);
@@ -80,7 +78,7 @@ public class Pkcs11Test extends EnvelopeTest {
         log.debug("Using hardware private key for decrypting: {}", Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
         assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
 
-        testContainer(tempDir, igorKeyPair);
+        testContainer(tempDir, igorKeyPair, "testContainerUsingPKCS11Key");
     }
 
 
