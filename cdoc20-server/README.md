@@ -47,29 +47,28 @@ recipient_pub_key is public key extracted from certificate in cdoc20client.p12 f
 sender_pub_key is any EC public key with same curve as recipient_pub_key (can be reused from example below)
 ```
 curl -v -k -X 'POST' \
-'https://localhost:8443/ecc-details' \
---cacert 'server-certificate.pem' \
+'https://localhost:8443/key-capsules' \
 -H 'Content-Type: application/json' \
 -H 'Accept: application/json' \
 -d '{
-"recipient_pub_key":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==",
-"sender_pub_key":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==",
-"ecc_curve": 1}' 
+"recipient_id":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==",
+"ephemeral_key_material":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==",
+"capsule_type":"ecc_secp384r1"}'
 ```
 Response:
 ```
 HTTP/1.1 201 
-Location: /ecc-details/SD6efa76980f591f0cfb4966a2229505cb
+Location: /key-capsules/KC6efa76980f591f0cfb4966a2229505cb
 ```
 
 Copy transaction id from Location header
 
 ```
-curl -k --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8444/ecc-details/SD6eab12a4e1900e58cc8da0975e8cc394
+curl -k --cert-type P12 --cert cdoc20client.p12:passwd --cacert server-certificate.pem -v -H "Content-Type: application/json" -H 'Accept: application/json' -X GET https://localhost:8444/key-capsules/KC6eab12a4e1900e58cc8da0975e8cc394
 ```
 Response:
 ```
-{"recipient_pub_key":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==","sender_pub_key":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==","ecc_curve":1}
+{"recipient_id":"BFR25IttEoB7fwzJi5KOaVMTNrfGgXlC/SilElVubX8hmGL4orYq/oP5jP6dERD7Fnw4XUk7SQgrj70moX9K+3CISafQVEvEjhhgljBLV9jSiZuB2twrkmBN7ihLGig7ew==","ephemeral_key_material":"BHvMJnfeeEGbhTieRHskVVajbcdzJ5RQDwpLK/1CR1k6o8sZpaWFBUnA/vPhFyZFL8IS3fVQPYFnRQuMqRWXRgy5WmvAZb2/pBMDb5P68aAIHYn9PGeGTFnmwg13vGskew==","capsule_type":"ecc_secp384r1"}
 ```
 
 If the private key does not match with recipient_pub_key from the POST request, then the server returns 404 Not Found

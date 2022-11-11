@@ -88,7 +88,7 @@ public class RsaTest {
     @Test
     void testLoadRsaKeys() throws Exception {
         PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
-        KeyPair keyPair = PemTools.loadFromPem(rsaKeyPem);
+        KeyPair keyPair = PemTools.loadKeyPair(rsaKeyPem);
 
         Assertions.assertEquals("RSA", keyPair.getPublic().getAlgorithm());
         Assertions.assertEquals(publicKey, keyPair.getPublic());
