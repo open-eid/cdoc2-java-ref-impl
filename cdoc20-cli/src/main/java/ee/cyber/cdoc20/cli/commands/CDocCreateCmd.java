@@ -92,7 +92,7 @@ public class CDocCreateCmd implements Callable<Void> {
         recipients.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
         recipients.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
 
-        //FIXME: Works for id-card/digi-id only (EC keys), RSA cert (companies) finding is not implemented in SkLdapUtil
+        //TODO: Works for id-card/digi-id only (EC keys), RSA cert (companies) finding is not implemented in SkLdapUtil
         Map<PublicKey, String> ldapKeysWithLabels =
                 SkLdapUtil.getCertKeysWithLabels(this.recipient.identificationCodes).entrySet()
                     .stream()

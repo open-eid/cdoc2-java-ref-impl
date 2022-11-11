@@ -42,6 +42,11 @@ public class CDocCliTest {
     }
 
     @Test
+    void testCreateDecyptDocECShort(@TempDir Path tempPath) throws IOException {
+        checkCreateDecryptDoc("keys/cdoc20client_pub.pem", "keys/cdoc20client.pem", tempPath);
+    }
+
+    @Test
     void testCreateDecryptDocRSA(@TempDir Path tempPath) throws IOException {
         checkCreateDecryptDoc("keys/rsa_pub.pem", "keys/rsa_priv.pem", tempPath);
     }

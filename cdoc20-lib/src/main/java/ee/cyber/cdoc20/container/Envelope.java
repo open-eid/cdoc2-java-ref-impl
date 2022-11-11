@@ -389,7 +389,7 @@ public class Envelope {
 
         return new EccServerKeyRecipient(eccPubKeyRecipient.getEllipticCurve(),
                 eccPubKeyRecipient.getRecipientPubKey(), serverId, transactionId,
-                eccPubKeyRecipient.getEncryptedFileMasterKey());
+                eccPubKeyRecipient.getEncryptedFileMasterKey(), keyLabel);
     }
 
     private static Recipient[] buildRecipients(byte[] fmk, Map<PublicKey, String> recipientKeys,
@@ -768,6 +768,11 @@ public class Envelope {
         // https://github.com
         // /open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3116dff450/client/SslCertificate.cpp#L302
         // https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
+
+
+        if (recipient.getRecipientPubKeyLabel() != null) {
+            return recipient.getRecipientPubKeyLabel();
+        }
 
         final int numOfBytes = 16;
         if (recipient.getRecipientPubKeyTlsEncoded() != null) {

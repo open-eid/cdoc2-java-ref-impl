@@ -28,12 +28,12 @@ mvn clean package
 
 From cdoc20-server/put-server directory run:
 ```
-java -jar -Dspring.config.location=config/application-local.properties target/cdoc20-put-server-VER.jar
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-put-server-VER.jar
 ```
 
 and from cdoc20-server/get-server directory run:
 ```
-java -jar -Dspring.config.location=config/application-local.properties target/cdoc20-get-server-VER.jar
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-get-server-VER.jar
 ```
 
 where VER is the version of the package built by mvn package previously.

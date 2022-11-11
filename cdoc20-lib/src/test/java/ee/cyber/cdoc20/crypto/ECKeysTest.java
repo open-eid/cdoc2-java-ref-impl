@@ -150,6 +150,7 @@ class ECKeysTest {
 
     @Test
     void testLoadEcKeyPairFromPem() throws GeneralSecurityException, IOException {
+        //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
@@ -200,6 +201,91 @@ class ECKeysTest {
         assertEquals("EC", ecPublicKey.getAlgorithm());
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
+
+
+    /**
+     * <pre>openssl pkcs12 -in INFILE.p12 -nodes -nocerts | openssl ec -out OUTFILE.key</pre>
+     * exports only private key, where
+     * <pre>openssl ecparam -name secp384r1 -genkey -noout -out key.pem</pre> appends also public key. Both
+     * have header -----BEGIN EC PRIVATE KEY-----, but structure is different
+     *
+     * Example pem exported from p12:
+     * </pre>
+     * -----BEGIN EC PRIVATE KEY-----
+     * MD4CAQEEMNLrqy74Rn1LO3dAuhBuqV6ucTqJXY/8/6DD1ESBkTy46XKKHVuZmy2K
+     * pSsqr4gWhaAHBgUrgQQAIg==
+     * -----END EC PRIVATE KEY-----
+     * </pre>
+     *
+     * <pre>
+     * openssl asn1parse -in exported_from_p12.pem
+     *     0:d=0  hl=2 l=  62 cons: SEQUENCE
+     *     2:d=1  hl=2 l=   1 prim: INTEGER           :01
+     *     5:d=1  hl=2 l=  48 prim: OCTET STRING      [HEX DUMP]:D2EBAB2EF8467D4B3B7740BA106EA95EAE713A895D8FFCFFA0C..
+     *    55:d=1  hl=2 l=   7 cons: cont [ 0 ]
+     *    57:d=2  hl=2 l=   5 prim: OBJECT            :secp384r1
+     *
+     * openssl asn1parse -in generated.pem
+     *     0:d=0  hl=2 l=  62 cons: SEQUENCE
+     *     2:d=1  hl=2 l=   1 prim: INTEGER           :01
+     *     5:d=1  hl=2 l=  48 prim: OCTET STRING      [HEX DUMP]:D2EBAB2EF8467D4B3B7740BA106EA95EAE713A895D8FFCFFA0C..
+     *    55:d=1  hl=2 l=   7 cons: cont [ 0 ]
+     *    57:d=2  hl=2 l=   5 prim: OBJECT            :secp384r1
+     *    65:d=1  hl=2 l= 100 cons: cont [ 1 ]
+     *    67:d=2  hl=2 l=  98 prim: BIT STRING
+     * </pre>
+     *
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    @Test
+    void testLoadKeyPairFromPemShort() throws GeneralSecurityException, IOException {
+        @SuppressWarnings("checkstyle:OperatorWrap")
+        final String pem = "-----BEGIN EC PRIVATE KEY-----\n" +
+                "MD4CAQEEMNLrqy74Rn1LO3dAuhBuqV6ucTqJXY/8/6DD1ESBkTy46XKKHVuZmy2K\n" +
+                "pSsqr4gWhaAHBgUrgQQAIg==\n" +
+                "-----END EC PRIVATE KEY-----\n";
+
+//        openssl ec -in blah.pem -text -noout
+//        read EC key
+//        Private-Key: (384 bit)
+//        priv:
+//        d2:eb:ab:2e:f8:46:7d:4b:3b:77:40:ba:10:6e:a9:
+//        5e:ae:71:3a:89:5d:8f:fc:ff:a0:c3:d4:44:81:91:
+//        3c:b8:e9:72:8a:1d:5b:99:9b:2d:8a:a5:2b:2a:af:
+//        88:16:85
+//        pub:
+//        04:54:76:e4:8b:6d:12:80:7b:7f:0c:c9:8b:92:8e:
+//        69:53:13:36:b7:c6:81:79:42:fd:28:a5:12:55:6e:
+//        6d:7f:21:98:62:f8:a2:b6:2a:fe:83:f9:8c:fe:9d:
+//        11:10:fb:16:7c:38:5d:49:3b:49:08:2b:8f:bd:26:
+//        a1:7f:4a:fb:70:88:49:a7:d0:54:4b:c4:8e:18:60:
+//        96:30:4b:57:d8:d2:89:9b:81:da:dc:2b:92:60:4d:
+//        ee:28:4b:1a:28:3b:7b
+//        ASN1 OID: secp384r1
+//        NIST CURVE: P-384
+
+        final String expectedSecretHex =
+                  "d2ebab2ef8467d4b3b7740ba106ea95eae713a895d8ffcffa0c3d44481913cb8e9728a1d5b999b2d8aa52b2aaf881685";
+
+        String expectedPubHex = "04"
+                + "5476e48b6d12807b7f0cc98b928e69531336b7c6817942fd28a512556e6d7f219862f8a2b62afe83f98cfe9d1110fb16"
+                + "7c385d493b49082b8fbd26a17f4afb708849a7d0544bc48e186096304b57d8d2899b81dadc2b92604dee284b1a283b7b";
+
+        KeyPair keyPair = PemTools.loadFromPem(pem);
+        ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
+        ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
+
+        //log.debug("key: {}", ecPrivKey.getS().toString(16));
+        assertEquals("EC", ecPrivKey.getAlgorithm());
+        assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
+
+
+        //log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        assertEquals("EC", ecPublicKey.getAlgorithm());
+        assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+    }
+
 
     @Test
     void testLoadCertWithLabel() throws CertificateException, IOException {
@@ -301,5 +387,4 @@ class ECKeysTest {
         ECPublicKey infinityPublicKey = getInfinityPublicKey();
         assertThrows(IllegalArgumentException.class, () -> ECKeys.encodeEcPubKeyForTls(infinityPublicKey));
     }
-
 }

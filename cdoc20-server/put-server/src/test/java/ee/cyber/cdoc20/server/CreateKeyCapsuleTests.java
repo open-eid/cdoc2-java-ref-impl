@@ -72,7 +72,8 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
 
     @Test
     void testKeyServerPropertiesClientPKCS12() throws Exception {
-        String prop = "cdoc20.client.server.baseurl.post=" + this.baseUrl + "\n";
+        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
+        prop += "cdoc20.client.server.base-url=" + this.baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
@@ -133,7 +134,8 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
     }
 
     void testKeyServerPropertiesClientPKCS11(boolean interactive) throws Exception {
-        String prop = "cdoc20.client.server.baseurl.post=" + baseUrl + "\n";
+        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS11\n";
+        prop += "cdoc20.client.server.base-url=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
