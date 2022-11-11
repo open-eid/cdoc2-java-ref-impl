@@ -180,7 +180,7 @@ HTTP status code: 200
 HTTP body in json:
 ```
   {
-    // returns the the number of successful and failed database queries since server startup
+    // returns the number of successful and failed database queries since server startup
     "database": {
       "successfulRequests": 155,
       "failedRequests": 12
