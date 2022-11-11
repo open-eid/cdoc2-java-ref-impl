@@ -79,7 +79,7 @@ public class CDocDecryptCmd implements Callable<Void> {
         }
 
 
-        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadFromPem(privKeyFile)
+        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadECKeyPair(privKeyFile)
                 : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

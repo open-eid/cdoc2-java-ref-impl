@@ -341,7 +341,7 @@ public final class ECKeys {
      */
     public static ECPrivateKey loadECPrivateKey(String openSslPem) throws GeneralSecurityException, IOException {
 
-        KeyPair keyPair = PemTools.loadFromPem(openSslPem);
+        KeyPair keyPair = PemTools.loadKeyPair(openSslPem);
         if (!isECSecp384r1(keyPair)) {
             throw new IllegalArgumentException("Not EC key pair");
         }

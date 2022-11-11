@@ -184,7 +184,7 @@ class ECKeysTest {
                 + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
                 + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
-        KeyPair keyPair = PemTools.loadFromPem(privKeyPem);
+        KeyPair keyPair = PemTools.loadKeyPair(privKeyPem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 
@@ -272,7 +272,7 @@ class ECKeysTest {
                 + "5476e48b6d12807b7f0cc98b928e69531336b7c6817942fd28a512556e6d7f219862f8a2b62afe83f98cfe9d1110fb16"
                 + "7c385d493b49082b8fbd26a17f4afb708849a7d0544bc48e186096304b57d8d2899b81dadc2b92604dee284b1a283b7b";
 
-        KeyPair keyPair = PemTools.loadFromPem(pem);
+        KeyPair keyPair = PemTools.loadKeyPair(pem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 

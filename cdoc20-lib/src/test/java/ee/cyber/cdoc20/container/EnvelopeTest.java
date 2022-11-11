@@ -74,7 +74,7 @@ public class EnvelopeTest {
     @Test
     void testHeaderSerializationParse() throws Exception {
 
-        KeyPair recipientKeyPair = PemTools.loadFromPem(bobKeyPem);
+        KeyPair recipientKeyPair = PemTools.loadKeyPair(bobKeyPem);
 
 
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-" + UUID.randomUUID() + ".txt");
@@ -161,7 +161,7 @@ public class EnvelopeTest {
 
     @Test
     void testEccServerSerialization(@TempDir Path tempDir) throws Exception {
-        KeyPair recipientKeyPair = PemTools.loadFromPem(bobKeyPem);
+        KeyPair recipientKeyPair = PemTools.loadKeyPair(bobKeyPem);
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -208,7 +208,7 @@ public class EnvelopeTest {
 
     @Test
     void testECContainer(@TempDir Path tempDir) throws Exception {
-        KeyPair bobKeyPair = PemTools.loadFromPem(bobKeyPem);
+        KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
         testContainer(tempDir, bobKeyPair, "testECContainer");
     }
 
@@ -225,7 +225,7 @@ public class EnvelopeTest {
     @Test
     @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
     void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws Exception {
-        KeyPair bobKeyPair = PemTools.loadFromPem(bobKeyPem);
+        KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
         String payloadData = "payload-" + uuid;
@@ -359,7 +359,7 @@ public class EnvelopeTest {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair bobKeyPair = PemTools.loadFromPem(bobKeyPem);
+        KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
 

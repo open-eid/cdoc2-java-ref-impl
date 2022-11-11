@@ -1,14 +1,17 @@
 package ee.cyber.cdoc20.server;
 
 import ee.cyber.cdoc20.client.ServerEccDetailsClient;
+import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
+import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.ExtApiException;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -19,13 +22,16 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import static ee.cyber.cdoc20.client.ServerEccDetailsClient.SERVER_DETAILS_PREFIX;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.client.RestTemplate;
 import static ee.cyber.cdoc20.server.TestData.getKeysDirectory;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,8 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
+    // rest client with client auth using keystore rsa/client-rsa-2048.p12
+    @Qualifier("trustAllWithClientAuth")
     @Autowired
-    private ServerEccDetailsJpaRepository jpaRepository;
+    private RestTemplate restTemplate;
 
     @Test
     void testPKCS12Client() throws GeneralSecurityException, IOException, ee.cyber.cdoc20.client.api.ApiException {
@@ -62,30 +70,30 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
                 .withTrustKeyStore(trustKeyStore)
                 .build();
 
-        var details = new ServerEccDetails();
+        var capsule = new Capsule()
+            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
 
         // Recipient public key TLS encoded and base64 encoded from client-certificate.pem
         File[] certs = {getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile()};
         ECPublicKey recipientKey = ECKeys.loadCertKeys(certs).get(0);
         ECKeys.EllipticCurve curve = ECKeys.EllipticCurve.forPubKey(recipientKey);
-        details.recipientPubKey(ECKeys.encodeEcPubKeyForTls(curve, recipientKey));
+        capsule.recipientId(ECKeys.encodeEcPubKeyForTls(curve, recipientKey));
 
         // Sender public key
         KeyPair senderKeyPair = curve.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
-        details.senderPubKey(ECKeys.encodeEcPubKeyForTls(senderPubKey));
+        capsule.ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey));
 
-        details.eccCurve((int) curve.getValue());
-
-        String id = this.saveCapsule(details).getTransactionId();
+        String id = this.saveCapsule(capsule).getTransactionId();
 
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         var serverDetails = client.getEccDetailsByTransactionId(id);
 
         assertTrue(serverDetails.isPresent());
-        assertEquals(details, serverDetails.get());
+        assertArrayEquals(capsule.getRecipientId(), serverDetails.get().getRecipientPubKey());
+        assertArrayEquals(capsule.getEphemeralKeyMaterial(), serverDetails.get().getSenderPubKey());
+        assertEquals((int) ECKeys.EllipticCurve.secp384r1.getValue(), serverDetails.get().getEccCurve());
     }
 
     @Test
@@ -124,15 +132,14 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         var curve = ECKeys.EllipticCurve.forPubKey(recipientPubKey);
 
-        var capsule = new ServerEccDetails()
-            .senderPubKey(ECKeys.encodeEcPubKeyForTls(senderPubKey))
-            .recipientPubKey(ECKeys.encodeEcPubKeyForTls(curve, recipientPubKey))
-            .eccCurve((int) curve.getValue());
+        var capsule = new Capsule()
+            .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey))
+            .recipientId(ECKeys.encodeEcPubKeyForTls(curve, recipientPubKey))
+            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
 
         String transactionID = this.saveCapsule(capsule).getTransactionId();
 
         assertNotNull(transactionID);
-        assertTrue(transactionID.startsWith(SERVER_DETAILS_PREFIX));
 
         Optional<ECPublicKey> serverSenderKey = client.getSenderKey(transactionID);
         assertTrue(serverSenderKey.isPresent());
@@ -191,14 +198,13 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         var curve = ECKeys.EllipticCurve.forPubKey(recipientPubKey);
 
-        var capsule = new ServerEccDetails()
-            .senderPubKey(ECKeys.encodeEcPubKeyForTls(senderPubKey))
-            .recipientPubKey(ECKeys.encodeEcPubKeyForTls(curve, recipientPubKey))
-            .eccCurve((int) curve.getValue());
+        var capsule = new Capsule()
+            .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey))
+            .recipientId(ECKeys.encodeEcPubKeyForTls(curve, recipientPubKey))
+            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
 
         String id = this.saveCapsule(capsule).getTransactionId();
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         Optional<ECPublicKey> serverSenderKey = client.getSenderKey(id);
 
@@ -244,27 +250,56 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
                 .withTrustKeyStore(trustKeyStore)
                 .build();
 
-        ServerEccDetails details = new ServerEccDetails();
+        Capsule capsule = new Capsule()
+            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
 
         // Client public key TLS encoded and base64 encoded from id-kaart
         ECPublicKey pubKey = (ECPublicKey) cert.getPublicKey();
         //recipient must match to client's cert pub key or GET will fail with 404
-        details.recipientPubKey(ECKeys.encodeEcPubKeyForTls(pubKey));
+        capsule.recipientId(ECKeys.encodeEcPubKeyForTls(pubKey));
 
         KeyPair senderKeyPair = ECKeys.EllipticCurve.secp384r1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
-        details.senderPubKey(ECKeys.encodeEcPubKeyForTls(senderPubKey));
+        capsule.ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey));
 
-        details.eccCurve(1);
-
-        String id = this.saveCapsule(details).getTransactionId();
+        String id = this.saveCapsule(capsule).getTransactionId();
 
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         Optional<ServerEccDetails> serverDetails = client.getEccDetailsByTransactionId(id);
 
         assertTrue(serverDetails.isPresent());
-        assertEquals(details, serverDetails.get());
+        assertArrayEquals(capsule.getRecipientId(), serverDetails.get().getRecipientPubKey());
+        assertArrayEquals(capsule.getEphemeralKeyMaterial(), serverDetails.get().getSenderPubKey());
+        assertEquals((int) ECKeys.EllipticCurve.secp384r1.getValue(), serverDetails.get().getEccCurve());
+    }
+
+    @Test
+    void shouldGetRsaCapsule() throws Exception {
+        var recipientCert = PemTools.loadCertificate(
+            new ByteArrayInputStream(
+                Files.readAllBytes(getKeysDirectory().resolve("rsa/client-rsa-2048-cert.pem")
+                    .toAbsolutePath())
+            )
+        );
+
+        var rsaCapsule = new Capsule()
+            .capsuleType(Capsule.CapsuleTypeEnum.RSA)
+            .ephemeralKeyMaterial(UUID.randomUUID().toString().getBytes())
+            .recipientId(recipientCert.getPublicKey().getEncoded());
+
+        String txId = this.saveCapsule(rsaCapsule).getTransactionId();
+
+        var response = this.restTemplate.getForEntity(
+            new URI(this.capsuleApiUrl() + "/" + txId),
+            Capsule.class
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+
+        assertEquals(rsaCapsule.getCapsuleType(), response.getBody().getCapsuleType());
+        assertArrayEquals(rsaCapsule.getRecipientId(), response.getBody().getRecipientId());
+        assertArrayEquals(rsaCapsule.getEphemeralKeyMaterial(), response.getBody().getEphemeralKeyMaterial());
     }
 }

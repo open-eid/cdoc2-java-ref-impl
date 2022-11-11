@@ -33,10 +33,6 @@ import org.slf4j.LoggerFactory;
 public final class ServerEccDetailsClient {
     private static final Logger log = LoggerFactory.getLogger(ServerEccDetailsClient.class);
 
-    // prefix to give server details id a 'type', useful for grepping in logs/object database etc,
-    // basic format validation
-    public static final String SERVER_DETAILS_PREFIX = "SD";
-
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
     public static final int DEFAULT_READ_TIMEOUT_MS = 500;
 
@@ -248,13 +244,12 @@ public final class ServerEccDetailsClient {
             throw new ApiException(response.getStatusCode(), "Failed to create EccDetails");
         }
         log.debug("Created {}", locationHeaderValue);
-        String[] splitted = locationHeaderValue.split("/");
-        String id = splitted[splitted.length - 1];
-        if (!id.startsWith(SERVER_DETAILS_PREFIX)) {
-            throw new ApiException("Invalid transactionId " + id);
-        }
+        String[] split = locationHeaderValue.split("/");
 
-        return id;
+        if (split.length == 0) {
+            throw new IllegalArgumentException("transactionId not present in location header");
+        }
+        return split[split.length - 1];
     }
 
     /**
@@ -264,8 +259,8 @@ public final class ServerEccDetailsClient {
      * @throws ApiException if http response code is something else that 200 or 404
      */
     public Optional<ServerEccDetails> getEccDetailsByTransactionId(String id) throws ApiException {
-        if (id == null || !id.startsWith(SERVER_DETAILS_PREFIX)) {
-            throw new IllegalArgumentException("Invalid id " + id);
+        if (id == null) {
+            throw new IllegalArgumentException("transactionId cannot be null");
         }
 
         ApiResponse<ServerEccDetails> response = api.getEccDetailsByTransactionIdWithHttpInfo(id);

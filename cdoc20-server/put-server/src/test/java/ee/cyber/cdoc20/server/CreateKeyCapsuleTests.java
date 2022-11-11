@@ -4,25 +4,36 @@ import ee.cyber.cdoc20.client.ServerEccDetailsClient;
 import ee.cyber.cdoc20.client.api.ApiException;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.server.model.Capsule;
+import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import static ee.cyber.cdoc20.client.ServerEccDetailsClient.SERVER_DETAILS_PREFIX;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 import static ee.cyber.cdoc20.server.TestData.getKeysDirectory;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,9 +47,12 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         "passwd"
     );
 
+    @Qualifier("trustAllNoClientAuth")
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Test
-    void testPKCS12Client() throws Exception {
+    void shouldCreateEcCapsuleUsingPKCS12Client() throws Exception {
         ServerEccDetailsClient noAuthClient = ServerEccDetailsClient.builder()
             .withBaseUrl(this.baseUrl)
             .withTrustKeyStore(CLIENT_TRUST_STORE)
@@ -62,7 +76,6 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         String id = noAuthClient.createEccDetails(details);
 
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         this.checkCapsuleExistsInDb(id, details);
 
@@ -71,7 +84,7 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
     }
 
     @Test
-    void testKeyServerPropertiesClientPKCS12() throws Exception {
+    void shouldCreateCapsuleUsingKeyServerPropertiesClientPKCS12() throws Exception {
         String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
         prop += "cdoc20.client.server.base-url=" + this.baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
@@ -108,9 +121,8 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         String transactionID = client.storeSenderKey(recipientPubKey, senderPubKey);
 
         assertNotNull(transactionID);
-        assertTrue(transactionID.startsWith(SERVER_DETAILS_PREFIX));
 
-        var dbCapsule = this.jpaRepository.findById(transactionID);
+        var dbCapsule = this.capsuleRepository.findById(transactionID);
         assertTrue(dbCapsule.isPresent());
     }
 
@@ -167,7 +179,6 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         String id = client.storeSenderKey(recipientPubKey, senderPubKey);
 
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
     }
 
     @Test
@@ -224,24 +235,68 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         String id = client.createEccDetails(details);
 
         assertNotNull(id);
-        assertTrue(id.startsWith(SERVER_DETAILS_PREFIX));
 
         this.checkCapsuleExistsInDb(id, details);
     }
 
     private void checkCapsuleExistsInDb(String txId, ServerEccDetails expected) {
-        var dbCapsuleOpt = this.jpaRepository.findById(txId);
+        var dbCapsuleOpt = this.capsuleRepository.findById(txId);
         assertTrue(dbCapsuleOpt.isPresent());
         var dbCapsule = dbCapsuleOpt.get();
 
-        assertEquals(expected.getEccCurve(), dbCapsule.getEccCurve());
-        assertEquals(
-            Base64.getEncoder().encodeToString(expected.getRecipientPubKey()),
-            dbCapsule.getRecipientPubKey()
+        assertEquals(KeyCapsuleDb.CapsuleType.SECP384R1, dbCapsule.getCapsuleType());
+        assertArrayEquals(expected.getRecipientPubKey(), dbCapsule.getRecipient());
+        assertArrayEquals(expected.getSenderPubKey(), dbCapsule.getPayload());
+    }
+
+    @Test
+    void shouldValidateCapsule() {
+        var invalidCapsules = Arrays.asList(
+            // empty capsule
+            new Capsule(),
+
+            // invalid recipient EC pub key
+            new Capsule()
+                .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1)
+                .recipientId(UUID.randomUUID().toString().getBytes())
+                .ephemeralKeyMaterial(UUID.randomUUID().toString().getBytes()),
+
+            // invalid RSA pub key
+            new Capsule()
+                .capsuleType(Capsule.CapsuleTypeEnum.RSA)
+                .recipientId(UUID.randomUUID().toString().getBytes())
+                .ephemeralKeyMaterial(UUID.randomUUID().toString().getBytes())
         );
-        assertEquals(
-            Base64.getEncoder().encodeToString(expected.getSenderPubKey()),
-            dbCapsule.getSenderPubKey()
+
+        invalidCapsules.forEach(capsule -> assertThrows(
+            HttpClientErrorException.BadRequest.class,
+            () -> this.restTemplate.postForEntity(this.capsuleApiUrl(), capsule, Void.class)
+        ));
+    }
+
+    @Test
+    void shouldCreateRsaCapsule() throws Exception {
+        var rsaCapsule = new Capsule()
+            .capsuleType(Capsule.CapsuleTypeEnum.RSA)
+            .ephemeralKeyMaterial(UUID.randomUUID().toString().getBytes());
+
+        var rsaCerts = Arrays.asList(
+            "rsa/client-rsa-2048-cert.pem",
+            "rsa/client-rsa-4096-cert.pem",
+            "rsa/client-rsa-8192-cert.pem",
+            "rsa/client-rsa-16384-cert.pem"
         );
+
+        for (String certFile: rsaCerts) {
+            var bytes = Files.readAllBytes(getKeysDirectory().resolve(certFile).toAbsolutePath());
+            var rsaCert = PemTools.loadCertificate(new ByteArrayInputStream(bytes));
+
+            rsaCapsule.recipientId(rsaCert.getPublicKey().getEncoded());
+
+            log.info("Creating RSA capsule for {}", certFile);
+
+            var location = this.restTemplate.postForLocation(new URI(this.capsuleApiUrl()), rsaCapsule);
+            assertNotNull(location);
+        }
     }
 }
