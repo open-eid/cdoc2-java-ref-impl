@@ -2,8 +2,10 @@ package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +17,12 @@ import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -98,14 +102,32 @@ public final class PemTools {
     public static KeyPair loadFromPem(String pem) throws GeneralSecurityException, IOException {
 
         Object parsed = new PEMParser(new StringReader(pem)).readObject();
-        KeyPair pair = new JcaPEMKeyConverter().getKeyPair((org.bouncycastle.openssl.PEMKeyPair)parsed);
+        org.bouncycastle.openssl.PEMKeyPair pemKeyPair = (org.bouncycastle.openssl.PEMKeyPair) parsed;
 
-        PublicKey publicKey = pair.getPublic();
+        PrivateKey privateKey = new JcaPEMKeyConverter().getPrivateKey(pemKeyPair.getPrivateKeyInfo());
+        PublicKey publicKey = (pemKeyPair.getPublicKeyInfo() == null) ? null
+                : new JcaPEMKeyConverter().getPublicKey(pemKeyPair.getPublicKeyInfo());
+
+        KeyPair keyPair = new KeyPair(publicKey, privateKey);
+
+        // openssl pkcs12 -in INFILE.p12 -nodes -nocerts | openssl ec -out OUTFILE.key
+        // doesn't export public key part, which is added by
+        // openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+        // Derive public key from EC private if public key was not in PEM
+        // see ECKeysTest::testLoadKeyPairFromPemShort
         if (publicKey == null) {
-            throw new IllegalArgumentException("No public key found");
+            if ((privateKey != null) && ("EC".equals(privateKey.getAlgorithm()))) {
+                keyPair = ECKeys.deriveECPubKeyFromPrivKey((ECPrivateKey) privateKey);
+            } else {
+                throw new IllegalArgumentException("No public key found");
+            }
         }
+
+
+
+        publicKey = keyPair.getPublic();
         if ("EC".equals(publicKey.getAlgorithm())) {
-            if (!ECKeys.isECSecp384r1(pair)) {
+            if (!ECKeys.isECSecp384r1(keyPair)) {
                 throw new InvalidKeyException("Not EC keypair with secp384r1 curve");
             }
         } else if ("RSA".equals(publicKey.getAlgorithm())) {
@@ -118,7 +140,7 @@ public final class PemTools {
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
         }
-        return pair;
+        return keyPair;
     }
 
     /**

@@ -64,7 +64,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         var details = new ServerEccDetails();
 
-        // Client public key TLS encoded and base64 encoded from client-certificate.pem
+        // Recipient public key TLS encoded and base64 encoded from client-certificate.pem
         File[] certs = {getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile()};
         ECPublicKey recipientKey = ECKeys.loadCertKeys(certs).get(0);
         ECKeys.EllipticCurve curve = ECKeys.EllipticCurve.forPubKey(recipientKey);
@@ -90,7 +90,8 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
     @Test
     void testKeyServerPropertiesClientPKCS12() throws ExtApiException, GeneralSecurityException, IOException {
-        String prop = "cdoc20.client.server.baseurl.post=" + baseUrl + "\n";
+        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
+        prop += "cdoc20.client.server.base-url=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
@@ -158,7 +159,8 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
     }
 
     void testKeyServerPropertiesClientPKCS11(boolean interactive) throws Exception {
-        String prop = "cdoc20.client.server.baseurl.post=" + baseUrl + "\n";
+        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS11\n";
+        prop += "cdoc20.client.server.base-url=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";

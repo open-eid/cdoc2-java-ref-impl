@@ -8,6 +8,7 @@ import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
@@ -28,15 +29,13 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
 
     private final String serverId;
 
-    //TODO: current implementation is using single client for POST and GET. In future there should be two separate
-    // clients as baseurls and authentication methods will be different (depends: Server needs DNS addresses and impl).
     private ServerEccDetailsClient client;
 
 
     private KeyStore clientKeyStore;
 
-    private KeyServerPropertiesClient(String serverId, ServerEccDetailsClient client, KeyStore clientKeyStore) {
-        this.serverId = serverId;
+    private KeyServerPropertiesClient(String serverIdentifier, ServerEccDetailsClient client, KeyStore clientKeyStore) {
+        this.serverId = serverIdentifier;
         this.client = client;
         this.clientKeyStore = clientKeyStore;
     }
@@ -49,12 +48,14 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
 
         KeyStore clientKeyStore = loadClientKeyStore(p);
 
-        String baseUrl = p.getProperty("cdoc20.client.server.baseurl.post");
+        String serverId = p.getProperty("cdoc20.client.server.id");
+        String baseUrl = p.getProperty("cdoc20.client.server.base-url");
         ServerEccDetailsClient.Builder builder = ServerEccDetailsClient.builder()
                 .withBaseUrl(baseUrl)
                 .withTrustKeyStore(loadTrustKeyStore(p))
                 .withClientKeyStore(clientKeyStore)
                 .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p));
+
 
         getInteger(p, "cdoc20.client.server.connect-timeout")
                 .ifPresent(intValue -> builder.withConnectTimeoutMs(intValue));
@@ -65,7 +66,7 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
 
         ServerEccDetailsClient client = builder.build();
 
-        return new KeyServerPropertiesClient(baseUrl, client, clientKeyStore);
+        return new KeyServerPropertiesClient(serverId, client, clientKeyStore);
     }
 
     static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
@@ -105,6 +106,7 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
     }
 
     /**
+     *
      * @param p properties to load the key store
      * @throws KeyStoreException if no Provider supports a KeyStoreSpi implementation for the specified type in
      *      properties file
@@ -113,16 +115,19 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
+     * @return client key store or null if not defined in properties
      * @NoSuchAlgorithmException – if the algorithm used to check the integrity of the keystore cannot be found
      * @CertificateException – if any of the certificates in the keystore could not be loaded
      */
-    static KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException, CertificateException,
-            NoSuchAlgorithmException {
+    static @Nullable KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
+            CertificateException, NoSuchAlgorithmException {
+
         KeyStore clientKeyStore;
+        String type = p.getProperty("cdoc20.client.ssl.client-store.type", null);
 
-        String type = p.getProperty("cdoc20.client.ssl.client-store.type", "PKCS12");
-
-        if ("PKCS12".equalsIgnoreCase(type)) {
+        if (null == type) {
+            return null;
+        } else if ("PKCS12".equalsIgnoreCase(type)) {
             clientKeyStore = KeyStore.getInstance(type);
 
             String clientStoreFile = p.getProperty("cdoc20.client.ssl.client-store");

@@ -46,6 +46,9 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
 import org.slf4j.Logger;
@@ -73,6 +76,7 @@ public final class ECKeys {
 
     private ECKeys() {
     }
+
 
     /**
      * Curve values from {@link ee.cyber.cdoc20.fbs.recipients.EllipticCurve} defined as enum and mapped to
@@ -680,6 +684,25 @@ public final class ECKeys {
         }
         return onCurve;
     }
+
+    /**
+     * Derive EC public key from EC private key (and its curve)
+     * @param ecPrivateKey EC private key
+     * @return EC KeyPair where public key is derived from ecPrivateKey
+     * @throws GeneralSecurityException
+     */
+    public static KeyPair deriveECPubKeyFromPrivKey(ECPrivateKey ecPrivateKey) throws GeneralSecurityException {
+        KeyFactory keyFactory = KeyFactory.getInstance("EC", new BouncyCastleProvider());
+
+        ECNamedCurveParameterSpec spec = ECNamedCurveTable.getParameterSpec(getCurveOid(ecPrivateKey));
+        org.bouncycastle.math.ec.ECPoint q = spec.getG().multiply(ecPrivateKey.getS());
+        PublicKey bcPublicKey = keyFactory.generatePublic(new org.bouncycastle.jce.spec.ECPublicKeySpec(q, spec));
+
+        ECPublicKey publicKey = EllipticCurve.forPubKey(bcPublicKey).decodeFromTls(
+                ByteBuffer.wrap(encodeEcPubKeyForTls((ECPublicKey) bcPublicKey)));
+        return new KeyPair(publicKey, ecPrivateKey);
+    }
+
 
     /**
      * Read file contents into String

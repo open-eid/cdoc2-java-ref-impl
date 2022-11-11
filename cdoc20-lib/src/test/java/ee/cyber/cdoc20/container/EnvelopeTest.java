@@ -173,12 +173,13 @@ public class EnvelopeTest {
         }
 
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
+        final String recipientKeyLabel = "testEccServerSerialization";
 
         when(keyServerClientMock.getServerIdentifier()).thenReturn("mock");
         when(keyServerClientMock.storeSenderKey(any(), any())).thenReturn("SD1234567890");
 
         Envelope envelope = Envelope.prepare(
-            Map.of(recipientPubKey, "testEccServerSerialization"),
+            Map.of(recipientPubKey, recipientKeyLabel),
             keyServerClientMock
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -202,8 +203,7 @@ public class EnvelopeTest {
 
         assertEquals("mock", details.getKeyServerId());
         assertEquals("SD1234567890", details.getTransactionId());
-        assertNotNull(details.getRecipientPubKeyLabel());
-        assertTrue(details.getRecipientPubKeyLabel().startsWith("ec_pub_key"));
+        assertEquals(recipientKeyLabel, details.getRecipientPubKeyLabel());
     }
 
     @Test

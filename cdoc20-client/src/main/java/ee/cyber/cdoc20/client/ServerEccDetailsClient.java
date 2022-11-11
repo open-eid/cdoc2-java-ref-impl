@@ -16,6 +16,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
@@ -75,12 +76,22 @@ public final class ServerEccDetailsClient {
         private Builder() {
         }
 
+        /**
+         * Init server base url
+         * @param url server base url, example https://https://cdoc2-keyserver-01.dev.riaint.ee:8443
+         * @return
+         */
         public Builder withBaseUrl(String url) {
             this.baseUrl = url;
             return this;
         }
 
-        public Builder withClientKeyStore(KeyStore clientKS) {
+        /**
+         * Client keystore used for mutual TLS
+         * @param clientKS client key store containing client keys for mutual TLS or null, if mTLS is not used
+         * @return
+         */
+        public Builder withClientKeyStore(@Nullable KeyStore clientKS) {
             this.clientKeyStore = clientKS;
             return this;
         }

@@ -29,33 +29,26 @@ To create:
 java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.pem README.md
 ```
 
-### Encryption with server stored keys
+### Encryption with server scenario
 Server must be running, see cdoc20-server/README.md for starting the server
 
 To store keys in key server, specify addition `--server` option:
 
+When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc20-cli-0.0.6-SNAPSHOT.jar create --server=server_localhost.properties -f /tmp/server_id-kaart.cdoc -r 37903130370  README.md
+java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
 ```
 
-server_localhost.properties:
+Optionally cdoc20-cli also supports encrypting with "soft" key or certificate
+
+Public key (`-p`)
 ```
-cdoc20.client.server.baseurl.post=https://localhost:8443
+java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost.cdoc -p keys/cdoc20client_pub.pem README.md
+```
 
-# trusted certificates by client
-cdoc20.client.ssl.trust-store.type=JKS
-cdoc20.client.ssl.trust-store=../cdoc20-server/keys/clienttruststore.jks
-# or from classpath
-#cdoc20.client.ssl.trust-store=classpath:keystore/clienttruststore.jks
-cdoc20.client.ssl.trust-store-password=passwd
-
-# client private certificate for mutual TLS
-# client public certificate must be in server trust store
-cdoc20.client.ssl.client-store.type=PKCS12
-cdoc20.client.ssl.client-store=../cdoc20-server/keys/cdoc20client.p12
-# alternatively load from classpath
-#cdoc20.client.ssl.client-store=classpath:keystore/cdoc20client.p12
-cdoc20.client.ssl.client-store-password=passwd
+Certificate (`-c` option):
+```
+java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost.cdoc -c ../cdoc20-server/keys/client-certificate.pem README.md
 ```
 
 
@@ -74,32 +67,18 @@ Server must be running, see cdoc20-server/README.md for starting the server
 
 To decrypt CDOC document that has its keys distributed through key server, cdoc-cli must have `--server` option:
 
+Configuration for id-card (certificate for mutual TLS and private key is read from smart-card)
 ```
-java -jar target/cdoc20-cli-0.0.6-SNAPSHOT.jar decrypt -f /tmp/server_id-kaart.cdoc --server=localhost_pkcs11.properties -o /tmp/
+java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/localhost/localhost_get_pkcs11.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
 ```
 
-localhost_pkcs11.properties:
+It is also possible to decrypt documents created with "soft" keys, but configuration for mutual TLS (properties file) and
+key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
+mutual TLS.
 ```
-cdoc20.client.server.baseurl.post=https://localhost:8443
-
-# trusted certificates by client
-cdoc20.client.ssl.trust-store.type=JKS
-# path to client trust store (relative or full)
-cdoc20.client.ssl.trust-store=../cdoc20-server/keys/clienttruststore.jks
-# or path to file in classpath (jar)
-#cdoc20.client.ssl.trust-store=classpath:keystore/clienttruststore.jks
-cdoc20.client.ssl.trust-store-password=passwd
-
-# mutual TLS with cert from smart-card (EST-ID certificates are trusted by the server)
-cdoc20.client.ssl.client-store.type=PKCS11
-# if ssl.client-store-password.prompt is set, then ask user interactively
-cdoc20.client.ssl.client-store-password.prompt=PIN1
-# otherwise use password value
-#cdoc20.client.ssl.client-store-password=3471
-
-#OpenSCLibrary location, if not found in default location
-#opensclibrary=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
+java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/localhost/localhost_get_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem -o /tmp/
 ```
+
 
 ### List
 
@@ -214,4 +193,3 @@ default 10.0
 
 Decrypting will be stopped if compressed file compression ratio is over compressionThreshold
 
-  

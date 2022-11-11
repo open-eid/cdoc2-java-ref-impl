@@ -23,11 +23,6 @@ public class EccServerKeyRecipient extends EccRecipient {
         this.transactionId = transactionId;
     }
 
-    public EccServerKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipientPubKey,
-                                 String keyServerId, String transactionId, byte[] encryptedFmk) {
-        this(eccCurve, recipientPubKey, keyServerId, transactionId, encryptedFmk, null);
-    }
-
     public byte[] getRecipientPubKeyTlsEncoded() {
         return ECKeys.encodeEcPubKeyForTls(this.ellipticCurve, this.recipientPubKey);
     }
