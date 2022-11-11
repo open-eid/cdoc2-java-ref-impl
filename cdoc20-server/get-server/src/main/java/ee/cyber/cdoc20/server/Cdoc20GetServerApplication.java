@@ -3,8 +3,11 @@ package ee.cyber.cdoc20.server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.server.Ssl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -58,5 +61,20 @@ public class Cdoc20GetServerApplication extends WebSecurityConfigurerAdapter {
                 return new User(cn, "", AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER"));
             }
         };
+    }
+
+    /**
+     * Checks that the application is configured with mutual TLS.
+     * @param event the context
+     * @throws IllegalStateException when mutual TLS is not configured
+     */
+    @EventListener
+    public static void checkMutualTlsConfigured(ContextRefreshedEvent event) {
+        var env = event.getApplicationContext().getEnvironment();
+        var clientAuth = env.getRequiredProperty("server.ssl.client-auth");
+
+        if (Ssl.ClientAuth.NEED != Ssl.ClientAuth.valueOf(clientAuth.toUpperCase())) {
+            throw new IllegalStateException("TLS client authentication not enabled");
+        }
     }
 }
