@@ -1,14 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.util.SkLdapUtil;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +18,12 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class to deal with EC and RSA keys and certificates in PEM format.
@@ -35,7 +33,6 @@ public final class PemTools {
 
     private PemTools() {
     }
-
 
     /**
      * Load EC or RSA pub key from PEM
@@ -99,14 +96,15 @@ public final class PemTools {
      * @return KeyPair decoded from PEM
      * @throw InvalidKeyException if key is not supported by CDOC2 lib
      */
-    public static KeyPair loadFromPem(String pem) throws GeneralSecurityException, IOException {
+    public static KeyPair loadKeyPair(String pem) throws GeneralSecurityException, IOException {
 
         Object parsed = new PEMParser(new StringReader(pem)).readObject();
-        org.bouncycastle.openssl.PEMKeyPair pemKeyPair = (org.bouncycastle.openssl.PEMKeyPair) parsed;
+        PEMKeyPair pemKeyPair = (PEMKeyPair) parsed;
 
         PrivateKey privateKey = new JcaPEMKeyConverter().getPrivateKey(pemKeyPair.getPrivateKeyInfo());
-        PublicKey publicKey = (pemKeyPair.getPublicKeyInfo() == null) ? null
-                : new JcaPEMKeyConverter().getPublicKey(pemKeyPair.getPublicKeyInfo());
+        PublicKey publicKey = pemKeyPair.getPublicKeyInfo() == null
+            ? null
+            : new JcaPEMKeyConverter().getPublicKey(pemKeyPair.getPublicKeyInfo());
 
         KeyPair keyPair = new KeyPair(publicKey, privateKey);
 
@@ -123,19 +121,17 @@ public final class PemTools {
             }
         }
 
-
-
         publicKey = keyPair.getPublic();
         if ("EC".equals(publicKey.getAlgorithm())) {
             if (!ECKeys.isECSecp384r1(keyPair)) {
-                throw new InvalidKeyException("Not EC keypair with secp384r1 curve");
+                throw new InvalidKeyException("Not an EC keypair with secp384r1 curve");
             }
         } else if ("RSA".equals(publicKey.getAlgorithm())) {
             // all RSA keys are considered good. Shorter will fail during encryption as OAEP takes some space
             RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
             // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
             if (rsaPublicKey.getModulus().bitLength() <= 512) {
-                new InvalidKeyException("RSA key doesn't meat length requirements");
+                new InvalidKeyException("RSA key does not meet length requirements");
             }
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
@@ -144,7 +140,7 @@ public final class PemTools {
     }
 
     /**
-     * Load EC key pair from OpenSSL generated PEM file:
+     * Load key pair from OpenSSL generated PEM file:
      * openssl ecparam -name secp384r1 -genkey -noout -out key.pem
      * Example key PEM:
      * <pre>
@@ -158,8 +154,8 @@ public final class PemTools {
      * @param pemFile OpenSSL generated EC private key in PEM
      * @return EC KeyPair decoded from PEM
      */
-    public static KeyPair loadFromPem(File pemFile) throws GeneralSecurityException, IOException {
-        return loadFromPem(ECKeys.readAll(pemFile));
+    public static KeyPair loadECKeyPair(File pemFile) throws GeneralSecurityException, IOException {
+        return loadKeyPair(Files.readString(pemFile.toPath()));
     }
 
     public static Map<PublicKey, String> loadPubKeysWithKeyLabel(File[] pubPemFiles) throws IOException {
@@ -179,11 +175,21 @@ public final class PemTools {
      * @throws CertificateException
      */
     public static Map.Entry<PublicKey, String> loadCertKeyWithLabel(InputStream certIs) throws CertificateException {
-        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-        X509Certificate cert = (X509Certificate) certFactory.generateCertificate(certIs);
+        var cert = loadCertificate(certIs);
         PublicKey publicKey = cert.getPublicKey();
         String label = SkLdapUtil.getKeyLabel(cert);
         return Map.entry(publicKey, label);
+    }
+
+    /**
+     * Load a certificate from input stream
+     * @param is the input stream
+     * @return the X509Certificate
+     * @throws CertificateException when parsing fails
+     */
+    public static X509Certificate loadCertificate(InputStream is) throws CertificateException {
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        return (X509Certificate) certFactory.generateCertificate(is);
     }
 
     /**
@@ -209,5 +215,4 @@ public final class PemTools {
 
         return map;
     }
-
 }

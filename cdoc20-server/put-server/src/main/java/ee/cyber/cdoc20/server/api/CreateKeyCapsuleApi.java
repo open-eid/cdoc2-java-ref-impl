@@ -1,96 +1,98 @@
 package ee.cyber.cdoc20.server.api;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.server.model.Capsule;
 import ee.cyber.cdoc20.server.model.ServerEccDetails;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
+import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
+import ee.cyber.cdoc20.server.model.db.KeyCapsuleRepository;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.NativeWebRequest;
-import static ee.cyber.cdoc20.server.Utils.MODEL_MAPPER;
 import static ee.cyber.cdoc20.server.Utils.fixOABrokenBaseURL;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
- * Implements API for creating CDOC2.0 key capsules {@link EccDetailsApi}
+ * Implements API for creating CDOC2.0 key capsules {@link KeyCapsulesApi}
  */
 @Service
 @Slf4j
-public class CreateKeyCapsuleApi implements EccDetailsApiDelegate {
+public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDelegate {
 
     @Autowired
-    private final NativeWebRequest nativeWebRequest;
+    private NativeWebRequest nativeWebRequest;
 
     @Autowired
-    private ServerEccDetailsJpaRepository jpaRepository;
-
-    private static ModelMapper modelMapperInstance = null;
-
-    CreateKeyCapsuleApi(NativeWebRequest nativeWebRequest) {
-        this.nativeWebRequest = nativeWebRequest;
-    }
+    private KeyCapsuleRepository keyCapsuleRepository;
 
     @Override
     public Optional<NativeWebRequest> getRequest() {
         return Optional.of(nativeWebRequest);
     }
 
-    /**
-     * POST /ecc-details/{transactionId} : Add Ecc Details
-     * Save ServerEccDetails and generate transaction id using secure random. Saved resource location
-     * is returned in Location header
-     *
-     * Location: /ecc-details/SD9b7036de0c9fce889850c4bbb1e23482
-     *
-     * @param serverEccDetails (optional)
-     * @return Created (status code 201)
-     *         or Bad request. Client error. (status code 400)
-    * @see EccDetailsApi#createEccDetails
-     */
     @Override
-    public ResponseEntity<Void> createEccDetails(ServerEccDetails serverEccDetails) {
-        log.trace("createEccDetails");
+    public ResponseEntity<Void> createCapsule(Capsule capsule) {
+        log.trace("createCapsule(type={}, recipientId={} bytes, ephemeralKey={} bytes)",
+            capsule.getCapsuleType(), capsule.getRecipientId().length,
+            capsule.getEphemeralKeyMaterial().length
+        );
 
-        if (!isValid(serverEccDetails)) {
+        if (!CapsuleValidator.isValid(capsule)) {
             return ResponseEntity.badRequest().build();
         }
 
         try {
-            ServerEccDetailsJpa jpaModel = MODEL_MAPPER.map(serverEccDetails, ServerEccDetailsJpa.class);
-            var saved = jpaRepository.save(jpaModel);
-
-            log.debug("serverEccDetails   : {} {}",
-                Base64.getEncoder().encodeToString(serverEccDetails.getRecipientPubKey()),
-                HexFormat.of().formatHex(serverEccDetails.getRecipientPubKey())
+            var saved = this.keyCapsuleRepository.save(
+                new KeyCapsuleDb()
+                    .setCapsuleType(getDbCapsuleType(capsule.getCapsuleType()))
+                    .setRecipient(capsule.getRecipientId())
+                    .setPayload(capsule.getEphemeralKeyMaterial())
             );
-            log.debug("ServerEccDetailsJpa: {} {}",
-                jpaModel.getRecipientPubKey(),
-                HexFormat.of().formatHex(Base64.getDecoder().decode(jpaModel.getRecipientPubKey()))
+
+            log.info(
+                "Capsule(transactionId={}, type={}) created",
+                saved.getTransactionId(), saved.getCapsuleType()
             );
 
             URI created = getResourceLocation(saved.getTransactionId());
 
             return ResponseEntity.created(created).build();
-        } catch (URISyntaxException e) {
-            log.error("failed to publish {}", serverEccDetails, e);
+        } catch (Exception e) {
+            log.error(
+                "Failed to save key capsule(type={}, recipient={}, payloadLength={})",
+                capsule.getCapsuleType(),
+                Base64.getEncoder().encodeToString(capsule.getRecipientId()),
+                capsule.getEphemeralKeyMaterial().length,
+                e
+            );
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Override
+    public ResponseEntity<Capsule> getCapsuleByTransactionId(String transactionId) {
+        log.error("getCapsuleByTransactionId() operation not supported on key capsule put server");
+        return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @Deprecated // old api
+    @Override
+    public ResponseEntity<Void> createEccDetails(ServerEccDetails serverEccDetails) {
+        return this.createCapsule(
+            new Capsule()
+                .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1)
+                .recipientId(serverEccDetails.getRecipientPubKey())
+                .ephemeralKeyMaterial(serverEccDetails.getSenderPubKey())
+        );
+    }
+
+    @Deprecated // old api
     @Override
     public ResponseEntity<ServerEccDetails> getEccDetailsByTransactionId(String transactionId) {
         log.error("getEccDetailsByTransactionId() operation not supported on key capsule put server");
@@ -98,42 +100,25 @@ public class CreateKeyCapsuleApi implements EccDetailsApiDelegate {
     }
 
     /**
-     * Get URI for getting ECC details resource (Location).
-     * @param id EccDetails id example: SD9b7036de0c9fce889850c4bbb1e23482
-     * @return URI (path and query) example: /ecc-details/SD9b7036de0c9fce889850c4bbb1e23482
+     * Get URI for getting Key Capsule resource (Location).
+     * @param id Capsule id example: SD9b7036de0c9fce889850c4bbb1e23482
+     * @return URI (path and query) example: /key-capsules/KC9b7036de0c9fce889850c4bbb1e23482
      * @throws URISyntaxException
      */
     private static URI getResourceLocation(String id) throws URISyntaxException {
         return fixOABrokenBaseURL(
-            linkTo(methodOn(EccDetailsApiController.class).getEccDetailsByTransactionId(id)).toUri()
+            linkTo(methodOn(KeyCapsulesApiController.class).getCapsuleByTransactionId(id)).toUri()
         );
     }
 
-    private boolean isValid(ServerEccDetails sd) {
-        try {
-            if (sd.getEccCurve() != null) {
-                ECKeys.EllipticCurve curve = ECKeys.EllipticCurve.forValue(sd.getEccCurve().byteValue());
-
-                int tlsEncodedKeyLen = 2 * curve.getKeyLength() + 1;
-                if ((sd.getRecipientPubKey() == null) || (sd.getRecipientPubKey().length != tlsEncodedKeyLen)
-                    || (sd.getSenderPubKey() == null) || (sd.getSenderPubKey().length != tlsEncodedKeyLen)) {
-                    log.info("Invalid key length for curve {}", curve.getName());
-                    return false;
-                }
-
-                ECPublicKey recipientPubKey = curve.decodeFromTls(ByteBuffer.wrap(sd.getRecipientPubKey()));
-                ECPublicKey senderPubKey = curve.decodeFromTls(ByteBuffer.wrap(sd.getSenderPubKey()));
-
-                return curve.isValidKey(recipientPubKey) && curve.isValidKey(senderPubKey);
-            }
-        } catch (NoSuchAlgorithmException nsae) {
-            log.info("Invalid curve " + nsae);
-        } catch (GeneralSecurityException gse) {
-            log.info("Invalid key " + gse);
+    private static KeyCapsuleDb.CapsuleType getDbCapsuleType(Capsule.CapsuleTypeEnum dtoType) {
+        switch (dtoType) {
+            case ECC_SECP384R1:
+                return KeyCapsuleDb.CapsuleType.SECP384R1;
+            case RSA:
+                return KeyCapsuleDb.CapsuleType.RSA;
+            default:
+                throw new IllegalArgumentException("Unknown capsule type: " + dtoType);
         }
-
-        return false;
     }
-
-
 }

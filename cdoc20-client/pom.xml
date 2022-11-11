@@ -157,11 +157,21 @@
                 <version>5.3.0</version>
                 <executions>
                     <execution>
+                        <id>generate-ecc-server-details-api-client</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/../cdoc20-openapi/cdoc20services.yaml</inputSpec>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-key-capsules-api-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/../cdoc20-openapi/cdoc20-key-capsules.yaml</inputSpec>
                         </configuration>
                     </execution>
                 </executions>

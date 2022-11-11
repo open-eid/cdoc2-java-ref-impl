@@ -1,12 +1,11 @@
 package ee.cyber.cdoc20.server;
 
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpa;
-import ee.cyber.cdoc20.server.model.ServerEccDetailsJpaRepository;
-import java.util.Base64;
+import ee.cyber.cdoc20.client.model.Capsule;
+import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
+import ee.cyber.cdoc20.server.model.db.KeyCapsuleRepository;
 import java.util.Optional;
-import java.util.random.RandomGenerator;
 import javax.validation.ConstraintViolationException;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +20,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import static ee.cyber.cdoc20.server.Utils.MODEL_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,11 +54,14 @@ abstract class BaseIntegrationTest {
         }
     }
 
+    // context path of the key capsule api
+    protected static final String API_CONTEXT_PATH = "/key-capsules";
+
     @Value("https://localhost:${local.server.port}")
     protected String baseUrl;
 
     @Autowired
-    protected ServerEccDetailsJpaRepository jpaRepository;
+    protected KeyCapsuleRepository capsuleRepository;
 
     @Test
     void contextLoads() {
@@ -69,15 +70,13 @@ abstract class BaseIntegrationTest {
 
     @Test
     void testJpaConstraints() {
-        ServerEccDetailsJpa model = new ServerEccDetailsJpa();
+        KeyCapsuleDb model = new KeyCapsuleDb();
 
-        model.setEccCurve(1);
-        model.setSenderPubKey("123");
-        byte[] rnd = new byte[255];
-        RandomGenerator.getDefault().nextBytes(rnd);
-        model.setRecipientPubKey(Base64.getEncoder().encodeToString(rnd));
+        model.setCapsuleType(KeyCapsuleDb.CapsuleType.SECP384R1);
+        model.setPayload("123".getBytes());
+        model.setRecipient(null);
 
-        Throwable cause = assertThrows(Throwable.class, () -> this.jpaRepository.save(model));
+        Throwable cause = assertThrows(Throwable.class, () -> this.capsuleRepository.save(model));
 
         //check that exception is or is caused by ConstraintViolationException
         while (cause.getCause() != null) {
@@ -86,7 +85,6 @@ abstract class BaseIntegrationTest {
 
         assertEquals(ConstraintViolationException.class, cause.getClass());
         assertNotNull(cause.getMessage());
-        assertTrue(cause.getMessage().contains("'size must be between 0 and 132', propertyPath=recipientPubKey"));
     }
 
     @Test
@@ -94,25 +92,28 @@ abstract class BaseIntegrationTest {
         assertTrue(postgresContainer.isRunning());
 
         // test that jpa is up and running (expect no exceptions)
-        this.jpaRepository.count();
+        this.capsuleRepository.count();
 
-        ServerEccDetailsJpa model = new ServerEccDetailsJpa();
-        model.setEccCurve(1);
+        KeyCapsuleDb model = new KeyCapsuleDb();
+        model.setCapsuleType(KeyCapsuleDb.CapsuleType.SECP384R1);
 
-        model.setRecipientPubKey("123");
-        model.setSenderPubKey("345");
-        ServerEccDetailsJpa saved = this.jpaRepository.save(model);
+        model.setRecipient("123".getBytes());
+        model.setPayload("345".getBytes());
+        KeyCapsuleDb saved = this.capsuleRepository.save(model);
 
         assertNotNull(saved);
         assertNotNull(saved.getTransactionId());
         log.debug("Created {}", saved.getTransactionId());
 
-        Optional<ServerEccDetailsJpa> retrieved = this.jpaRepository.findById(saved.getTransactionId());
-        assertTrue(retrieved.isPresent());
-        assertNotNull(retrieved.get().getTransactionId()); // transactionId was generated
-        assertTrue(retrieved.get().getTransactionId().startsWith("SD"));
-        assertNotNull(retrieved.get().getCreatedAt()); // createdAt field was filled
-        log.debug("Retrieved {}", retrieved.get());
+        Optional<KeyCapsuleDb> retrievedOpt = this.capsuleRepository.findById(saved.getTransactionId());
+        assertTrue(retrievedOpt.isPresent());
+
+        var dbRecord = retrievedOpt.get();
+        assertNotNull(dbRecord.getTransactionId()); // transactionId was generated
+        assertTrue(dbRecord.getTransactionId().startsWith("KC"));
+        assertNotNull(dbRecord.getCreatedAt()); // createdAt field was filled
+        assertEquals(dbRecord.getCapsuleType(), model.getCapsuleType());
+        log.debug("Retrieved {}", dbRecord);
     }
 
     /**
@@ -120,7 +121,21 @@ abstract class BaseIntegrationTest {
      * @param dto the capsule dto
      * @return the saved capsule
      */
-    protected ServerEccDetailsJpa saveCapsule(ServerEccDetails dto) {
-        return this.jpaRepository.save(MODEL_MAPPER.map(dto, ServerEccDetailsJpa.class));
+    protected KeyCapsuleDb saveCapsule(Capsule dto) {
+        return this.capsuleRepository.save(
+            new KeyCapsuleDb()
+                .setCapsuleType(
+                    dto.getCapsuleType() == Capsule.CapsuleTypeEnum.ECC_SECP384R1
+                        ? KeyCapsuleDb.CapsuleType.SECP384R1
+                        : KeyCapsuleDb.CapsuleType.RSA
+                )
+                .setRecipient(dto.getRecipientId())
+                .setPayload(dto.getEphemeralKeyMaterial())
+        );
+    }
+
+    @SneakyThrows
+    protected String capsuleApiUrl() {
+        return this.baseUrl + API_CONTEXT_PATH;
     }
 }

@@ -53,7 +53,7 @@ public class CDocListCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
-        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadFromPem(privKeyFile)
+        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadECKeyPair(privKeyFile)
                 : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

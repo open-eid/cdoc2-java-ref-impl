@@ -7,8 +7,8 @@ info:
   version: '2.0 Draft'
   description: API for exchanging CDOC2.0 ephemeral key material in key capsules
 servers:
-  - url: 'https://localhost:8080'
   - url: 'https://localhost:8443'
+  - url: 'https://localhost:8444'
 paths:
   '/key-capsules/{transactionId}':
     get:
@@ -21,6 +21,8 @@ paths:
           in: path
           schema:
             type: string
+            minLength: 18
+            maxLength: 34
           required: true
           description: transaction id from recipients.KeyServerDetails.transaction_id (fbs)
       responses:
@@ -32,8 +34,10 @@ paths:
                 $ref: '#/components/schemas/Capsule'
         '400':
           description: 'Bad request. Client error.'
+        '401':
+          description: 'Unauthorized. Client certificate was not presented with the request.'
         '404':
-          description: 'Not Found. 404 is also returned, when recipient id in record does not match with public key in client certificate '
+          description: 'Not Found. 404 is also returned, when recipient id in record does not match with public key in client certificate.'
       operationId: getCapsuleByTransactionId
       security:
         - mutualTLS: []
@@ -70,10 +74,13 @@ components:
         recipient_id:
           type: string
           format: byte
+          minLength: 132 # EC public key + base 64 increase
+          maxLength: 3000 # 16 K RSA public key = 2086 bytes + base64 increase
           description: 'binary, base64 encoded. Binary format is defined by capsule_type'
-        ephemeral_id:
+        ephemeral_key_material:
           type: string
           format: byte
+          maxLength: 3000
           description: 'binary, base64 encoded.  Binary format is defined by capsule_type'
         capsule_type:
           type: string
@@ -81,9 +88,9 @@ components:
             - ecc_secp384r1
             - rsa
           description: |
-            Depending on capsule type, Capsule fields have following contents:
+            Depending on capsule type, Capsule fields have the following contents:
              - ecc_secp384r1:
-                  * recipient_id is EC pub key with secp384r1 curve in TLS format (0x04 + X coord 48 bytes + Y coord 48 bytes)
+                  * recipient_id is EC pub key with secp384r1 curve in TLS format (0x04 + X coord 48 bytes + Y coord 48 bytes) (https://www.rfc-editor.org/rfc/rfc8446#section-4.2.8.2)
                   * ephemeral_key_material contains sender public EC key (generated) in TLS format.
              - rsa:
                   * recipient_id is DER encoded RSA recipient public key
