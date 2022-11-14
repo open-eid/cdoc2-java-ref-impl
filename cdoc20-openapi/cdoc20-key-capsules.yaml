@@ -74,13 +74,13 @@ components:
         recipient_id:
           type: string
           format: byte
-          minLength: 132 # EC public key + base 64 increase
-          maxLength: 3000 # 16 K RSA public key = 2086 bytes + base64 increase
+          minLength: 97 # EC public key
+          maxLength: 2100 # 16 K RSA public key = 2086 bytes
           description: 'binary, base64 encoded. Binary format is defined by capsule_type'
         ephemeral_key_material:
           type: string
           format: byte
-          maxLength: 3000
+          maxLength: 2100
           description: 'binary, base64 encoded.  Binary format is defined by capsule_type'
         capsule_type:
           type: string
