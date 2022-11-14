@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.10] Key server RSA support (2022-11-14)
+
+### Features
+* Added support for RSA keys in key server
+* Added support for 2 key server instances when using cdoc20-cli
+* Added key server administration manual
+
 ## [0.0.9] RSA-OAEP support (2022-11-02)
 
 ### Features
