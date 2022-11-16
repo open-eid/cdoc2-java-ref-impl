@@ -101,7 +101,7 @@ public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsAp
 
     /**
      * Get URI for getting Key Capsule resource (Location).
-     * @param id Capsule id example: SD9b7036de0c9fce889850c4bbb1e23482
+     * @param id Capsule id example: KC9b7036de0c9fce889850c4bbb1e23482
      * @return URI (path and query) example: /key-capsules/KC9b7036de0c9fce889850c4bbb1e23482
      * @throws URISyntaxException
      */
