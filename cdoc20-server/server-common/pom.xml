@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>ee.cyber.cdoc20</groupId>
 		<artifactId>cdoc20-server</artifactId>
-		<version>0.0.11</version>
+		<version>0.0.12-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
 
@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>ee.cyber.cdoc20</groupId>
 			<artifactId>cdoc20-server-db</artifactId>
-			<version>0.0.11</version>
+			<version>0.0.12-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -89,6 +89,6 @@
 	</build>
 
   <scm>
-    <tag>v0.0.11</tag>
+    <tag>v0.0.9</tag>
   </scm>
 </project>
