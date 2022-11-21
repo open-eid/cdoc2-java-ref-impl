@@ -12,6 +12,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
@@ -42,7 +43,6 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 import static ee.cyber.cdoc20.fbs.header.Details.*;
@@ -232,8 +232,13 @@ public class Envelope {
 
                 byte[] rsaPubKeyBytes =
                         Arrays.copyOfRange(rsaPubKeyBuf.array(), rsaPubKeyBuf.position(), rsaPubKeyBuf.limit());
-                RSAPublicKey recipientRsaPublicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
-                        .generatePublic(new X509EncodedKeySpec(rsaPubKeyBytes));
+                RSAPublicKey recipientRsaPublicKey;
+
+                try {
+                    recipientRsaPublicKey = RsaUtils.decodeRsaPubKey(rsaPubKeyBytes);
+                } catch (GeneralSecurityException | IOException ex) {
+                    throw new CDocParseException("error decoding RSAPublicKey", ex);
+                }
 
                 byte[] encKek = Arrays.copyOfRange(encKekBuf.array(), encKekBuf.position(), encKekBuf.limit());
                 recipientList.add(
@@ -314,7 +319,7 @@ public class Envelope {
         byte[] kek = new byte[Crypto.FMK_LEN_BYTES];
         Crypto.getSecureRandom().nextBytes(kek);
 
-        byte[] encryptedKek = Crypto.rsaEncrypt(kek, recipientPubRsaKey);
+        byte[] encryptedKek = RsaUtils.rsaEncrypt(kek, recipientPubRsaKey);
         byte[] encryptedFmk = Crypto.xor(fmk, kek);
         return new RSAPubKeyRecipient(recipientPubRsaKey, encryptedKek, encryptedFmk, keyLabel);
     }
@@ -514,7 +519,7 @@ public class Envelope {
                 } else if (recipient instanceof RSAPubKeyRecipient) {
                     var rsaPubKeyRecipient = (RSAPubKeyRecipient) recipient;
                     RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
-                    kek = Crypto.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), rsaPrivateKey);
+                    kek = RsaUtils.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), rsaPrivateKey);
                 } else {
                     throw new CDocParseException("Unknown Details.EccRecipient type " + recipient);
                 }
@@ -713,7 +718,8 @@ public class Envelope {
             } else if (recipients[i] instanceof RSAPubKeyRecipient) {
                 RSAPubKeyRecipient rsaRecipient = (RSAPubKeyRecipient) recipients[i];
 
-                int recipientPubKeyOffset = builder.createByteVector(rsaRecipient.getRecipientPubKey().getEncoded());
+                int recipientPubKeyOffset = builder.createByteVector(
+                        RsaUtils.encodeRsaPubKey(rsaRecipient.getRecipientPubKey()));
                 int encKekOffset = builder.createByteVector(rsaRecipient.getEncryptedKek());
                 int rsaPublicKeyDetailsOffset = RSAPublicKeyDetails.createRSAPublicKeyDetails(builder,
                         recipientPubKeyOffset, encKekOffset);

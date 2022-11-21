@@ -76,12 +76,12 @@ components:
           format: byte
           minLength: 97 # EC public key
           maxLength: 2100 # 16 K RSA public key = 2086 bytes
-          description: 'binary, base64 encoded. Binary format is defined by capsule_type'
+          description: 'Binary format is defined by capsule_type'
         ephemeral_key_material:
           type: string
           format: byte
           maxLength: 2100
-          description: 'binary, base64 encoded.  Binary format is defined by capsule_type'
+          description: 'Binary format is defined by capsule_type'
         capsule_type:
           type: string
           enum:
@@ -93,7 +93,7 @@ components:
                   * recipient_id is EC pub key with secp384r1 curve in TLS format (0x04 + X coord 48 bytes + Y coord 48 bytes) (https://www.rfc-editor.org/rfc/rfc8446#section-4.2.8.2)
                   * ephemeral_key_material contains sender public EC key (generated) in TLS format.
              - rsa:
-                  * recipient_id is DER encoded RSA recipient public key
+                  * recipient_id is DER encoded RSA recipient public key - RsaPublicKey encoding [https://www.rfc-editor.org/rfc/rfc8017#page-54](RFC8017 RSA Public Key Syntax A.1.1)
                   * ephemeral_key_material contains KEK encrypted with recipient public RSA key
       required:
         - recipient_id

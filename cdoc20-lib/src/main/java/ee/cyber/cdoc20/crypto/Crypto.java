@@ -14,7 +14,6 @@ import java.nio.file.StandardOpenOption;
 import java.security.DrbgParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -24,19 +23,13 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.MGF1ParameterSpec;
 import java.util.Arrays;
 import java.util.List;
-import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
@@ -451,54 +444,4 @@ public final class Crypto {
         return out;
     }
 
-    /**
-     * Init RSA OAEP cipher.
-     * @param opMode the operation mode of RSA cipher (this is one of the following: ENCRYPT_MODE, DECRYPT_MODE)
-     * @param key RSAPublicKey if opMode is ENCRYPT and RSAPrivateKey for DECRYPT_MODE
-     * @return initialized to RsaOAEP Cipher
-     * @throws GeneralSecurityException if cipher initialization failed
-     */
-    private static Cipher getRsaOaepCipher(int opMode, RSAKey key) throws GeneralSecurityException {
-
-        final String rsaOaepTransformation = "RSA/ECB/OAEPPadding";
-        // OAEP algorithm padding specifier string from
-        // https://docs.oracle.com/en/java/javase/17/docs/specs/security/standard-names.html#cipher-algorithm-paddings
-        // is not enough as standard name doesn't specify if the hash should also be used for Mask Generation Function
-        // (MGF1) or should default be used (SHA-1). As a result SunJCE and BC are not compatible for
-        // "RSA/ECB/OAEPWithSHA-256AndMGF1Padding" as SunJCE uses MGF param sha1 and BC sha256
-        // https://stackoverflow.com/questions/32161720/breaking-down-rsa-ecb-oaepwithsha-256andmgf1padding
-        OAEPParameterSpec oaepParams =
-                new OAEPParameterSpec("SHA-256",
-                        "MGF1", new MGF1ParameterSpec("SHA-256"),
-                        PSource.PSpecified.DEFAULT); //DEFAULT is new byte[0], equal to pSpecified Empty from Spec
-        Cipher rsaOaepCipher = Cipher.getInstance(rsaOaepTransformation);
-        rsaOaepCipher.init(opMode, (Key) key, oaepParams);
-        return rsaOaepCipher;
-    }
-
-    /**
-     * Encrypt plain with rsaPublicKey
-     * @param plain data to encrypted with rsaPublicKey
-     * @param rsaPublicKey key to use for encryption
-     * @return encrypted data
-     * @throws GeneralSecurityException if encryption failed
-     */
-    public static byte[] rsaEncrypt(byte[] plain, RSAPublicKey rsaPublicKey) throws GeneralSecurityException {
-
-        Cipher rsa = getRsaOaepCipher(Cipher.ENCRYPT_MODE, rsaPublicKey);
-        return rsa.doFinal(plain);
-    }
-
-    /**
-     * Decrypt encrypted with rsaPrivateKey
-     * @param encrypted data rsaPrivateKey matching public RSA key
-     * @param rsaPrivateKey key to use for decryption
-     * @return decrypted data
-     * @throws GeneralSecurityException if decryption failed
-     */
-    public static byte[] rsaDecrypt(byte[] encrypted, RSAPrivateKey rsaPrivateKey) throws GeneralSecurityException {
-
-        Cipher rsa = getRsaOaepCipher(Cipher.DECRYPT_MODE, rsaPrivateKey);
-        return rsa.doFinal(encrypted);
-    }
 }

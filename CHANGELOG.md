@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.11] RsaPublicKey  (2022-11-21)
+
+### Bug Fixes
+* Use RsaPublicKey encoding (RFC8017 RSA Public Key Syntax (A.1.1)) instead of X.509 (Java default encoding)
+
 ## [0.0.10] Key server RSA support (2022-11-14)
 
 ### Features
