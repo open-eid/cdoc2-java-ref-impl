@@ -5,6 +5,7 @@ import ee.cyber.cdoc20.client.api.ApiException;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.server.model.Capsule;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
@@ -19,6 +20,7 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -291,7 +293,7 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
             var bytes = Files.readAllBytes(getKeysDirectory().resolve(certFile).toAbsolutePath());
             var rsaCert = PemTools.loadCertificate(new ByteArrayInputStream(bytes));
 
-            rsaCapsule.recipientId(rsaCert.getPublicKey().getEncoded());
+            rsaCapsule.recipientId(RsaUtils.encodeRsaPubKey((RSAPublicKey) rsaCert.getPublicKey()));
 
             log.info("Creating RSA capsule for {}", certFile);
 

@@ -5,6 +5,7 @@ import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
@@ -21,14 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -153,8 +152,7 @@ public class EnvelopeTest {
         ByteBuffer rsaPubKeyBuf = rsaDetails.recipientPublicKeyAsByteBuffer();
         assertNotNull(rsaPubKeyBuf);
         byte[] rsaPubKeyBytes = Arrays.copyOfRange(rsaPubKeyBuf.array(), rsaPubKeyBuf.position(), rsaPubKeyBuf.limit());
-        PublicKey publicKeyOut =
-                KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(rsaPubKeyBytes));
+        PublicKey publicKeyOut = RsaUtils.decodeRsaPubKey(rsaPubKeyBytes);
 
         assertEquals(publicKey, publicKeyOut);
     }
