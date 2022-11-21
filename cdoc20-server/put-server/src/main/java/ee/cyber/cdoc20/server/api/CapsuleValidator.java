@@ -1,7 +1,8 @@
 package ee.cyber.cdoc20.server.api;
 
-import java.security.KeyFactory;
-import java.security.spec.X509EncodedKeySpec;
+import java.io.IOException;
+
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
@@ -59,10 +60,9 @@ public final class CapsuleValidator {
 
     private static boolean validateRSACapsule(Capsule capsule) {
         try {
-            var keySpec = new X509EncodedKeySpec(capsule.getRecipientId());
-            KeyFactory.getInstance("RSA").generatePublic(keySpec);
+            RsaUtils.decodeRsaPubKey(capsule.getRecipientId());
             return true;
-        } catch (GeneralSecurityException exc) {
+        } catch (GeneralSecurityException | IOException exc) {
             log.error("Failed to parse capsule recipient's RSA public key", exc);
             return false;
         }

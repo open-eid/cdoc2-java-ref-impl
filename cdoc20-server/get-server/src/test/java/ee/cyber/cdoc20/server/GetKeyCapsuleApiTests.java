@@ -5,6 +5,7 @@ import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.client.model.ServerEccDetails;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.util.ExtApiException;
 import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
 import java.io.ByteArrayInputStream;
@@ -18,6 +19,7 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
@@ -286,7 +288,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         var rsaCapsule = new Capsule()
             .capsuleType(Capsule.CapsuleTypeEnum.RSA)
             .ephemeralKeyMaterial(UUID.randomUUID().toString().getBytes())
-            .recipientId(recipientCert.getPublicKey().getEncoded());
+            .recipientId(RsaUtils.encodeRsaPubKey((RSAPublicKey) recipientCert.getPublicKey()));
 
         String txId = this.saveCapsule(rsaCapsule).getTransactionId();
 

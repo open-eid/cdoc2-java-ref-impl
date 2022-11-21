@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.server.api;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.server.model.Capsule;
 import ee.cyber.cdoc20.server.model.ServerEccDetails;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
@@ -9,6 +10,7 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.security.auth.x500.X500Principal;
@@ -107,7 +109,7 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDe
             }
             if (capsule.getCapsuleType() == KeyCapsuleDb.CapsuleType.RSA
                     && "RSA".equals(publicKey.getAlgorithm())) {
-                return Arrays.equals(capsule.getRecipient(), publicKey.getEncoded());
+                return Arrays.equals(capsule.getRecipient(), RsaUtils.encodeRsaPubKey((RSAPublicKey) publicKey));
             }
         } catch (GeneralSecurityException exc) {
             log.error("Error occurred while verifying recipient", exc);

@@ -1,31 +1,20 @@
 package ee.cyber.cdoc20.crypto;
 
-
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RsaTest {
-
-    // openssl rsa -in rsa_priv.pem -outform PEM -pubout -out rsa_pub.pem
-    @SuppressWarnings("checkstyle:OperatorWrap")
-    static final String pubKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
-            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs18v09QVTnzSTRrFnVhk\n" +
-            "xDWM2rSHOua2rPz60CVazfOk5Vv9Jo4Nq6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsP\n" +
-            "GbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7CfYKxOicL5akXqDP2NCoytHFG8QePPE1\n" +
-            "XAHC7pHyC+hEa7Hggol6sdbEWOK7WLCmIjmJ+gJx2O3bg433ad0LX6swvclGNbe0\n" +
-            "z+YagmYsu4ChfwY9Be6oVRvQzFEHOKh+tEibyutdFJ9fioyMjjZtL6lEx5xKUJ18\n" +
-            "d4efC9apvJ810wRkMDqwR203HEJrkRnBg9RtkVPNzOMl8eH6eUdS/oDW5eysnKbt\n" +
-            "rwIDAQAB\n" +
-            "-----END PUBLIC KEY-----";
 
     // openssl genrsa -out rsa_priv.pem 2048
     @SuppressWarnings("checkstyle:OperatorWrap")
@@ -58,6 +47,46 @@ public class RsaTest {
             "FpMKKtuLmE733CZbg85d9dCMU808+XR+psNvUR6XhxRB+lzgVjc=\n" +
             "-----END RSA PRIVATE KEY-----\n";
 
+    // X.509 encoding, Java default for RSAPublicKey
+    //    SEQUENCE (2 elem)
+    //        SEQUENCE (2 elem)
+    //            OBJECT IDENTIFIER 1.2.840.113549.1.1.1 rsaEncryption (PKCS #1)
+    //            NULL
+    //        BIT STRING (2160 bit) 001100001000001000000001000010100000001010000010000000010000000100000…
+    //            SEQUENCE (2 elem)
+    //                INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
+    //                INTEGER 65537
+    // openssl rsa -in rsa_priv.pem -outform PEM -pubout -out rsa_pub.pem
+    @SuppressWarnings("checkstyle:OperatorWrap")
+    static final String pubKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
+            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs18v09QVTnzSTRrFnVhk\n" +
+            "xDWM2rSHOua2rPz60CVazfOk5Vv9Jo4Nq6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsP\n" +
+            "GbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7CfYKxOicL5akXqDP2NCoytHFG8QePPE1\n" +
+            "XAHC7pHyC+hEa7Hggol6sdbEWOK7WLCmIjmJ+gJx2O3bg433ad0LX6swvclGNbe0\n" +
+            "z+YagmYsu4ChfwY9Be6oVRvQzFEHOKh+tEibyutdFJ9fioyMjjZtL6lEx5xKUJ18\n" +
+            "d4efC9apvJ810wRkMDqwR203HEJrkRnBg9RtkVPNzOMl8eH6eUdS/oDW5eysnKbt\n" +
+            "rwIDAQAB\n" +
+            "-----END PUBLIC KEY-----";
+
+    // openssl rsa -pubin -in rsa_pub.pem -RSAPublicKey_out -out pub.pem
+    // header, footer and '\n' removed to get base64 encoded RSAPublicKey structure defined in
+    // RFC8017 RSA Public Key Syntax (A.1.1) https://www.rfc-editor.org/rfc/rfc8017#page-54
+    //    SEQUENCE (2 elem)
+    //        INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
+    //        INTEGER 65537
+    @SuppressWarnings("checkstyle:OperatorWrap")
+    static final String pubKeyRSAPublicKeyB64 =
+            //-----BEGIN RSA PUBLIC KEY-----
+            "MIIBCgKCAQEAs18v09QVTnzSTRrFnVhkxDWM2rSHOua2rPz60CVazfOk5Vv9Jo4N" +
+            "q6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsPGbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7" +
+            "CfYKxOicL5akXqDP2NCoytHFG8QePPE1XAHC7pHyC+hEa7Hggol6sdbEWOK7WLCm" +
+            "IjmJ+gJx2O3bg433ad0LX6swvclGNbe0z+YagmYsu4ChfwY9Be6oVRvQzFEHOKh+" +
+            "tEibyutdFJ9fioyMjjZtL6lEx5xKUJ18d4efC9apvJ810wRkMDqwR203HEJrkRnB" +
+            "g9RtkVPNzOMl8eH6eUdS/oDW5eysnKbtrwIDAQAB";
+            //-----END RSA PUBLIC KEY-----
+
+
+
 
     @Test
     void testRsaOep() throws Exception {
@@ -77,12 +106,12 @@ public class RsaTest {
     static void checkRsaEncryption(String plainSecret, RSAPublicKey publicKey, RSAPrivateKey privateKey)
             throws Exception {
         byte[] data = plainSecret.getBytes(StandardCharsets.UTF_8);
-        byte[] encrypted = Crypto.rsaEncrypt(data, publicKey);
+        byte[] encrypted = RsaUtils.rsaEncrypt(data, publicKey);
 
-        byte[] decryptedBytes = Crypto.rsaDecrypt(encrypted, privateKey);
+        byte[] decryptedBytes = RsaUtils.rsaDecrypt(encrypted, privateKey);
         String decrypted =  new String(decryptedBytes, StandardCharsets.UTF_8);
 
-        Assertions.assertEquals(plainSecret, decrypted);
+        assertEquals(plainSecret, decrypted);
     }
 
     @Test
@@ -90,9 +119,38 @@ public class RsaTest {
         PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
         KeyPair keyPair = PemTools.loadKeyPair(rsaKeyPem);
 
-        Assertions.assertEquals("RSA", keyPair.getPublic().getAlgorithm());
-        Assertions.assertEquals(publicKey, keyPair.getPublic());
+        assertEquals("RSA", keyPair.getPublic().getAlgorithm());
+        assertEquals(publicKey, keyPair.getPublic());
 
         checkRsaEncryption("secret", (RSAPublicKey) publicKey, (RSAPrivateKey) keyPair.getPrivate());
     }
+
+    @Test
+    void testRsaPubKeyEncode() throws IOException {
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) PemTools.loadPublicKey(pubKeyPem);
+        byte[] encoded = RsaUtils.encodeRsaPubKey(rsaPublicKey);
+
+        assertEquals(pubKeyRSAPublicKeyB64, Base64.getEncoder().encodeToString(encoded));
+    }
+
+    @Test
+    void testRsaPubKeyDecode() throws IOException, GeneralSecurityException {
+
+        byte[] rsaPubDer = Base64.getDecoder().decode(pubKeyRSAPublicKeyB64);
+
+        RSAPublicKey rsaPublicKey = RsaUtils.decodeRsaPubKey(rsaPubDer);
+        RSAPublicKey expected = (RSAPublicKey) PemTools.loadPublicKey(pubKeyPem);
+
+        assertEquals(expected, rsaPublicKey);
+    }
+
+    @Test
+    void testRsaEncodingDigiDocInteroperability() throws GeneralSecurityException, IOException {
+        // RSA pub key encoded by DigiDoc client, interoperability test
+        @SuppressWarnings("checkstyle:LineLength")
+        String m = "MIIBCgKCAQEAxKTvy+zUftuk3gK5SbUW6RUG3VQYTgqFQrjcAuLyquhSIun06xu9nz4N3Vfqg9h4BUYQKmcGNwoYC7ka1bjnQcblUy7FSznlwQssddE7BL4r3av52atU90Dvr3K9eaJmlfTpbpEa1JpUkDpnDCKf2vM6wPxhxNQYDDoA6QnKFjxOlfzJno/pHFnHKqdDBqmoJlU2o2XcTHzm5vtkg/Z4jjb7tHkrLV75tl+puXK1Kr598cl8pvsLRQHm0L+zKMs+btLZv2LlLNkXEl6dIm73a60bSf65Ya5fLeC+/znde3QibmlmN3yJenP/5bZsqmxExQmX9mFLrAr1g/8jw6O2xwIDAQAB";
+        //should not throw exceptions
+        RSAPublicKey rsaPublicKey = RsaUtils.decodeRsaPubKey(Base64.getDecoder().decode(m));
+    }
 }
+
