@@ -79,7 +79,7 @@ public final class Tar {
             throws IOException {
 
         List<String> baseNameList = new LinkedList<>();
-        files.forEach(f -> baseNameList.add(f.getName()));
+        files.forEach(f -> baseNameList.add(FileNameValidator.validate(f.getName())));
         List<String> distinctList = baseNameList.stream().distinct().toList();
         if (baseNameList.size() != distinctList.size()) {
             List<String> duplicates = baseNameList.stream()
@@ -241,7 +241,7 @@ public final class Tar {
             throw new IOException("Invalid tarEntry without name");
         }
 
-        Path tarPath = Path.of(tarArchiveEntry.getName());
+        Path tarPath = Path.of(FileNameValidator.validate(tarArchiveEntry.getName()));
         if (null != tarPath.getParent()) {
             log.debug("Entries with directories are not supported {}", tarArchiveEntry.getName());
             throw new IOException("Entries with directories are not supported ("

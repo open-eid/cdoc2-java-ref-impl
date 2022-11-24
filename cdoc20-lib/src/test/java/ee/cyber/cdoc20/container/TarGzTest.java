@@ -27,17 +27,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class TarGzTest {
     private static final  Logger log = LoggerFactory.getLogger(TarGzTest.class);
 
-    private final String archiveTgz = "archive.tgz";
+    private static final String TGZ_FILE_NAME = "archive.tgz";
+    private static final String PAYLOAD = "payload\n";
+    private static final List<String> INVALID_FILE_NAMES = List.of(
+        "CON", "con", "PRN", "AUX", "aux", "NUL", "nul", "COM2", "LPT1", "com1", "lpt1",
+        "abc:", "test ", "test.", "abc>", "abc<", "abc\\",
+        "abc|", "abc?", "abc*", "abc\"",
+        "test ", "test.", "test\n", "test\t", "-test.text"
+    );
 
-    private final String payload = "payload\n";
+    private static final List<String> VALID_FILE_NAMES = List.of("control", "test");
 
-
-
-    //@Test
     void testCreateArchive(Path tempDir) throws IOException {
         File payloadFile = tempDir.resolve("payload.txt").toFile();
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
-            payloadFos.write(payload.getBytes(UTF_8));
+            payloadFos.write(PAYLOAD.getBytes(UTF_8));
         }
 
         File readmeFile = new File("../README.md"); //cdoc20-lib
@@ -45,8 +49,7 @@ class TarGzTest {
             readmeFile = new File("README.md"); // parent dir
         }
 
-
-        File tarGZipFile = tempDir.resolve(archiveTgz).toFile();
+        File tarGZipFile = tempDir.resolve(TGZ_FILE_NAME).toFile();
         log.debug("Creating tar {}", tarGZipFile);
         try (FileOutputStream fos = new FileOutputStream(tarGZipFile)) {
             Tar.archiveFiles(fos, List.of(payloadFile, readmeFile));
@@ -69,7 +72,7 @@ class TarGzTest {
     @Test
     void testExtract(@TempDir Path tempDir) throws IOException {
         testCreateArchive(tempDir); //create archive
-        File tarGZipFile = tempDir.resolve(archiveTgz).toFile();
+        File tarGZipFile = tempDir.resolve(TGZ_FILE_NAME).toFile();
 
         Path outDir = tempDir.resolve("testExtract");
         Files.createDirectories(outDir);
@@ -94,7 +97,7 @@ class TarGzTest {
 
         String read = Files.readString(payloadPath);
 
-        assertEquals(payload, read);
+        assertEquals(PAYLOAD, read);
     }
 
     //TempDir and its contents will be automatically cleaned up by Junit
@@ -105,8 +108,7 @@ class TarGzTest {
         String tarEntryName = "payload-" + UUID.randomUUID();
 
         try (FileOutputStream fos = new FileOutputStream(outFile.toFile())) {
-            //Tar.archiveData(fos, payload.getBytes(StandardCharsets.UTF_8), tarEntryName);
-            ByteArrayInputStream bos = new ByteArrayInputStream(payload.getBytes(UTF_8));
+            ByteArrayInputStream bos = new ByteArrayInputStream(PAYLOAD.getBytes(UTF_8));
             Tar.archiveData(fos, bos, tarEntryName);
         }
 
@@ -120,7 +122,7 @@ class TarGzTest {
 
             long extractedLen = Tar.extractTarEntry(is, bos, tarEntryName);
             assertTrue(extractedLen > 0);
-            assertEquals(payload, bos.toString(UTF_8));
+            assertEquals(PAYLOAD, bos.toString(UTF_8));
         }
     }
 
@@ -190,4 +192,73 @@ class TarGzTest {
 
         System.clearProperty(CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY);
     }
+
+    @Test
+    void shouldValidateFileNameWhenCreatingTar(@TempDir Path tempDir) throws IOException {
+        File outputTarFile = tempDir.resolve(TGZ_FILE_NAME).toFile();
+
+        assertFalse(INVALID_FILE_NAMES.isEmpty());
+
+        // should fail
+        for (String fileName: INVALID_FILE_NAMES) {
+            File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
+            OutputStream os = new ByteArrayOutputStream();
+            assertThrows(
+                InvalidPathException.class,
+                () -> Tar.archiveFiles(os, List.of(file)),
+                "File with name '" + file + "' should not be allowed in created tar"
+            );
+        }
+
+        // should pass
+        for (String fileName: VALID_FILE_NAMES) {
+            File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
+            var bos = new ByteArrayOutputStream();
+            Tar.archiveFiles(bos, List.of(file));
+            assertTrue(bos.toByteArray().length > 0);
+        }
+    }
+
+    @Test
+    void shouldValidateFileNameWhenExtractingTar(@TempDir Path tempDir) throws IOException {
+        // should fail
+        for (int i = 0; i < INVALID_FILE_NAMES.size(); i++) {
+            String fileName = INVALID_FILE_NAMES.get(i);
+            File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i, fileName, PAYLOAD);
+
+            assertThrows(
+                InvalidPathException.class,
+                () -> Tar.processTarGz(new FileInputStream(file), tempDir, List.of(fileName), true),
+                "File with name '" + fileName + "' should not be extracted from tar"
+            );
+        }
+
+        // should pass
+        int i = 0;
+        for (String fileName: VALID_FILE_NAMES) {
+            File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
+            var result = Tar.processTarGz(new FileInputStream(file), tempDir, List.of(fileName), true);
+            assertTrue(result.size() == 1);
+        }
+    }
+
+    private static File createAndWriteToFile(Path path, String fileName, String contents) throws IOException {
+        File file = path.resolve(fileName).toFile();
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(contents.getBytes(UTF_8));
+        }
+        return file;
+    }
+
+    private static File createTar(Path path, String tarFileName, String entryFileName, String entryContents)
+            throws IOException {
+        File outFile = path.resolve(tarFileName).toFile();
+
+        try (FileOutputStream fos = new FileOutputStream(outFile)) {
+            ByteArrayInputStream bos = new ByteArrayInputStream(entryContents.getBytes(UTF_8));
+            Tar.archiveData(fos, bos, entryFileName);
+        }
+        return outFile;
+    }
+
 }

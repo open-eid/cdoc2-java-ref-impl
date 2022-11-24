@@ -194,7 +194,7 @@ public final class SkLdapUtil {
                         keyLabel += " (digi-id)";
                     } else if (dName.contains(ID_CARD)) {
                         keyLabel += " (id-card)";
-                    } else if (dName.contains(E_RESIDENT_DIGI_ID)){
+                    } else if (dName.contains(E_RESIDENT_DIGI_ID)) {
                         keyLabel += " (e-resident digi-id)";
                     }
                 }
