@@ -24,7 +24,7 @@ public class SkLdapTest {
     @Tag("ldap")
     void testFindAuthenticationCerts() throws NamingException, CertificateException {
         String[] ids = new String[]{"37903130370", "38207162766"};
-        Map<PublicKey, String> keysWithLabels =  SkLdapUtil.getCertKeysWithLabels(ids);
+        Map<PublicKey, String> keysWithLabels =  SkLdapUtil.getPublicKeysWithLabels(ids);
 
         // Since testing against external service, then can't be really sure what is returned
         // if something is returned then consider it success

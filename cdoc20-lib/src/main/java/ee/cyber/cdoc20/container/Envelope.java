@@ -363,7 +363,8 @@ public class Envelope {
         byte[] kek = Crypto.deriveKeyEncryptionKey(senderEcKeyPair, recipientPubKey, Crypto.CEK_LEN_BYTES);
         byte[] encryptedFmk = Crypto.xor(fmk, kek);
         return new EccPubKeyRecipient(
-                curve, recipientPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk, keyLabel);
+            curve, recipientPubKey, (ECPublicKey) senderEcKeyPair.getPublic(), encryptedFmk, keyLabel
+        );
     }
 
     /**
@@ -408,7 +409,7 @@ public class Envelope {
 
         List<Recipient> result = new ArrayList<>(recipientKeys.size());
         for (Map.Entry<PublicKey, String> recipientEntry : recipientKeys.entrySet()) {
-            PublicKey publicKey  = recipientEntry.getKey();
+            PublicKey publicKey = recipientEntry.getKey();
             String keyLabel = recipientEntry.getValue();
 
             if (publicKey instanceof RSAPublicKey) {
