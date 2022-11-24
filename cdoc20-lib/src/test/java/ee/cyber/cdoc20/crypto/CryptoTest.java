@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 
 import java.util.HexFormat;
@@ -53,7 +52,7 @@ class CryptoTest {
         KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         byte[] ecdhSharedSecret =
-                Crypto.calcEcDhSharedSecret((ECPrivateKey) keyPair.getPrivate(), (ECPublicKey) other.getPublic());
+                Crypto.calcEcDhSharedSecret(keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
         assertEquals(ECKeys.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
     }
@@ -119,6 +118,7 @@ class CryptoTest {
         assertNotNull(hmac);
         assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
     }
+
 
 
 }

@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.NativeWebRequest;
-import static ee.cyber.cdoc20.server.Utils.fixOABrokenBaseURL;
+import static ee.cyber.cdoc20.server.Utils.getPathAndQueryPart;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -106,7 +106,7 @@ public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsAp
      * @throws URISyntaxException
      */
     private static URI getResourceLocation(String id) throws URISyntaxException {
-        return fixOABrokenBaseURL(
+        return getPathAndQueryPart(
             linkTo(methodOn(KeyCapsulesApiController.class).getCapsuleByTransactionId(id)).toUri()
         );
     }

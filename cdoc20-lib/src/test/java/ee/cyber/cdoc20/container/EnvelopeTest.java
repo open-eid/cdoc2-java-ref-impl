@@ -1,7 +1,9 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.container.recipients.EccRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
@@ -9,8 +11,8 @@ import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
-import ee.cyber.cdoc20.util.ExtApiException;
-import ee.cyber.cdoc20.util.KeyServerClient;
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.KeyCapsuleClient;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -34,8 +36,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -43,8 +49,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+
 import static ee.cyber.cdoc20.fbs.header.Details.recipients_RSAPublicKeyDetails;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -52,7 +62,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class EnvelopeTest {
@@ -66,8 +79,10 @@ public class EnvelopeTest {
             "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
             "-----END EC PRIVATE KEY-----\n";
 
-    @Mock KeyServerClient keyServerClientMock;
+    @Mock
+    KeyCapsuleClient capsuleClientMock;
 
+    Capsule capsuleData;
 
     // Mainly flatbuffers and friends
     @Test
@@ -175,12 +190,12 @@ public class EnvelopeTest {
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
         final String recipientKeyLabel = "testEccServerSerialization";
 
-        when(keyServerClientMock.getServerIdentifier()).thenReturn("mock");
-        when(keyServerClientMock.storeSenderKey(any(), any())).thenReturn("SD1234567890");
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
 
         Envelope envelope = Envelope.prepare(
             Map.of(recipientPubKey, recipientKeyLabel),
-            keyServerClientMock
+            capsuleClientMock
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -207,9 +222,90 @@ public class EnvelopeTest {
     }
 
     @Test
+    void testRsaServerSerialization(@TempDir Path tempDir) throws Exception {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048, SecureRandom.getInstanceStrong());
+
+        KeyPair keyPair = generator.generateKeyPair();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        final String recipientKeyLabel = "testRsaServerSerialization";
+
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_rsa");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("KC1234567890123456789012");
+
+        Envelope envelope = Envelope.prepare(
+                Map.of(publicKey, recipientKeyLabel),
+            capsuleClientMock
+        );
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        envelope.encrypt(List.of(payloadFile), dst);
+
+        byte[] resultBytes = dst.toByteArray();
+
+        assertTrue(resultBytes.length > 0);
+
+        //no exception is also good indication that parsing worked
+        List<Recipient> recipients =
+                Envelope.parseHeader(new ByteArrayInputStream(resultBytes), null);
+
+        assertEquals(1, recipients.size());
+
+        assertInstanceOf(RSAServerKeyRecipient.class, recipients.get(0));
+
+        RSAServerKeyRecipient details = (RSAServerKeyRecipient) recipients.get(0);
+
+        assertEquals(publicKey, details.getRecipientPubKey());
+
+        assertEquals("mock_rsa", details.getKeyServerId());
+        assertEquals("KC1234567890123456789012", details.getTransactionId());
+        assertEquals(recipientKeyLabel, details.getRecipientPubKeyLabel());
+
+    }
+
+    @Test
     void testECContainer(@TempDir Path tempDir) throws Exception {
         KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
-        testContainer(tempDir, bobKeyPair, "testECContainer");
+        testContainer(tempDir, bobKeyPair, "testECContainer", null);
+    }
+
+    @Test
+    void testECServerScenario(@TempDir Path tempDir) throws Exception {
+        KeyPair keyPair = PemTools.loadKeyPair(bobKeyPem);
+        String transactionId = "KC1234567890123456789011";
+
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_ec_server");
+
+        doAnswer(invocation -> {
+            capsuleData = (Capsule) invocation.getArguments()[0];
+            log.debug("storing capsule {}", capsuleData);
+            return transactionId;
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
+
+        when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
+            log.debug("returning capsule {}", capsuleData);
+            return Optional.of(capsuleData);
+        });
+
+        testContainer(tempDir, keyPair, "testECContainer", capsuleClientMock);
+
+        verify(capsuleClientMock, times(1)).storeCapsule(any());
+        verify(capsuleClientMock, times(1)).getCapsule(transactionId);
+
+        assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
+        assertEquals(keyPair.getPublic(), ECKeys.EllipticCurve.secp384r1.decodeFromTls(
+                ByteBuffer.wrap(capsuleData.getRecipientId())));
+        assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKey(ECKeys.EllipticCurve.secp384r1.decodeFromTls(
+                ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial()))));
     }
 
     @Test
@@ -219,8 +315,42 @@ public class EnvelopeTest {
         generator.initialize(2048, SecureRandom.getInstanceStrong());
         KeyPair rsaKeyPair = generator.generateKeyPair();
 
-        testContainer(tempDir, rsaKeyPair, "testContainerUsingRSAKey");
+        testContainer(tempDir, rsaKeyPair, "testContainerUsingRSAKey", null);
     }
+
+    @Test
+    void testRsaServerScenario(@TempDir Path tempDir) throws Exception {
+
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048, SecureRandom.getInstanceStrong());
+        KeyPair rsaKeyPair = generator.generateKeyPair();
+
+        String transactionId = "KC1234567890123456789012";
+
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_rsa_server");
+
+        doAnswer(invocation -> {
+            capsuleData = (Capsule) invocation.getArguments()[0];
+            log.debug("storing capsule {}", capsuleData);
+            return transactionId;
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
+
+        when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
+            log.debug("returning capsule {}", capsuleData);
+            return Optional.of(capsuleData);
+        });
+
+        testContainer(tempDir, rsaKeyPair, "testContainerUsingRSAKey", capsuleClientMock);
+
+        verify(capsuleClientMock, times(1)).storeCapsule(any());
+        verify(capsuleClientMock, times(1)).getCapsule(transactionId);
+        assertEquals(Capsule.CapsuleTypeEnum.RSA, capsuleData.getCapsuleType());
+
+        assertEquals(rsaKeyPair.getPublic(), RsaUtils.decodeRsaPubKey(capsuleData.getRecipientId()));
+        assertEquals(((RSAPublicKey)rsaKeyPair.getPublic()).getModulus().bitLength(),
+                capsuleData.getEphemeralKeyMaterial().length * 8);
+    }
+
 
     @Test
     @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
@@ -247,7 +377,7 @@ public class EnvelopeTest {
         Files.createDirectories(outDir);
 
         byte[] cdocContainerBytes = createContainer(payloadFile, payloadData.getBytes(StandardCharsets.UTF_8),
-                bobKeyPair.getPublic(), "testContainerWrongPoly1305Mac", List.of(biggerFile));
+                bobKeyPair.getPublic(), "testContainerWrongPoly1305Mac", List.of(biggerFile), null);
 
         log.debug("cdoc size: {}", cdocContainerBytes.length);
 
@@ -258,7 +388,7 @@ public class EnvelopeTest {
         var ex = assertThrows(
             Exception.class,
             () -> checkContainerDecrypt(cdocContainerBytes, outDir,
-                bobKeyPair, List.of(payloadFileName), payloadFileName, payloadData)
+                bobKeyPair, List.of(payloadFileName), payloadFileName, payloadData, null)
         );
 
         assertInstanceOf(javax.crypto.AEADBadTagException.class, ex.getCause());
@@ -275,12 +405,14 @@ public class EnvelopeTest {
      * @param payloadData data to be written to payloadFile
      * @param recipientPubKey created container can be decrypted with recipientPubKey private part
      * @param additionalFiles optional additional file to add
+     * @param capsuleClient
      * @return created container as byte[]
      * @throws IOException if IOException happens
      * @throws GeneralSecurityException if GeneralSecurityException happens
      */
     public byte[] createContainer(File payloadFile, byte[] payloadData, PublicKey recipientPubKey, String label,
-                                  List<File> additionalFiles)
+                                  @Nullable List<File> additionalFiles,
+                                  @Nullable KeyCapsuleClient capsuleClient)
             throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -296,7 +428,7 @@ public class EnvelopeTest {
         }
 
         byte[] cdocContainerBytes;
-        Envelope senderEnvelope = Envelope.prepare(recipients, null);
+        Envelope senderEnvelope = Envelope.prepare(recipients, capsuleClient);
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
             cdocContainerBytes = dst.toByteArray();
@@ -306,7 +438,12 @@ public class EnvelopeTest {
         return cdocContainerBytes;
     }
 
-    public void testContainer(Path tempDir, KeyPair bobKeyPair, String keyLabel) throws Exception {
+    /**
+     * Creates CDOC2 container in tempDir and encrypts/decrypts it with keyPair. If capsulesClient is provided, then
+     * test server scenarios
+     */
+    public void testContainer(Path tempDir, KeyPair keyPair, String keyLabel,
+                              @Nullable KeyCapsuleClient capsulesClient) throws Exception {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -317,27 +454,44 @@ public class EnvelopeTest {
         Files.createDirectories(outDir);
 
         byte[] cdocContainerBytes = createContainer(payloadFile,
-                payloadData.getBytes(StandardCharsets.UTF_8), bobKeyPair.getPublic(), keyLabel, null);
+                payloadData.getBytes(StandardCharsets.UTF_8), keyPair.getPublic(), keyLabel, null,
+                capsulesClient);
 
         assertTrue(cdocContainerBytes.length > 0);
 
-        checkContainerDecrypt(cdocContainerBytes, outDir, bobKeyPair,
-                List.of(payloadFileName), payloadFileName, payloadData);
+        checkContainerDecrypt(cdocContainerBytes, outDir, keyPair,
+                List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
     }
 
     public void checkContainerDecrypt(byte[] cdocBytes, Path outDir, KeyPair recipientKeyPair,
-            List<String> expectedFilesExtracted, String payloadFileName, String expectedPayloadData)
+                                      List<String> expectedFilesExtracted, String payloadFileName,
+                                      String expectedPayloadData,
+                                      KeyCapsuleClient capsulesClient)
                 throws Exception {
 
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
-            List<String> filesExtracted = Envelope.decrypt(bis, recipientKeyPair, outDir);
+
+            KeyCapsuleClientFactory clientFactory = (capsulesClient == null) ? null : new KeyCapsuleClientFactory() {
+                @Override
+                public KeyCapsuleClient getForId(String serverId) {
+                    Objects.requireNonNull(serverId);
+                    if ((capsulesClient != null)
+                            && (serverId.equals(capsulesClient.getServerIdentifier()))) {
+                        return capsulesClient;
+                    }
+
+                    log.warn("No KeyCapsulesClient for {}", serverId);
+                    return null;
+                }
+            };
+
+            List<String> filesExtracted = Envelope.decrypt(bis, recipientKeyPair, outDir, clientFactory);
 
             assertEquals(expectedFilesExtracted, filesExtracted);
             Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
 
             assertEquals(expectedPayloadData, Files.readString(payloadPath));
         }
-
     }
 
     // test that near max size header can be created and parsed
@@ -380,7 +534,7 @@ public class EnvelopeTest {
         int emptyHeaderLen = singleKeyLen - recipientLength;
 
         log.debug("empty header len:{}, single recipient len {}",
-            emptyHeaderLen, singleKeyLen - recipientLength, fbsOverhead
+            emptyHeaderLen, singleKeyLen - recipientLength
         );
 
         int maxRecipientsNum = (Envelope.MAX_HEADER_LEN - emptyHeaderLen) / recipientLength;

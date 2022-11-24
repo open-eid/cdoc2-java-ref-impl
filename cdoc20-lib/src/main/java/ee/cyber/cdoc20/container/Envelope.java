@@ -3,14 +3,13 @@ package ee.cyber.cdoc20.container;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 import ee.cyber.cdoc20.container.recipients.EccPubKeyRecipient;
-import ee.cyber.cdoc20.container.recipients.EccRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAPubKeyRecipient;
+import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
@@ -22,9 +21,14 @@ import ee.cyber.cdoc20.fbs.recipients.KeyServerDetails;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
 import ee.cyber.cdoc20.fbs.recipients.ServerDetailsUnion;
 import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
-import ee.cyber.cdoc20.util.KeyServerClient;
-import ee.cyber.cdoc20.util.KeyServerClientFactory;
-import ee.cyber.cdoc20.util.ExtApiException;
+import ee.cyber.cdoc20.fbs.recipients.ServerRsaDetails;
+import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
+import ee.cyber.cdoc20.client.KeyCapsuleClient;
+import ee.cyber.cdoc20.client.EcCapsuleClient;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.RsaCapsuleClient;
+import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +75,6 @@ public class Envelope {
     //
     // in practice ECCPublicKey in fbs ~284bytes
 
-
     public static final int MIN_PAYLOAD_LEN = 1; //TODO: find minimal payload size
 
     public static final int MAX_HEADER_LEN = 1024 * 1024; //1MB
@@ -86,13 +89,13 @@ public class Envelope {
 
     private static final byte PAYLOAD_ENC_BYTE = PayloadEncryptionMethod.CHACHA20POLY1305;
     private final Recipient[] recipients;
-    private final KeyServerClient keyServerClient;
+    private final KeyCapsuleClient capsuleClient;
     private final SecretKey hmacKey;
     private final SecretKey cekKey;
 
-    private Envelope(Recipient[] recipients, byte[] fmk, KeyServerClient keyServerClient) {
+    private Envelope(Recipient[] recipients, byte[] fmk, KeyCapsuleClient capsuleClient) {
         this.recipients = recipients;
-        this.keyServerClient = keyServerClient;
+        this.capsuleClient = capsuleClient;
         this.hmacKey = Crypto.deriveHeaderHmacKey(fmk);
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
     }
@@ -106,16 +109,16 @@ public class Envelope {
      * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For each recipient FMK is
      * encrypted with generated key that single recipient can decrypt with their private key.
      * @param recipients map<PublicKey, keyLabel> of supported PublicKey (required) paired to optional keyLabel string
-     * @param keyServerClient if keyServerClient is provided then store generated key material in the server
+     * @param capsuleClient if capsuleClient is provided then store generated key material in the server
      * @return Envelope that has key material prepared and can be used for
      *          {@link #encrypt(List, OutputStream) encryption}
      */
-    public static Envelope prepare(Map<PublicKey, String> recipients, @Nullable KeyServerClient keyServerClient)
+    public static Envelope prepare(Map<PublicKey, String> recipients, @Nullable KeyCapsuleClient capsuleClient)
             throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
         byte[] fmk = Crypto.generateFileMasterKey();
-        return new Envelope(buildRecipients(fmk, recipients, keyServerClient), fmk);
+        return new Envelope(buildRecipients(fmk, recipients, capsuleClient), fmk);
      }
 
     /**
@@ -272,7 +275,28 @@ public class Envelope {
                     recipientList.add(new EccServerKeyRecipient(curve, recipientPubKey, keyServerId,
                             transactionId, encryptedFmkBytes, keyLabel));
                 } else if (keyServerDetails.recipientKeyDetailsType() == ServerDetailsUnion.ServerRsaDetails) {
-                    log.warn("ServerRsaDetail not implemented. Ignoring"); //TODO
+
+                    ServerRsaDetails serverRsaDetails =
+                            (ServerRsaDetails) keyServerDetails.recipientKeyDetails(new ServerRsaDetails());
+                    if (serverRsaDetails == null) {
+                        throw new CDocParseException("error parsing ServerRsaDetails");
+                    }
+
+                    RSAPublicKey recipientPubKey;
+                    try {
+                        recipientPubKey = RsaUtils.decodeRsaPubKey(serverRsaDetails.recipientPublicKeyAsByteBuffer());
+                    } catch (IOException e) {
+                        throw new CDocParseException("error parsing ServerRsaDetails");
+                    }
+
+                    String keyServerId = keyServerDetails.keyserverId();
+                    String transactionId = keyServerDetails.transactionId();
+
+                    recipientList.add(new RSAServerKeyRecipient(recipientPubKey, keyServerId, transactionId,
+                            encryptedFmkBytes, keyLabel));
+                } else {
+                    log.warn("Unknown KeyServerDetails.recipient_key_details type (ServerDetailsUnion) {}",
+                            keyServerDetails.recipientKeyDetailsType());
                 }
             } else {
                 log.warn("Unknown Details type {}. Ignoring.", r.detailsType());
@@ -377,7 +401,7 @@ public class Envelope {
      * @return For each recipient create EccServerKeyRecipient with fields filled
      */
     static EccServerKeyRecipient buildEccServerKeyRecipient(byte[] fmk, ECPublicKey recipientPubKey,
-            String keyLabel, KeyServerClient serverClient) throws GeneralSecurityException, ExtApiException {
+            String keyLabel, EcCapsuleClient serverClient) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientPubKey);
@@ -398,8 +422,33 @@ public class Envelope {
                 eccPubKeyRecipient.getEncryptedFileMasterKey(), keyLabel);
     }
 
+    static RSAServerKeyRecipient buildRsaServerKeyRecipient(byte[] fmk, RSAPublicKey recipientPubKey,
+                                                            String keyLabel, RsaCapsuleClient serverClient)
+            throws GeneralSecurityException, ExtApiException {
+
+        Objects.requireNonNull(fmk);
+        Objects.requireNonNull(recipientPubKey);
+        Objects.requireNonNull(serverClient);
+        if (fmk.length != Crypto.CEK_LEN_BYTES) {
+            throw new IllegalArgumentException("Invalid FMK len");
+        }
+
+        RSAPubKeyRecipient rsaPubKeyRecipient = buildRsaRecipient(fmk, recipientPubKey, keyLabel);
+
+        String transactionId = serverClient.storeRsaCapsule(
+                recipientPubKey, rsaPubKeyRecipient.getEncryptedKek()
+        );
+
+        String serverId = serverClient.getServerIdentifier();
+
+        return new RSAServerKeyRecipient(recipientPubKey, serverId, transactionId,
+                rsaPubKeyRecipient.getEncryptedFileMasterKey(), keyLabel);
+    }
+
+
+
     private static Recipient[] buildRecipients(byte[] fmk, Map<PublicKey, String> recipientKeys,
-            KeyServerClient serverClient) throws GeneralSecurityException, ExtApiException {
+            KeyCapsuleClient serverClient) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientKeys);
@@ -413,17 +462,17 @@ public class Envelope {
             String keyLabel = recipientEntry.getValue();
 
             if (publicKey instanceof RSAPublicKey) {
-                 result.add(buildRsaRecipient(fmk, (RSAPublicKey) publicKey, keyLabel));
-
                 if (serverClient != null) {
-                    //TODO: RSA server
-                    log.error("Server scenario for RSA is not supported yet");
-                    throw new UnsupportedOperationException("Server RSA not implemented");
+                    RsaCapsuleClient rsaCapsuleClient = new RsaCapsuleClientImpl(serverClient);
+                    result.add(buildRsaServerKeyRecipient(fmk, (RSAPublicKey) publicKey, keyLabel, rsaCapsuleClient));
+                } else {
+                    result.add(buildRsaRecipient(fmk, (RSAPublicKey) publicKey, keyLabel));
                 }
 
             } else if (publicKey instanceof ECPublicKey) {
                 if (serverClient != null) {
-                    result.add(buildEccServerKeyRecipient(fmk, (ECPublicKey) publicKey, keyLabel, serverClient));
+                    result.add(buildEccServerKeyRecipient(fmk, (ECPublicKey) publicKey, keyLabel,
+                            new EcCapsuleClientImpl(serverClient)));
                 } else {
                     result.add(buildEccRecipient(fmk, (ECPublicKey) publicKey, keyLabel));
                 }
@@ -455,7 +504,6 @@ public class Envelope {
         os.write(headerLenBytes);
         os.write(headerBytes);
 
-
         byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
         os.write(hmac);
         byte[] additionalData = getAdditionalData(headerBytes, hmac);
@@ -468,7 +516,7 @@ public class Envelope {
 
     private static List<ArchiveEntry> decrypt(InputStream cdocInputStream, KeyPair recipientKeyPair,
                                               Path outputDir, List<String> filesToExtract, boolean extract,
-                                              KeyServerClientFactory keyServerClientFac)
+                                              KeyCapsuleClientFactory capsulesClientFac)
             throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
 
         log.trace("Envelope::decrypt");
@@ -499,14 +547,14 @@ public class Envelope {
                         throw new CDocParseException("ServerId missing in record");
                     }
 
-                    if (keyServerClientFac == null || keyServerClientFac.getForId(serverId) == null) {
+                    if (capsulesClientFac == null || capsulesClientFac.getForId(serverId) == null) {
                         log.error("Configuration not found for server {}", serverId);
                         throw new CDocParseException("Configuration not found for server \"" + serverId + "\"");
                     }
 
                     try {
-                        KeyServerClient keyServerClient = keyServerClientFac.getForId(serverId);
-                        Optional<ECPublicKey> senderPubKeyOptional = keyServerClient.getSenderKey(transactionId);
+                        EcCapsuleClient client = new EcCapsuleClientImpl(capsulesClientFac.getForId(serverId));
+                        Optional<ECPublicKey> senderPubKeyOptional = client.getSenderKey(transactionId);
                         ECPublicKey senderPubKey = senderPubKeyOptional.orElseThrow();
                         kek = Crypto.deriveKeyDecryptionKey(recipientKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
                     } catch (NoSuchElementException nse) {
@@ -516,6 +564,33 @@ public class Envelope {
                         log.error("Error querying {} for {} ({})", serverId, transactionId, apiException);
                         throw apiException;
                     }
+
+                } else if (recipient instanceof RSAServerKeyRecipient) {
+                    var rsaServerKeyRecipient = (RSAServerKeyRecipient) recipient;
+
+
+                    String transactionId = rsaServerKeyRecipient.getTransactionId();
+                    String serverId = rsaServerKeyRecipient.getKeyServerId();
+                    if (transactionId == null) {
+                        log.error("No transactionId for recipient {}", recipientPubKey);
+                        throw new CDocParseException("TransactionId missing in record");
+                    }
+
+                    if (serverId == null) {
+                        log.error("No serverId for recipient {}", recipientPubKey);
+                        throw new CDocParseException("ServerId missing in record");
+                    }
+
+                    if (capsulesClientFac == null || capsulesClientFac.getForId(serverId) == null) {
+                        log.error("Configuration not found for server {}", serverId);
+                        throw new CDocParseException("Configuration not found for server \"" + serverId + "\"");
+                    }
+
+                    RsaCapsuleClient client = new RsaCapsuleClientImpl(capsulesClientFac.getForId(serverId));
+                    byte[] encryptedKek = client.getEncryptedKek(transactionId).orElseThrow();
+
+                    RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
+                    kek = RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
 
                 } else if (recipient instanceof RSAPubKeyRecipient) {
                     var rsaPubKeyRecipient = (RSAPubKeyRecipient) recipient;
@@ -612,7 +687,7 @@ public class Envelope {
      * @throws CDocParseException if cdocInputStream is invalid format
      */
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir,
-                                       KeyServerClientFactory keyServerClientFac)
+                                       KeyCapsuleClientFactory keyServerClientFac)
             throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
         return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, null, true, keyServerClientFac)
                 .stream()
@@ -626,20 +701,20 @@ public class Envelope {
         if (o == null || getClass() != o.getClass()) return false;
         Envelope envelope = (Envelope) o;
         return Arrays.equals(recipients, envelope.recipients)
-                && Objects.equals(keyServerClient, envelope.keyServerClient)
+                && Objects.equals(capsuleClient, envelope.capsuleClient)
                 && Objects.equals(hmacKey, envelope.hmacKey)
                 && Objects.equals(cekKey, envelope.cekKey);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(keyServerClient, hmacKey, cekKey);
+        int result = Objects.hash(capsuleClient, hmacKey, cekKey);
         result = 31 * result + Arrays.hashCode(recipients);
         return result;
     }
 
     public static List<String> decrypt(InputStream cdocInputStream, KeyPair recipientEcKeyPair, Path outputDir,
-                                       List<String> filesToExtract, KeyServerClientFactory keyServerClientFac)
+                                       List<String> filesToExtract, KeyCapsuleClientFactory keyServerClientFac)
             throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
 
         return decrypt(cdocInputStream, recipientEcKeyPair, outputDir, filesToExtract, true, keyServerClientFac)
@@ -649,7 +724,7 @@ public class Envelope {
     }
 
     public static List<ArchiveEntry> list(InputStream cdocInputStream, KeyPair recipientEcKeyPair,
-                                          KeyServerClientFactory keyServerClientFac)
+                                          KeyCapsuleClientFactory keyServerClientFac)
             throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
         return decrypt(cdocInputStream, recipientEcKeyPair, null, null, false, keyServerClientFac);
     }
@@ -708,14 +783,41 @@ public class Envelope {
                 int encFmkOffset =
                         RecipientRecord.createEncryptedFmkVector(builder, eccRecipient.getEncryptedFileMasterKey());
 
-                String keyLabelString =  (eccRecipient.getRecipientPubKeyLabel() == null)
-                        ? getKeyLabelValue(eccRecipient) : eccRecipient.getRecipientPubKeyLabel();
-                int keyLabelOffset = builder.createString(keyLabelString); //required field
+                int keyLabelOffset = builder.createString(getKeyLabelValue(eccRecipient)); //required field
 
                 int recipientOffset = fillRecipientRecord(builder, recipients_ECCPublicKeyDetails,
                         eccPubKeyOffset, keyLabelOffset, encFmkOffset, eccRecipient.getFmkEncryptionMethod());
 
                 recipientOffsets[i] = recipientOffset;
+            } else if (recipients[i] instanceof RSAServerKeyRecipient) {
+                RSAServerKeyRecipient rsaServerRecipient = (RSAServerKeyRecipient) recipients[i];
+
+                byte[] rsaPubKeyDer = RsaUtils.encodeRsaPubKey(rsaServerRecipient.getRecipientPubKey());
+                int recipientPubKeyOffset = builder.createByteVector(rsaPubKeyDer);
+
+                int serverRsaDetailsOffset = ServerRsaDetails.createServerRsaDetails(builder, recipientPubKeyOffset);
+
+                int keyServerOffset = builder.createString(rsaServerRecipient.getKeyServerId());
+                int transactionIdOffset = builder.createString(rsaServerRecipient.getTransactionId());
+
+                int detailsOffset = KeyServerDetails.createKeyServerDetails(builder,
+                        ServerDetailsUnion.ServerRsaDetails,
+                        serverRsaDetailsOffset,
+                        keyServerOffset,
+                        transactionIdOffset
+                );
+
+                int encFmkOffset =
+                        RecipientRecord.createEncryptedFmkVector(builder,
+                                rsaServerRecipient.getEncryptedFileMasterKey());
+
+                int keyLabelOffset = builder.createString(getKeyLabelValue(rsaServerRecipient));
+
+                int recipientOffset = fillRecipientRecord(builder, recipients_KeyServerDetails,
+                        detailsOffset, keyLabelOffset, encFmkOffset, rsaServerRecipient.getFmkEncryptionMethod());
+
+                recipientOffsets[i] = recipientOffset;
+
             } else if (recipients[i] instanceof RSAPubKeyRecipient) {
                 RSAPubKeyRecipient rsaRecipient = (RSAPubKeyRecipient) recipients[i];
 
@@ -728,10 +830,7 @@ public class Envelope {
                 int encFmkOffset =
                         RecipientRecord.createEncryptedFmkVector(builder, rsaRecipient.getEncryptedFileMasterKey());
 
-                String keyLabelString =  (rsaRecipient.getRecipientPubKeyLabel() == null)
-                        ? getKeyLabelValue(rsaRecipient.getRecipientPubKey())
-                        : rsaRecipient.getRecipientPubKeyLabel();
-                int keyLabelOffset = builder.createString(keyLabelString);
+                int keyLabelOffset = builder.createString(getKeyLabelValue(rsaRecipient));
 
                 int recipientOffset = fillRecipientRecord(builder, recipients_RSAPublicKeyDetails,
                         rsaPublicKeyDetailsOffset, keyLabelOffset, encFmkOffset, rsaRecipient.getFmkEncryptionMethod());
@@ -762,13 +861,12 @@ public class Envelope {
         return os.toByteArray();
     }
 
-
     /**
      * Get value for FBS RecipientRecord.key_label
      * @param recipient recipient to generate key label from
      * @return key label that describes recipient
      */
-    private static String getKeyLabelValue(EccRecipient recipient) {
+    private static String getKeyLabelValue(Recipient recipient) {
         // KeyLabel is UI specific field, so its value is not specified in the Spec.
         // Required to be filled or deserialization will fail.
         // DigiDoc4-Client uses this field to hint user what type of eID was used for encryption
@@ -776,49 +874,11 @@ public class Envelope {
         // /open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3116dff450/client/SslCertificate.cpp#L302
         // https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
 
-
         if (recipient.getRecipientPubKeyLabel() != null) {
             return recipient.getRecipientPubKeyLabel();
-        }
-
-        final int numOfBytes = 16;
-        if (recipient.getRecipientPubKeyTlsEncoded() != null) {
-            byte[] pubKeyTlsEncoded = recipient.getRecipientPubKeyTlsEncoded();
-            return "ec_pub_key: "
-                    + HexFormat.of().formatHex(pubKeyTlsEncoded, 0, Math.min(numOfBytes, pubKeyTlsEncoded.length));
         } else {
-            return "";
+            return "n/a"; //can't be empty
         }
-    }
-
-    private static String getKeyLabelValue(RSAPublicKey rsaPublicKey) {
-
-        final int numOfChars = 32;
-        int bitLen = rsaPublicKey.getModulus().bitLength();
-        String encoded = Base64.getEncoder().encodeToString(rsaPublicKey.getEncoded());
-
-        return "rsa_pub_key (" + bitLen + " bits): " + encoded.substring(0, Math.min(numOfChars, encoded.length()));
-    }
-
-    private static String getKeyLabelValue(ECPublicKey key) {
-        if (key == null) {
-            return "null";
-        }
-        final int numOfBytes = 16;
-        EllipticCurve curve;
-        try {
-            curve = EllipticCurve.forPubKey(key);
-        } catch (GeneralSecurityException e) {
-            byte[] encoded = key.getEncoded();
-            String b64 = (encoded != null) ? Base64.getEncoder().encodeToString(encoded) : "null";
-            log.error("Invalid ec key {}", b64);
-            return "invalid ec_key:"
-                    + b64.substring(0, Math.min(numOfBytes, b64.length()));
-        }
-
-        byte[] encoded = ECKeys.encodeEcPubKeyForTls(curve, key);
-        return "ec_pub_key: "
-                + HexFormat.of().formatHex(encoded, 0, Math.min(numOfBytes, encoded.length));
     }
 
     /**

@@ -16,7 +16,7 @@ Latest help can be seen by running:
 java -jar target/cdoc20-cli-<version>.jar
 ```
 
-where `<version>` must be replaced with the latest version built. Example `0.0.3-SNAPSHOT`
+where `<version>` must be replaced with the latest version built. Example `0.0.12-SNAPSHOT`
 
 ### Encryption
 To create:
@@ -36,19 +36,19 @@ To store keys in key server, specify addition `--server` option:
 
 When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
 ```
 
 Optionally cdoc20-cli also supports encrypting with "soft" key or certificate
 
 Public key (`-p`)
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost.cdoc -p keys/cdoc20client_pub.pem README.md
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc20client_pub.pem README.md
 ```
 
 Certificate (`-c` option):
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/localhost/localhost_post.properties -f /tmp/localhost.cdoc -c ../cdoc20-server/keys/client-certificate.pem README.md
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c ../cdoc20-server/keys/client-certificate.pem README.md
 ```
 
 
@@ -59,7 +59,7 @@ To decrypt:
 - to output directory `/tmp`
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
 ```
 
 ### Decrypting with server scenario
@@ -69,14 +69,14 @@ To decrypt CDOC document that has its keys distributed through key server, cdoc-
 
 Configuration for id-card (certificate for mutual TLS and private key is read from smart-card)
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/localhost/localhost_get_pkcs11.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
 ```
 
 It is also possible to decrypt documents created with "soft" keys, but configuration for mutual TLS (properties file) and
 key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
 mutual TLS.
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/localhost/localhost_get_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem -o /tmp/
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem -o /tmp/
 ```
 
 
@@ -84,6 +84,12 @@ java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/localhos
 
 ```
 java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
+```
+
+or
+
+```
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
 ```
 
 

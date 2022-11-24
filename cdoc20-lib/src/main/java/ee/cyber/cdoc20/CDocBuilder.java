@@ -2,7 +2,7 @@ package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,8 @@ public class CDocBuilder {
             if (serverProperties == null) {
                 envelope = Envelope.prepare(recipients, null);
             } else {
-                envelope = Envelope.prepare(recipients, KeyServerPropertiesClient.create(serverProperties));
+                // for encryption don't init mTLS client as this might require smart-card
+                envelope = Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
             }
             envelope.encrypt(this.payloadFiles, outputStream);
         } catch (GeneralSecurityException ex) {

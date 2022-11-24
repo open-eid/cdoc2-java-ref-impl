@@ -1,72 +1,113 @@
-package ee.cyber.cdoc20.util;
+package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.CDocConfiguration;
-import ee.cyber.cdoc20.client.ServerEccDetailsClient;
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
+import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
+import ee.cyber.cdoc20.util.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
 /**
- * KeyServerClient initialization from properties file.
+ * KeyCapsuleClient initialization from properties file.
  */
-public final class KeyServerPropertiesClient implements KeyServerClient, KeyServerClientFactory {
-    private static final Logger log = LoggerFactory.getLogger(KeyServerPropertiesClient.class);
+public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleClientFactory {
+    private static final Logger log = LoggerFactory.getLogger(KeyCapsuleClientImpl.class);
 
     private final String serverId;
+    private final Cdoc20KeyCapsuleApiClient postClient; // TLS client
+    private final Cdoc20KeyCapsuleApiClient getClient; // mTLS client
+    @Nullable
+    private KeyStore clientKeyStore; //initialised only from #create(Properties)
 
-    private ServerEccDetailsClient client;
-
-
-    private KeyStore clientKeyStore;
-
-    private KeyServerPropertiesClient(String serverIdentifier, ServerEccDetailsClient client, KeyStore clientKeyStore) {
+    private KeyCapsuleClientImpl(String serverIdentifier,
+                                  Cdoc20KeyCapsuleApiClient postClient,
+                                  Cdoc20KeyCapsuleApiClient getClient,
+                                  @Nullable KeyStore clientKeyStore) {
         this.serverId = serverIdentifier;
-        this.client = client;
+        this.postClient = postClient;
+        this.getClient = getClient;
         this.clientKeyStore = clientKeyStore;
     }
 
-    public static KeyServerPropertiesClient create(Properties p) throws GeneralSecurityException, IOException {
+    public static KeyCapsuleClient create(String serverIdentifier,
+                                           Cdoc20KeyCapsuleApiClient postClient,
+                                           Cdoc20KeyCapsuleApiClient getClient) {
+        return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
+    }
+
+    public static KeyCapsuleClient create(Properties p) throws GeneralSecurityException, IOException {
+        return create(p, true);
+    }
+
+    /**
+     * Create KeyCapsulesClient from properties file
+     * @param p properties
+     * @param initMutualTlsClient if false then mutual TLS (get-server) client is not initialized.
+     *            Useful, when client is only used for creating KeyCapsules (encryption). Initializing mTLS client may
+     *            require special hardware (smart-card or crypto token) and/or interaction with the user.
+     * <p>
+     *            If false and {@link KeyCapsuleClient#getCapsule(String)} is called, then IllegalStateException is
+     *            thrown.
+     * @return KeyCapsulesClient
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
+            throws GeneralSecurityException, IOException {
         if (log.isDebugEnabled()) {
             log.debug("KeyServer properties:");
             p.forEach((key, value) -> log.debug("{}={}", key, value));
         }
 
-        KeyStore clientKeyStore = loadClientKeyStore(p);
-
         String serverId = p.getProperty("cdoc20.client.server.id");
-        String baseUrl = p.getProperty("cdoc20.client.server.base-url");
-        ServerEccDetailsClient.Builder builder = ServerEccDetailsClient.builder()
-                .withBaseUrl(baseUrl)
-                .withTrustKeyStore(loadTrustKeyStore(p))
-                .withClientKeyStore(clientKeyStore)
-                .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p));
 
+        Cdoc20KeyCapsuleApiClient.Builder builder = Cdoc20KeyCapsuleApiClient.builder()
+                .withTrustKeyStore(loadTrustKeyStore(p));
 
         getInteger(p, "cdoc20.client.server.connect-timeout")
-                .ifPresent(intValue -> builder.withConnectTimeoutMs(intValue));
+                .ifPresent(builder::withConnectTimeoutMs);
         getInteger(p, "cdoc20.client.server.read-timeout")
-                .ifPresent(intValue -> builder.withReadTimeoutMs(intValue));
+                .ifPresent(builder::withReadTimeoutMs);
         getBoolean(p, "cdoc20.client.server.debug")
-                .ifPresent(b -> builder.withDebuggingEnabled(b));
+                .ifPresent(builder::withDebuggingEnabled);
 
-        ServerEccDetailsClient client = builder.build();
+        String postBaseUrl = p.getProperty("cdoc20.client.server.base-url.post");
+        String getBaseUrl = p.getProperty("cdoc20.client.server.base-url.get");
 
-        return new KeyServerPropertiesClient(serverId, client, clientKeyStore);
+        // postClient can be configured with client key store,
+        Cdoc20KeyCapsuleApiClient postClient = builder
+                .withBaseUrl(postBaseUrl)
+                .build();
+
+        // client key store configuration required
+        Cdoc20KeyCapsuleApiClient getClient = null;
+        KeyStore clientKeyStore = null;
+        if (initMutualTlsClient) {
+            clientKeyStore = loadClientKeyStore(p);
+            getClient = builder
+                    .withClientKeyStore(clientKeyStore)
+                    .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p))
+                    .withBaseUrl(getBaseUrl)
+                    .build();
+        }
+
+        return new KeyCapsuleClientImpl(serverId, postClient, getClient, clientKeyStore);
+    }
+
+    public static KeyCapsuleClientFactory createFactory(Properties p) throws GeneralSecurityException, IOException {
+        return (KeyCapsuleClientFactory) create(p);
     }
 
     static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
@@ -116,8 +157,8 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
      * @return client key store or null if not defined in properties
-     * @NoSuchAlgorithmException – if the algorithm used to check the integrity of the keystore cannot be found
-     * @CertificateException – if any of the certificates in the keystore could not be loaded
+     * @KeyStoreException
+     * @IOException
      */
     static @Nullable KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
             CertificateException, NoSuchAlgorithmException {
@@ -127,7 +168,9 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
 
         if (null == type) {
             return null;
-        } else if ("PKCS12".equalsIgnoreCase(type)) {
+        }
+
+        if ("PKCS12".equalsIgnoreCase(type)) {
             clientKeyStore = KeyStore.getInstance(type);
 
             String clientStoreFile = p.getProperty("cdoc20.client.ssl.client-store");
@@ -165,7 +208,7 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
     /**
      *
      * @param p properties to load the key store
-     * @return
+     * @return Keystore loaded based on properties
      * @throws KeyStoreException if no Provider supports a KeyStoreSpi implementation for the specified type in
      *      properties file
      * @throws IOException – if an I/O error occurs,
@@ -173,7 +216,8 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
-     * @NoSuchAlgorithmException – if the algorithm used to check the integrity of the keystore cannot be found
+     * @IOException
+     * @KeyStoreException
      * @CertificateException – if any of the certificates in the keystore could not be loaded
      */
     static KeyStore loadTrustKeyStore(Properties p) throws KeyStoreException, IOException, CertificateException,
@@ -190,61 +234,33 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
                 (passwd != null) ? passwd.toCharArray() : null);
 
         return trustKeyStore;
-
     }
 
     @Override
-    public String storeSenderKey(final ECPublicKey receiverKey, final ECPublicKey senderKey) throws ExtApiException {
-
-        EllipticCurve curve;
-        try {
-            curve = EllipticCurve.forPubKey(receiverKey);
-            EllipticCurve senderCurve = EllipticCurve.forPubKey(senderKey);
-
-            if (curve != senderCurve) {
-                throw new IllegalArgumentException("receiverKey and senderKey curves don't match");
-            }
-
-        } catch (GeneralSecurityException gse) {
-            log.error(gse.toString(), gse);
-            throw new ExtApiException(gse);
-        }
-
-
-        ServerEccDetails serverEccDetails = new ServerEccDetails()
-                .eccCurve(Integer.valueOf(curve.getValue()))
-                .recipientPubKey(ECKeys.encodeEcPubKeyForTls(curve, receiverKey))
-                .senderPubKey(ECKeys.encodeEcPubKeyForTls(curve, senderKey));
-
+    public String storeCapsule(Capsule capsule)
+            throws ExtApiException {
+        Objects.requireNonNull(postClient);
 
         try {
-            return client.createEccDetails(serverEccDetails);
+            return postClient.createCapsule(capsule);
         } catch (ee.cyber.cdoc20.client.api.ApiException e) {
             throw new ExtApiException(e.getMessage(), e);
         }
-
     }
 
     @Override
-    public Optional<ECPublicKey> getSenderKey(String transactionId) throws ExtApiException {
+    public Optional<Capsule> getCapsule(String id) throws ExtApiException {
+        if (getClient == null) {
+            throw new IllegalStateException("get-server client not initialized");
+        }
 
         try {
-            Optional<ServerEccDetails> serverEccDetailsOptional = client.getEccDetailsByTransactionId(transactionId);
-            if (serverEccDetailsOptional.isPresent()) {
-                ServerEccDetails serverDetails = serverEccDetailsOptional.get();
-                EllipticCurve curve = EllipticCurve.forValue(serverDetails.getEccCurve().byteValue());
-                return Optional.of(curve.decodeFromTls(
-                        ByteBuffer.wrap(serverDetails.getSenderPubKey())));
-            }
+            return getClient.getCapsule(id);
 
-            return Optional.empty();
-
-        } catch (GeneralSecurityException gse) {
-            log.error("Error decoding key server response ", gse);
-            throw new ExtApiException(gse);
         } catch (ee.cyber.cdoc20.client.api.ApiException apiException) {
             throw new ExtApiException(apiException.getMessage(), apiException);
         }
+
     }
 
     @Override
@@ -252,16 +268,40 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
         return serverId;
     }
 
+    /**
+     * Get first certificate from clientKeyStore if its initialized
+     * @return first certificate from clientKeyStore or null if not found
+     */
+    @Nullable
+    public Certificate getClientCertificate() {
+        return getClientCertificate(null);
+    }
 
-    public KeyStore getClientKeyStore() {
-        return clientKeyStore;
+    @Nullable
+    public Certificate getClientCertificate(@Nullable String alias) {
+        if (clientKeyStore != null) {
+            try {
+                if (alias != null) {
+                    return clientKeyStore.getCertificate(alias);
+                } else {
+                    return clientKeyStore.getCertificate(clientKeyStore.aliases().nextElement());
+                }
+            } catch (KeyStoreException e) {
+                log.debug("Error listing certificate aliases", e);
+                return null;
+            }
+        }
+
+        log.debug("clientKeyStore == null: only initialized for #create(Properties)");
+        return null;
     }
 
     @Override
-    public KeyServerClient getForId(String serverIdentifier) {
+    public KeyCapsuleClient getForId(String serverIdentifier) {
         if (getServerIdentifier().equals(serverIdentifier)) {
             return this;
         }
+        log.warn("Server configuration for {} requested, but {} provided", serverIdentifier, getServerIdentifier());
         return null;
     }
 
@@ -269,14 +309,15 @@ public final class KeyServerPropertiesClient implements KeyServerClient, KeyServ
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        KeyServerPropertiesClient that = (KeyServerPropertiesClient) o;
+        KeyCapsuleClientImpl that = (KeyCapsuleClientImpl) o;
         return Objects.equals(serverId, that.serverId)
-                && Objects.equals(client, that.client)
+                && Objects.equals(postClient, that.postClient)
+                && Objects.equals(getClient, that.getClient)
                 && Objects.equals(clientKeyStore, that.clientKeyStore);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(serverId, client, clientKeyStore);
+        return Objects.hash(serverId, postClient, getClient, clientKeyStore);
     }
 }

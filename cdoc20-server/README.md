@@ -38,13 +38,15 @@ java -Dspring.config.location=config/application-local.properties -jar target/cd
 
 where VER is the version of the package built by mvn package previously.
 
+Note: to enable TLS handshake debugging, add `-Djavax.net.debug=ssl:handshake` option
+
 
 #Testing
-## Create ServerDetails
+## Create Key Capsule
 Run from cdoc20-server/keys directory or adjust paths to certificates and keys
 
-recipient_pub_key is public key extracted from certificate in cdoc20client.p12 file.
-sender_pub_key is any EC public key with same curve as recipient_pub_key (can be reused from example below)
+recipient_id is public key extracted from certificate in cdoc20client.p12 file.
+ephemeral_key_material is any EC public key with same curve as recipient_pub_key (can be reused from example below)
 ```
 curl -v -k -X 'POST' \
 'https://localhost:8443/key-capsules' \

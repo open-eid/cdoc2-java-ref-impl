@@ -1,11 +1,13 @@
 package ee.cyber.cdoc20.util;
 
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
+
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Utility class for loading resources (ex. properties files) from classpath
@@ -21,7 +23,7 @@ public final class Resources {
      * @throws NullPointerException if name is null
      */
     public static InputStream getResourceAsStream(String name) throws IOException {
-        return getResourceAsStream(name, Optional.empty());
+        return getResourceAsStream(name, null);
     }
 
     /**
@@ -32,11 +34,11 @@ public final class Resources {
      * @throws IOException if an I/O error occurs
      * @throws NullPointerException if name is null
      */
-    public static InputStream getResourceAsStream(String name, Optional<ClassLoader> cl) throws IOException {
+    public static InputStream getResourceAsStream(String name, @Nullable ClassLoader cl) throws IOException {
         final String classpath = "classpath:";
         Objects.requireNonNull(name);
 
-        ClassLoader classLoader = cl.orElse(KeyServerPropertiesClient.class.getClassLoader());
+        ClassLoader classLoader = (cl != null) ? cl : KeyCapsuleClientImpl.class.getClassLoader();
 
         if (name.startsWith(classpath) && (name.length() > classpath.length())) {
             return classLoader.getResourceAsStream(name.substring(classpath.length()));

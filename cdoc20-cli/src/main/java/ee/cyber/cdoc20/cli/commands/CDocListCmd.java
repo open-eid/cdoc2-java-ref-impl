@@ -2,12 +2,11 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-
+import ee.cyber.cdoc20.util.Resources;
 import java.io.File;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
@@ -15,7 +14,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -30,9 +33,18 @@ public class CDocListCmd implements Callable<Void> {
             paramLabel = "PEM", description = "EC private key PEM used to decrypt")
     File privKeyFile;
 
+    @Option(names = {"-p12"},
+            paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
+    String p12;
+
+
     @Option (names = {"-s", "--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
     Integer slot = 0;
+
+    @Option(names = {"--server"}, paramLabel = "FILE.properties")
+    private String keyServerPropertiesFile;
+
 
 
     // allow -Dkey for setting System properties
@@ -53,11 +65,27 @@ public class CDocListCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
-        KeyPair keyPair = (privKeyFile != null) ? PemTools.loadECKeyPair(privKeyFile)
+        KeyCapsuleClientFactory keyCapsulesClient = null;
+        Properties p;
+
+        if (keyServerPropertiesFile != null) {
+            p = new Properties();
+            p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
+            keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
+        }
+
+        KeyPair keyPair;
+        if (p12 != null) {
+            keyPair = PemTools.loadKeyPairFromP12File(p12);
+        } else {
+            keyPair = privKeyFile != null
+                ? PemTools.loadKeyPair(privKeyFile)
                 : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
+        }
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
+                .withKeyServers(keyCapsulesClient)
                 .withRecipient(keyPair);
 
         System.out.println("Listing contents of " + cdocFile);
