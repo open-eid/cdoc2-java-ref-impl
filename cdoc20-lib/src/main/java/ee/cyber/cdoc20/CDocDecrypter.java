@@ -2,7 +2,7 @@ package ee.cyber.cdoc20;
 
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
-import ee.cyber.cdoc20.util.KeyServerClientFactory;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.io.*;
@@ -22,7 +22,7 @@ public class CDocDecrypter {
 
     private List<String> filesToExtract;
 
-    private KeyServerClientFactory keyServerClientFactory;
+    private KeyCapsuleClientFactory keyServerClientFactory;
 
     @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withRecipient(KeyPair recipientKeyPair) {
@@ -49,7 +49,7 @@ public class CDocDecrypter {
         return this;
     }
 
-    public CDocDecrypter withKeyServers(KeyServerClientFactory clientFactory) {
+    public CDocDecrypter withKeyServers(KeyCapsuleClientFactory clientFactory) {
         this.keyServerClientFactory = clientFactory;
         return this;
     }

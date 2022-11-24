@@ -1,13 +1,14 @@
 package ee.cyber.cdoc20.server;
 
-import ee.cyber.cdoc20.client.ServerEccDetailsClient;
+import ee.cyber.cdoc20.client.Cdoc20KeyCapsuleApiClient;
 import ee.cyber.cdoc20.client.model.Capsule;
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
+import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
 import ee.cyber.cdoc20.crypto.RsaUtils;
-import ee.cyber.cdoc20.util.ExtApiException;
-import ee.cyber.cdoc20.util.KeyServerPropertiesClient;
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +26,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+
+import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -65,7 +68,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
             log.error("Error initializing key stores", e);
         }
 
-        ServerEccDetailsClient client = ServerEccDetailsClient.builder()
+        Cdoc20KeyCapsuleApiClient client = Cdoc20KeyCapsuleApiClient.builder()
                 .withBaseUrl(baseUrl)
                 .withClientKeyStore(clientKeyStore)
                 .withClientKeyStorePassword("passwd".toCharArray())
@@ -90,18 +93,18 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         assertNotNull(id);
 
-        var serverDetails = client.getEccDetailsByTransactionId(id);
 
-        assertTrue(serverDetails.isPresent());
-        assertArrayEquals(capsule.getRecipientId(), serverDetails.get().getRecipientPubKey());
-        assertArrayEquals(capsule.getEphemeralKeyMaterial(), serverDetails.get().getSenderPubKey());
-        assertEquals((int) ECKeys.EllipticCurve.secp384r1.getValue(), serverDetails.get().getEccCurve());
+        var serverCapsule = client.getCapsule(id);
+
+        assertTrue(serverCapsule.isPresent());
+        assertEquals(capsule, serverCapsule.get());
     }
 
     @Test
     void testKeyServerPropertiesClientPKCS12() throws ExtApiException, GeneralSecurityException, IOException {
         String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
-        prop += "cdoc20.client.server.base-url=" + baseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.post=" + baseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.get=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
@@ -113,12 +116,11 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         Properties p = new Properties();
         p.load(new StringReader(prop));
 
-        KeyServerPropertiesClient client = KeyServerPropertiesClient.create(p);
+        KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
 
-        KeyStore clientKeyStore = client.getClientKeyStore();
-        assertEquals(1, clientKeyStore.size());
+        X509Certificate cert = (X509Certificate) client.getClientCertificate();
 
-        X509Certificate cert = (X509Certificate) clientKeyStore.getCertificate(clientKeyStore.aliases().nextElement());
+        assertNotNull(cert);
 
         //recipientPubKey must match with pub key in mutual TLS
         ECPublicKey recipientPubKey = (ECPublicKey) cert.getPublicKey();
@@ -143,12 +145,55 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         assertNotNull(transactionID);
 
-        Optional<ECPublicKey> serverSenderKey = client.getSenderKey(transactionID);
+        Optional<ECPublicKey> serverSenderKey = new EcCapsuleClientImpl(client).getSenderKey(transactionID);
         assertTrue(serverSenderKey.isPresent());
         assertEquals(senderPubKey, serverSenderKey.get());
     }
 
     @Test
+    void testKeyCapsulesClientImplRsaPKCS12() throws ExtApiException, GeneralSecurityException, IOException {
+        String prop = "cdoc20.client.server.id=testKeyCapsulesClientImplRsaPKCS12\n";
+        prop += "cdoc20.client.server.base-url.post=" + baseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.get=" + baseUrl + "\n";
+        prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
+        prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
+        prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
+
+        prop += "cdoc20.client.ssl.client-store.type=PKCS12\n";
+        prop += "cdoc20.client.ssl.client-store=" + getKeysDirectory().resolve("rsa/client-rsa-2048.p12") + "\n";
+        prop += "cdoc20.client.ssl.client-store-password=passwd\n";
+
+        Properties p = new Properties();
+        p.load(new StringReader(prop));
+
+        KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
+
+        X509Certificate cert = (X509Certificate) client.getClientCertificate();
+        assertNotNull(cert);
+        RSAPublicKey senderPubKey = (RSAPublicKey) cert.getPublicKey();
+
+
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) cert.getPublicKey();
+        byte[] kek = new byte[Crypto.FMK_LEN_BYTES];
+        Crypto.getSecureRandom().nextBytes(kek);
+        byte[] encryptedKek = RsaUtils.rsaEncrypt(kek, rsaPublicKey);
+
+        var capsule = new Capsule()
+                .ephemeralKeyMaterial(encryptedKek)
+                .recipientId(RsaUtils.encodeRsaPubKey(senderPubKey))
+                .capsuleType(Capsule.CapsuleTypeEnum.RSA);
+
+        String transactionID = this.saveCapsule(capsule).getTransactionId();
+
+        assertNotNull(transactionID);
+
+        Optional<byte[]> serverEncKek = new RsaCapsuleClientImpl(client).getEncryptedKek(transactionID);
+
+        assertTrue(serverEncKek.isPresent());
+        assertArrayEquals(encryptedKek, serverEncKek.get());
+    }
+
+        @Test
     @Tag("pkcs11")
     void testKeyServerPropertiesClientPKCS11Passwd() throws Exception {
         testKeyServerPropertiesClientPKCS11(false);
@@ -169,7 +214,8 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
     void testKeyServerPropertiesClientPKCS11(boolean interactive) throws Exception {
         String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS11\n";
-        prop += "cdoc20.client.server.base-url=" + baseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.post=" + baseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.get=" + baseUrl + "\n";
         prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
         prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
         prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
@@ -185,7 +231,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         Properties p = new Properties();
         p.load(new StringReader(prop));
 
-        KeyServerPropertiesClient client = KeyServerPropertiesClient.create(p);
+        KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
 
         KeyPair senderKeyPair = ECKeys.EllipticCurve.secp384r1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
@@ -193,8 +239,8 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         // Storing clientKeyStore in KeyServerPropertiesClient is a bit of hack for tests.
         // It's required to get recipient pub key
         // normally recipient certificate would come from LDAP, but for test-id card certs are not in LDAP
-        KeyStore clientKeyStore = client.getClientKeyStore();
-        X509Certificate cert  = (X509Certificate) clientKeyStore.getCertificate("Isikutuvastus");
+        X509Certificate cert  = (X509Certificate)client.getClientCertificate("Isikutuvastus");
+        assertNotNull(cert);
         // Client public key TLS encoded binary base64 encoded
         ECPublicKey recipientPubKey = (ECPublicKey) cert.getPublicKey();
 
@@ -208,7 +254,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         String id = this.saveCapsule(capsule).getTransactionId();
         assertNotNull(id);
 
-        Optional<ECPublicKey> serverSenderKey = client.getSenderKey(id);
+        Optional<ECPublicKey> serverSenderKey = new EcCapsuleClientImpl(client).getSenderKey(id);
 
         assertTrue(serverSenderKey.isPresent());
         assertEquals(senderPubKey, serverSenderKey.get());
@@ -238,6 +284,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
             log.error("Error initializing key stores", e);
         }
 
+        assertNotNull(clientKeyStore);
         log.debug("aliases: {}", Collections.list(clientKeyStore.aliases()));
 
 
@@ -245,7 +292,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         log.debug("Certificate issuer is {}.  This must be in server truststore "
                 + "or SSL handshake will fail with cryptic error", cert.getIssuerDN());
 
-        ServerEccDetailsClient client = ServerEccDetailsClient.builder()
+        Cdoc20KeyCapsuleApiClient client = Cdoc20KeyCapsuleApiClient.builder()
                 .withBaseUrl(baseUrl)
                 .withClientKeyStore(clientKeyStore)
                 .withClientKeyStoreProtectionParameter(protectionParameter)
@@ -268,12 +315,10 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         assertNotNull(id);
 
-        Optional<ServerEccDetails> serverDetails = client.getEccDetailsByTransactionId(id);
+        Optional<Capsule> serverCapsule = client.getCapsule(id);
 
-        assertTrue(serverDetails.isPresent());
-        assertArrayEquals(capsule.getRecipientId(), serverDetails.get().getRecipientPubKey());
-        assertArrayEquals(capsule.getEphemeralKeyMaterial(), serverDetails.get().getSenderPubKey());
-        assertEquals((int) ECKeys.EllipticCurve.secp384r1.getValue(), serverDetails.get().getEccCurve());
+        assertTrue(serverCapsule.isPresent());
+        assertEquals(capsule, serverCapsule.get());
     }
 
     @Test

@@ -3,8 +3,9 @@ package ee.cyber.cdoc20.client;
 import ee.cyber.cdoc20.client.api.ApiClient;
 import ee.cyber.cdoc20.client.api.ApiException;
 import ee.cyber.cdoc20.client.api.ApiResponse;
-import ee.cyber.cdoc20.client.api.EccDetailsApi;
-import ee.cyber.cdoc20.client.model.ServerEccDetails;
+import ee.cyber.cdoc20.client.api.Cdoc20KeyCapsulesApi;
+import ee.cyber.cdoc20.client.model.Capsule;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -22,37 +23,38 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Client for creating and getting ServerEccDetails from key server. Provides Builder to initialize mutual TLS
+ * Client for creating and getting CDOC 2.0 key capsules from key server. Provides Builder to initialize mutual TLS
  * from PKCS11 (smart-card) or PKCS12 (software) key stores.
  */
-public final class ServerEccDetailsClient {
-    private static final Logger log = LoggerFactory.getLogger(ServerEccDetailsClient.class);
+public final class Cdoc20KeyCapsuleApiClient {
+    private static final Logger log = LoggerFactory.getLogger(Cdoc20KeyCapsuleApiClient.class);
 
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
     public static final int DEFAULT_READ_TIMEOUT_MS = 500;
 
-    private final EccDetailsApi api;
+    private final Cdoc20KeyCapsulesApi capsulesApi;
 
-    private ServerEccDetailsClient(EccDetailsApi api) {
-        this.api = api;
+
+    private Cdoc20KeyCapsuleApiClient(Cdoc20KeyCapsulesApi capsuleApi) {
+        this.capsulesApi = capsuleApi;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ServerEccDetailsClient that = (ServerEccDetailsClient) o;
-        return api.equals(that.api);
+        Cdoc20KeyCapsuleApiClient that = (Cdoc20KeyCapsuleApiClient) o;
+        return capsulesApi.equals(that.capsulesApi);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(api);
+        return Objects.hash(capsulesApi);
     }
 
     public static final class Builder {
@@ -74,7 +76,7 @@ public final class ServerEccDetailsClient {
 
         /**
          * Init server base url
-         * @param url server base url, example https://https://cdoc2-keyserver-01.dev.riaint.ee:8443
+         * @param url server base url, example https://cdoc2-keyserver-01.dev.riaint.ee:8443
          * @return
          */
         public Builder withBaseUrl(String url) {
@@ -152,7 +154,7 @@ public final class ServerEccDetailsClient {
             }
         }
 
-        public ServerEccDetailsClient build() throws GeneralSecurityException, IOException {
+        public Cdoc20KeyCapsuleApiClient build() throws GeneralSecurityException, IOException {
             validate();
 
             final SSLContext finalSslContext = createSslContext();
@@ -175,12 +177,12 @@ public final class ServerEccDetailsClient {
 
             apiClient.setUserAgent(userAgent);
 
-            return new ServerEccDetailsClient(new EccDetailsApi(apiClient));
+            return new Cdoc20KeyCapsuleApiClient(new Cdoc20KeyCapsulesApi(apiClient));
         }
 
         private SSLContext createSslContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException,
                 KeyStoreException, KeyManagementException {
-            SSLContext sslContext = null;
+            SSLContext sslContext;
             try {
                 TrustManagerFactory trustManagerFactory =
                         TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -224,9 +226,22 @@ public final class ServerEccDetailsClient {
         return new Builder();
     }
 
-    public String createEccDetails(ServerEccDetails details) throws ApiException {
-        ApiResponse<Void> response = api.createEccDetailsWithHttpInfo(details);
+    /**
+     * @param capsule
+     * @return transacationId
+     * @throws ApiException
+     */
+    public String createCapsule(Capsule capsule) throws ApiException {
 
+        Objects.requireNonNull(capsule);
+        Objects.requireNonNull(capsule.getCapsuleType());
+        if (capsule.getCapsuleType() == Capsule.CapsuleTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+            throw new IllegalArgumentException("Illegal capsuleType " + capsule.getCapsuleType());
+        }
+        Objects.requireNonNull(capsule.getRecipientId());
+        Objects.requireNonNull(capsule.getEphemeralKeyMaterial());
+
+        ApiResponse<Void> response = capsulesApi.createCapsuleWithHttpInfo(capsule);
         String locationHeaderValue = null;
         if ((response.getStatusCode() == 201)
                 && response.getHeaders() != null
@@ -258,12 +273,12 @@ public final class ServerEccDetailsClient {
      * @return Optional with value, if server returned 200 or empty Optional if 404
      * @throws ApiException if http response code is something else that 200 or 404
      */
-    public Optional<ServerEccDetails> getEccDetailsByTransactionId(String id) throws ApiException {
+    public Optional<Capsule> getCapsule(String id) throws ApiException {
         if (id == null) {
             throw new IllegalArgumentException("transactionId cannot be null");
         }
 
-        ApiResponse<ServerEccDetails> response = api.getEccDetailsByTransactionIdWithHttpInfo(id);
+        ApiResponse<Capsule> response = capsulesApi.getCapsuleByTransactionIdWithHttpInfo(id);
 
         switch (response.getStatusCode()) {
             case 200:
@@ -275,4 +290,5 @@ public final class ServerEccDetailsClient {
                 throw new ApiException("Unexpected status code " + response.getStatusCode());
         }
     }
+
 }

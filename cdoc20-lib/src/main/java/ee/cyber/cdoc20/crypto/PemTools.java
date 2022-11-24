@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.util.Resources;
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +9,10 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
 import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
@@ -16,7 +20,10 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.AbstractMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -24,6 +31,8 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 
 /**
  * Utility class to deal with EC and RSA keys and certificates in PEM format.
@@ -154,8 +163,58 @@ public final class PemTools {
      * @param pemFile OpenSSL generated EC private key in PEM
      * @return EC KeyPair decoded from PEM
      */
-    public static KeyPair loadECKeyPair(File pemFile) throws GeneralSecurityException, IOException {
+    public static KeyPair loadKeyPair(File pemFile) throws GeneralSecurityException, IOException {
         return loadKeyPair(Files.readString(pemFile.toPath()));
+    }
+
+    /**
+     * Load first private key and certificate from .p12 (PKCS12) input stream
+     * @param p12InputStream InputStream containing PKCS12 structure
+     * @param passwd optional password for p12 input stream
+     * @return private key and certificate pair
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    public static AbstractMap.SimpleEntry<PrivateKey, X509Certificate> loadKeyCertFromP12(InputStream p12InputStream,
+                                                                                          @Nullable char[] passwd)
+            throws GeneralSecurityException, IOException {
+
+        KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
+        clientKeyStore.load(p12InputStream, passwd);
+        final List<String> entryNames = new LinkedList<>();
+        clientKeyStore.aliases().asIterator().forEachRemaining(alias -> {
+            try {
+                log.debug("{} key={} cert={}", alias, clientKeyStore.isKeyEntry(alias),
+                        clientKeyStore.isCertificateEntry(alias));
+                entryNames.add(alias);
+            } catch (KeyStoreException e) {
+                log.error("KeyStoreException", e);
+            }
+        });
+
+        if (entryNames.size() != 1) {
+            if (entryNames.isEmpty()) {
+                log.error("No keys found from .p12");
+                throw new KeyManagementException("No keys found from p12");
+            } else {
+                log.warn("Multiple keys found {}", entryNames);
+            }
+        }
+
+        String keyAlias = entryNames.get(0);
+
+        log.info("Loading key \"{}\"", keyAlias);
+        KeyStore.PrivateKeyEntry privateKeyEntry =
+                (KeyStore.PrivateKeyEntry) clientKeyStore.getEntry(keyAlias, new KeyStore.PasswordProtection(passwd));
+        if (privateKeyEntry == null) {
+            log.error("Entry not found {}", keyAlias);
+            throw new KeyStoreException("Key not found for " + keyAlias);
+        }
+
+        PrivateKey key = privateKeyEntry.getPrivateKey();
+        X509Certificate cert = (X509Certificate) privateKeyEntry.getCertificate();
+
+        return new AbstractMap.SimpleEntry<>(key, cert);
     }
 
     public static Map<PublicKey, String> loadPubKeysWithKeyLabel(File[] pubPemFiles) throws IOException {
@@ -214,5 +273,28 @@ public final class PemTools {
         }
 
         return map;
+    }
+
+    /**
+     * Load keypair from P12 representation.
+     * @param p12 the .p12 file with optional password, i.e filename:password
+     * @return the key pair
+     */
+    public static KeyPair loadKeyPairFromP12File(String p12) throws GeneralSecurityException, IOException {
+        String[] split = p12.split(":");
+        if (split.length < 1 || split.length > 2) {
+            throw new IllegalArgumentException("Invalid .p12 file: " + p12);
+        }
+
+        String p12FileName = split.length == 2 ? split[0] : p12;
+        char[] p12Passwd = split.length == 2 ? split[1].toCharArray() : null;
+
+        var keyCert = PemTools.loadKeyCertFromP12(
+            Resources.getResourceAsStream(p12FileName), p12Passwd);
+
+        PrivateKey key = keyCert.getKey();
+        X509Certificate cert = keyCert.getValue();
+        PublicKey publicKey = cert.getPublicKey();
+        return new KeyPair(publicKey, key);
     }
 }

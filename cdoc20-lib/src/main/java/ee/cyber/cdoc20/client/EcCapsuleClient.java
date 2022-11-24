@@ -1,9 +1,9 @@
-package ee.cyber.cdoc20.util;
+package ee.cyber.cdoc20.client;
 
 import java.security.interfaces.ECPublicKey;
 import java.util.Optional;
 
-public interface KeyServerClient {
+public interface EcCapsuleClient extends ServerClient {
     /**
      * Store senderKey in server
      * @param receiverKey recipient key
@@ -20,10 +20,4 @@ public interface KeyServerClient {
      * @throws ExtApiException if error happens
      */
     Optional<ECPublicKey> getSenderKey(String transactionId) throws ExtApiException;
-
-    /**
-     * Get unique server identifier
-     * @return serverId that identifies server that this KeyServerClient is connected to
-     */
-    String getServerIdentifier();
 }

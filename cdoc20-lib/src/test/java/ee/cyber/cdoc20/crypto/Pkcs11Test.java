@@ -78,7 +78,7 @@ public class Pkcs11Test extends EnvelopeTest {
         log.debug("Using hardware private key for decrypting: {}", Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
         assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
 
-        testContainer(tempDir, igorKeyPair, "testContainerUsingPKCS11Key");
+        testContainer(tempDir, igorKeyPair, "testContainerUsingPKCS11Key", null);
     }
 
 

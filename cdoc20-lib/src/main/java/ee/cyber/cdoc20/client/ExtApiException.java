@@ -1,4 +1,4 @@
-package ee.cyber.cdoc20.util;
+package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.CDocException;
 

@@ -14,7 +14,7 @@ public class EccRecipient extends Recipient {
     protected ECKeys.EllipticCurve ellipticCurve;
     protected final ECPublicKey recipientPubKey;
 
-    public EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipient, String recipientLabel, byte[] encFmk) {
+    protected EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipient, String recipientLabel, byte[] encFmk) {
         super(encFmk, recipientLabel);
         this.ellipticCurve = eccCurve;
         this.recipientPubKey = recipient;
