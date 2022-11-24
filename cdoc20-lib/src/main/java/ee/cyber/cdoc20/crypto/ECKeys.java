@@ -236,7 +236,7 @@ public final class ECKeys {
      * @return ecPublicKey encoded in TLS 1.3 EC pub key format
      */
     public static byte[] encodeEcPubKeyForTls(ECPublicKey ecPublicKey) throws GeneralSecurityException {
-        if (ecPublicKey.getW() == ECPoint.POINT_INFINITY) {
+        if (ECPoint.POINT_INFINITY.equals(ecPublicKey.getW())) {
             throw new IllegalArgumentException("Cannot encode infinity ECPoint");
         }
         EllipticCurve curve = EllipticCurve.forOid(ECKeys.getCurveOid(ecPublicKey));
