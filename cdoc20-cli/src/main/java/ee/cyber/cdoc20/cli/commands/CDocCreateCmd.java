@@ -41,7 +41,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
     static class Dependent {
         @Option(names = {"-p", "--pubkey"},
-                paramLabel = "PEM", description = "recipient public key as key pem")
+                paramLabel = "PEM", description = "recipient public key in PEM format")
         File[] pubKeys;
 
         @Option(names = {"-c", "--cert"},
@@ -92,9 +92,9 @@ public class CDocCreateCmd implements Callable<Void> {
         recipients.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
         recipients.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
 
-        //TODO: Works for id-card/digi-id only (EC keys), RSA cert (companies) finding is not implemented in SkLdapUtil
+        // fetch authentication certificates' public keys for natural person identity codes
         Map<PublicKey, String> ldapKeysWithLabels =
-                SkLdapUtil.getCertKeysWithLabels(this.recipient.identificationCodes).entrySet()
+                SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
                     .stream()
                     .filter(entry -> ECKeys.EllipticCurve.isSupported(entry.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

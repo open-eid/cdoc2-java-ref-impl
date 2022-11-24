@@ -162,7 +162,7 @@ public final class PemTools {
         Map<PublicKey, String> map = new LinkedHashMap<>();
         if (pubPemFiles != null) {
             for (File f : pubPemFiles) {
-                map.put(loadPublicKey(ECKeys.readAll(f)), "file: " + f);
+                map.put(loadPublicKey(Files.readString(f.toPath())), "N/A");
             }
         }
         return map;

@@ -703,17 +703,6 @@ public final class ECKeys {
         return new KeyPair(publicKey, ecPrivateKey);
     }
 
-
-    /**
-     * Read file contents into String
-     * @param file file to read
-     * @return file contents as String
-     * @throws IOException
-     */
-    public static String readAll(File file) throws IOException {
-        return Files.readString(file.toPath());
-    }
-
     /**
      * Load EC public keys from certificate files
      * @param certDerFiles x509 certificates
@@ -736,6 +725,4 @@ public final class ECKeys {
 
         return list;
     }
-
-
 }

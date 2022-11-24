@@ -75,7 +75,6 @@ public class EnvelopeTest {
 
         KeyPair recipientKeyPair = PemTools.loadKeyPair(bobKeyPem);
 
-
         File payloadFile = new File(System.getProperty("java.io.tmpdir"), "payload-" + UUID.randomUUID() + ".txt");
         payloadFile.deleteOnExit();
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -84,7 +83,8 @@ public class EnvelopeTest {
 
         ECPublicKey recipientPubKey = (ECPublicKey) recipientKeyPair.getPublic();
 
-        Envelope envelope = Envelope.prepare(Map.of(recipientKeyPair.getPublic(), "testHeaderSerializationParse"),
+        String keyLabel = "testHeaderSerializationParse";
+        Envelope envelope = Envelope.prepare(Map.of(recipientKeyPair.getPublic(), keyLabel),
                 null);
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -96,14 +96,16 @@ public class EnvelopeTest {
         ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
 
         //no exception is also good indication that parsing worked
-        List<Recipient> details = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
+        List<Recipient> recipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
 
-        assertEquals(1, details.size());
-        assertInstanceOf(EccRecipient.class, details.get(0));
+        assertEquals(1, recipients.size());
 
-        assertEquals(recipientPubKey, ((EccRecipient)details.get(0)).getRecipientPubKey());
-        assertNotNull(details.get(0).getRecipientPubKeyLabel());
-        assertTrue(details.get(0).getRecipientPubKeyLabel().startsWith("testHeaderSerializationParse"));
+        var recipient = recipients.get(0);
+        assertInstanceOf(EccRecipient.class, recipient);
+
+        assertEquals(recipientPubKey, ((EccRecipient) recipient).getRecipientPubKey());
+        assertNotNull(recipient.getRecipientPubKeyLabel());
+        assertEquals(keyLabel, recipient.getRecipientPubKeyLabel());
     }
 
     @Test
@@ -124,7 +126,8 @@ public class EnvelopeTest {
         KeyPair keyPair = generator.generateKeyPair();
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
 
-        Envelope envelope = Envelope.prepare(Map.of(publicKey, "testRsaSerialization"), null);
+        String keyLabel = "testRsaSerialization";
+        Envelope envelope = Envelope.prepare(Map.of(publicKey, keyLabel), null);
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -142,8 +145,7 @@ public class EnvelopeTest {
 
         RecipientRecord recipient = header.recipients(0);
 
-        String keyLabelOut = recipient.keyLabel();
-        assertEquals("testRsaSerialization", keyLabelOut);
+        assertEquals(keyLabel, recipient.keyLabel());
         assertEquals(recipient.detailsType(), recipients_RSAPublicKeyDetails);
 
         RSAPublicKeyDetails rsaDetails = (RSAPublicKeyDetails) recipient.details(new RSAPublicKeyDetails());
