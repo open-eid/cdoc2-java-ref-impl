@@ -40,6 +40,11 @@ public final class Crypto {
     private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
     /**
+     * SecureRandom instance not to "run out of entropy"
+     */
+    private static SecureRandom secureRandomInstance = null;
+
+    /**
      * File Master Key length in octets
      */
     public static final int FMK_LEN_BYTES = 256 / 8;
@@ -83,14 +88,36 @@ public final class Crypto {
         return os;
     }
 
-    public static SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
+    /**
+     * Create SecureRandom
+     * @throws NoSuchAlgorithmException if SecureRandom initialization failed
+     */
+    private static SecureRandom createSecureRandom() throws NoSuchAlgorithmException {
+        log.debug("Initializing SecureRandom");
+
         //https://www.veracode.com/blog/research/java-crypto-catchup
-        return SecureRandom.getInstance("DRBG", //NIST SP 800-90Ar1
-                DrbgParameters.instantiation(256,  // Required security strength
-                        PR_AND_RESEED,  // configure algorithm to provide prediction resistance and reseeding facilities
-                        "CDOC20".getBytes() // personalization string, used to derive seed
-                )
+        SecureRandom sRnd = SecureRandom.getInstance("DRBG", //NIST SP 800-90Ar1
+            DrbgParameters.instantiation(
+                256, // Required security strength
+                PR_AND_RESEED, // configure algorithm to provide prediction resistance and reseeding facilities
+                "CDOC20".getBytes() // personalization string, used to derive seed
+            )
         );
+        log.info("Initialized SecureRandom.");
+        return sRnd;
+    }
+
+
+    /**
+     * Get SecureRandom instance
+     * @return SecureRandom
+     * @throws NoSuchAlgorithmException if SecureRandom initialization failed
+     */
+    public static synchronized SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
+        if (secureRandomInstance == null) {
+            secureRandomInstance = createSecureRandom();
+        }
+        return secureRandomInstance;
     }
 
     public static byte[] generateFileMasterKey() throws NoSuchAlgorithmException {
