@@ -4,7 +4,7 @@
     <parent>
         <artifactId>cdoc20</artifactId>
         <groupId>ee.cyber.cdoc20</groupId>
-        <version>0.0.12-SNAPSHOT</version>
+        <version>0.0.12</version>
     </parent>
 
     <artifactId>cdoc20-openapi</artifactId>
@@ -191,7 +191,7 @@
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                         <legacyDiscriminatorBehavior>false</legacyDiscriminatorBehavior>
                         <!-- requestMappingMode: https://github.com/OpenAPITools/openapi-generator/pull/13838 -->
-                        <requestMappingMode>none</requestMappingMode>>
+                        <requestMappingMode>none</requestMappingMode>&gt;
                     </configOptions>
                     <typeMappings>
                         <typeMapping>duration=Duration</typeMapping>
