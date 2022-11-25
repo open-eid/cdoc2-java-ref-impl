@@ -1,14 +1,17 @@
-# Draft for OpenAPI spec that supports RSA-OAEP
+# Key Capsules API, version 2.0 of cdoc20services API
 openapi: 3.0.3
 info:
   contact:
     url: http://cyber.ee
   title: cdoc20-key-capsules
-  version: '2.0 Draft'
+  version: '2.0'
   description: API for exchanging CDOC2.0 ephemeral key material in key capsules
 servers:
-  - url: 'https://localhost:8443'
-  - url: 'https://localhost:8444'
+  - url: 'https://cdoc2-keyserver-01.test.riaint.ee:8443'
+    description: RIA test no auth (for creating key capsules)
+  - url: 'https://cdoc2-keyserver-01.test.riaint.ee:8444'
+    description: RIA test mutual TLS authentication
+
 paths:
   '/key-capsules/{transactionId}':
     get:
@@ -24,7 +27,7 @@ paths:
             minLength: 18
             maxLength: 34
           required: true
-          description: transaction id from recipients.KeyServerDetails.transaction_id (fbs)
+          description: transaction id from recipients.KeyServerCapsule.transaction_id (fbs)
       responses:
         '200':
           description: OK

@@ -5,6 +5,7 @@ info:
   title: cdoc20services
   version: '1.0'
   description: |
+    Deprecated: Use cdoc20-key-capsules API instead
     # API for securely exchanging keys
     
     ```
@@ -41,6 +42,7 @@ servers:
 paths:
   '/ecc-details/{transactionId}':
     get:
+      deprecated: true
       summary: ''
       description: Get Ecc details for transactionId
       tags:
@@ -68,6 +70,7 @@ paths:
         - mutualTLS: []
   '/ecc-details':
     post:
+      deprecated: true
       summary: Add Ecc Details
       description: Save ServerEccDetails and generate transaction id using secure random. Generated transactionId is returned in Location header
       operationId: createEccDetails
