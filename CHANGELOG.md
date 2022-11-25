@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.12] RSA-OAEP server scenario (2022-11-25)
+
+### Features
+* RSA-OAEP server scenario implementation
+* Client uses cdoc2-key-capsules API to create/download key capsules
+* Server configuration changes for client (single configuration file for create and decrypt `--server` configuration)
+* E-Resident certificate support (find e-resident certificate from SK LDAP)
+* Basic filename validation in container (illegal symbols and filenames)
+* CLI supports certificate and private key loading from .p12 file (PKCS12)
+
+### Bug Fixes
+* `cdoc list` command supports `--server` option
+
 ## [0.0.11] RsaPublicKey  (2022-11-21)
 
 ### Bug Fixes
