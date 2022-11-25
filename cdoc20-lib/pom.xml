@@ -3,7 +3,7 @@
     <parent>
         <artifactId>cdoc20</artifactId>
         <groupId>ee.cyber.cdoc20</groupId>
-        <version>0.0.12</version>
+        <version>0.0.13-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -19,13 +19,13 @@
         <dependency>
             <groupId>ee.cyber.cdoc20</groupId>
             <artifactId>cdoc20-schema</artifactId>
-            <version>0.0.12</version>
+            <version>0.0.13-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>ee.cyber.cdoc20</groupId>
             <artifactId>cdoc20-client</artifactId>
-            <version>0.0.12</version>
+            <version>0.0.13-SNAPSHOT</version>
         </dependency>
 
 
