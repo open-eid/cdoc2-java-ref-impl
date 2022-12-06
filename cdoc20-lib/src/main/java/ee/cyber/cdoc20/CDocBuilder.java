@@ -1,12 +1,13 @@
 package ee.cyber.cdoc20;
 
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -15,6 +16,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys.
@@ -84,9 +87,9 @@ public class CDocBuilder {
                 String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
                 try {
                     oid = ECKeys.getCurveOid(recipientPubKey);
-                    ECKeys.EllipticCurve curve;
+                    EllipticCurve curve;
                     try {
-                        curve = ECKeys.EllipticCurve.forOid(oid);
+                        curve = EllipticCurve.forOid(oid);
                     } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
                         log.error("EC pub key curve ({}) is not supported. EC public key={}",
                                 oid, encoded);

@@ -1,6 +1,6 @@
 package ee.cyber.cdoc20;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
@@ -31,7 +31,7 @@ public class SkLdapTest {
         assertFalse(keysWithLabels.isEmpty());
 
         Map<PublicKey, String> ecKeysWithLabels = keysWithLabels.entrySet().stream()
-                .filter(entry -> ECKeys.EllipticCurve.isSupported(entry.getKey()))
+                .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         // all returned keys were supported by cdoc

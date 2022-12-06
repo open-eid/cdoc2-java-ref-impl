@@ -2,7 +2,8 @@ package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.client.model.Capsule;
-import ee.cyber.cdoc20.crypto.ECKeys;
+
+import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,10 +32,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     @Nullable
     private KeyStore clientKeyStore; //initialised only from #create(Properties)
 
-    private KeyCapsuleClientImpl(String serverIdentifier,
-                                  Cdoc20KeyCapsuleApiClient postClient,
-                                  Cdoc20KeyCapsuleApiClient getClient,
-                                  @Nullable KeyStore clientKeyStore) {
+    private KeyCapsuleClientImpl(String serverIdentifier, Cdoc20KeyCapsuleApiClient postClient,
+          Cdoc20KeyCapsuleApiClient getClient, @Nullable KeyStore clientKeyStore) {
         this.serverId = serverIdentifier;
         this.postClient = postClient;
         this.getClient = getClient;
@@ -114,7 +113,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         String prompt = p.getProperty("cdoc20.client.ssl.client-store-password.prompt");
         if (prompt != null) {
             log.debug("Using interactive client KS protection param");
-            return ECKeys.getKeyStoreCallbackProtectionParameter(prompt + ":");
+            return Pkcs11Tools.getKeyStoreProtectionHandler(prompt + ":");
         }
 
         String pw = p.getProperty("cdoc20.client.ssl.client-store-password");
@@ -180,11 +179,11 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
                     (passwd != null) ? passwd.toCharArray() : null);
 
         } else if ("PKCS11".equalsIgnoreCase(type)) {
-            String openScLibPath = loadOpenScLibPath(p);
+            String openScLibPath = loadPkcs11LibPath(p);
             KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParamater(p);
 
             // default slot 0 - Isikutuvastus
-            clientKeyStore = ECKeys.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
+            clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
         } else {
             throw new IllegalArgumentException("cdoc20.client.ssl.client-store.type " + type + " not supported");
         }
@@ -193,16 +192,16 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     /**
-     * If "opensclibrary" property is set in properties or System properties, return value specified. If both specify
-     * value then use one from System properties
+     * If "pkcs11-library" property is set in properties or System properties, return value specified.
+     * If both specify a balue then use one from System properties.
      * @param p properties provided
-     * @return "opensclibrary" value specified in properties or null if not property not present
+     * @return "pkcs11-library" value specified in properties or null if not property not present
      */
-    static String loadOpenScLibPath(Properties p) {
+    static String loadPkcs11LibPath(Properties p) {
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
-        return System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY,
-                p.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null));
+        return System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY,
+                p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
     }
 
     /**

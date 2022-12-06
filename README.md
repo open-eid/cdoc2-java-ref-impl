@@ -129,6 +129,23 @@ For more control set `tests` maven property directly. For more info see
 mvn -Dtests='!(slow | pkcs11)'
 ```
 
+### PKCS11 tests
+
+To run the tests using a physical PKCS11 device (smart card or usb token), execute:
+
+```
+mvn test -Dtests=pkcs11
+```
+
+The pkcs11 device configuration (PKCS11 library, slot, pin, etc) can be specified using `cdoc2.pkcs11.conf-file` system property, for example:
+
+```
+mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=pkcs11-test-safenet.properties
+```
+
+By default, the pkcs11 configuration is read from the file `pkcs11-test-idcard.properties`.
+
+### Entropy
 In case the tests run slowly (probably due to waiting on entropy generation),
 using an entropy source (e.g `haveged`) may help on Linux:
 

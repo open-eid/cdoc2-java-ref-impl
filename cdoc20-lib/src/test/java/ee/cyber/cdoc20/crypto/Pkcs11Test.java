@@ -1,62 +1,67 @@
 package ee.cyber.cdoc20.crypto;
 
-import java.io.IOException;
+import ee.cyber.cdoc20.container.EnvelopeTest;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.PrivateKey;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
-import java.util.AbstractMap;
 import java.util.List;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import ee.cyber.cdoc20.container.EnvelopeTest;
-
+import static ee.cyber.cdoc20.crypto.Pkcs11Tools.createSunPkcsConfigurationFile;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// Tests here will fail without correct id-kaart
+/**
+ * These tests will fail without a PKCS11 device (smart card, usb token).
+ * The device and its details can be configured using a properties file under src/test/resources/
+ * @see Pkcs11DeviceConfiguration for details
+ */
 @Isolated
-public class Pkcs11Test extends EnvelopeTest {
+public class Pkcs11Test {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
-    // card specific data, checked from tests
-    // CN=ŽAIKOVSKI\,IGOR\,37101010021
-    private final char[] pin = {'3', '4', '7', '1'};
-    private final String id = "37101010021";
+    // load pkcs11 devive properties
+    private static final Pkcs11DeviceConfiguration CONF = Pkcs11DeviceConfiguration.load();
 
     @Test
     @Tag("pkcs11")
-    void testLoadKeyInteractively() throws GeneralSecurityException, IOException {
+    void testLoadKeyInteractively() throws Exception {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
         // so running this test with other tests doesn't make much sense
-        KeyPair igorKeyPair = ECKeys.loadFromPKCS11Interactively(null, 0);
-        assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
-        assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKeyPair(igorKeyPair));
+        KeyPair keyPair = Pkcs11Tools.loadFromPKCS11Interactively(
+            CONF.pkcs11Library(), CONF.slot(), CONF.keyAlias()
+        );
+
+        if (Crypto.isECPKCS11Key(keyPair.getPrivate())) {
+            assertTrue(EllipticCurve.secp384r1.isValidKeyPair(keyPair));
+        }
     }
 
     @Test
     @Tag("pkcs11")
-    void testLoadCert() throws IOException, GeneralSecurityException {
-        Path sunpkcs11Conf = Crypto.createSunPkcsConfigurationFile(null, null, 0);
-        AbstractMap.SimpleEntry<PrivateKey, X509Certificate> pair =
-                ECKeys.loadFromPKCS11(sunpkcs11Conf, pin, null);
+    void testLoadCert() throws Exception {
+        var pair = Pkcs11Tools.loadFromPKCS11(
+            createSunPkcsConfigurationFile(null, CONF.pkcs11Library(), CONF.slot()),
+            new KeyStore.PasswordProtection(CONF.pin()),
+            CONF.keyAlias()
+        );
 
         X509Certificate cert = pair.getValue();
 
         List<String> cn;
         try {
-            cn = new LdapName(cert.getSubjectX500Principal().getName()).getRdns().stream()
-                            .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
-                            .map(rdn -> rdn.getValue().toString())
-                    .toList();
+            cn = new LdapName(cert.getSubjectX500Principal().getName())
+                .getRdns().stream()
+                .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
+                .map(rdn -> rdn.getValue().toString())
+                .toList();
         } catch (InvalidNameException e) {
             cn = List.of();
             log.error("InvalidNameException", e);
@@ -64,8 +69,8 @@ public class Pkcs11Test extends EnvelopeTest {
 
         log.debug("CN {}", cn);
 
-        assertTrue(cn.size() == 1);
-        assertTrue(cn.get(0).contains(id));
+        assertEquals(1, cn.size());
+        assertTrue(cn.get(0).contains(CONF.certCn()));
     }
 
     @Test
@@ -73,42 +78,18 @@ public class Pkcs11Test extends EnvelopeTest {
     void testContainerUsingPKCS11Key(@TempDir Path tempDir) throws Exception {
 
         log.trace("Pkcs11Test::testContainerUsingPKCS11Key");
-        KeyPair igorKeyPair = ECKeys.loadFromPKCS11(null, 0, pin);
+        KeyPair keyPair = loadFromPKCS11();
 
-        log.debug("Using hardware private key for decrypting: {}", Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
-        assertTrue(Crypto.isECPKCS11Key(igorKeyPair.getPrivate()));
+        log.debug("Using hardware private key for decrypting");
 
-        testContainer(tempDir, igorKeyPair, "testContainerUsingPKCS11Key", null);
+        EnvelopeTest.testContainer(tempDir, keyPair, "testContainerUsingPKCS11Key", null);
     }
 
-
-    // override EnvelopeTest tests so that they are not executed twice
-    void testLongHeader(@TempDir Path tempDir) {
+    private static KeyPair loadFromPKCS11() throws Exception {
+        Path confPath = createSunPkcsConfigurationFile("OpenSC", CONF.pkcs11Library(), CONF.slot());
+        var entry = Pkcs11Tools.loadFromPKCS11(
+            confPath, new KeyStore.PasswordProtection(CONF.pin()), CONF.keyAlias()
+        );
+        return new KeyPair(entry.getValue().getPublicKey(), entry.getKey());
     }
-
-    void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws IOException, GeneralSecurityException {
-    }
-
-    void testContainer(@TempDir Path tempDir) {
-    }
-
-    void testHeaderSerializationParse() {
-    }
-
-// DSS and cdoc4j style SunPKCS11 initialization through reflection fails on OpenJDK 17.0.2 with IllegalAccessException
-//    private Provider getProviderJavaGreaterOrEquals9(String configString)
-//      throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-//            Provider provider = Security.getProvider("SunPKCS11");
-//            Method configureMethod = provider.getClass().getMethod("configure", String.class);
-//            // "--" is permitted in the constructor sun.security.pkcs11.Config
-//            return (Provider) configureMethod.invoke(provider, "--" + configString);
-//    }
-//
-//    @Test
-//    void testGetProviderJavaGreaterOrEquals9()
-//    throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-//        Path confPath = Crypto.createSunPkcsConfigurationFile(null, null, null);
-//        String conf = Files.readString(confPath, StandardCharsets.UTF_8);
-//        Provider sunpkcs11 = getProviderJavaGreaterOrEquals9(conf);
-//    }
 }

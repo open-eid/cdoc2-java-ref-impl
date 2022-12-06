@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.server;
 
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +10,6 @@ import java.security.interfaces.ECPublicKey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.server.conf.LoadedKeyStore;
 import ee.cyber.cdoc20.server.conf.TestConfig;
 import ee.cyber.cdoc20.server.datagen.CertUtil;
@@ -74,7 +74,7 @@ public class TestDataGenerator {
         return new EccDetailsRequest(
             CertUtil.encodePublicKey(recipient.getPublicKey()),
             CertUtil.encodePublicKey((ECPublicKey) sender.getPublic()),
-            (int) ECKeys.EllipticCurve.secp384r1.getValue()
+            (int) EllipticCurve.secp384r1.getValue()
         );
     }
 

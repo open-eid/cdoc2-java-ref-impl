@@ -4,10 +4,11 @@ import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
 import java.io.File;
+import java.nio.file.InvalidPathException;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
@@ -31,16 +32,20 @@ public class CDocDecryptCmd implements Callable<Void> {
     File cdocFile;
 
     @Option(names = {"-k", "--key"},
-            paramLabel = "PEM", description = "EC private key PEM used to decrypt")
+            paramLabel = "PEM", description = "Private key PEM to use for decrypting")
     File privKeyFile;
 
     @Option(names = {"-p12"},
             paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
     String p12;
 
-    @Option (names = {"-s", "--slot"},
-            description = "Key from smart card slot used for decrypting. Default 0")
+    @Option(names = {"-s", "--slot"},
+            description = "Smart card key slot to use for decrypting. Default: 0")
     Integer slot = 0;
+
+    @Option(names = {"-a", "--alias"},
+            description = "Alias of the keystore entry to use for decrypting")
+    String keyAlias;
 
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
@@ -65,11 +70,13 @@ public class CDocDecryptCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
-
     @Override
     public Void call() throws Exception {
+        if (!this.cdocFile.exists()) {
+            throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
+        }
 
-        String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
+        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
         Properties p;
 
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
@@ -84,9 +91,9 @@ public class CDocDecryptCmd implements Callable<Void> {
         if (p12 != null) {
             keyPair = PemTools.loadKeyPairFromP12File(p12);
         } else {
-            keyPair = privKeyFile != null
+            keyPair = (privKeyFile != null)
                 ? PemTools.loadKeyPair(privKeyFile)
-                : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
+                : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
         }
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
@@ -95,7 +102,6 @@ public class CDocDecryptCmd implements Callable<Void> {
                 .withFilesToExtract(Arrays.asList(filesToExtract))
                 .withKeyServers(keyCapsulesClientFactory)
                 .withDestinationDirectory(outputPath);
-
 
         System.out.println("Decrypting " + cdocFile + " to " + outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();

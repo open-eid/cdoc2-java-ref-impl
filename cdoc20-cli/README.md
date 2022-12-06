@@ -151,10 +151,10 @@ java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -c 
 Verify that DigiDoc4 client is running and can access ID-card
 
 cdoc20-cli will try to configure itself automatically. If OpenSC library is installed to non-standard location, then
-specify its location by setting 'opensclibrary' property:
+specify its location by setting 'pkcs11-library' property:
 
 ```
-java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dopensclibrary=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
+java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dpkcs11-library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
 ```
 
 More tips for debugging ID-card related issues are provided in cdoc20-lib/pkcs11.README file
@@ -168,8 +168,8 @@ Set with -D option
 java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dee.cyber.cdoc20.overwrite=false -f mydoc.cdoc
 ```
 
-#### opensclibrary
-OpenSC library location. Default is platform specific
+#### pkcs11-library
+PKCS11 library location. Default is platform specific
 
 Common OpenSC library locations:
 
@@ -177,7 +177,51 @@ Common OpenSC library locations:
 * For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 * For OSX, it could be /usr/local/lib/opensc-pkcs11.so
 
+## SafeNet eToken support
 
+Requirements:
+* OpenSC is installed
+* SafeNet Authentication Client (provides the pkcs11 library) is installed.
+  See https://knowledge.digicert.com/generalinformation/INFO1982.html for details.
+* Create an OpenSC configuration file `opensc-safenet.cfg` for the USB device in the following format
+
+```
+name=SafeNet-eToken
+library=/usr/lib/libeToken.so
+slot=1
+```
+
+To find the slot for the SafeNet eToken, execute:
+
+```
+pkcs11-tool --module /usr/lib/libeToken.so -L
+```
+
+List entries on the eToken device:
+
+```
+keytool -providerclass sun.security.pkcs11.SunPKCS11 -providerarg opensc-safenet.cfg -storetype PKCS11 -storepass YOUR-SAFENET-PIN -list
+```
+
+Export Certificate from the SafeNet eToken device:
+
+```
+keytool -providerclass sun.security.pkcs11.SunPKCS11 -providerarg opensc-safenet.cfg -storetype PKCS11 -storepass YOUR-SAFENET-PIN -alias YOUR_ENTRY_ALIAS -exportcert -rfc -file etoken-cert.pem
+```
+
+Encrypt certificate as described in the "Encrypting documents with certificate" section.
+
+List files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
+
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar list -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+```
+
+Decrypt files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
+
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar decrypt -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+```
 
 #### ee.cyber.cdoc20.overwrite 
 When decrypting, is overwriting files allowed. Default is true

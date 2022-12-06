@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.server.api;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.server.model.Capsule;
 import ee.cyber.cdoc20.server.model.ServerEccDetails;
@@ -88,7 +89,7 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDe
                 .orElseThrow(() -> new IllegalArgumentException("No response body from capsule api"));
             return ResponseEntity.ok(
                 new ServerEccDetails()
-                    .eccCurve((int) ECKeys.EllipticCurve.secp384r1.getValue())
+                    .eccCurve((int) EllipticCurve.secp384r1.getValue())
                     .recipientPubKey(capsule.getRecipientId())
                     .senderPubKey(capsule.getEphemeralKeyMaterial())
             );

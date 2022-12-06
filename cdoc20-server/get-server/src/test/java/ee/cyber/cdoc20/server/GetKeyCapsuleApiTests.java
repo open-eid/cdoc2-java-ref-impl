@@ -1,14 +1,18 @@
 package ee.cyber.cdoc20.server;
 
 import ee.cyber.cdoc20.client.Cdoc20KeyCapsuleApiClient;
+import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.PemTools;
-import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
+import ee.cyber.cdoc20.crypto.Pkcs11DeviceConfiguration;
+import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
-import ee.cyber.cdoc20.client.ExtApiException;
-import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +22,7 @@ import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -26,8 +31,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
-
-import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -44,13 +47,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
+    // read hardware PKCS11 device conf from a properties file
+    private static final Pkcs11DeviceConfiguration PKCS11_CONF = Pkcs11DeviceConfiguration.load();
+
     // rest client with client auth using keystore rsa/client-rsa-2048.p12
     @Qualifier("trustAllWithClientAuth")
     @Autowired
     private RestTemplate restTemplate;
 
     @Test
-    void testPKCS12Client() throws GeneralSecurityException, IOException, ee.cyber.cdoc20.client.api.ApiException {
+    void testPKCS12Client() throws Exception {
         KeyStore clientKeyStore = null;
         KeyStore trustKeyStore = null;
         try {
@@ -81,7 +87,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         // Recipient public key TLS encoded and base64 encoded from client-certificate.pem
         File[] certs = {getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile()};
         ECPublicKey recipientKey = ECKeys.loadCertKeys(certs).get(0);
-        ECKeys.EllipticCurve curve = ECKeys.EllipticCurve.forPubKey(recipientKey);
+        EllipticCurve curve = EllipticCurve.forPubKey(recipientKey);
         capsule.recipientId(ECKeys.encodeEcPubKeyForTls(curve, recipientKey));
 
         // Sender public key
@@ -92,7 +98,6 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         String id = this.saveCapsule(capsule).getTransactionId();
 
         assertNotNull(id);
-
 
         var serverCapsule = client.getCapsule(id);
 
@@ -125,16 +130,16 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         //recipientPubKey must match with pub key in mutual TLS
         ECPublicKey recipientPubKey = (ECPublicKey) cert.getPublicKey();
 
-        ECPublicKey senderPubKey = (ECPublicKey) ECKeys.EllipticCurve.secp384r1.generateEcKeyPair().getPublic();
+        ECPublicKey senderPubKey = (ECPublicKey) EllipticCurve.secp384r1.generateEcKeyPair().getPublic();
 
         log.debug("Sender pub key: {}",
             Base64.getEncoder().encodeToString(
-                ECKeys.encodeEcPubKeyForTls(ECKeys.EllipticCurve.secp384r1, senderPubKey)
+                ECKeys.encodeEcPubKeyForTls(EllipticCurve.secp384r1, senderPubKey)
             )
         );
         assertNotNull(client.getServerIdentifier());
 
-        var curve = ECKeys.EllipticCurve.forPubKey(recipientPubKey);
+        var curve = EllipticCurve.forPubKey(recipientPubKey);
 
         var capsule = new Capsule()
             .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey))
@@ -225,7 +230,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         if (interactive) {
             prop += "cdoc20.client.ssl.client-store-password.prompt=PIN1\n";
         } else {
-            prop += "cdoc20.client.ssl.client-store-password=3471\n";
+            prop += "cdoc20.client.ssl.client-store-password=" + new String(PKCS11_CONF.pin()) + "\n";
         }
 
         Properties p = new Properties();
@@ -233,31 +238,46 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
 
-        KeyPair senderKeyPair = ECKeys.EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
 
         // Storing clientKeyStore in KeyServerPropertiesClient is a bit of hack for tests.
         // It's required to get recipient pub key
         // normally recipient certificate would come from LDAP, but for test-id card certs are not in LDAP
-        X509Certificate cert  = (X509Certificate)client.getClientCertificate("Isikutuvastus");
+        X509Certificate cert  = (X509Certificate) client.getClientCertificate(PKCS11_CONF.keyAlias());
         assertNotNull(cert);
         // Client public key TLS encoded binary base64 encoded
-        ECPublicKey recipientPubKey = (ECPublicKey) cert.getPublicKey();
+        PublicKey recipientPubKey = cert.getPublicKey();
 
-        var curve = ECKeys.EllipticCurve.forPubKey(recipientPubKey);
+        if (recipientPubKey instanceof ECPublicKey pubKey) {
+            var curve = EllipticCurve.forPubKey(recipientPubKey);
+            var capsule = new Capsule()
+                .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey))
+                .recipientId(ECKeys.encodeEcPubKeyForTls(curve, pubKey))
+                .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
 
-        var capsule = new Capsule()
-            .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey))
-            .recipientId(ECKeys.encodeEcPubKeyForTls(curve, recipientPubKey))
-            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
+            String id = this.saveCapsule(capsule).getTransactionId();
+            assertNotNull(id);
 
-        String id = this.saveCapsule(capsule).getTransactionId();
-        assertNotNull(id);
+            Optional<ECPublicKey> payload = new EcCapsuleClientImpl(client).getSenderKey(id);
+            assertTrue(payload.isPresent());
+            assertEquals(senderPubKey, payload.get());
+        } else if (recipientPubKey instanceof RSAPublicKey pubKey) {
+            var keyMaterial = senderPubKey.getEncoded();
+            var capsule = new Capsule()
+                .ephemeralKeyMaterial(keyMaterial)
+                .recipientId(RsaUtils.encodeRsaPubKey(pubKey))
+                .capsuleType(Capsule.CapsuleTypeEnum.RSA);
 
-        Optional<ECPublicKey> serverSenderKey = new EcCapsuleClientImpl(client).getSenderKey(id);
+            String id = this.saveCapsule(capsule).getTransactionId();
+            assertNotNull(id);
 
-        assertTrue(serverSenderKey.isPresent());
-        assertEquals(senderPubKey, serverSenderKey.get());
+            Optional<byte[]> payload = new RsaCapsuleClientImpl(client).getEncryptedKek(id);
+            assertTrue(payload.isPresent());
+            assertArrayEquals(keyMaterial, payload.get());
+        } else {
+            throw new RuntimeException("Unsupported PKCS11 public key type: " + recipientPubKey.getClass());
+        }
     }
 
     @Test
@@ -265,7 +285,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
     void testPKCS11Client() throws Exception {
 
         //PIN1 for 37101010021 test id-kaart
-        var protectionParameter = new KeyStore.PasswordProtection("3471".toCharArray());
+        var protectionParameter = new KeyStore.PasswordProtection(PKCS11_CONF.pin());
 
         //Or ask pin interactively
         //KeyStore.ProtectionParameter protectionParameter = getKeyStoreCallbackProtectionParameter("PIN1");
@@ -273,7 +293,11 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         KeyStore clientKeyStore = null;
         KeyStore trustKeyStore = null;
         try {
-            clientKeyStore = ECKeys.initPKCS11KeysStore(null, null, protectionParameter);
+            clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(
+                PKCS11_CONF.pkcs11Library(),
+                PKCS11_CONF.slot(),
+                protectionParameter
+            );
 
             trustKeyStore = KeyStore.getInstance("JKS");
             trustKeyStore.load(Files.newInputStream(getKeysDirectory().resolve("clienttruststore.jks")),
@@ -288,7 +312,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         log.debug("aliases: {}", Collections.list(clientKeyStore.aliases()));
 
 
-        X509Certificate cert  = (X509Certificate) clientKeyStore.getCertificate("Isikutuvastus");
+        X509Certificate cert  = (X509Certificate) clientKeyStore.getCertificate(PKCS11_CONF.keyAlias());
         log.debug("Certificate issuer is {}.  This must be in server truststore "
                 + "or SSL handshake will fail with cryptic error", cert.getIssuerDN());
 
@@ -299,24 +323,30 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
                 .withTrustKeyStore(trustKeyStore)
                 .build();
 
-        Capsule capsule = new Capsule()
-            .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
+        Capsule capsule = new Capsule();
 
-        // Client public key TLS encoded and base64 encoded from id-kaart
-        ECPublicKey pubKey = (ECPublicKey) cert.getPublicKey();
-        //recipient must match to client's cert pub key or GET will fail with 404
-        capsule.recipientId(ECKeys.encodeEcPubKeyForTls(pubKey));
-
-        KeyPair senderKeyPair = ECKeys.EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
-        capsule.ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey));
+
+        PublicKey pubKey = cert.getPublicKey();
+
+        if (pubKey instanceof ECPublicKey publicKey) {
+            capsule.capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1);
+            // Client public key TLS encoded and base64 encoded from id-kaart
+            //recipient must match to client's cert pub key or GET will fail with 404
+            capsule.recipientId(ECKeys.encodeEcPubKeyForTls(publicKey));
+            capsule.ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(senderPubKey));
+        } else if (pubKey instanceof RSAPublicKey publicKey) {
+            capsule.capsuleType(Capsule.CapsuleTypeEnum.RSA);
+            capsule.recipientId(RsaUtils.encodeRsaPubKey(publicKey));
+            capsule.ephemeralKeyMaterial(senderPubKey.getEncoded());
+        }
 
         String id = this.saveCapsule(capsule).getTransactionId();
 
         assertNotNull(id);
 
         Optional<Capsule> serverCapsule = client.getCapsule(id);
-
         assertTrue(serverCapsule.isPresent());
         assertEquals(capsule, serverCapsule.get());
     }
