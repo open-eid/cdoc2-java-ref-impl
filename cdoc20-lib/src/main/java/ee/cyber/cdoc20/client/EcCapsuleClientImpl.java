@@ -2,7 +2,7 @@ package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -70,19 +70,19 @@
 
     <build>
         <plugins>
-            <!--plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
+            <plugin>
+                <!-- compile tests as a jar for use by sibling projects -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.2</version>
                 <executions>
                     <execution>
-                        <id>report</id>
                         <goals>
-                            <goal>report-aggregate</goal>
+                            <goal>test-jar</goal>
                         </goals>
-                        <phase>verify</phase>
                     </execution>
                 </executions>
-            </plugin-->
+            </plugin>
         </plugins>
     </build>
 </project>

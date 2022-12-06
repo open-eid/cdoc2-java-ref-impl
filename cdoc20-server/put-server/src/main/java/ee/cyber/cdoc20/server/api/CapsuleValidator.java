@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.server.api;
 
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import java.io.IOException;
 
 import ee.cyber.cdoc20.crypto.RsaUtils;
@@ -9,7 +10,6 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.server.model.Capsule;
 
 /**
@@ -35,7 +35,7 @@ public final class CapsuleValidator {
 
     private static boolean validateEcSecp34r1Capsule(Capsule capsule) {
         try {
-            var curve = ECKeys.EllipticCurve.secp384r1;
+            var curve = EllipticCurve.secp384r1;
             int tlsEncodedKeyLen = 2 * curve.getKeyLength() + 1;
 
             if (capsule.getRecipientId() == null || capsule.getEphemeralKeyMaterial() == null) {

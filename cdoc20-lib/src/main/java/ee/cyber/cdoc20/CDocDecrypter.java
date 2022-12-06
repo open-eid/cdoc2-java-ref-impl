@@ -10,8 +10,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.List;
 
-
-
 public class CDocDecrypter {
 
     private KeyPair recipientKeyPair;
@@ -54,11 +52,8 @@ public class CDocDecrypter {
         return this;
     }
 
-
-
     public List<String> decrypt() throws IOException, CDocException {
         //TODO: validate
-
 
         try {
             if ((filesToExtract == null) || (filesToExtract.isEmpty())) {

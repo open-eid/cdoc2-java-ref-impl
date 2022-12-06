@@ -1,42 +1,26 @@
 package ee.cyber.cdoc20.crypto;
 
 import at.favre.lib.crypto.HKDF;
-import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.security.DrbgParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.interfaces.ECPublicKey;
-import java.util.Arrays;
-import java.util.List;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
-
 public final class Crypto {
-
     private static final Logger log = LoggerFactory.getLogger(Crypto.class);
 
     /**
@@ -61,31 +45,20 @@ public final class Crypto {
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
 
-    private static String pkcs11ProviderName;
-
     private Crypto() {
     }
 
 
-    public enum OS {
-        WINDOWS, LINUX, MAC
-    } // Operating systems.
-
-
-
-    public static OS getOS() {
-        log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
-        OS os = null;
-        String operSys = System.getProperty("os.name").toLowerCase();
-        if (operSys.contains("win")) {
-            os = OS.WINDOWS;
-        } else if (operSys.contains("nix") || operSys.contains("nux")) {
-            os = OS.LINUX;
-        } else if (operSys.contains("mac")) {
-            os = OS.MAC;
+    /**
+     * Get SecureRandom instance
+     * @return SecureRandom
+     * @throws NoSuchAlgorithmException if SecureRandom initialization failed
+     */
+    public static synchronized SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
+        if (secureRandomInstance == null) {
+            secureRandomInstance = createSecureRandom();
         }
-
-        return os;
+        return secureRandomInstance;
     }
 
     /**
@@ -107,19 +80,6 @@ public final class Crypto {
         return sRnd;
     }
 
-
-    /**
-     * Get SecureRandom instance
-     * @return SecureRandom
-     * @throws NoSuchAlgorithmException if SecureRandom initialization failed
-     */
-    public static synchronized SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
-        if (secureRandomInstance == null) {
-            secureRandomInstance = createSecureRandom();
-        }
-        return secureRandomInstance;
-    }
-
     public static byte[] generateFileMasterKey() throws NoSuchAlgorithmException {
         byte[] inputKeyingMaterial = new byte[64]; //spec says: ikm should be more than 32bytes of secure random
         getSecureRandom().nextBytes(inputKeyingMaterial);
@@ -137,215 +97,6 @@ public final class Crypto {
         return new SecretKeySpec(hhk, HMAC_SHA_256);
     }
 
-    /**
-     * Create configuration file for SunPKCS11
-     *
-     *
-     * Common opensc library locations:
-     * <ul>
-     *   <li>For Windows, it could be C:\Windows\SysWOW64\opensc-pkcs11.dll,
-     *   <li>For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so,
-     *   <li>For OSX, it could be /usr/local/lib/opensc-pkcs11.so
-     * </ul>
-     * @param name any string, default OpenSC
-     * @param openScLibrary OpenSC library location, defaults above
-     * @param slot Slot, default 0
-     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
-     *     SunPKCS11 documentation Table 5-1</a>
-     */
-
-    public static Path createSunPkcsConfigurationFile(String name, String openScLibrary, Integer slot) throws
-            IOException {
-//        name=OpenSC
-//        library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
-//        slot=0
-//        attributes(*,CKO_SECRET_KEY,*) = {
-//            CKA_TOKEN = false
-//        }
-
-
-        String newLine = System.getProperty("line.separator");
-        Path confPath = Path.of(System.getProperty("java.io.tmpdir")).resolve("opensc-java.cfg");
-
-        String library = openScLibrary;
-
-        if (library == null) {
-            library = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
-        }
-
-        if (library == null) {
-            OS os = getOS();
-            switch (os) {
-                case LINUX:
-                    library = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so";
-                    break;
-                case WINDOWS:
-                    library = "C:\\Windows\\SysWOW64\\opensc-pkcs11.dll";
-                    break;
-                case MAC:
-                    library = "/usr/local/lib/opensc-pkcs11.so";
-                    break;
-                default:
-                    log.info("os.family: {}, os.name: {}", System.getProperty("os.family"),
-                            System.getProperty("os.name"));
-                    throw new IllegalStateException("Unknown OS");
-            }
-        }
-
-        if ((library == null) || !Files.isReadable(Path.of(library))) {
-            log.error("OpenSC library not found at {}, define {} System.property to overwrite ", library,
-                    CDocConfiguration.OPENSC_LIBRARY_PROPERTY);
-        }
-
-        String slotStr = "";
-        if (slot == null) {
-            slotStr = "-slot0";
-        } else {
-            slotStr = "-slot" + slot;
-        }
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(bos))) {
-
-            if (name == null) {
-                writer.write("name=OpenSC" + slotStr);
-            } else {
-                writer.write("name=" + name + slotStr);
-            }
-            writer.newLine();
-
-            writer.write("library=" + library);
-            writer.newLine();
-
-            if (slot != null) {
-                writer.write("slot=" + slot);
-                writer.newLine();
-            }
-
-            //est-eid specific
-            writer.write("attributes(*,CKO_SECRET_KEY,*) = {"
-                    + newLine
-                    + "  CKA_TOKEN = false"
-                    + newLine
-                    + "}");
-            writer.newLine();
-        }
-
-
-        String confFileStr = bos.toString(StandardCharsets.UTF_8);
-
-        log.debug("Creating SunPKCS11 configuration file: {}", confPath);
-        if (log.isDebugEnabled()) {
-            Arrays.asList(confFileStr.split(newLine)).forEach(line -> log.debug(">>{}", line));
-        }
-
-        try (BufferedWriter w = Files.newBufferedWriter(confPath, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING
-                //StandardOpenOption.DELETE_ON_CLOSE
-        )) {
-            w.write(confFileStr);
-        }
-
-        return confPath;
-    }
-
-    /**
-     * Configure SunPKCS11 Provider using
-     * @param confPath SunPKCS11 configuration file path
-     * @return if configuration was successful
-     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
-     *      SunPKCS11 documentation Table 5-1</a>
-     */
-    public static boolean initSunPkcs11(Path confPath) {
-        log.trace("Crypto.initSunPkcs11({})", confPath);
-        log.info("Configuring SunPKCS11 from {}", confPath.toString());
-        Provider sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
-
-        log.debug("Provider name {}", sunPkcs11Provider.getName());
-        log.debug("Provider info {}", sunPkcs11Provider.getInfo());
-
-        // print algorithms available
-        //log.debug("Provider properties: {}", sunPkcs11Provider.stringPropertyNames());
-        //sunPkcs11Provider.getServices().forEach(s -> log.debug("{} {}",s.getAlgorithm(), s.getType()));
-
-        Security.addProvider(sunPkcs11Provider);
-        log.debug("SunPKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),
-                (Security.getProvider(sunPkcs11Provider.getName()) != null));
-
-        try {
-            KeyStore ks = KeyStore.getInstance("PKCS11", sunPkcs11Provider);
-        } catch (KeyStoreException e) {
-            log.error("Successfully configured SunPKCS11, but PKCS11 not found. Is smartcard connected?");
-            return false;
-        }
-
-
-        Provider p = getConfiguredPKCS11Provider();
-        if (p != null) {
-            log.info("Successfully configured PKCS11 provider {}", p.getName());
-            return true;
-        } else {
-            log.error("Configuring PKCS11 provider FAILED");
-            return false;
-        }
-    }
-
-    public static String getPkcs11ProviderName() {
-
-        if (pkcs11ProviderName != null) {
-            return pkcs11ProviderName;
-        }
-
-        if (System.getProperties().containsKey(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY)) {
-            pkcs11ProviderName = System.getProperty(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY);
-            return pkcs11ProviderName;
-        }
-
-        //[SunPKCS11-OpenSC]
-        Provider[] pkcs11ProvidersArr = Security.getProviders("KeyStore.PKCS11");
-        List<String> pkcs11Providers = Arrays.stream((pkcs11ProvidersArr == null)
-                        ? new Provider[]{} : pkcs11ProvidersArr).map(Provider::getName).toList();
-        log.debug("KeyStore.PKCS11 providers {}", pkcs11Providers);
-
-        //[SunEC, SunPKCS11-OpenSC]
-        Provider[] ecdhProvidersArr = Security.getProviders("KeyAgreement.ECDH");
-        List<String> ecdhProviders = Arrays.stream((ecdhProvidersArr == null) ? new Provider[]{} : ecdhProvidersArr)
-                .map(Provider::getName).toList();
-        log.debug("KeyAgreement.ECDH {}", ecdhProviders);
-
-        List<String> common = pkcs11Providers.stream().filter(ecdhProviders::contains).toList();
-
-        if (common.size() == 1) {
-            pkcs11ProviderName = common.get(0);
-            return pkcs11ProviderName;
-        } else if (common.size() > 1) {
-            log.info("Several PKCS11 providers found that support \"KeyStore.PKCS11\" & \"KeyAgreement.ECDH\": {}",
-                    common);
-            log.info("Choose correct one by setting system property {} to one of {}",
-                    CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY, common);
-        }
-
-        log.error("PKCS11 provider not configured");
-        return null;
-    }
-
-
-    /**
-     * Get Provider for PKCS11
-     * @return PKCS11 provider or null, if not found or configured
-     */
-    public static Provider getConfiguredPKCS11Provider() {
-
-        // Name depends on name parameter in configuration file used for initializing SunPKCS11 provider
-        Provider sunPKCS11Provider = Security.getProvider(getPkcs11ProviderName());
-        if ((sunPKCS11Provider != null) && sunPKCS11Provider.isConfigured()) {
-            return sunPKCS11Provider;
-        }
-
-        return null;
-    }
-
     public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
 
@@ -354,15 +105,14 @@ public final class Crypto {
         // KeyAgreement instances (software and pkcs11) don't work with other provider private keys
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
-        if (isECPKCS11Key(ecPrivateKey) && (getConfiguredPKCS11Provider() != null)) {
-            keyAgreement = KeyAgreement.getInstance("ECDH", getConfiguredPKCS11Provider());
+        if (isECPKCS11Key(ecPrivateKey) && (Pkcs11Tools.getConfiguredPKCS11Provider() != null)) {
+            keyAgreement = KeyAgreement.getInstance("ECDH", Pkcs11Tools.getConfiguredPKCS11Provider());
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");
         }
 
         return calcEcDhSharedSecret(keyAgreement, ecPrivateKey, otherPublicKey);
     }
-
 
     /**
      * If key is EC PKCS11 key (unextractable hardware key), that should only be used by the provider associated with
@@ -388,8 +138,6 @@ public final class Crypto {
         // Note that a Key object for an unextractable token key can only be used by the provider associated with that
         // token.
 
-
-
         // algorithm is EC, but doesn't implement java.security.interfaces.ECKey
         return ("EC".equals(key.getAlgorithm()) && !(key instanceof java.security.interfaces.ECKey));
     }
@@ -404,7 +152,6 @@ public final class Crypto {
         //shared secret
         return ka.generateSecret();
     }
-
 
     public static byte[] deriveKeyEncryptionKey(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen)
             throws GeneralSecurityException {
@@ -454,7 +201,6 @@ public final class Crypto {
         return mac.doFinal(data);
     }
 
-
     public static byte[] xor(byte[] x1, byte[] x2) {
 
         if ((x1 == null) || (x2 == null)) {
@@ -470,5 +216,4 @@ public final class Crypto {
         }
         return out;
     }
-
 }

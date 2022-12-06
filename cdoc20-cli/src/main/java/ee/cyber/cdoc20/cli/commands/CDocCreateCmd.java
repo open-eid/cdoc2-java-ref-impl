@@ -2,7 +2,7 @@ package ee.cyber.cdoc20.cli.commands;
 
 
 import ee.cyber.cdoc20.CDocBuilder;
-import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import ee.cyber.cdoc20.util.Resources;
@@ -96,7 +96,7 @@ public class CDocCreateCmd implements Callable<Void> {
         Map<PublicKey, String> ldapKeysWithLabels =
                 SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
                     .stream()
-                    .filter(entry -> ECKeys.EllipticCurve.isSupported(entry.getKey()))
+                    .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         recipients.putAll(ldapKeysWithLabels);
 

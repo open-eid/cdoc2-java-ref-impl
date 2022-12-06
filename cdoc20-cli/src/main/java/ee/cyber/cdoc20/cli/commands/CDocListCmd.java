@@ -4,10 +4,11 @@ import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.PemTools;
+import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
 import java.io.File;
+import java.nio.file.InvalidPathException;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -37,15 +38,16 @@ public class CDocListCmd implements Callable<Void> {
             paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
     String p12;
 
-
     @Option (names = {"-s", "--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
     Integer slot = 0;
 
+    @Option(names = {"-a", "--alias"},
+            description = "Alias of the keystore entry to use for decrypting")
+    String keyAlias;
+
     @Option(names = {"--server"}, paramLabel = "FILE.properties")
     private String keyServerPropertiesFile;
-
-
 
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
@@ -53,18 +55,18 @@ public class CDocListCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
-
     @Option(names = { "-v", "--verbose" }, description = "verbose")
     private boolean verbose = false;
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
-
     @Override
     public Void call() throws Exception {
+        if (!this.cdocFile.exists()) {
+            throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
+        }
 
-        String openScLibPath = System.getProperty(CDocConfiguration.OPENSC_LIBRARY_PROPERTY, null);
         KeyCapsuleClientFactory keyCapsulesClient = null;
         Properties p;
 
@@ -78,9 +80,10 @@ public class CDocListCmd implements Callable<Void> {
         if (p12 != null) {
             keyPair = PemTools.loadKeyPairFromP12File(p12);
         } else {
+            String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
             keyPair = privKeyFile != null
                 ? PemTools.loadKeyPair(privKeyFile)
-                : ECKeys.loadFromPKCS11Interactively(openScLibPath, slot);
+                : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
         }
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

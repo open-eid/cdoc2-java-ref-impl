@@ -1,7 +1,13 @@
 package ee.cyber.cdoc20.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-
+import ee.cyber.cdoc20.client.EcCapsuleClient;
+import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.KeyCapsuleClient;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.client.RsaCapsuleClient;
+import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAPubKeyRecipient;
@@ -9,8 +15,7 @@ import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
-
-import ee.cyber.cdoc20.crypto.ECKeys.EllipticCurve;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
@@ -22,34 +27,44 @@ import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
 import ee.cyber.cdoc20.fbs.recipients.ServerDetailsUnion;
 import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
 import ee.cyber.cdoc20.fbs.recipients.ServerRsaDetails;
-import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
-import ee.cyber.cdoc20.client.KeyCapsuleClient;
-import ee.cyber.cdoc20.client.EcCapsuleClient;
-import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.client.ExtApiException;
-import ee.cyber.cdoc20.client.RsaCapsuleClient;
-import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidParameterSpecException;
-import java.util.*;
-
-import static ee.cyber.cdoc20.fbs.header.Details.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HexFormat;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.Nullable;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.SecretKey;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static ee.cyber.cdoc20.fbs.header.Details.recipients_ECCPublicKeyDetails;
+import static ee.cyber.cdoc20.fbs.header.Details.recipients_KeyServerDetails;
+import static ee.cyber.cdoc20.fbs.header.Details.recipients_RSAPublicKeyDetails;
 
 @SuppressWarnings("checkstyle:FinalClass")
 public class Envelope {
@@ -515,9 +530,8 @@ public class Envelope {
     }
 
     private static List<ArchiveEntry> decrypt(InputStream cdocInputStream, KeyPair recipientKeyPair,
-                                              Path outputDir, List<String> filesToExtract, boolean extract,
-                                              KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
+            Path outputDir, List<String> filesToExtract, boolean extract, KeyCapsuleClientFactory capsulesClientFac)
+                    throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
 
         log.trace("Envelope::decrypt");
         log.debug("total available {}", cdocInputStream.available());
@@ -588,14 +602,12 @@ public class Envelope {
 
                     RsaCapsuleClient client = new RsaCapsuleClientImpl(capsulesClientFac.getForId(serverId));
                     byte[] encryptedKek = client.getEncryptedKek(transactionId).orElseThrow();
-
-                    RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
-                    kek = RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
+                    kek = RsaUtils.rsaDecrypt(encryptedKek, recipientKeyPair.getPrivate());
 
                 } else if (recipient instanceof RSAPubKeyRecipient) {
                     var rsaPubKeyRecipient = (RSAPubKeyRecipient) recipient;
-                    RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
-                    kek = RsaUtils.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), rsaPrivateKey);
+                    PrivateKey privateKey = recipientKeyPair.getPrivate();
+                    kek = RsaUtils.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), privateKey);
                 } else {
                     throw new CDocParseException("Unknown Details.EccRecipient type " + recipient);
                 }

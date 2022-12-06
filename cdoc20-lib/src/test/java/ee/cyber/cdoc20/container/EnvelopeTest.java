@@ -1,18 +1,19 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.client.KeyCapsuleClient;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.container.recipients.EccRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
-import ee.cyber.cdoc20.client.ExtApiException;
-import ee.cyber.cdoc20.client.KeyCapsuleClient;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,8 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
-
-import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -52,9 +52,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-
 import static ee.cyber.cdoc20.fbs.header.Details.recipients_RSAPublicKeyDetails;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -64,8 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class EnvelopeTest {
@@ -302,10 +299,12 @@ public class EnvelopeTest {
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
-        assertEquals(keyPair.getPublic(), ECKeys.EllipticCurve.secp384r1.decodeFromTls(
+        assertEquals(keyPair.getPublic(), EllipticCurve.secp384r1.decodeFromTls(
                 ByteBuffer.wrap(capsuleData.getRecipientId())));
-        assertTrue(ECKeys.EllipticCurve.secp384r1.isValidKey(ECKeys.EllipticCurve.secp384r1.decodeFromTls(
-                ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial()))));
+        assertTrue(EllipticCurve.secp384r1.isValidKey(
+                    EllipticCurve.secp384r1.decodeFromTls(
+                        ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial())))
+        );
     }
 
     @Test
@@ -410,10 +409,8 @@ public class EnvelopeTest {
      * @throws IOException if IOException happens
      * @throws GeneralSecurityException if GeneralSecurityException happens
      */
-    public byte[] createContainer(File payloadFile, byte[] payloadData, PublicKey recipientPubKey, String label,
-                                  @Nullable List<File> additionalFiles,
-                                  @Nullable KeyCapsuleClient capsuleClient)
-            throws IOException, GeneralSecurityException, ExtApiException {
+    public static byte[] createContainer(File payloadFile, byte[] payloadData, PublicKey recipientPubKey, String label,
+            @Nullable List<File> additionalFiles, @Nullable KeyCapsuleClient capsuleClient) throws Exception {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payloadData);
@@ -442,8 +439,8 @@ public class EnvelopeTest {
      * Creates CDOC2 container in tempDir and encrypts/decrypts it with keyPair. If capsulesClient is provided, then
      * test server scenarios
      */
-    public void testContainer(Path tempDir, KeyPair keyPair, String keyLabel,
-                              @Nullable KeyCapsuleClient capsulesClient) throws Exception {
+    public static void testContainer(Path tempDir, KeyPair keyPair, String keyLabel,
+            @Nullable KeyCapsuleClient capsulesClient) throws Exception {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -463,11 +460,9 @@ public class EnvelopeTest {
                 List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
     }
 
-    public void checkContainerDecrypt(byte[] cdocBytes, Path outDir, KeyPair recipientKeyPair,
-                                      List<String> expectedFilesExtracted, String payloadFileName,
-                                      String expectedPayloadData,
-                                      KeyCapsuleClient capsulesClient)
-                throws Exception {
+    public static void checkContainerDecrypt(byte[] cdocBytes, Path outDir, KeyPair recipientKeyPair,
+              List<String> expectedFilesExtracted, String payloadFileName, String expectedPayloadData,
+              KeyCapsuleClient capsulesClient) throws Exception {
 
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
 

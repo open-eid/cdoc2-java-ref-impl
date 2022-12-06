@@ -1,26 +1,24 @@
 package ee.cyber.cdoc20.crypto;
 
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERSequence;
-
-import javax.crypto.Cipher;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
-import java.security.interfaces.RSAKey;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.PrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.Objects;
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 
 /**
  * Utility class for RSA related functions
@@ -31,11 +29,12 @@ public final class RsaUtils {
     /**
      * Init RSA OAEP cipher.
      * @param opMode the operation mode of RSA cipher (this is one of the following: ENCRYPT_MODE, DECRYPT_MODE)
-     * @param key RSAPublicKey if opMode is ENCRYPT and RSAPrivateKey for DECRYPT_MODE
+     * @param key PublicKey if opMode is ENCRYPT, PrivateKey for DECRYPT_MODE. General Key class is used
+     *            as PKCS11 usb hardware tokens use a wrapped PKCS11 implementation of the public key.
      * @return initialized to RsaOAEP Cipher
      * @throws GeneralSecurityException if cipher initialization failed
      */
-    private static Cipher getRsaOaepCipher(int opMode, RSAKey key) throws GeneralSecurityException {
+    private static Cipher getRsaOaepCipher(int opMode, Key key) throws GeneralSecurityException {
 
         final String rsaOaepTransformation = "RSA/ECB/OAEPPadding";
         // OAEP algorithm padding specifier string from
@@ -49,7 +48,7 @@ public final class RsaUtils {
                         "MGF1", new MGF1ParameterSpec("SHA-256"),
                         PSource.PSpecified.DEFAULT); //DEFAULT is new byte[0], equal to pSpecified Empty from Spec
         Cipher rsaOaepCipher = Cipher.getInstance(rsaOaepTransformation);
-        rsaOaepCipher.init(opMode, (Key) key, oaepParams);
+        rsaOaepCipher.init(opMode, key, oaepParams);
         return rsaOaepCipher;
     }
 
@@ -73,7 +72,7 @@ public final class RsaUtils {
      * @return decrypted data
      * @throws GeneralSecurityException if decryption failed
      */
-    public static byte[] rsaDecrypt(byte[] encrypted, RSAPrivateKey rsaPrivateKey) throws GeneralSecurityException {
+    public static byte[] rsaDecrypt(byte[] encrypted, PrivateKey rsaPrivateKey) throws GeneralSecurityException {
 
         Cipher rsa = getRsaOaepCipher(Cipher.DECRYPT_MODE, rsaPrivateKey);
         return rsa.doFinal(encrypted);

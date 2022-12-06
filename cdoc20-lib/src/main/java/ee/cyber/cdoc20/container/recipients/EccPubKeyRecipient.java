@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.container.recipients;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyDetails;
 
 import java.security.interfaces.ECPublicKey;
@@ -14,7 +15,7 @@ public class EccPubKeyRecipient extends EccRecipient {
 
     private final ECPublicKey senderPubKey;
 
-    public EccPubKeyRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipient, ECPublicKey sender,
+    public EccPubKeyRecipient(EllipticCurve eccCurve, ECPublicKey recipient, ECPublicKey sender,
                               byte[] encFmk, String recipientLabel) {
         super(eccCurve, recipient, recipientLabel, encFmk);
         this.senderPubKey = sender;

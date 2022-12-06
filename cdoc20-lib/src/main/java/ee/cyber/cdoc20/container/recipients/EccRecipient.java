@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.container.recipients;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
 
+import ee.cyber.cdoc20.crypto.EllipticCurve;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
@@ -11,16 +12,16 @@ import java.util.Objects;
 public class EccRecipient extends Recipient {
 
     // recipient.ECCPublicKeyDetails fields
-    protected ECKeys.EllipticCurve ellipticCurve;
+    protected EllipticCurve ellipticCurve;
     protected final ECPublicKey recipientPubKey;
 
-    protected EccRecipient(ECKeys.EllipticCurve eccCurve, ECPublicKey recipient, String recipientLabel, byte[] encFmk) {
+    protected EccRecipient(EllipticCurve eccCurve, ECPublicKey recipient, String recipientLabel, byte[] encFmk) {
         super(encFmk, recipientLabel);
         this.ellipticCurve = eccCurve;
         this.recipientPubKey = recipient;
     }
 
-    public ECKeys.EllipticCurve getEllipticCurve() {
+    public EllipticCurve getEllipticCurve() {
         return this.ellipticCurve;
     }
 
