@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.13] Symmetric Key support (long term crypto) (2022-12-dd)
+
+### Features
+* Symmetric Key scenario implementation
+* Added `cdoc info` cli command that lists recipients in CDOC header
+
 ## [0.0.12] RSA-OAEP server scenario (2022-11-25)
 
 ### Features

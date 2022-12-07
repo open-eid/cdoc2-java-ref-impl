@@ -82,7 +82,8 @@ public class Pkcs11Test {
 
         log.debug("Using hardware private key for decrypting");
 
-        EnvelopeTest.testContainer(tempDir, keyPair, "testContainerUsingPKCS11Key", null);
+        EnvelopeTest.testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(keyPair),
+                "testContainerUsingPKCS11Key", null);
     }
 
     private static KeyPair loadFromPKCS11() throws Exception {

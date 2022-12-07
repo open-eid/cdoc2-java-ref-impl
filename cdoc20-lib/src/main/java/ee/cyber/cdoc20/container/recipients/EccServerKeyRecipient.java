@@ -1,9 +1,16 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.container.CDocParseException;
+import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.KekDerivable;
+import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
 
+import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
@@ -11,7 +18,7 @@ import java.util.Objects;
  * ECC recipient using ECCServerKey. POJO of
  * {@link ServerEccDetails recipients.ECCKeyServer} in CDOC header.
  */
-public class EccServerKeyRecipient extends EccRecipient {
+public class EccServerKeyRecipient extends EccRecipient implements KekDerivable, ServerRecipient {
     private final String keyServerId;
     private final String transactionId;
 
@@ -28,10 +35,12 @@ public class EccServerKeyRecipient extends EccRecipient {
         return ECKeys.encodeEcPubKeyForTls(this.ellipticCurve, this.recipientPubKey);
     }
 
+    @Override
     public String getKeyServerId() {
         return keyServerId;
     }
 
+    @Override
     public String getTransactionId() {
         return transactionId;
     }
@@ -49,5 +58,11 @@ public class EccServerKeyRecipient extends EccRecipient {
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), keyServerId, transactionId);
+    }
+
+    @Override
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+            throws GeneralSecurityException, ExtApiException, CDocParseException {
+        return KekTools.deriveKekForEccServer(this, keyMaterial, factory);
     }
 }

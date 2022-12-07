@@ -2,8 +2,10 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
+import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
@@ -24,7 +26,7 @@ import picocli.CommandLine.Option;
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
-@Command(name = "list", aliases = {"l"})
+@Command(name = "list", aliases = {"l"}, showAtFileInUsageHelp = true)
 public class CDocListCmd implements Callable<Void> {
     @Option(names = {"-f", "--file" }, required = true,
             paramLabel = "CDOC", description = "the CDOC2.0 file")
@@ -38,7 +40,11 @@ public class CDocListCmd implements Callable<Void> {
             paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
     String p12;
 
-    @Option (names = {"-s", "--slot"},
+    @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
+            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
+    String secret;
+
+    @Option (names = {"--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
     Integer slot = 0;
 
@@ -67,8 +73,10 @@ public class CDocListCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        KeyCapsuleClientFactory keyCapsulesClient = null;
+        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
         Properties p;
+
+        KeyCapsuleClientFactory keyCapsulesClient = null;
 
         if (keyServerPropertiesFile != null) {
             p = new Properties();
@@ -76,20 +84,28 @@ public class CDocListCmd implements Callable<Void> {
             keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
         }
 
-        KeyPair keyPair;
-        if (p12 != null) {
-            keyPair = PemTools.loadKeyPairFromP12File(p12);
-        } else {
-            String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
-            keyPair = privKeyFile != null
-                ? PemTools.loadKeyPair(privKeyFile)
-                : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
+        DecryptionKeyMaterial decryptionKm = null;
+        if (secret != null) {
+            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterial(secret);
+        }
+
+        if (decryptionKm == null)  {
+            KeyPair keyPair;
+            if (p12 != null) {
+                keyPair = PemTools.loadKeyPairFromP12File(p12);
+            } else {
+                keyPair = privKeyFile != null
+                        ? PemTools.loadKeyPair(privKeyFile)
+                        : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
+            }
+
+            decryptionKm = DecryptionKeyMaterial.fromKeyPair(keyPair);
         }
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
                 .withKeyServers(keyCapsulesClient)
-                .withRecipient(keyPair);
+                .withRecipient(decryptionKm);
 
         System.out.println("Listing contents of " + cdocFile);
         List<ArchiveEntry> files = cDocDecrypter.list();

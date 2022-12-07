@@ -96,6 +96,24 @@ sender public key).
     capsule that contains encrypted KEK
 11. *Follow steps from RSA-OAEP scenario steps 12-15*
 
+## CDoc 2.0 with symmetric key
+
+Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
+
+1. Sender and recipient have a pre shared secret identified by key_label 
+2. Sender derives key encryption key (KEK) from secret, key_label and salt (generated using secure random) using HKDF algorithm
+3. *Follow steps from ECDH scenario 4-6*
+4. Sender adds encrypted FMK with key_label to CDoc header
+5. *Follow steps from ECDH scenario 8-10*
+6. Recipient searches CDoc header for key_label and finds salt and encrypted FMK
+7. Recipient derives encryption key (KEK) from salt, key_label and pre-shared symmetric key (secret)
+8. Recipient decrypts FMK using KEK.
+9. *Follow steps from ECDH scenario 13-15*
+
+cdoc20_java does not provide solution for securely storing the secret, but most password managers
+ can do that.
+
+
 ## Structure
 
 - cdoc20-schema  - flatbuffers schemas and code generation
@@ -108,7 +126,8 @@ sender public key).
 
 ## Preconditions for building
 * Java 17
-* Docker available and running
+* Maven 3.8.x
+* Docker available and running (required for running tests)
 
 ## Building
 CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4

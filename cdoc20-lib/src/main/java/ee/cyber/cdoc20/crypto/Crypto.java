@@ -12,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
+import java.util.Objects;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -33,6 +34,12 @@ public final class Crypto {
      */
     public static final int FMK_LEN_BYTES = 256 / 8;
 
+
+    /**
+     * Kek is used to encrypt FMK. For XOR length must match FMK
+     */
+    public static final int KEK_LEN_BYTES = FMK_LEN_BYTES;
+
     /**
      * Content Encryption Key length in octets
      */
@@ -44,6 +51,10 @@ public final class Crypto {
     public static final int HHK_LEN_BYTES = 256 / 8; //SHA-256
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
+
+    public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
+
+
 
     private Crypto() {
     }
@@ -96,6 +107,50 @@ public final class Crypto {
         byte[] hhk = HKDF.fromHmacSha256().expand(fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
         return new SecretKeySpec(hhk, HMAC_SHA_256);
     }
+
+    /**
+     * Derive KEK from salt and secret. Used in symmetric key scenario only.
+     * @param label Label identifying pre shared secret
+     * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to derive KEK.
+     *                           Min len of 32 bytes
+     * @param salt salt minimum length of 32 bytes
+     * @param fmkEncMethod fmk encryption method from {@link FMKEncryptionMethod#names}.
+     *                     Currently, only "XOR" is valid value
+     * @return
+     */
+    public static SecretKey deriveKeyEncryptionKey(String label, SecretKey preSharedSecretKey, byte[] salt,
+                                                   String fmkEncMethod) {
+
+        final int minSaltLen = 256 / 8;
+        Objects.requireNonNull(label);
+        Objects.requireNonNull(preSharedSecretKey);
+        Objects.requireNonNull(preSharedSecretKey.getEncoded());
+        Objects.requireNonNull(salt);
+        Objects.requireNonNull(fmkEncMethod);
+
+        if (preSharedSecretKey.getEncoded().length < SYMMETRIC_KEY_MIN_LEN_BYTES) {
+            throw new IllegalArgumentException("preSharedSecretKey must be at least "
+                    + SYMMETRIC_KEY_MIN_LEN_BYTES + " bytes");
+        }
+
+        if (salt.length < minSaltLen) {
+            throw new IllegalArgumentException("Salt must be at least " + minSaltLen + " bytes");
+        }
+
+        // Currently, only XOR is supported
+        if (!FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).equalsIgnoreCase(fmkEncMethod)) {
+            throw new IllegalArgumentException("Unknown FMK encryption method " + fmkEncMethod);
+        }
+
+        final HKDF hkdf = HKDF.fromHmacSha256();
+        byte[] kekPm = hkdf.extract(salt, preSharedSecretKey.getEncoded());
+
+        String info = "CDOC20kek" + fmkEncMethod + label;
+        byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), FMK_LEN_BYTES);
+
+        return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
+    }
+
 
     public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
@@ -164,6 +219,15 @@ public final class Crypto {
         return deriveKek(ecKeyPair, otherPublicKey, keyLen, false);
     }
 
+    /**
+     * Derive KEK for EC scenarios
+     * @param ecKeyPair
+     * @param otherPublicKey
+     * @param keyLen
+     * @param isEncryptionMode
+     * @return
+     * @throws GeneralSecurityException
+     */
     private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
             throws GeneralSecurityException {
 

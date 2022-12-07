@@ -12,6 +12,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -140,7 +141,7 @@ class TarGzTest {
 
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(Files.newOutputStream(bombPath))))) {
-            tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            tarOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
             tarOs.setAddPaxHeadersForNonAsciiNames(true);
             TarArchiveEntry tarEntry = new TarArchiveEntry("A");
             tarEntry.setSize(bigFileSize);
@@ -240,6 +241,43 @@ class TarGzTest {
             var result = Tar.processTarGz(new FileInputStream(file), tempDir, List.of(fileName), true);
             assertTrue(result.size() == 1);
         }
+    }
+
+    @Test
+    void findZlibMinSize() throws IOException {
+        // code to find out minimum compressed tar file, used to find minimum payload size in
+        // ChaChaCipherTest.findTarZChaChaCipherStreamMin
+
+        byte[] data = {0x00};
+        ByteArrayOutputStream dest = new ByteArrayOutputStream();
+        try (DeflateCompressorOutputStream zOs = new DeflateCompressorOutputStream(new BufferedOutputStream(dest))) {
+            zOs.write(data);
+        }
+
+        //zlib header 2 bytes, crc 4
+        log.debug("zLib size {}", dest.size()); //9
+
+        ByteArrayOutputStream destTarZ = new ByteArrayOutputStream();
+        Tar.archiveData(destTarZ, new ByteArrayInputStream(data), "A");
+
+        log.debug("TarZ size {}", destTarZ.size()); //76
+
+
+        ByteArrayOutputStream destEmptyTarZ = new ByteArrayOutputStream();
+        // https://superuser.com/questions/448623/how-to-get-an-empty-tar-archive
+        byte[] emptyTarBytes = new byte[1024]; //1024 bytes of 0x00 is valid tar
+        InputStream emptyTar = new ByteArrayInputStream(emptyTarBytes);
+        DeflateParameters deflateParameters = new DeflateParameters();
+        deflateParameters.setCompressionLevel(9);
+        try (DeflateCompressorOutputStream zOs =
+                     new DeflateCompressorOutputStream(new BufferedOutputStream(destEmptyTarZ), deflateParameters)) {
+            emptyTar.transferTo(zOs);
+        }
+
+        log.debug("Compressed empty.tar {}", destEmptyTarZ.size()); //17
+
+        // Tar is able to process empty tar without exceptions
+        assertTrue(Tar.listFiles(new ByteArrayInputStream(destEmptyTarZ.toByteArray())).isEmpty());
     }
 
     private static File createAndWriteToFile(Path path, String fileName, String contents) throws IOException {
