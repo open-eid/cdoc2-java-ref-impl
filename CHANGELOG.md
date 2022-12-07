@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.13] Symmetric Key support (long term crypto) (2022-12-dd)
+## [0.0.13] Symmetric Key support (long term crypto) (2022-12-07)
 
 ### Features
 * Symmetric Key scenario implementation
