@@ -51,6 +51,44 @@ Certificate (`-c` option):
 java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c ../cdoc20-server/keys/client-certificate.pem README.md
 ```
 
+### Encryption with symmetric key
+
+Generate key with openssl (minimum length 32 bytes):
+```
+openssl rand -base64 32
+`HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=`
+```
+
+Base64 encoded keys must be prefixed with 'base64,', so that key becomes "base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
+
+Encrypt with generated key and label 'mylabel':
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create --secret "mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=" -f /tmp/symmetric.cdoc README.md
+```
+
+Or clear text:
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
+```
+
+Or secret read from file (so that secret is not exposed through process list)
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create @keys/b64secret.option -f /tmp/symmetric.cdoc README.md
+```
+
+```
+cat keys/b64secret.option
+--secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+```
+
+Decryption is done with the same label and key used for encryption
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
+```
+
+Key and label can be safely stored in a password manager.
+
+
 
 ### Decryption
 To decrypt:
@@ -92,6 +130,13 @@ or
 java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
 ```
 
+### List recipients
+
+List recipients. Prints recipient types and key labels from CDOC header.
+
+```
+java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar info -f /tmp/id.cdoc
+```
 
 
 ## ID-kaart (Est-id secure card)

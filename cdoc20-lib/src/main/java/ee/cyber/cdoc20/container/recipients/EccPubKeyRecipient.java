@@ -1,9 +1,14 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.KekDerivable;
+import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyDetails;
 
+import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
@@ -11,7 +16,7 @@ import java.util.Objects;
  * ECC recipient using ECCPublicKey. POJO of
  * {@link ECCPublicKeyDetails recipients.ECCPublicKey} in CDOC header.
  */
-public class EccPubKeyRecipient extends EccRecipient {
+public class EccPubKeyRecipient extends EccRecipient implements KekDerivable {
 
     private final ECPublicKey senderPubKey;
 
@@ -45,4 +50,12 @@ public class EccPubKeyRecipient extends EccRecipient {
     public int hashCode() {
         return Objects.hash(super.hashCode(), senderPubKey);
     }
+
+    @Override
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+            throws GeneralSecurityException {
+
+        return KekTools.deriveKekForEcc(this, keyMaterial);
+    }
+
 }

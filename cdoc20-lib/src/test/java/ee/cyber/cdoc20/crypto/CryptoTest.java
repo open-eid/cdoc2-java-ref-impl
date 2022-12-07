@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
+import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 
 
 class CryptoTest {
@@ -120,5 +122,30 @@ class CryptoTest {
     }
 
 
+    @Test
+    void deriveKeyEncryptionKeyFromSharedSecret() {
+        byte[] sharedSecret = new byte[32];
+        // sharedSecret should be initialized from SecureRandom, for test repeatability sharedSecret in this test is
+        // initialized to 0 bytes
 
+        byte[] salt = new byte[32];
+        salt[0] = 's';
+        salt[1] = 'a';
+        salt[2] = 'l';
+        salt[3] = 't';
+
+        SecretKey kekSecretKey = Crypto.deriveKeyEncryptionKey("deriveKeyEncryptionKeyFromSharedSecret",
+                new SecretKeySpec(sharedSecret, ""),
+                salt,
+                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
+
+        assertEquals("XOR", kekSecretKey.getAlgorithm());
+        assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using SecretKeySpec
+
+        byte[] kek = kekSecretKey.getEncoded();
+        assertNotNull(kek);
+        assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
+        assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
+                HexFormat.of().formatHex(kek));
+    }
 }

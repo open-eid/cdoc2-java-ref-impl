@@ -2,6 +2,8 @@ package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.container.Tar;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +106,48 @@ class ChaChaChipherTest {
             Tar.extractTarEntry(cis, out, tarEntryName);
             assertEquals(payload, out.toString(StandardCharsets.UTF_8));
         }
+    }
+
+    @Test
+    void findTarZChaChaCipherStreamMin() throws IOException, GeneralSecurityException {
+        //see also TarGzTest.findZlibMinSize
+
+
+        //Create empty.tar and compress it with deflate
+        ByteArrayOutputStream destEmptyTarZ = new ByteArrayOutputStream();
+        // https://superuser.com/questions/448623/how-to-get-an-empty-tar-archive
+        byte[] emptyTarBytes = new byte[1024]; //1024 bytes of 0x00 is valid tar archive, see link above
+        InputStream emptyTar = new ByteArrayInputStream(emptyTarBytes);
+        DeflateParameters deflateParameters = new DeflateParameters();
+        deflateParameters.setCompressionLevel(9);
+        try (DeflateCompressorOutputStream zOs =
+                     new DeflateCompressorOutputStream(new BufferedOutputStream(destEmptyTarZ), deflateParameters)) {
+            emptyTar.transferTo(zOs);
+        }
+
+        log.debug("Compressed empty.tar {}", destEmptyTarZ.size()); //17
+        // Tar is able to process empty tar without exceptions
+        assertTrue(Tar.listFiles(new ByteArrayInputStream(destEmptyTarZ.toByteArray())).isEmpty());
+
+        // encrypt compressed empty.tar with ChaCha stream, find out size
+        SecretKey cek = Crypto.deriveContentEncryptionKey(Crypto.generateFileMasterKey());
+        byte[] header = new byte[0];
+        byte[] headerHMAC = new byte[0];
+        byte[] additionalData = Envelope.getAdditionalData(header, headerHMAC);
+
+        ByteArrayInputStream minCompressedTarInputStream = new ByteArrayInputStream(destEmptyTarZ.toByteArray());
+        ByteArrayOutputStream encryptedTarGzBos = new ByteArrayOutputStream();
+
+        try (CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(
+                     encryptedTarGzBos, cek, additionalData)) {
+
+            minCompressedTarInputStream.transferTo(cipherOutputStream);
+        }
+
+        log.debug("ChaCha encrypted minimum compressed tar {} bytes", encryptedTarGzBos.size());
+        //nonce 12 + min compressed tar 17 + Poly1305 MAC 16
+        //45 - value for Envelope.MIN_PAYLOAD_LEN
+        assertTrue(encryptedTarGzBos.size() >= Envelope.MIN_PAYLOAD_LEN);
     }
 
 

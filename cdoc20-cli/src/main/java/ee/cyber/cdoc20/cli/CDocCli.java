@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.cli;
 
 import ee.cyber.cdoc20.cli.commands.CDocCreateCmd;
 import ee.cyber.cdoc20.cli.commands.CDocDecryptCmd;
+import ee.cyber.cdoc20.cli.commands.CDocInfoCmd;
 import ee.cyber.cdoc20.cli.commands.CDocListCmd;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -18,10 +19,12 @@ import java.util.concurrent.Callable;
         header = "\r\ncdoc20-cli is a command line interface for cdoc20 library\r\n",
         customSynopsis = { "cdoc [create] <arguments>",
                 "cdoc [decrypt] <arguments>",
-                "cdoc [list] <arguments>"},
+                "cdoc [list] <arguments>",
+                "cdoc [info] <arguments>"},
         subcommands = {CDocCreateCmd.class,
                 CDocDecryptCmd.class,
-                CDocListCmd.class}
+                CDocListCmd.class,
+                CDocInfoCmd.class}
 )
 public class CDocCli implements Callable<Void> {
     @Option(names = {"--version"}, versionHelp = true, description = "display version info")
@@ -36,6 +39,7 @@ public class CDocCli implements Callable<Void> {
             CommandLine.usage(new CDocCreateCmd(), System.out);
             CommandLine.usage(new CDocDecryptCmd(), System.out);
             CommandLine.usage(new CDocListCmd(), System.out);
+            CommandLine.usage(new CDocInfoCmd(), System.out);
         }
         int exitCode = new CommandLine(new CDocCli()).execute(args);
         System.exit(exitCode);

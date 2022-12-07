@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * Base class for ECC based recipients {@link EccPubKeyRecipient} and {@link EccServerKeyRecipient}.
  */
-public class EccRecipient extends Recipient {
+public class EccRecipient extends Recipient implements PublicKeyRecipient {
 
     // recipient.ECCPublicKeyDetails fields
     protected EllipticCurve ellipticCurve;
@@ -58,4 +58,5 @@ public class EccRecipient extends Recipient {
     public int hashCode() {
         return Objects.hash(super.hashCode(), ellipticCurve, recipientPubKey);
     }
+
 }

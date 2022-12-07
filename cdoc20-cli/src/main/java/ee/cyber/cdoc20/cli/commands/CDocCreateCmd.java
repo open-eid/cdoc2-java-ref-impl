@@ -2,6 +2,8 @@ package ee.cyber.cdoc20.cli.commands;
 
 
 import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
+import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.SkLdapUtil;
@@ -17,6 +19,7 @@ import java.io.File;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
@@ -25,7 +28,7 @@ import java.util.stream.Collectors;
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
-@Command(name = "create", aliases = {"c", "encrypt"})
+@Command(name = "create", aliases = {"c", "encrypt"}, showAtFileInUsageHelp = true)
 public class CDocCreateCmd implements Callable<Void> {
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
 
@@ -51,6 +54,10 @@ public class CDocCreateCmd implements Callable<Void> {
         @Option(names = {"-r", "--recipient", "--receiver"},
                 paramLabel = "isikukood", description = "recipient id code (isikukood)")
         String[] identificationCodes;
+
+        @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
+                description = SymmetricKeyUtil.SECRET_DESCRIPTION)
+        String[] secrets;
     }
 
     // allow -Dkey for setting System properties
@@ -87,10 +94,10 @@ public class CDocCreateCmd implements Callable<Void> {
         }
 
         //Map of PublicKey, keyLabel
-        Map<PublicKey, String> recipients = new LinkedHashMap<>();
+        Map<PublicKey, String> recipientsMap = new LinkedHashMap<>();
 
-        recipients.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
-        recipients.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
+        recipientsMap.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
+        recipientsMap.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
 
         // fetch authentication certificates' public keys for natural person identity codes
         Map<PublicKey, String> ldapKeysWithLabels =
@@ -98,7 +105,15 @@ public class CDocCreateCmd implements Callable<Void> {
                     .stream()
                     .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        recipients.putAll(ldapKeysWithLabels);
+        recipientsMap.putAll(ldapKeysWithLabels);
+
+        List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
+                .map(entry -> EncryptionKeyMaterial.from(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+
+        // add symmetric keys with labels
+        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterial(recipient.secrets));
+
 
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withRecipients(recipients)
@@ -116,4 +131,5 @@ public class CDocCreateCmd implements Callable<Void> {
 
         return null;
     }
+
 }

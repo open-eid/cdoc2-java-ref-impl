@@ -11,16 +11,16 @@ import java.util.Objects;
 public abstract class Recipient {
     // header.RecipientRecord specific fields
     protected final byte[] encryptedFmk;
-    protected final String recipientPubKeyLabel;
+    protected final String recipientKeyLabel;
     protected final byte fmkEncryptionMethod = FMKEncryptionMethod.XOR;
 
     protected Recipient(byte[] encFmk, String recipientLabel) {
-        this.recipientPubKeyLabel = recipientLabel;
-        this.encryptedFmk = encFmk;
+        this.recipientKeyLabel = recipientLabel;
+        this.encryptedFmk = encFmk.clone();
     }
 
-    public String getRecipientPubKeyLabel() {
-        return recipientPubKeyLabel;
+    public String getRecipientKeyLabel() {
+        return recipientKeyLabel;
     }
 
     public byte[] getEncryptedFileMasterKey() {
@@ -45,13 +45,13 @@ public abstract class Recipient {
         if (o == null || getClass() != o.getClass()) return false;
         Recipient recipient = (Recipient) o;
         return fmkEncryptionMethod == recipient.fmkEncryptionMethod
-                && Objects.equals(recipientPubKeyLabel, recipient.recipientPubKeyLabel)
+                && Objects.equals(recipientKeyLabel, recipient.recipientKeyLabel)
                 && Arrays.equals(encryptedFmk, recipient.encryptedFmk);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(recipientPubKeyLabel, fmkEncryptionMethod);
+        int result = Objects.hash(recipientKeyLabel, fmkEncryptionMethod);
         result = 31 * result + Arrays.hashCode(encryptedFmk);
         return result;
     }
