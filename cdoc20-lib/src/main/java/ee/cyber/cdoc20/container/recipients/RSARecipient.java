@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Base class for RSAPubKeyRecipient and RSAServerKeyRecipient
  */
-public class RSARecipient extends Recipient implements PublicKeyRecipient {
+public abstract class RSARecipient extends Recipient implements PublicKeyRecipient {
 
     protected final RSAPublicKey recipientPubKey;
 

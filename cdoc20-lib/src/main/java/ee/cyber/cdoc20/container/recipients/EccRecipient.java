@@ -9,9 +9,9 @@ import java.util.Objects;
 /**
  * Base class for ECC based recipients {@link EccPubKeyRecipient} and {@link EccServerKeyRecipient}.
  */
-public class EccRecipient extends Recipient implements PublicKeyRecipient {
+public abstract class EccRecipient extends Recipient implements PublicKeyRecipient {
 
-    // recipient.ECCPublicKeyDetails fields
+    // recipient.ECCPublicKeyCapsule fields
     protected EllipticCurve ellipticCurve;
     protected final ECPublicKey recipientPubKey;
 

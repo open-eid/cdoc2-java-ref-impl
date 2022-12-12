@@ -1,14 +1,15 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import ee.cyber.cdoc20.crypto.KekDerivable;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Java POJO that represents flatbuffers {@link ee.cyber.cdoc20.fbs.header.RecipientRecord header.RecipientRecord}
- * details union field(s) will be implemented by subclasses.
+ * Capsule union field(s) will be implemented by subclasses.
  */
-public abstract class Recipient {
+public abstract class Recipient implements KekDerivable, SerializableFBS {
     // header.RecipientRecord specific fields
     protected final byte[] encryptedFmk;
     protected final String recipientKeyLabel;

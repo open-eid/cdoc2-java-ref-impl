@@ -125,7 +125,7 @@
                         <goals>
                             <!-- temporary disable flatc execution -->
                             <!-- as installation on RIA build servers fails -->
-                            <!--goal>exec</goal-->
+<!--                            <goal>exec</goal>-->
                         </goals>
                         <phase>generate-sources</phase>
                     </execution>

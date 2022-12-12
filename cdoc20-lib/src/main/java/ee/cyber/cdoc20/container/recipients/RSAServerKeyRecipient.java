@@ -1,20 +1,20 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.KekDerivable;
 import ee.cyber.cdoc20.crypto.KekTools;
-
+import ee.cyber.cdoc20.fbs.recipients.RsaKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
 /**
- * RSA-OAEP recipient using ServerRsa. POJO of flatbuffers
- *  {@link ee.cyber.cdoc20.fbs.recipients.ServerRsaDetails recipients.ServerRsaDetails} structure in CDOC header.
+ * RSA-OAEP recipient using RsaKeyDetails. POJO of flatbuffers
+ *  {@link RsaKeyDetails recipients.RsaKeyDetails} structure in CDOC header.
  */
-public class RSAServerKeyRecipient extends RSARecipient implements KekDerivable, ServerRecipient {
+public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipient {
 
     private final String keyServerId;
     private final String transactionId;
@@ -58,5 +58,10 @@ public class RSAServerKeyRecipient extends RSARecipient implements KekDerivable,
             throws GeneralSecurityException, ExtApiException, CDocParseException {
 
         return KekTools.deriveKekForRsaServer(this, keyMaterial, factory);
+    }
+
+    @Override
+    public int serialize(FlatBufferBuilder builder) {
+        return RecipientSerializer.serialize(this, builder);
     }
 }

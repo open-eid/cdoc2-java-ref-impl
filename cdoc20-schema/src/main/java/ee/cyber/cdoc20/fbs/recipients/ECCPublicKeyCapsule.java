@@ -12,12 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
-public final class ECCPublicKeyDetails extends Table {
+public final class ECCPublicKeyCapsule extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
-  public static ECCPublicKeyDetails getRootAsECCPublicKeyDetails(ByteBuffer _bb) { return getRootAsECCPublicKeyDetails(_bb, new ECCPublicKeyDetails()); }
-  public static ECCPublicKeyDetails getRootAsECCPublicKeyDetails(ByteBuffer _bb, ECCPublicKeyDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static ECCPublicKeyCapsule getRootAsECCPublicKeyCapsule(ByteBuffer _bb) { return getRootAsECCPublicKeyCapsule(_bb, new ECCPublicKeyCapsule()); }
+  public static ECCPublicKeyCapsule getRootAsECCPublicKeyCapsule(ByteBuffer _bb, ECCPublicKeyCapsule obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
-  public ECCPublicKeyDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public ECCPublicKeyCapsule __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte curve() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public int recipientPublicKey(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
@@ -33,18 +33,18 @@ public final class ECCPublicKeyDetails extends Table {
   public ByteBuffer senderPublicKeyAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
   public ByteBuffer senderPublicKeyInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
 
-  public static int createECCPublicKeyDetails(FlatBufferBuilder builder,
+  public static int createECCPublicKeyCapsule(FlatBufferBuilder builder,
       byte curve,
       int recipientPublicKeyOffset,
       int senderPublicKeyOffset) {
     builder.startTable(3);
-    ECCPublicKeyDetails.addSenderPublicKey(builder, senderPublicKeyOffset);
-    ECCPublicKeyDetails.addRecipientPublicKey(builder, recipientPublicKeyOffset);
-    ECCPublicKeyDetails.addCurve(builder, curve);
-    return ECCPublicKeyDetails.endECCPublicKeyDetails(builder);
+    ECCPublicKeyCapsule.addSenderPublicKey(builder, senderPublicKeyOffset);
+    ECCPublicKeyCapsule.addRecipientPublicKey(builder, recipientPublicKeyOffset);
+    ECCPublicKeyCapsule.addCurve(builder, curve);
+    return ECCPublicKeyCapsule.endECCPublicKeyCapsule(builder);
   }
 
-  public static void startECCPublicKeyDetails(FlatBufferBuilder builder) { builder.startTable(3); }
+  public static void startECCPublicKeyCapsule(FlatBufferBuilder builder) { builder.startTable(3); }
   public static void addCurve(FlatBufferBuilder builder, byte curve) { builder.addByte(0, curve, 0); }
   public static void addRecipientPublicKey(FlatBufferBuilder builder, int recipientPublicKeyOffset) { builder.addOffset(1, recipientPublicKeyOffset, 0); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
@@ -54,7 +54,7 @@ public final class ECCPublicKeyDetails extends Table {
   public static int createSenderPublicKeyVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createSenderPublicKeyVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startSenderPublicKeyVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endECCPublicKeyDetails(FlatBufferBuilder builder) {
+  public static int endECCPublicKeyCapsule(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 6);  // recipient_public_key
     builder.required(o, 8);  // sender_public_key
@@ -64,8 +64,8 @@ public final class ECCPublicKeyDetails extends Table {
   public static final class Vector extends BaseVector {
     public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
 
-    public ECCPublicKeyDetails get(int j) { return get(new ECCPublicKeyDetails(), j); }
-    public ECCPublicKeyDetails get(ECCPublicKeyDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+    public ECCPublicKeyCapsule get(int j) { return get(new ECCPublicKeyCapsule(), j); }
+    public ECCPublicKeyCapsule get(ECCPublicKeyCapsule obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

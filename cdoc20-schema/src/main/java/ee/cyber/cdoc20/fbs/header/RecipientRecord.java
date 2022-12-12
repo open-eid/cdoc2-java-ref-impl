@@ -19,8 +19,8 @@ public final class RecipientRecord extends Table {
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public RecipientRecord __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public byte detailsType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public Table details(Table obj) { int o = __offset(6); return o != 0 ? __union(obj, o + bb_pos) : null; }
+  public byte capsuleType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
+  public Table capsule(Table obj) { int o = __offset(6); return o != 0 ? __union(obj, o + bb_pos) : null; }
   public String keyLabel() { int o = __offset(8); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer keyLabelAsByteBuffer() { return __vector_as_bytebuffer(8, 1); }
   public ByteBuffer keyLabelInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 1); }
@@ -33,23 +33,23 @@ public final class RecipientRecord extends Table {
   public byte fmkEncryptionMethod() { int o = __offset(12); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createRecipientRecord(FlatBufferBuilder builder,
-      byte detailsType,
-      int detailsOffset,
+      byte capsuleType,
+      int capsuleOffset,
       int keyLabelOffset,
       int encryptedFmkOffset,
       byte fmkEncryptionMethod) {
     builder.startTable(5);
     RecipientRecord.addEncryptedFmk(builder, encryptedFmkOffset);
     RecipientRecord.addKeyLabel(builder, keyLabelOffset);
-    RecipientRecord.addDetails(builder, detailsOffset);
+    RecipientRecord.addCapsule(builder, capsuleOffset);
     RecipientRecord.addFmkEncryptionMethod(builder, fmkEncryptionMethod);
-    RecipientRecord.addDetailsType(builder, detailsType);
+    RecipientRecord.addCapsuleType(builder, capsuleType);
     return RecipientRecord.endRecipientRecord(builder);
   }
 
   public static void startRecipientRecord(FlatBufferBuilder builder) { builder.startTable(5); }
-  public static void addDetailsType(FlatBufferBuilder builder, byte detailsType) { builder.addByte(0, detailsType, 0); }
-  public static void addDetails(FlatBufferBuilder builder, int detailsOffset) { builder.addOffset(1, detailsOffset, 0); }
+  public static void addCapsuleType(FlatBufferBuilder builder, byte capsuleType) { builder.addByte(0, capsuleType, 0); }
+  public static void addCapsule(FlatBufferBuilder builder, int capsuleOffset) { builder.addOffset(1, capsuleOffset, 0); }
   public static void addKeyLabel(FlatBufferBuilder builder, int keyLabelOffset) { builder.addOffset(2, keyLabelOffset, 0); }
   public static void addEncryptedFmk(FlatBufferBuilder builder, int encryptedFmkOffset) { builder.addOffset(3, encryptedFmkOffset, 0); }
   public static int createEncryptedFmkVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
