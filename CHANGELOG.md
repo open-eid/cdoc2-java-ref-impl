@@ -3,6 +3,7 @@
 ## [0.1.0] Enable Posix extensions for tar (2022-12-12)
 Switch to semantic versioning
 
+### Features
 * Enable POSIX (PAX) extension for tar:
   * support long filenames (over 100 bytes)
   * support big file sizes (over 8GB)
