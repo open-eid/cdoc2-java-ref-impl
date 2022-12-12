@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>ee.cyber.cdoc20</groupId>
 		<artifactId>cdoc20</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.1.0</version>
 		<relativePath>..</relativePath>
 	</parent>
 
