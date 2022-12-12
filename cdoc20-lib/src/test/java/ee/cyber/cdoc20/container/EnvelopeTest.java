@@ -21,6 +21,7 @@ import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyDetails;
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -70,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
@@ -489,8 +492,6 @@ public class EnvelopeTest {
             payloadFos.write(payloadData);
         }
 
-
-
         List<File> files = new LinkedList<>();
         files.add(payloadFile);
         if (additionalFiles != null) {
@@ -632,8 +633,6 @@ public class EnvelopeTest {
                 .map(entry -> EncryptionKeyMaterial.from(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList()); //mutable list
 
-
-
         Instant end = Instant.now();
         log.debug("Generated {} EC keys in {}s", keyLabelMap.size(), end.getEpochSecond() - start.getEpochSecond());
 
@@ -675,6 +674,82 @@ public class EnvelopeTest {
 
                 assertEquals(payloadData, Files.readString(payloadPath));
             }
+        }
+    }
+
+    // test that over 8GB files can be encrypted/decrypted.
+    // Over 8GB files are tar extension
+    // Not all ChaCha implementation can handle big files
+    // requires 16GB of free disk space on /tmp
+    @Test
+    @Tag("slow") // about 8 min, depends on IO speed
+    void test8GBPlusFileContainer(@TempDir Path tempDir) throws Exception {
+
+        // since generated file is random, zlib can't compress it effectively and
+        // created cdoc might be bigger than original file
+        long sixteenGB = (16 + 1) * 1024 * 1024 * 1024;
+        if (tempDir.toFile().getUsableSpace() < sixteenGB) {
+            log.error("Need {} B of free space, but only {} B available", sixteenGB, tempDir.toFile().getUsableSpace());
+            fail("Not enough free disk space at " + tempDir);
+        }
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        Files.write(payloadFile.toPath(), payloadData.getBytes(StandardCharsets.UTF_8));
+
+        String bigFileName = "bigFile";
+
+        byte[] oneMb = new byte[1024 * 1024]; // 1 MB
+
+        log.debug("Generating {} bytes of random...", oneMb.length);
+        new Random().nextBytes(oneMb);
+
+        log.debug("Done.");
+
+        long mbWanted = 8192 + 1; // 8,0001 GB
+        // create over 8GB file (limit of standard tar to force use of POSIX bigFile extension headers)
+        File biggerFile = tempDir.resolve(bigFileName).toFile();
+
+        log.debug("Writing {} MB to file..", mbWanted);
+        try (OutputStream os = Files.newOutputStream(biggerFile.toPath())) {
+            for (long i = 0; i < mbWanted; i++) {
+                os.write(oneMb);
+            }
+        }
+        log.debug("Done.");
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        String label = "test8GBFileContainer";
+        byte[] secret = new byte[32];
+        Crypto.getSecureRandom().nextBytes(secret);
+        SecretKey key = new SecretKeySpec(secret, "");
+
+        Envelope envelope = Envelope.prepare(List.of(EncryptionKeyMaterial.from(key, label)), null);
+
+        File bigDotCdoc = outDir.resolve("big.cdoc").toFile();
+
+        log.debug("Encrypting big payload...");
+        try (FileOutputStream dst = new FileOutputStream(bigDotCdoc)) {
+            envelope.encrypt(List.of(payloadFile, biggerFile), dst);
+        }
+        log.debug("Done.");
+        log.debug("Created {} {}B", bigDotCdoc, bigDotCdoc.length());
+
+        try (FileInputStream cdoc = new FileInputStream(bigDotCdoc)) {
+            // use list, instead of decrypt. Container is decrypted, but files are not extracted - save disk space
+            List<ArchiveEntry> entryList =
+                    Envelope.list(cdoc, DecryptionKeyMaterial.fromSecretKey(label, key), null);
+
+            entryList.forEach(entry -> log.debug("{} {}", entry.getName(), entry.getSize()));
+
+            assertEquals(2, entryList.size());
+            assertEquals("bigFile", entryList.get(1).getName());
+            assertEquals(mbWanted * oneMb.length, entryList.get(1).getSize());
         }
     }
 }

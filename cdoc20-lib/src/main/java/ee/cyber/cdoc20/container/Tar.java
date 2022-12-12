@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,9 +97,7 @@ public final class Tar {
             throw new IllegalArgumentException("Files with same basename not supported: " + duplicateFiles);
         }
 
-        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
-                new BufferedOutputStream(dest)))) {
-            tos.setAddPaxHeadersForNonAsciiNames(true);
+        try (TarArchiveOutputStream tos = createPosixTarZArchiveOutputStream(dest)) {
             for (File file : files) {
                 addFileToTar(tos, file.toPath(), file.getName());
             }
@@ -113,9 +112,8 @@ public final class Tar {
      * @throws IOException if an I/O error has occurred
      */
     public static void archiveData(OutputStream dest, InputStream inputStream, String tarEntryName) throws IOException {
-        try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
-                new BufferedOutputStream(dest)))) {
-            tarOs.setAddPaxHeadersForNonAsciiNames(true);
+        try (TarArchiveOutputStream tarOs = createPosixTarZArchiveOutputStream(dest)) {
+
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
             //log.debug("adding {}B", inputStream.available());
             tarEntry.setSize(inputStream.available());
@@ -125,6 +123,19 @@ public final class Tar {
             //log.debug("Wrote {}B", written);
             tarOs.closeArchiveEntry();
         }
+    }
+
+    /**
+     * Create zlib compressed POSIX compliant TarArchiveOutputStream with UTF-8 filenames and POSIX long filename and
+     * POSIX big file sizes (over 8GB) extensions enabled.
+     */
+    private static TarArchiveOutputStream createPosixTarZArchiveOutputStream(OutputStream dest) throws IOException {
+        TarArchiveOutputStream tarZOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
+                new BufferedOutputStream(dest)), StandardCharsets.UTF_8.name());
+        tarZOs.setAddPaxHeadersForNonAsciiNames(true);
+        tarZOs.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+        tarZOs.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+        return tarZOs;
     }
 
 
