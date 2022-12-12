@@ -280,6 +280,27 @@ class TarGzTest {
         assertTrue(Tar.listFiles(new ByteArrayInputStream(destEmptyTarZ.toByteArray())).isEmpty());
     }
 
+    @Test
+    void shouldSupportLongFileName(@TempDir Path tempDir) throws IOException {
+        byte[] data = {0x00};
+        ByteArrayOutputStream destTarZ = new ByteArrayOutputStream();
+
+        // test also utf-8 support
+        String longFileName = "\uD83D\uDC4D";
+        do {
+            longFileName += "a";
+        } while (longFileName.getBytes(UTF_8).length < 300);
+
+        log.debug("longFilename: {}", longFileName);
+
+        Tar.archiveData(destTarZ, new ByteArrayInputStream(data), longFileName);
+
+
+        ByteArrayInputStream is = new ByteArrayInputStream(destTarZ.toByteArray());
+        List<String> filesList = Tar.listFiles(is);
+        assertEquals(List.of(longFileName), filesList);
+    }
+
     private static File createAndWriteToFile(Path path, String fileName, String contents) throws IOException {
         File file = path.resolve(fileName).toFile();
         try (FileOutputStream fos = new FileOutputStream(file)) {
