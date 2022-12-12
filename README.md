@@ -180,7 +180,7 @@ See `cdoc20-cli/README.md`
 
 ## Releasing
 
-First update CHANGELOG.md
+First update CHANGELOG.md - follow semantic versioning
 
 Will create tag with version v{x.y.z} in git
 ```

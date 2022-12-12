@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.0] Enable Posix extensions for tar (2022-12-12)
+Switch to semantic versioning
+
+* Enable POSIX (PAX) extension for tar:
+  * support long filenames (over 100 bytes)
+  * support big file sizes (over 8GB)
+  * always use utf-8 in filenames (even, when platform default is not utf-8)
+* Synchronize flatbuffers schema files with Specification v0.7 
+
 ## [0.0.13] Symmetric Key support (long term crypto) (2022-12-07)
 
 ### Features
