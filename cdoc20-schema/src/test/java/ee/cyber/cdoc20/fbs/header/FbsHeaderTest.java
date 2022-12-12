@@ -1,9 +1,9 @@
 package ee.cyber.cdoc20.fbs.header;
 
 import ee.cyber.cdoc20.fbs.recipients.EllipticCurve;
-import ee.cyber.cdoc20.fbs.recipients.KeyServerDetails;
-import ee.cyber.cdoc20.fbs.recipients.ServerDetailsUnion;
-import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
+import ee.cyber.cdoc20.fbs.recipients.KeyServerCapsule;
+import ee.cyber.cdoc20.fbs.recipients.KeyDetailsUnion;
+import ee.cyber.cdoc20.fbs.recipients.EccKeyDetails;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static ee.cyber.cdoc20.fbs.header.Details.recipients_KeyServerDetails;
+import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_KeyServerCapsule;
 
 class FbsHeaderTest {
 
@@ -49,7 +49,7 @@ class FbsHeaderTest {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int recipientPubKeyOffset = builder.createByteVector(recipientPubKeyBuf);
 
-        int serverEccDetailsOffset = ServerEccDetails.createServerEccDetails(builder,
+        int serverEccDetailsOffset = EccKeyDetails.createEccKeyDetails(builder,
                 EllipticCurve.secp384r1,
                 recipientPubKeyOffset
         );
@@ -58,8 +58,8 @@ class FbsHeaderTest {
         int transactionIdOffset = builder.createString("SD1234567890");
 
 
-        int detailsOffset  = KeyServerDetails.createKeyServerDetails(builder,
-                ServerDetailsUnion.ServerEccDetails,
+        int detailsOffset  = KeyServerCapsule.createKeyServerCapsule(builder,
+                KeyDetailsUnion.EccKeyDetails,
                 serverEccDetailsOffset,
                 keyServerOffset,
                 transactionIdOffset
@@ -71,8 +71,8 @@ class FbsHeaderTest {
         int keyLabelOffset = builder.createString(keyLabel);
 
         RecipientRecord.startRecipientRecord(builder);
-        RecipientRecord.addDetailsType(builder, recipients_KeyServerDetails);
-        RecipientRecord.addDetails(builder, detailsOffset);
+        RecipientRecord.addCapsuleType(builder, recipients_KeyServerCapsule);
+        RecipientRecord.addCapsule(builder, detailsOffset);
 
         RecipientRecord.addKeyLabel(builder, keyLabelOffset);
 
@@ -112,14 +112,14 @@ class FbsHeaderTest {
         RecipientRecord recipient = header.recipients(0);
 
 
-        Assertions.assertEquals(recipients_KeyServerDetails, recipient.detailsType());
+        Assertions.assertEquals(recipients_KeyServerCapsule, recipient.capsuleType());
 
-        KeyServerDetails keyServerDetails = (KeyServerDetails) recipient.details(new KeyServerDetails());
+        KeyServerCapsule keyServerDetails = (KeyServerCapsule) recipient.capsule(new KeyServerCapsule());
         Assertions.assertNotNull(keyServerDetails);
-        Assertions.assertEquals(ServerDetailsUnion.ServerEccDetails, keyServerDetails.recipientKeyDetailsType());
+        Assertions.assertEquals(KeyDetailsUnion.EccKeyDetails, keyServerDetails.recipientKeyDetailsType());
 
-        ServerEccDetails serverEccDetails =
-                (ServerEccDetails) keyServerDetails.recipientKeyDetails(new ServerEccDetails());
+        EccKeyDetails serverEccDetails =
+                (EccKeyDetails) keyServerDetails.recipientKeyDetails(new EccKeyDetails());
         Assertions.assertNotNull(serverEccDetails);
         Assertions.assertEquals(EllipticCurve.secp384r1, serverEccDetails.curve());
         Assertions.assertEquals(recipientPubKeyBuf.length, serverEccDetails.recipientPublicKeyLength());

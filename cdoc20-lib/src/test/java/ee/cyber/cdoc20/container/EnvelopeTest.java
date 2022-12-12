@@ -17,7 +17,7 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
-import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails;
+import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -49,7 +49,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyDetails;
+import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import static ee.cyber.cdoc20.fbs.header.Details.recipients_RSAPublicKeyDetails;
-import static ee.cyber.cdoc20.fbs.header.Details.recipients_SymmetricKeyDetails;
+import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
+import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -173,12 +173,12 @@ public class EnvelopeTest {
         RecipientRecord recipient = header.recipients(0);
 
         assertEquals(keyLabel, recipient.keyLabel());
-        assertEquals(recipient.detailsType(), recipients_RSAPublicKeyDetails);
+        assertEquals(recipient.capsuleType(), recipients_RSAPublicKeyCapsule);
 
-        RSAPublicKeyDetails rsaDetails = (RSAPublicKeyDetails) recipient.details(new RSAPublicKeyDetails());
-        assertNotNull(rsaDetails);
+        RSAPublicKeyCapsule rsaPublicKeyCapsule = (RSAPublicKeyCapsule) recipient.capsule(new RSAPublicKeyCapsule());
+        assertNotNull(rsaPublicKeyCapsule);
 
-        ByteBuffer rsaPubKeyBuf = rsaDetails.recipientPublicKeyAsByteBuffer();
+        ByteBuffer rsaPubKeyBuf = rsaPublicKeyCapsule.recipientPublicKeyAsByteBuffer();
         assertNotNull(rsaPubKeyBuf);
         byte[] rsaPubKeyBytes = Arrays.copyOfRange(rsaPubKeyBuf.array(), rsaPubKeyBuf.position(), rsaPubKeyBuf.limit());
         PublicKey publicKeyOut = RsaUtils.decodeRsaPubKey(rsaPubKeyBytes);
@@ -224,13 +224,13 @@ public class EnvelopeTest {
 
         assertInstanceOf(EccServerKeyRecipient.class, eccRecipients.get(0));
 
-        EccServerKeyRecipient details = (EccServerKeyRecipient) eccRecipients.get(0);
+        EccServerKeyRecipient eccServerKeyRecipient = (EccServerKeyRecipient) eccRecipients.get(0);
 
-        assertEquals(recipientPubKey, details.getRecipientPubKey());
+        assertEquals(recipientPubKey, eccServerKeyRecipient.getRecipientPubKey());
 
-        assertEquals("mock", details.getKeyServerId());
-        assertEquals("SD1234567890", details.getTransactionId());
-        assertEquals(recipientKeyLabel, details.getRecipientKeyLabel());
+        assertEquals("mock", eccServerKeyRecipient.getKeyServerId());
+        assertEquals("SD1234567890", eccServerKeyRecipient.getTransactionId());
+        assertEquals(recipientKeyLabel, eccServerKeyRecipient.getRecipientKeyLabel());
     }
 
     @Test
@@ -273,13 +273,13 @@ public class EnvelopeTest {
 
         assertInstanceOf(RSAServerKeyRecipient.class, recipients.get(0));
 
-        RSAServerKeyRecipient details = (RSAServerKeyRecipient) recipients.get(0);
+        RSAServerKeyRecipient rsaServerKeyRecipient = (RSAServerKeyRecipient) recipients.get(0);
 
-        assertEquals(publicKey, details.getRecipientPubKey());
+        assertEquals(publicKey, rsaServerKeyRecipient.getRecipientPubKey());
 
-        assertEquals("mock_rsa", details.getKeyServerId());
-        assertEquals("KC1234567890123456789012", details.getTransactionId());
-        assertEquals(recipientKeyLabel, details.getRecipientKeyLabel());
+        assertEquals("mock_rsa", rsaServerKeyRecipient.getKeyServerId());
+        assertEquals("KC1234567890123456789012", rsaServerKeyRecipient.getTransactionId());
+        assertEquals(recipientKeyLabel, rsaServerKeyRecipient.getRecipientKeyLabel());
 
     }
 
@@ -319,12 +319,12 @@ public class EnvelopeTest {
         RecipientRecord recipient = header.recipients(0);
 
         assertEquals(keyLabel, recipient.keyLabel());
-        assertEquals(recipients_SymmetricKeyDetails, recipient.detailsType());
+        assertEquals(recipients_SymmetricKeyCapsule, recipient.capsuleType());
 
-        SymmetricKeyDetails symmetricKeyDetails = (SymmetricKeyDetails) recipient.details(new SymmetricKeyDetails());
-        assertNotNull(symmetricKeyDetails);
+        SymmetricKeyCapsule symmetricKeyCapsule = (SymmetricKeyCapsule) recipient.capsule(new SymmetricKeyCapsule());
+        assertNotNull(symmetricKeyCapsule);
 
-        ByteBuffer saltBuf = symmetricKeyDetails.saltAsByteBuffer();
+        ByteBuffer saltBuf = symmetricKeyCapsule.saltAsByteBuffer();
         assertNotNull(saltBuf);
     }
 

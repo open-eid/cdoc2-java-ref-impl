@@ -1,13 +1,12 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.KekDerivable;
-import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-
+import ee.cyber.cdoc20.crypto.KekTools;
 import java.util.Arrays;
 
-public class SymmetricKeyRecipient extends Recipient implements KekDerivable {
+public class SymmetricKeyRecipient extends Recipient {
 
     private final byte[] salt;
 
@@ -44,5 +43,10 @@ public class SymmetricKeyRecipient extends Recipient implements KekDerivable {
         int result = super.hashCode();
         result = 31 * result + Arrays.hashCode(salt);
         return result;
+    }
+
+    @Override
+    public int serialize(FlatBufferBuilder builder) {
+        return RecipientSerializer.serializeSymmetricKeyRecipient(this, builder);
     }
 }

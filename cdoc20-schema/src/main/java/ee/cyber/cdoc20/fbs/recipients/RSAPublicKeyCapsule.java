@@ -12,12 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
-public final class RSAPublicKeyDetails extends Table {
+public final class RSAPublicKeyCapsule extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
-  public static RSAPublicKeyDetails getRootAsRSAPublicKeyDetails(ByteBuffer _bb) { return getRootAsRSAPublicKeyDetails(_bb, new RSAPublicKeyDetails()); }
-  public static RSAPublicKeyDetails getRootAsRSAPublicKeyDetails(ByteBuffer _bb, RSAPublicKeyDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static RSAPublicKeyCapsule getRootAsRSAPublicKeyCapsule(ByteBuffer _bb) { return getRootAsRSAPublicKeyCapsule(_bb, new RSAPublicKeyCapsule()); }
+  public static RSAPublicKeyCapsule getRootAsRSAPublicKeyCapsule(ByteBuffer _bb, RSAPublicKeyCapsule obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
-  public RSAPublicKeyDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public RSAPublicKeyCapsule __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int recipientPublicKey(int j) { int o = __offset(4); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
   public int recipientPublicKeyLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
@@ -32,16 +32,16 @@ public final class RSAPublicKeyDetails extends Table {
   public ByteBuffer encryptedKekAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer encryptedKekInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
 
-  public static int createRSAPublicKeyDetails(FlatBufferBuilder builder,
+  public static int createRSAPublicKeyCapsule(FlatBufferBuilder builder,
       int recipientPublicKeyOffset,
       int encryptedKekOffset) {
     builder.startTable(2);
-    RSAPublicKeyDetails.addEncryptedKek(builder, encryptedKekOffset);
-    RSAPublicKeyDetails.addRecipientPublicKey(builder, recipientPublicKeyOffset);
-    return RSAPublicKeyDetails.endRSAPublicKeyDetails(builder);
+    RSAPublicKeyCapsule.addEncryptedKek(builder, encryptedKekOffset);
+    RSAPublicKeyCapsule.addRecipientPublicKey(builder, recipientPublicKeyOffset);
+    return RSAPublicKeyCapsule.endRSAPublicKeyCapsule(builder);
   }
 
-  public static void startRSAPublicKeyDetails(FlatBufferBuilder builder) { builder.startTable(2); }
+  public static void startRSAPublicKeyCapsule(FlatBufferBuilder builder) { builder.startTable(2); }
   public static void addRecipientPublicKey(FlatBufferBuilder builder, int recipientPublicKeyOffset) { builder.addOffset(0, recipientPublicKeyOffset, 0); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
@@ -50,7 +50,7 @@ public final class RSAPublicKeyDetails extends Table {
   public static int createEncryptedKekVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createEncryptedKekVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startEncryptedKekVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endRSAPublicKeyDetails(FlatBufferBuilder builder) {
+  public static int endRSAPublicKeyCapsule(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 4);  // recipient_public_key
     builder.required(o, 6);  // encrypted_kek
@@ -60,8 +60,8 @@ public final class RSAPublicKeyDetails extends Table {
   public static final class Vector extends BaseVector {
     public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
 
-    public RSAPublicKeyDetails get(int j) { return get(new RSAPublicKeyDetails(), j); }
-    public RSAPublicKeyDetails get(RSAPublicKeyDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+    public RSAPublicKeyCapsule get(int j) { return get(new RSAPublicKeyCapsule(), j); }
+    public RSAPublicKeyCapsule get(RSAPublicKeyCapsule obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

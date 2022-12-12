@@ -12,12 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
-public final class ServerEccDetails extends Table {
+public final class EccKeyDetails extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
-  public static ServerEccDetails getRootAsServerEccDetails(ByteBuffer _bb) { return getRootAsServerEccDetails(_bb, new ServerEccDetails()); }
-  public static ServerEccDetails getRootAsServerEccDetails(ByteBuffer _bb, ServerEccDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static EccKeyDetails getRootAsEccKeyDetails(ByteBuffer _bb) { return getRootAsEccKeyDetails(_bb, new EccKeyDetails()); }
+  public static EccKeyDetails getRootAsEccKeyDetails(ByteBuffer _bb, EccKeyDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
-  public ServerEccDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public EccKeyDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte curve() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public int recipientPublicKey(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
@@ -27,22 +27,22 @@ public final class ServerEccDetails extends Table {
   public ByteBuffer recipientPublicKeyAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer recipientPublicKeyInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
 
-  public static int createServerEccDetails(FlatBufferBuilder builder,
+  public static int createEccKeyDetails(FlatBufferBuilder builder,
       byte curve,
       int recipientPublicKeyOffset) {
     builder.startTable(2);
-    ServerEccDetails.addRecipientPublicKey(builder, recipientPublicKeyOffset);
-    ServerEccDetails.addCurve(builder, curve);
-    return ServerEccDetails.endServerEccDetails(builder);
+    EccKeyDetails.addRecipientPublicKey(builder, recipientPublicKeyOffset);
+    EccKeyDetails.addCurve(builder, curve);
+    return EccKeyDetails.endEccKeyDetails(builder);
   }
 
-  public static void startServerEccDetails(FlatBufferBuilder builder) { builder.startTable(2); }
+  public static void startEccKeyDetails(FlatBufferBuilder builder) { builder.startTable(2); }
   public static void addCurve(FlatBufferBuilder builder, byte curve) { builder.addByte(0, curve, 0); }
   public static void addRecipientPublicKey(FlatBufferBuilder builder, int recipientPublicKeyOffset) { builder.addOffset(1, recipientPublicKeyOffset, 0); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createRecipientPublicKeyVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startRecipientPublicKeyVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endServerEccDetails(FlatBufferBuilder builder) {
+  public static int endEccKeyDetails(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 6);  // recipient_public_key
     return o;
@@ -51,8 +51,8 @@ public final class ServerEccDetails extends Table {
   public static final class Vector extends BaseVector {
     public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
 
-    public ServerEccDetails get(int j) { return get(new ServerEccDetails(), j); }
-    public ServerEccDetails get(ServerEccDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+    public EccKeyDetails get(int j) { return get(new EccKeyDetails(), j); }
+    public EccKeyDetails get(EccKeyDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

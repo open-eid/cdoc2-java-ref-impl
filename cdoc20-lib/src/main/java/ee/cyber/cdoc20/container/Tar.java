@@ -11,6 +11,7 @@ import org.apache.commons.compress.utils.InputStreamStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
@@ -172,14 +173,15 @@ public final class Tar {
      * copied to outputDir.
      * @param tarGZipIs tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
-     * @param filesToExtract if not null, extract specified files otherwise all files
+     * @param filesToExtract if not null, extract specified files otherwise all files.
+     *                      No effect for list (extract=false)
      * @param extract if true, extract files to outputDir. Otherwise, list TarArchiveEntries
      * @return List<ArchiveEntry> list of TarArchiveEntry processed in tarGZipInputStream (ignored entries are not
      *      returned)
      * @throws IOException if an I/O error has occurred
      */
-    static List<ArchiveEntry> processTarGz(InputStream tarGZipIs, Path outputDir,
-                                           List<String> filesToExtract, boolean extract) throws IOException {
+    static List<ArchiveEntry> processTarGz(InputStream tarGZipIs, @Nullable Path outputDir,
+                                           @Nullable List<String> filesToExtract, boolean extract) throws IOException {
 
         if (extract && (!Files.isDirectory(outputDir) || !Files.isWritable(outputDir))) {
             throw new IOException("Not directory or not writeable " + outputDir);

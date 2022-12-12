@@ -1,22 +1,21 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.KekDerivable;
-import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyDetails;
-
+import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyCapsule;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
 /**
  * ECC recipient using ECCPublicKey. POJO of
- * {@link ECCPublicKeyDetails recipients.ECCPublicKey} in CDOC header.
+ * {@link ECCPublicKeyCapsule recipients.ECCPublicKeyCapsule} in CDOC header.
  */
-public class EccPubKeyRecipient extends EccRecipient implements KekDerivable {
+public class EccPubKeyRecipient extends EccRecipient {
 
     private final ECPublicKey senderPubKey;
 
@@ -58,4 +57,8 @@ public class EccPubKeyRecipient extends EccRecipient implements KekDerivable {
         return KekTools.deriveKekForEcc(this, keyMaterial);
     }
 
+    @Override
+    public int serialize(FlatBufferBuilder builder) {
+        return RecipientSerializer.serialize(this, builder);
+    }
 }

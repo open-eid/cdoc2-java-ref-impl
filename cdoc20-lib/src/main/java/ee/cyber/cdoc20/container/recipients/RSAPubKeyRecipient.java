@@ -1,19 +1,19 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.KekDerivable;
 import ee.cyber.cdoc20.crypto.KekTools;
-
+import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 
 /**
  * RSA-OAEP recipient using RSAPublicKey. POJO of flatbuffers
- * {@link ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyDetails recipients.RSAPublicKeyDetails} structure in CDOC header.
+ * {@link RSAPublicKeyCapsule fbs.recipients.RSAPublicKeyCapsule} structure in CDOC header.
  */
-public class RSAPubKeyRecipient extends RSARecipient implements KekDerivable {
+public class RSAPubKeyRecipient extends RSARecipient {
 
     private final byte[] encryptedKek;
 
@@ -49,5 +49,10 @@ public class RSAPubKeyRecipient extends RSARecipient implements KekDerivable {
             throws GeneralSecurityException {
 
         return KekTools.deriveKekForRsa(this, keyMaterial);
+    }
+
+    @Override
+    public int serialize(FlatBufferBuilder builder) {
+        return RecipientSerializer.serialize(this, builder);
     }
 }

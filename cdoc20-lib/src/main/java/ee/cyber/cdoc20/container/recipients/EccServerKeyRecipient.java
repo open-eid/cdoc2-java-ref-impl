@@ -1,27 +1,25 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.KekDerivable;
-import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.fbs.recipients.ServerEccDetails;
-
+import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.fbs.recipients.EccKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
 /**
- * ECC recipient using ECCServerKey. POJO of
- * {@link ServerEccDetails recipients.ECCKeyServer} in CDOC header.
+ * ECC recipient using EccKeyDetails. POJO of
+ * {@link EccKeyDetails recipients.EccKeyDetails} in CDOC header.
  */
-public class EccServerKeyRecipient extends EccRecipient implements KekDerivable, ServerRecipient {
+public class EccServerKeyRecipient extends EccRecipient implements ServerRecipient {
     private final String keyServerId;
     private final String transactionId;
-
 
     public EccServerKeyRecipient(EllipticCurve eccCurve, ECPublicKey recipientPubKey,
                                  String keyServerId, String transactionId, byte[] encryptedFmk,
@@ -64,5 +62,11 @@ public class EccServerKeyRecipient extends EccRecipient implements KekDerivable,
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
             throws GeneralSecurityException, ExtApiException, CDocParseException {
         return KekTools.deriveKekForEccServer(this, keyMaterial, factory);
+    }
+
+
+    @Override
+    public int serialize(FlatBufferBuilder builder) {
+        return RecipientSerializer.serialize(this, builder);
     }
 }

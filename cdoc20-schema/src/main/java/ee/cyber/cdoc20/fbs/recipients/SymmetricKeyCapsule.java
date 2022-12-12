@@ -12,12 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
-public final class SymmetricKeyDetails extends Table {
+public final class SymmetricKeyCapsule extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_2_0_8(); }
-  public static SymmetricKeyDetails getRootAsSymmetricKeyDetails(ByteBuffer _bb) { return getRootAsSymmetricKeyDetails(_bb, new SymmetricKeyDetails()); }
-  public static SymmetricKeyDetails getRootAsSymmetricKeyDetails(ByteBuffer _bb, SymmetricKeyDetails obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static SymmetricKeyCapsule getRootAsSymmetricKeyCapsule(ByteBuffer _bb) { return getRootAsSymmetricKeyCapsule(_bb, new SymmetricKeyCapsule()); }
+  public static SymmetricKeyCapsule getRootAsSymmetricKeyCapsule(ByteBuffer _bb, SymmetricKeyCapsule obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
-  public SymmetricKeyDetails __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public SymmetricKeyCapsule __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int salt(int j) { int o = __offset(4); return o != 0 ? bb.get(__vector(o) + j * 1) & 0xFF : 0; }
   public int saltLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
@@ -26,19 +26,19 @@ public final class SymmetricKeyDetails extends Table {
   public ByteBuffer saltAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
   public ByteBuffer saltInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 1); }
 
-  public static int createSymmetricKeyDetails(FlatBufferBuilder builder,
+  public static int createSymmetricKeyCapsule(FlatBufferBuilder builder,
       int saltOffset) {
     builder.startTable(1);
-    SymmetricKeyDetails.addSalt(builder, saltOffset);
-    return SymmetricKeyDetails.endSymmetricKeyDetails(builder);
+    SymmetricKeyCapsule.addSalt(builder, saltOffset);
+    return SymmetricKeyCapsule.endSymmetricKeyCapsule(builder);
   }
 
-  public static void startSymmetricKeyDetails(FlatBufferBuilder builder) { builder.startTable(1); }
+  public static void startSymmetricKeyCapsule(FlatBufferBuilder builder) { builder.startTable(1); }
   public static void addSalt(FlatBufferBuilder builder, int saltOffset) { builder.addOffset(0, saltOffset, 0); }
   public static int createSaltVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
   public static int createSaltVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startSaltVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
-  public static int endSymmetricKeyDetails(FlatBufferBuilder builder) {
+  public static int endSymmetricKeyCapsule(FlatBufferBuilder builder) {
     int o = builder.endTable();
     builder.required(o, 4);  // salt
     return o;
@@ -47,8 +47,8 @@ public final class SymmetricKeyDetails extends Table {
   public static final class Vector extends BaseVector {
     public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
 
-    public SymmetricKeyDetails get(int j) { return get(new SymmetricKeyDetails(), j); }
-    public SymmetricKeyDetails get(SymmetricKeyDetails obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+    public SymmetricKeyCapsule get(int j) { return get(new SymmetricKeyCapsule(), j); }
+    public SymmetricKeyCapsule get(SymmetricKeyCapsule obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 
