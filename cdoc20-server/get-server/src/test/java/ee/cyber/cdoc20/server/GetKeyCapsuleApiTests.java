@@ -1,8 +1,9 @@
 package ee.cyber.cdoc20.server;
 
+import ee.cyber.cdoc20.CDocUserException;
+import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.client.Cdoc20KeyCapsuleApiClient;
 import ee.cyber.cdoc20.client.EcCapsuleClientImpl;
-import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.client.model.Capsule;
@@ -42,6 +43,7 @@ import static ee.cyber.cdoc20.server.TestData.getKeysDirectory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
@@ -106,22 +108,8 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
     }
 
     @Test
-    void testKeyServerPropertiesClientPKCS12() throws ExtApiException, GeneralSecurityException, IOException {
-        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
-        prop += "cdoc20.client.server.base-url.post=" + baseUrl + "\n";
-        prop += "cdoc20.client.server.base-url.get=" + baseUrl + "\n";
-        prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
-        prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
-        prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
-
-        prop += "cdoc20.client.ssl.client-store.type=PKCS12\n";
-        prop += "cdoc20.client.ssl.client-store=" + getKeysDirectory().resolve("cdoc20client.p12") + "\n";
-        prop += "cdoc20.client.ssl.client-store-password=passwd\n";
-
-        Properties p = new Properties();
-        p.load(new StringReader(prop));
-
-        KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
+    void testKeyServerPropertiesClientPKCS12() throws Exception {
+        var client = createPkcs12ServerClient(baseUrl);
 
         X509Certificate cert = (X509Certificate) client.getClientCertificate();
 
@@ -153,10 +141,11 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         Optional<ECPublicKey> serverSenderKey = new EcCapsuleClientImpl(client).getSenderKey(transactionID);
         assertTrue(serverSenderKey.isPresent());
         assertEquals(senderPubKey, serverSenderKey.get());
+
     }
 
     @Test
-    void testKeyCapsulesClientImplRsaPKCS12() throws ExtApiException, GeneralSecurityException, IOException {
+    void testKeyCapsulesClientImplRsaPKCS12() throws Exception {
         String prop = "cdoc20.client.server.id=testKeyCapsulesClientImplRsaPKCS12\n";
         prop += "cdoc20.client.server.base-url.post=" + baseUrl + "\n";
         prop += "cdoc20.client.server.base-url.get=" + baseUrl + "\n";
@@ -176,7 +165,6 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         X509Certificate cert = (X509Certificate) client.getClientCertificate();
         assertNotNull(cert);
         RSAPublicKey senderPubKey = (RSAPublicKey) cert.getPublicKey();
-
 
         RSAPublicKey rsaPublicKey = (RSAPublicKey) cert.getPublicKey();
         byte[] kek = new byte[Crypto.FMK_LEN_BYTES];
@@ -198,7 +186,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         assertArrayEquals(encryptedKek, serverEncKek.get());
     }
 
-        @Test
+    @Test
     @Tag("pkcs11")
     void testKeyServerPropertiesClientPKCS11Passwd() throws Exception {
         testKeyServerPropertiesClientPKCS11(false);
@@ -378,5 +366,43 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         assertEquals(rsaCapsule.getCapsuleType(), response.getBody().getCapsuleType());
         assertArrayEquals(rsaCapsule.getRecipientId(), response.getBody().getRecipientId());
         assertArrayEquals(rsaCapsule.getEphemeralKeyMaterial(), response.getBody().getEphemeralKeyMaterial());
+    }
+
+    @Test
+    void shouldThrowUserExceptions() throws Exception {
+        // unknown serverId should throw exception
+        var client = createPkcs12ServerClient(baseUrl);
+        CDocUserException notFoundException = assertThrows(
+            CDocUserException.class,
+            () -> client.getForId(UUID.randomUUID().toString())
+        );
+        assertEquals(UserErrorCode.SERVER_NOT_FOUND, notFoundException.getErrorCode());
+
+        // test network error
+        var misconfiguredClient = createPkcs12ServerClient("https://foo");
+        CDocUserException networkException = assertThrows(
+            CDocUserException.class,
+            () -> misconfiguredClient.getCapsule(UUID.randomUUID().toString())
+        );
+        assertEquals(UserErrorCode.NETWORK_ERROR, networkException.getErrorCode());
+
+    }
+
+    private static KeyCapsuleClientImpl createPkcs12ServerClient(String serverBaseUrl) throws Exception {
+        String prop = "cdoc20.client.server.id=testKeyServerPropertiesClientPKCS12\n";
+        prop += "cdoc20.client.server.base-url.post=" + serverBaseUrl + "\n";
+        prop += "cdoc20.client.server.base-url.get=" + serverBaseUrl + "\n";
+        prop += "cdoc20.client.ssl.trust-store.type=JKS\n";
+        prop += "cdoc20.client.ssl.trust-store=" + getKeysDirectory().resolve("clienttruststore.jks") + "\n";
+        prop += "cdoc20.client.ssl.trust-store-password=passwd\n";
+
+        prop += "cdoc20.client.ssl.client-store.type=PKCS12\n";
+        prop += "cdoc20.client.ssl.client-store=" + getKeysDirectory().resolve("cdoc20client.p12") + "\n";
+        prop += "cdoc20.client.ssl.client-store-password=passwd\n";
+
+        Properties p = new Properties();
+        p.load(new StringReader(prop));
+
+        return (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
     }
 }

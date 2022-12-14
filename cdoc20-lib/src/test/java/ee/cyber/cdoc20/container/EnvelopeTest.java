@@ -9,15 +9,16 @@ import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.crypto.Crypto;
-import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.EllipticCurve;
+import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
+import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,8 +49,9 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-
-import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
+import javax.crypto.AEADBadTagException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -61,10 +63,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -206,7 +204,7 @@ public class EnvelopeTest {
         when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
 
         Envelope envelope = Envelope.prepare(
-                List.of(EncryptionKeyMaterial.from(recipientPubKey, recipientKeyLabel)),
+            List.of(EncryptionKeyMaterial.from(recipientPubKey, recipientKeyLabel)),
             capsuleClientMock
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -217,8 +215,7 @@ public class EnvelopeTest {
         assertTrue(resultBytes.length > 0);
 
         //no exception is also good indication that parsing worked
-        List<Recipient> eccRecipients =
-                Envelope.parseHeader(new ByteArrayInputStream(resultBytes), null);
+        List<Recipient> eccRecipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), null);
 
         assertEquals(1, eccRecipients.size());
 
@@ -464,7 +461,7 @@ public class EnvelopeTest {
                     List.of(payloadFileName), payloadFileName, payloadData, null)
         );
 
-        assertInstanceOf(javax.crypto.AEADBadTagException.class, ex.getCause());
+        assertInstanceOf(AEADBadTagException.class, ex.getCause());
 
         assertNotNull(outDir.toFile().listFiles());
         //extracted files were deleted
@@ -483,9 +480,9 @@ public class EnvelopeTest {
      * @throws IOException if IOException happens
      * @throws GeneralSecurityException if GeneralSecurityException happens
      */
-    public static byte[] createContainer(File payloadFile, byte[] payloadData, EncryptionKeyMaterial encKeyMaterial,
-                                  @Nullable List<File> additionalFiles,
-                                  @Nullable KeyCapsuleClient capsuleClient)
+    public static byte[] createContainer(File payloadFile, byte[] payloadData,
+                EncryptionKeyMaterial encKeyMaterial, @Nullable List<File> additionalFiles,
+                @Nullable KeyCapsuleClient capsuleClient)
             throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -514,7 +511,7 @@ public class EnvelopeTest {
      * test server scenarios
      */
     public static void testContainer(Path tempDir, DecryptionKeyMaterial keyMaterial, String keyLabel,
-                              @Nullable KeyCapsuleClient capsulesClient) throws Exception {
+            @Nullable KeyCapsuleClient capsulesClient) throws Exception {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -539,10 +536,8 @@ public class EnvelopeTest {
     }
 
     public static void checkContainerDecrypt(byte[] cdocBytes, Path outDir, DecryptionKeyMaterial keyMaterial,
-                                      List<String> expectedFilesExtracted, String payloadFileName,
-                                      String expectedPayloadData,
-                                      KeyCapsuleClient capsulesClient)
-                throws Exception {
+            List<String> expectedFilesExtracted, String payloadFileName, String expectedPayloadData,
+            KeyCapsuleClient capsulesClient)  throws Exception {
 
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
 
@@ -654,7 +649,6 @@ public class EnvelopeTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
             Envelope.prepare(recipients, null).serializeHeader());
         assertTrue(exception.getMessage().contains("Header serialization failed"));
-
 
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(List.of(payloadFile), dst);

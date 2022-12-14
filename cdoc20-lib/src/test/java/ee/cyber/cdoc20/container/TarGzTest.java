@@ -262,7 +262,6 @@ class TarGzTest {
 
         log.debug("TarZ size {}", destTarZ.size()); //76
 
-
         ByteArrayOutputStream destEmptyTarZ = new ByteArrayOutputStream();
         // https://superuser.com/questions/448623/how-to-get-an-empty-tar-archive
         byte[] emptyTarBytes = new byte[1024]; //1024 bytes of 0x00 is valid tar

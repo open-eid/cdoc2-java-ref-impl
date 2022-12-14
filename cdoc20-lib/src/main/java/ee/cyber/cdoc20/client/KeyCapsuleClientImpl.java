@@ -1,14 +1,11 @@
 package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.CDocConfiguration;
+import ee.cyber.cdoc20.CDocUserException;
+import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.client.model.Capsule;
-
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -19,6 +16,9 @@ import java.security.cert.CertificateException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * KeyCapsuleClient initialization from properties file.
@@ -109,7 +109,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return (KeyCapsuleClientFactory) create(p);
     }
 
-    static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
+    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
         String prompt = p.getProperty("cdoc20.client.ssl.client-store-password.prompt");
         if (prompt != null) {
             log.debug("Using interactive client KS protection param");
@@ -123,26 +123,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         }
 
         return null;
-    }
-
-    static Optional<Boolean> getBoolean(Properties p, String name) {
-        String value = p.getProperty(name);
-        if (value != null) {
-            return Optional.of(Boolean.parseBoolean(value));
-        }
-        return Optional.empty();
-    }
-
-    static Optional<Integer> getInteger(Properties p, String name) {
-        String value = p.getProperty(name);
-        if (value != null) {
-            try {
-                return Optional.of(Integer.parseInt(value));
-            } catch (NumberFormatException nfe) {
-                log.warn("Invalid int value {} for property {}. Ignoring.", value, name);
-            }
-        }
-        return Optional.empty();
     }
 
     /**
@@ -159,7 +139,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @KeyStoreException
      * @IOException
      */
-    static @Nullable KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
+    @Nullable
+    private static KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
             CertificateException, NoSuchAlgorithmException {
 
         KeyStore clientKeyStore;
@@ -197,7 +178,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @param p properties provided
      * @return "pkcs11-library" value specified in properties or null if not property not present
      */
-    static String loadPkcs11LibPath(Properties p) {
+    private static String loadPkcs11LibPath(Properties p) {
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
         return System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY,
@@ -219,8 +200,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @KeyStoreException
      * @CertificateException – if any of the certificates in the keystore could not be loaded
      */
-    static KeyStore loadTrustKeyStore(Properties p) throws KeyStoreException, IOException, CertificateException,
-            NoSuchAlgorithmException {
+    private static KeyStore loadTrustKeyStore(Properties p) throws KeyStoreException, IOException,
+            CertificateException, NoSuchAlgorithmException {
         KeyStore trustKeyStore;
 
         String type = p.getProperty("cdoc20.client.ssl.trust-store.type", "JKS");
@@ -236,15 +217,17 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     @Override
-    public String storeCapsule(Capsule capsule)
-            throws ExtApiException {
+    public String storeCapsule(Capsule capsule) throws ExtApiException {
         Objects.requireNonNull(postClient);
 
+        String result = null;
         try {
-            return postClient.createCapsule(capsule);
-        } catch (ee.cyber.cdoc20.client.api.ApiException e) {
-            throw new ExtApiException(e.getMessage(), e);
+            result = postClient.createCapsule(capsule);
+        } catch (Exception e) {
+            log.error("Failed to create capsule", e);
+            handleOpenApiException(e);
         }
+        return result;
     }
 
     @Override
@@ -253,13 +236,14 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             throw new IllegalStateException("get-server client not initialized");
         }
 
+        Optional<Capsule> result = Optional.empty();
         try {
-            return getClient.getCapsule(id);
-
-        } catch (ee.cyber.cdoc20.client.api.ApiException apiException) {
-            throw new ExtApiException(apiException.getMessage(), apiException);
+            result = getClient.getCapsule(id);
+        } catch (Exception e) {
+            log.error("Failed to get capsule", e);
+            handleOpenApiException(e);
         }
-
+        return result;
     }
 
     @Override
@@ -296,12 +280,40 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     @Override
-    public KeyCapsuleClient getForId(String serverIdentifier) {
+    public KeyCapsuleClient getForId(String serverIdentifier) throws CDocUserException {
         if (getServerIdentifier().equals(serverIdentifier)) {
             return this;
         }
-        log.warn("Server configuration for {} requested, but {} provided", serverIdentifier, getServerIdentifier());
-        return null;
+        log.error("Server configuration for {} requested, but {} provided", serverIdentifier, getServerIdentifier());
+        throw new CDocUserException(
+            UserErrorCode.SERVER_NOT_FOUND,
+            String.format("Server configuration for serverId '%s' not found", serverIdentifier)
+        );
+    }
+
+    private static void handleOpenApiException(Exception exception) throws ExtApiException {
+        // IOException is the base class for all network related exceptions
+        // and openapi client does not operate with files, so we can assume a network error occurred
+        if (exception.getCause() instanceof IOException) {
+            throw new CDocUserException(UserErrorCode.NETWORK_ERROR, exception.getMessage());
+        }
+        throw new ExtApiException(exception.getMessage(), exception);
+    }
+
+    private static Optional<Boolean> getBoolean(Properties p, String name) {
+        return Optional.ofNullable(p.getProperty(name)).map(Boolean::parseBoolean);
+    }
+
+    private static Optional<Integer> getInteger(Properties p, String name) {
+        try {
+            return Optional.ofNullable(p.getProperty(name)).map(Integer::parseInt);
+        } catch (NumberFormatException nfe) {
+            log.warn(
+                "Invalid int value {} for property {}. Ignoring.",
+                p.getProperty(name), name
+            );
+            return Optional.empty();
+        }
     }
 
     @Override

@@ -1,6 +1,8 @@
 package ee.cyber.cdoc20.container;
 
-public class CDocParseException extends Exception {
+import ee.cyber.cdoc20.CDocException;
+
+public class CDocParseException extends CDocException {
 
     public CDocParseException(String msg) {
         super(msg);

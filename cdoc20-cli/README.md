@@ -48,7 +48,7 @@ java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost
 
 Certificate (`-c` option):
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c ../cdoc20-server/keys/client-certificate.pem README.md
+java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc20client-certificate.pem README.md
 ```
 
 ### Encryption with symmetric key

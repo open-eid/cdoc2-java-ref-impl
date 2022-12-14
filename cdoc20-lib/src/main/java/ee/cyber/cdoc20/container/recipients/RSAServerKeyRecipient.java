@@ -1,15 +1,15 @@
 package ee.cyber.cdoc20.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.fbs.recipients.RsaKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
+
 /**
  * RSA-OAEP recipient using RsaKeyDetails. POJO of flatbuffers
  *  {@link RsaKeyDetails recipients.RsaKeyDetails} structure in CDOC header.
@@ -19,10 +19,8 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     private final String keyServerId;
     private final String transactionId;
 
-    public RSAServerKeyRecipient(RSAPublicKey recipient,
-                                 String keyServerId, String transactionId,
-                                 byte[] encryptedFmk,
-                                 String recipientLabel) {
+    public RSAServerKeyRecipient(RSAPublicKey recipient, String keyServerId, String transactionId,
+            byte[] encryptedFmk, String recipientLabel) {
         super(recipient, encryptedFmk, recipientLabel);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
@@ -37,7 +35,6 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     public String getTransactionId() {
         return transactionId;
     }
-
 
     @Override
     public boolean equals(Object o) {
@@ -55,8 +52,7 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException, ExtApiException, CDocParseException {
-
+            throws GeneralSecurityException, CDocException {
         return KekTools.deriveKekForRsaServer(this, keyMaterial, factory);
     }
 

@@ -1,29 +1,21 @@
 package ee.cyber.cdoc20.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClient;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc20.container.recipients.RecipientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
-
+import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,12 +26,19 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nullable;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.SecretKey;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @SuppressWarnings("checkstyle:FinalClass")
 public class Envelope {
@@ -207,7 +206,6 @@ public class Envelope {
         return bb.array();
     }
 
-
     /**
      * Encrypt payloadFiles. Create CDOC2 container and write it to OutputStream.
      * @param payloadFiles files to be encrypted and added to the container
@@ -263,7 +261,7 @@ public class Envelope {
                                               @Nullable Path outputDir,
                                               @Nullable List<String> filesToExtract,
                                               @Nullable KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
+            throws GeneralSecurityException, IOException, CDocException {
 
         ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
         List<Recipient> recipients = parseHeader(cdocInputStream, fileHeaderOs);
@@ -337,14 +335,12 @@ public class Envelope {
      */
     public static List<String> decrypt(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
                                        Path outputDir, @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
-
+            throws GeneralSecurityException, IOException, CDocException {
         return decrypt(cdocInputStream, recipientKeyMaterial, true, outputDir, null,
                 keyServerClientFac).stream()
                     .map(ArchiveEntry::getName)
                     .toList();
     }
-
 
     /**
      * Decrypt CDOC2 container, read from cdocInputStream.
@@ -362,7 +358,7 @@ public class Envelope {
     public static List<String> decrypt(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
                                        Path outputDir, @Nullable List<String> filesToExtract,
                                        @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
+            throws GeneralSecurityException, IOException, CDocException {
 
         return decrypt(cdocInputStream, recipientKeyMaterial, true, outputDir, filesToExtract, keyServerClientFac)
                 .stream()
@@ -372,7 +368,7 @@ public class Envelope {
 
     public static List<ArchiveEntry> list(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
                                           @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocParseException, ExtApiException {
+            throws GeneralSecurityException, IOException, CDocException {
         return decrypt(cdocInputStream, recipientKeyMaterial, false, null, null, keyServerClientFac);
     }
 

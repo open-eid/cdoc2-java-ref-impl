@@ -1,6 +1,8 @@
 package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.CDocConfiguration;
+import ee.cyber.cdoc20.CDocUserException;
+import ee.cyber.cdoc20.UserErrorCode;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.Console;
@@ -98,7 +100,7 @@ public final class Pkcs11Tools {
             KeyStore.ProtectionParameter ksProtection) throws IOException, KeyStoreException {
         log.trace("initPKCS11KeysStore");
         Path sunPkcsConPath = createSunPkcsConfigurationFile(null, openScLibPath, slot);
-        Provider sunPkcs11Provider = initSunPkcs11Provider(sunPkcsConPath);
+        initSunPkcs11Provider(sunPkcsConPath);
 
         return getConfiguredPkcs11KeyStore(ksProtection);
     }
@@ -135,12 +137,14 @@ public final class Pkcs11Tools {
                         pc.setPassword(pin);
                     } else { //running from IDE, console is null
                         JPasswordField pf = new JPasswordField();
-                        int okCxl = JOptionPane.showConfirmDialog(null, pf, prompt,
+                        int result = JOptionPane.showConfirmDialog(null, pf, prompt,
                             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-                        if (okCxl == JOptionPane.OK_OPTION) {
+                        if (result == JOptionPane.OK_OPTION) {
                             String password = new String(pf.getPassword());
                             pc.setPassword(password.toCharArray());
+                        } else if (result == JOptionPane.OK_CANCEL_OPTION) {
+                            throw new CDocUserException(UserErrorCode.USER_CANCEL, "PIN entry cancelled by user");
                         }
                     }
                 }
@@ -298,7 +302,8 @@ public final class Pkcs11Tools {
                 .newInstance("PKCS11", getConfiguredPKCS11Provider(), keyProtection)
                 .getKeyStore();
         } catch (KeyStoreException e) {
-            log.error("Failed to get PKCS11 keystore. Smart card is not connected or wrong pin inserted.");
+            log.error("Failed to get PKCS11 keystore", e);
+            handlePkcs11KeyStoreException(e);
             throw e;
         }
     }
@@ -363,6 +368,26 @@ public final class Pkcs11Tools {
 
         log.error("PKCS11 provider not configured");
         return null;
+    }
+
+    private static void handlePkcs11KeyStoreException(KeyStoreException exc) {
+        var cause = exc.getCause();
+
+        while (cause != null && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+
+        if (cause != null && cause.getMessage() != null) {
+            var errorMessage = cause.getMessage();
+
+            if (errorMessage.contains("CKR_PIN_INCORRECT") || errorMessage.contains("CKR_PIN_LEN_RANGE")) {
+                throw new CDocUserException(UserErrorCode.WRONG_PIN, errorMessage);
+            }
+            if (errorMessage.contains("CKR_PIN_LOCKED")) {
+                throw new CDocUserException(UserErrorCode.PIN_LOCKED, errorMessage);
+            }
+            throw new CDocUserException(UserErrorCode.SMART_CARD_NOT_PRESENT, exc.getMessage());
+        }
     }
 
     private static String getOpenSCDefaultLocation() {
