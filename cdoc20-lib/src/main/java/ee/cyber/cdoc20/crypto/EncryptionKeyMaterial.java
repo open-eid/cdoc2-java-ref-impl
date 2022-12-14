@@ -1,13 +1,15 @@
 package ee.cyber.cdoc20.crypto;
 
-import javax.crypto.SecretKey;
 import java.security.Key;
 import java.security.PublicKey;
+import javax.crypto.SecretKey;
+import javax.security.auth.DestroyFailedException;
+import javax.security.auth.Destroyable;
 
 /**
  * Represents key material required for encryption.
  */
-public interface EncryptionKeyMaterial {
+public interface EncryptionKeyMaterial extends Destroyable {
 
     /**
      * @return the key to derive the encryption key
@@ -38,6 +40,9 @@ public interface EncryptionKeyMaterial {
             public String getLabel() {
                 return keyLabel;
             }
+
+            @Override
+            public void destroy() { } // no secret key material that needs to be destroyed
         };
     }
 
@@ -59,6 +64,16 @@ public interface EncryptionKeyMaterial {
             @Override
             public String getLabel() {
                 return keyLabel;
+            }
+
+            @Override
+            public void destroy() throws DestroyFailedException {
+                preSharedKey.destroy();
+            }
+
+            @Override
+            public boolean isDestroyed() {
+                return preSharedKey.isDestroyed();
             }
         };
     }

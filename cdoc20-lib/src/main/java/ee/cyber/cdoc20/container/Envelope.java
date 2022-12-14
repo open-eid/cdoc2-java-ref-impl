@@ -80,26 +80,23 @@ public class Envelope {
     public static final byte FMK_ENC_METHOD_BYTE = FMKEncryptionMethod.XOR;
 
     private final Recipient[] recipients;
-    private final KeyCapsuleClient capsuleClient;
     private final SecretKey hmacKey;
     private final SecretKey cekKey;
 
-    private Envelope(Recipient[] recipients, byte[] fmk, @Nullable KeyCapsuleClient capsuleClient) {
+    private Envelope(Recipient[] recipients, byte[] fmk) {
         this.recipients = recipients;
-        this.capsuleClient = capsuleClient;
         this.hmacKey = Crypto.deriveHeaderHmacKey(fmk);
         this.cekKey = Crypto.deriveContentEncryptionKey(fmk);
-    }
-
-    private Envelope(Recipient[] recipients, byte[] fmk) {
-
-        this(recipients, fmk, null);
     }
 
     /**
      * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For each recipient FMK is
      * encrypted with generated key that single recipient can decrypt with their private key.
-     * @param recipients encryption key material either with public key or symmetric key and key label
+     * @param recipients encryption key material either with public key or symmetric key and key label. After
+     *          {@link #prepare(List, KeyCapsuleClient)} has returned, it is safe to call
+     *          {@link EncryptionKeyMaterial#destroy()} to clean up secret key material (it will not be referenced
+     *          anymore).
+     *
      * @param capsuleClient if capsuleClient is provided then store generated ephemeral key material in the server
      * @return Envelope that has key material prepared and can be used for
      *          {@link #encrypt(List, OutputStream) encryption}
@@ -116,14 +113,13 @@ public class Envelope {
     }
 
     /**
-     * Parse flatbuffers {@link Header} from CDOC2
-     * @param envelopeIs InputStream that contains CDOC2 file (envelope)
-     * @param outHeaderOs if not null Header bytes will be written into outHeaderOs
-     * @return FBS Header
+     * Read envelope header until HMAC start and return FlatBuffers header
+     * @param envelopeIs input stream that contain CDOC
+     * @return byte array containing FlatBuffers header
+     * @throws IOException if an I/O error has occurred
+     * @throws CDocParseException if a CDOC parsing error has occurred
      */
-    static Header parseHeaderFBS(InputStream envelopeIs, @Nullable ByteArrayOutputStream outHeaderOs)
-            throws IOException, CDocParseException {
-
+    static byte[] readFBSHeader(InputStream envelopeIs) throws IOException, CDocParseException {
         if (envelopeIs.available() < MIN_ENVELOPE_SIZE) {
             throw new CDocParseException("not enough bytes to read, expected min of " + MIN_ENVELOPE_SIZE);
         }
@@ -146,30 +142,22 @@ public class Envelope {
             throw new CDocParseException("invalid CDOC header length: " + headerLen);
         }
 
-        byte[] headerBytes = envelopeIs.readNBytes(headerLen);
-
-        if (outHeaderOs != null) {
-            outHeaderOs.writeBytes(headerBytes);
-        }
-        return deserializeHeader(headerBytes);
+        return envelopeIs.readNBytes(headerLen);
     }
 
     /**
-     * Parse header section from CDOC2
+     * Parse header section from CDOC2.
      * @param envelopeIs InputStream that contains CDOC2 file (envelope)
-     * @param outHeaderOs outHeaderOs if not null Header bytes will be written into outHeaderOs (for HMAC calculation)
      * @return list of recipients parsed from Header
-     * @throws IOException
-     * @throws CDocParseException
-     * @throws GeneralSecurityException
+     * @throws IOException if an I/O error has occurred
+     * @throws CDocParseException if parsing CDOC Envelope has failed
+     * @throws GeneralSecurityException if decoding cryptographic keys from FlatBuffers RecipientRecord has failed
      */
-    public static List<Recipient> parseHeader(InputStream envelopeIs, @Nullable ByteArrayOutputStream outHeaderOs)
+    public static List<Recipient> parseHeader(InputStream envelopeIs)
             throws IOException, CDocParseException, GeneralSecurityException {
 
-        Header header = parseHeaderFBS(envelopeIs, outHeaderOs);
-        if (header.payloadEncryptionMethod() != PayloadEncryptionMethod.CHACHA20POLY1305) {
-            throw new CDocParseException("Unknown PayloadEncryptionMethod " + header.payloadEncryptionMethod());
-        }
+        byte[] fbsHeaderBytes = readFBSHeader(envelopeIs);
+        Header header = deserializeFBSHeader(fbsHeaderBytes);
         return getRecipients(header);
     }
 
@@ -188,7 +176,12 @@ public class Envelope {
         return recipientList;
     }
 
-    static Header deserializeHeader(byte[] buf) {
+    /**
+     * Deserialize FlatBuffers header
+     * @param buf buffer containing FlatBuffers header
+     * @return parsed FlatBuffers {@link Header}
+     */
+    static Header deserializeFBSHeader(byte[] buf) {
         Objects.requireNonNull(buf);
         ByteBuffer byteBuffer = ByteBuffer.wrap(buf);
         return Header.getRootAsHeader(byteBuffer);
@@ -263,62 +256,78 @@ public class Envelope {
                                               @Nullable KeyCapsuleClientFactory capsulesClientFac)
             throws GeneralSecurityException, IOException, CDocException {
 
-        ByteArrayOutputStream fileHeaderOs = new ByteArrayOutputStream();
-        List<Recipient> recipients = parseHeader(cdocInputStream, fileHeaderOs);
+        byte[] fbsHeaderBytes = readFBSHeader(cdocInputStream);
+        byte[] hmac = readHmac(cdocInputStream);
+        Header header = deserializeFBSHeader(fbsHeaderBytes);
+        List<Recipient> recipients = getRecipients(header);
 
         for (Recipient recipient : recipients) {
             if (recipient.getRecipientId().equals(keyMaterial.getRecipientId())) {
                 byte[] kek = recipient.deriveKek(keyMaterial, capsulesClientFac);
-                byte[] fmk = Crypto.xor(kek, recipient.getEncryptedFileMasterKey());
+                byte[] fmk;
+                if (recipient.getFmkEncryptionMethod() == FMK_ENC_METHOD_BYTE) {
+                    fmk = Crypto.xor(kek, recipient.getEncryptedFileMasterKey());
+                } else {
+                    throw new CDocParseException("Unknown FMK encryption method: "
+                            + recipient.getFmkEncryptionMethod());
+                }
 
                 SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
                 SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
 
-                byte[] hmac = checkHmac(cdocInputStream, fileHeaderOs.toByteArray(), hmacKey);
+                checkHmac(hmac, fbsHeaderBytes, hmacKey);
 
                 log.debug("payload available (at least) {}", cdocInputStream.available());
 
-                byte[] additionalData = getAdditionalData(fileHeaderOs.toByteArray(), hmac);
-                try (CipherInputStream cis =
-                             ChaChaCipher.initChaChaInputStream(cdocInputStream, cekKey, additionalData)) {
+                if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
+                    byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
+                    try (CipherInputStream cis =
+                                 ChaChaCipher.initChaChaInputStream(cdocInputStream, cekKey, additionalData)) {
 
-                    return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
+                        return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
+                    }
+                } else {
+                    throw new CDocParseException("Unknown payload encryption method "
+                            + header.payloadEncryptionMethod());
                 }
             }
         }
 
-        log.info("Recipient {} not present in CDOC. Can't decrypt CDOC.", keyMaterial.getRecipientId());
-        throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, can't decrypt");
+        log.error("Recipient {} not present in CDOC. Cannot decrypt CDOC.", keyMaterial.getRecipientId());
+        throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, cannot decrypt");
     }
 
     /**
      * Check that hmac read from cdocInputStream and hmac calculated from headerBytes match
-     * @param cdocInputStream InputStream pointing to hmac
+     * @param hmac read from CDOC
      * @param headerBytes header bytes
      * @param hmacKey header HMAC key, derived from FMK
-     * @return hmac read from cdocInputStream
-     * @throws IOException if an I/O error has occurred
      * @throws GeneralSecurityException  if security/crypto error has occurred
      * @throws CDocParseException if calculated HMAC doesn't match with HMAC in header
      */
-    private static byte[] checkHmac(InputStream cdocInputStream, byte[] headerBytes, SecretKey hmacKey)
-            throws IOException, GeneralSecurityException, CDocParseException {
-        byte[] hmac;
-        if (cdocInputStream.available() > Crypto.HHK_LEN_BYTES) {
-            byte[] calculatedHmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
-            hmac = cdocInputStream.readNBytes(Crypto.HHK_LEN_BYTES);
+    private static void checkHmac(byte[] hmac, byte[] headerBytes, SecretKey hmacKey)
+            throws GeneralSecurityException, CDocParseException {
 
-            if (!Arrays.equals(calculatedHmac, hmac)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
-                    log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
-                }
-                throw new CDocParseException("Invalid hmac");
+        Objects.requireNonNull(hmac);
+        Objects.requireNonNull(headerBytes);
+
+        byte[] calculatedHmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
+
+        if (!Arrays.equals(calculatedHmac, hmac)) {
+            if (log.isDebugEnabled()) {
+                log.debug("calc hmac: {}", HexFormat.of().formatHex(calculatedHmac));
+                log.debug("file hmac: {}", HexFormat.of().formatHex(hmac));
             }
+            throw new CDocParseException("Invalid hmac");
+        }
+    }
+
+    private static byte[] readHmac(InputStream cdocInputStream) throws IOException, CDocParseException {
+        if (cdocInputStream.available() > Crypto.HHK_LEN_BYTES) {
+            return cdocInputStream.readNBytes(Crypto.HHK_LEN_BYTES);
         } else {
             throw new CDocParseException("No hmac");
         }
-        return hmac;
     }
 
     /**
@@ -411,14 +420,13 @@ public class Envelope {
         if (o == null || getClass() != o.getClass()) return false;
         Envelope envelope = (Envelope) o;
         return Arrays.equals(recipients, envelope.recipients)
-                && Objects.equals(capsuleClient, envelope.capsuleClient)
                 && Objects.equals(hmacKey, envelope.hmacKey)
                 && Objects.equals(cekKey, envelope.cekKey);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(capsuleClient, hmacKey, cekKey);
+        int result = Objects.hash(hmacKey, cekKey);
         result = 31 * result + Arrays.hashCode(recipients);
         return result;
     }

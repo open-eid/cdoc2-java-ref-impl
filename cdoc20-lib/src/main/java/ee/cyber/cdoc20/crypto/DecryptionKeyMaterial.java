@@ -1,13 +1,15 @@
 package ee.cyber.cdoc20.crypto;
 
-import javax.crypto.SecretKey;
 import java.security.KeyPair;
 import java.util.Optional;
+import javax.crypto.SecretKey;
+import javax.security.auth.DestroyFailedException;
+import javax.security.auth.Destroyable;
 
 /**
  * Represents key material required for decryption.
  */
-public interface DecryptionKeyMaterial {
+public interface DecryptionKeyMaterial extends Destroyable {
     /**
      * Uniquely identifies the recipient. This data is used to find recipients key material from parsed CDOC header
      * * For EC, this is EC pub key.
@@ -44,6 +46,16 @@ public interface DecryptionKeyMaterial {
             public Optional<SecretKey> getSecretKey() {
                 return Optional.of(secretKey);
             }
+
+            @Override
+            public void destroy() throws DestroyFailedException {
+                secretKey.destroy();
+            }
+
+            @Override
+            public boolean isDestroyed() {
+                return secretKey.isDestroyed();
+            }
         };
     }
 
@@ -58,6 +70,17 @@ public interface DecryptionKeyMaterial {
             public Optional<KeyPair> getKeyPair() {
                 return Optional.of(recipientKeyPair);
             }
+
+            @Override
+            public void destroy() throws DestroyFailedException {
+                recipientKeyPair.getPrivate().destroy();
+            }
+
+            @Override
+            public boolean isDestroyed() {
+                return recipientKeyPair.getPrivate().isDestroyed();
+            }
+
         };
     }
 }

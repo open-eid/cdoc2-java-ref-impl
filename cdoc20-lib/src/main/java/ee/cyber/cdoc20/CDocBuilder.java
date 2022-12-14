@@ -66,7 +66,7 @@ public class CDocBuilder {
             if (serverProperties == null) {
                 envelope = Envelope.prepare(recipients, null);
             } else {
-                // for encryption don't init mTLS client as this might require smart-card
+                // for encryption, do not init mTLS client as this might require smart-card
                 envelope = Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
             }
             envelope.encrypt(this.payloadFiles, outputStream);

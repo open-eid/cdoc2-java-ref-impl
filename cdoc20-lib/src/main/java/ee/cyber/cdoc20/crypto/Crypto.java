@@ -250,13 +250,14 @@ public final class Crypto {
         return HKDF.fromHmacSha256().expand(kekPm, baos.toByteArray(), keyLen);
     }
 
-    public static byte[] calcHmacSha256(byte[] fmk, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
-
-        Mac mac = Mac.getInstance(HMAC_SHA_256);
-        mac.init(deriveHeaderHmacKey(fmk));
-        return mac.doFinal(data);
-    }
-
+    /**
+     * Calculate HMAC
+     * @param hhk HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
+     * @param data input – data in bytes. For CDOC2 this is header FlatBuffers bytes
+     * @return the MAC result.
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     */
     public static byte[] calcHmacSha256(SecretKey hhk, byte[] data)
             throws NoSuchAlgorithmException, InvalidKeyException {
 
@@ -265,6 +266,12 @@ public final class Crypto {
         return mac.doFinal(data);
     }
 
+    /**
+     * XOR two byte arrays
+     * @param x1 byte array
+     * @param x2 byte array
+     * @return xor result
+     */
     public static byte[] xor(byte[] x1, byte[] x2) {
 
         if ((x1 == null) || (x2 == null)) {

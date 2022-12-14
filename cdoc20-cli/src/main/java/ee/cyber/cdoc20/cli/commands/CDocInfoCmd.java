@@ -31,7 +31,7 @@ public class CDocInfoCmd implements Callable<Void> {
     public Void call() throws Exception {
 
 
-        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()), null);
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
         for (Recipient recipient: recipients) {
 
             String type = (recipient instanceof PublicKeyRecipient)
