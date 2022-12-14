@@ -40,6 +40,17 @@ public final class RecipientFactory {
 
     private RecipientFactory() { }
 
+    /**
+     * Build recipients. For each recipient KEK (key encryption key) key is derived from recipients key material and fmk
+     * is encrypted with KEK.
+     * @param fmk file master key generated per CDOC2 envelope
+     * @param recipientKeys recipients key material used to derive KEK
+     * @param serverClient if server client is provided, then key material for deriving KEK or encrypted KEK is stored
+     *                     in key server
+     * @return Recipients list created from provided key material
+     * @throws GeneralSecurityException
+     * @throws ExtApiException if communication with key server failed
+     */
     public static Recipient[] buildRecipients(byte[] fmk, List<EncryptionKeyMaterial> recipientKeys,
                                               @Nullable KeyCapsuleClient serverClient)
             throws GeneralSecurityException, ExtApiException {
@@ -48,6 +59,10 @@ public final class RecipientFactory {
         Objects.requireNonNull(recipientKeys);
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
             throw new IllegalArgumentException("Invalid FMK len");
+        }
+
+        if (recipientKeys.isEmpty()) {
+            throw new IllegalArgumentException("At least one recipient required");
         }
 
         List<Recipient> result = new ArrayList<>(recipientKeys.size());

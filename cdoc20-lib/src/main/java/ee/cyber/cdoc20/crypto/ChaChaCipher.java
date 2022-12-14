@@ -21,13 +21,13 @@ public final class ChaChaCipher {
     //Sun ChaChaCipher decryption fails with big files, use BouncyCastle implementation for ChaCha
     static final Provider BC = new BouncyCastleProvider();
 
-    private static final String INVALID_ADDITIONAL_DATA = "Invalid additionalData";
+    private static final String INVALID_ADDITIONAL_DATA = "Invalid Additional Authentication Data (AAD)";
 
     private ChaChaCipher() {
     }
 
     /**
-     *
+     * Init ChaCha20-Poly1305 Cipher with contentEncryptionKey and nonce
      * @param mode {@link Cipher#ENCRYPT_MODE} or {@link Cipher#DECRYPT_MODE}
      * @param contentEncryptionKey CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
      * @param nonce if ENCRYPT mode then {@link #NONCE_LEN_BYTES } bytes of secure random, otherwise nonce read from
@@ -58,16 +58,25 @@ public final class ChaChaCipher {
         return cipher;
     }
 
-    public static byte[] encryptPayload(SecretKey cek, byte[] src, byte[] additionalData)
+    /**
+     *
+     * @param cek content encryption key CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
+     * @param src payload to encrypt
+     * @param aad Additional Authentication Data (AAD) provided to ChaChaCipher
+     *        {@link ee.cyber.cdoc20.container.Envelope#getAdditionalData(byte[], byte[])}
+     * @return src encrypted with cek. First 12 bytes are nonce, rest is encrypted payload
+     * @throws GeneralSecurityException
+     */
+    public static byte[] encryptPayload(SecretKey cek, byte[] src, byte[] aad)
             throws GeneralSecurityException {
 
-        if ((additionalData == null) || (additionalData.length == 0)) {
+        if ((aad == null) || (aad.length == 0)) {
             throw new IllegalArgumentException(INVALID_ADDITIONAL_DATA);
         }
 
         byte[] nonce = generateNonce();
         Cipher cipher = initCipher(Cipher.ENCRYPT_MODE, cek, nonce);
-        cipher.updateAAD(additionalData);
+        cipher.updateAAD(aad);
         byte[] encrypted = cipher.doFinal(src);
 
         ByteBuffer bb = ByteBuffer.allocate(NONCE_LEN_BYTES + encrypted.length);
@@ -76,20 +85,29 @@ public final class ChaChaCipher {
         return bb.array();
     }
 
-    public static byte[] decryptPayload(SecretKey cek, byte[] encrypted, byte[] additionalData)
+    /**
+     *
+     * @param cek content encryption key CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
+     * @param encrypted encrypted payload. First 12 bytes of encrypted is nonce.
+     * @param aad Additional Authentication Data (AAD) provided to ChaChaCipher
+     *        {@link ee.cyber.cdoc20.container.Envelope#getAdditionalData(byte[], byte[])}
+     * @return decrypted payload.
+     * @throws GeneralSecurityException if decryption has failed
+     */
+    public static byte[] decryptPayload(SecretKey cek, byte[] encrypted, byte[] aad)
             throws GeneralSecurityException {
 
         if ((encrypted == null) || (encrypted.length <= NONCE_LEN_BYTES)) {
             throw new IllegalArgumentException("Invalid encrypted data");
         }
 
-        if ((additionalData == null) || (additionalData.length == 0)) {
+        if ((aad == null) || (aad.length == 0)) {
             throw new IllegalArgumentException(INVALID_ADDITIONAL_DATA);
         }
 
         byte[] nonce = Arrays.copyOfRange(encrypted, 0, NONCE_LEN_BYTES);
         Cipher cipher = initCipher(Cipher.DECRYPT_MODE, cek, nonce);
-        cipher.updateAAD(additionalData);
+        cipher.updateAAD(aad);
         return cipher.doFinal(encrypted, NONCE_LEN_BYTES, encrypted.length - NONCE_LEN_BYTES);
     }
 
@@ -99,6 +117,16 @@ public final class ChaChaCipher {
         return nonce;
     }
 
+    /**
+     * Constructs a CipherOutputStream from an OutputStream and ChaChaCipher
+     * @param os the OutputStream object
+     * @param contentEncryptionKey  cek content encryption key CEK, {@link Crypto#deriveContentEncryptionKey(byte[])}
+     * @param additionalData Additional Authentication Data (AAD) provided to ChaChaCipher
+     *        {@link ee.cyber.cdoc20.container.Envelope#getAdditionalData(byte[], byte[])}
+     * @return CipherOutputStream
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
     public static CipherOutputStream initChaChaOutputStream(OutputStream os,
                                                             SecretKey contentEncryptionKey,
                                                             byte[] additionalData)
@@ -115,6 +143,17 @@ public final class ChaChaCipher {
         return new CipherOutputStream(os, cipher);
     }
 
+    /**
+     * Constructs a CipherInputStream from an InputStream and a ChaChaCipher.
+     * @param is the to-be-processed input stream
+     * @param contentEncryptionKey contentEncryptionKey  cek content encryption key CEK,
+     *          {@link Crypto#deriveContentEncryptionKey(byte[])}
+     * @param additionalData Additional Authentication Data (AAD) provided to ChaChaCipher
+     *        {@link ee.cyber.cdoc20.container.Envelope#getAdditionalData(byte[], byte[])}
+     * @return CipherInputStream
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
     public static CipherInputStream initChaChaInputStream(InputStream is,
                                                           SecretKey contentEncryptionKey,
                                                           byte[] additionalData)

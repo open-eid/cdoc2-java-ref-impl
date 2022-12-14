@@ -118,10 +118,8 @@ public class EnvelopeTest {
 
         assertTrue(resultBytes.length > 0);
 
-        ByteArrayOutputStream headerOs = new ByteArrayOutputStream();
-
         //no exception is also good indication that parsing worked
-        List<Recipient> recipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), headerOs);
+        List<Recipient> recipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes));
 
         assertEquals(1, recipients.size());
 
@@ -163,7 +161,8 @@ public class EnvelopeTest {
 
         log.debug("available: {}", cdocBytes.length);
 
-        Header header = Envelope.parseHeaderFBS(new ByteArrayInputStream(cdocBytes), null);
+        byte[] fbsBytes = Envelope.readFBSHeader(new ByteArrayInputStream(cdocBytes));
+        Header header = Envelope.deserializeFBSHeader(fbsBytes);
 
         assertNotNull(header);
         assertEquals(1, header.recipientsLength());
@@ -215,7 +214,7 @@ public class EnvelopeTest {
         assertTrue(resultBytes.length > 0);
 
         //no exception is also good indication that parsing worked
-        List<Recipient> eccRecipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), null);
+        List<Recipient> eccRecipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes));
 
         assertEquals(1, eccRecipients.size());
 
@@ -264,7 +263,7 @@ public class EnvelopeTest {
         assertTrue(resultBytes.length > 0);
 
         //no exception is also good indication that parsing worked
-        List<Recipient> recipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes), null);
+        List<Recipient> recipients = Envelope.parseHeader(new ByteArrayInputStream(resultBytes));
 
         assertEquals(1, recipients.size());
 
@@ -308,7 +307,8 @@ public class EnvelopeTest {
 
         log.debug("available: {}", cdocBytes.length);
 
-        Header header = Envelope.parseHeaderFBS(new ByteArrayInputStream(cdocBytes), null);
+        byte[] fbsBytes = Envelope.readFBSHeader(new ByteArrayInputStream(cdocBytes));
+        Header header = Envelope.deserializeFBSHeader(fbsBytes);
 
         assertNotNull(header);
         assertEquals(1, header.recipientsLength());

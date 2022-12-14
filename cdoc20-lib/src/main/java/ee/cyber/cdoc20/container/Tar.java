@@ -26,7 +26,6 @@ import static ee.cyber.cdoc20.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
 import static ee.cyber.cdoc20.CDocConfiguration.GZIP_COMPRESSION_THRESHOLD_PROPERTY;
 import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
 
-
 /**
  * Utility class for dealing with tar zlib stream/files. Only supports regular files (no directories/special files)
  * inside the tar. Concatenated gzip streams are not supported.
@@ -34,7 +33,6 @@ import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
 public final class Tar {
 
     private static final Logger log = LoggerFactory.getLogger(Tar.class);
-
 
     private static final int DEFAULT_BUFFER_SIZE  = 8192;
 
@@ -52,23 +50,22 @@ public final class Tar {
     private Tar() {
     }
 
-    static void addFileToTar(TarArchiveOutputStream tarArchiveOutputStream, Path file, String entryName)
-            throws IOException {
+    static void addFileToTar(TarArchiveOutputStream outputStream, Path file, String entryName) throws IOException {
 
         log.debug("Adding file {} as {}", file.toAbsolutePath(), entryName);
         if (Files.isRegularFile(file)) {
-            TarArchiveEntry tarArchiveEntry = (TarArchiveEntry) tarArchiveOutputStream.createArchiveEntry(file.toFile(),
+            TarArchiveEntry tarArchiveEntry = (TarArchiveEntry) outputStream.createArchiveEntry(file.toFile(),
                     entryName);
 
-            tarArchiveOutputStream.putArchiveEntry(tarArchiveEntry);
+            outputStream.putArchiveEntry(tarArchiveEntry);
             try (InputStream input = new BufferedInputStream(Files.newInputStream(file))) {
-                long written = input.transferTo(tarArchiveOutputStream);
+                long written = input.transferTo(outputStream);
                 log.debug("Added {}B", written);
             }
         } else {
             throw new IOException("Not a file: " + file);
         }
-        tarArchiveOutputStream.closeArchiveEntry();
+        outputStream.closeArchiveEntry();
     }
 
     /**
@@ -77,8 +74,7 @@ public final class Tar {
      * @param files to archive
      * @throws IOException
      */
-    public static void archiveFiles(OutputStream dest, Iterable<File> files)
-            throws IOException {
+    public static void archiveFiles(OutputStream dest, Iterable<File> files) throws IOException {
 
         List<String> baseNameList = new LinkedList<>();
         files.forEach(f -> baseNameList.add(FileNameValidator.validate(f.getName())));
@@ -139,7 +135,6 @@ public final class Tar {
         return tarZOs;
     }
 
-
     /**
      * Extract single file into outputStream
      * @param tarGZipInputStream GZipped and tarred input stream that is scanned for tarEntryName
@@ -165,7 +160,7 @@ public final class Tar {
         }
 
         log.info("not found {}", tarEntryName);
-        return -1;
+        return -1L;
     }
 
     /**
@@ -173,8 +168,9 @@ public final class Tar {
      * copied to outputDir.
      * @param tarGZipIs tar gzip InputStream to process
      * @param outputDir output directory where files are extracted when extract=true
-     * @param filesToExtract if not null, extract specified files otherwise all files.
-     *                      No effect for list (extract=false)
+     * @param filesToExtract extract specified files otherwise (filesToExtract=null) all files.
+     *                       No effect for files not present in the container.
+     *                       No effect for list (extract=false)
      * @param extract if true, extract files to outputDir. Otherwise, list TarArchiveEntries
      * @return List<ArchiveEntry> list of TarArchiveEntry processed in tarGZipInputStream (ignored entries are not
      *      returned)

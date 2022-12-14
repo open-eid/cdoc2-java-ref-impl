@@ -116,7 +116,8 @@ class CryptoTest {
     @Test
     void testHmacSha256() throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] data = "header".getBytes(StandardCharsets.UTF_8);
-        byte[] hmac = Crypto.calcHmacSha256(Crypto.generateFileMasterKey(), data);
+        SecretKey hhk = Crypto.deriveHeaderHmacKey(Crypto.generateFileMasterKey());
+        byte[] hmac = Crypto.calcHmacSha256(hhk, data);
         assertNotNull(hmac);
         assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
     }
