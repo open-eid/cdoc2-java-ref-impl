@@ -1,9 +1,7 @@
 package ee.cyber.cdoc20.crypto;
 
-import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.container.CDocParseException;
-
 import java.security.GeneralSecurityException;
 
 /**
@@ -11,5 +9,5 @@ import java.security.GeneralSecurityException;
  */
 public interface KekDerivable {
     byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException, ExtApiException, CDocParseException;
+        throws GeneralSecurityException, CDocException;
 }

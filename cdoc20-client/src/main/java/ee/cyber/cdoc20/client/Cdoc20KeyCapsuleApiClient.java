@@ -228,7 +228,7 @@ public final class Cdoc20KeyCapsuleApiClient {
 
     /**
      * @param capsule
-     * @return transacationId
+     * @return transactionId
      * @throws ApiException
      */
     public String createCapsule(Capsule capsule) throws ApiException {
@@ -243,13 +243,13 @@ public final class Cdoc20KeyCapsuleApiClient {
 
         ApiResponse<Void> response = capsulesApi.createCapsuleWithHttpInfo(capsule);
         String locationHeaderValue = null;
-        if ((response.getStatusCode() == 201)
+        if (response.getStatusCode() == 201
                 && response.getHeaders() != null
                 && response.getHeaders().containsKey("Location")) {
 
             List<String> locationHeaders = response.getHeaders().get("Location");
             // expect exactly 1 Location header
-            if ((locationHeaders.size() == 1)) {
+            if (locationHeaders.size() == 1) {
                 locationHeaderValue = locationHeaders.get(0);
             }
         }
