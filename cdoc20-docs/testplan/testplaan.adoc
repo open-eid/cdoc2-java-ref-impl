@@ -42,7 +42,7 @@ Käesolev testiplaan kirjeldab CDOC 2.0 võtmeedastusserveri (Server) testimiseg
 
 Käesoleva testiplaani raames on Serveri testimisel kaks peamist eesmärki:
 
-* funktsionaalse testimisega selgitada välja kas Serveri realiseeritud funktsionaalsus vastab dokumentatsioonis kirjeldatule ning kas Server suudab täita seatud eesmärke
+*	funktsionaalse testimisega selgitada välja kas Serveri realiseeritud funktsionaalsus vastab dokumentatsioonis kirjeldatule ning kas Server suudab täita seatud eesmärke
 *	koormustestidega teha kindlaks serveri toimimine ja käitumine erinevate kasutusmahtude ja -mustrite korral.
 
 === Funktsionaalne testimine
@@ -91,21 +91,24 @@ Tavapäraselt ei ole testiideed ning stsenaariumid otseselt testiplaani osa. Võ
 === Võtmeedastusserveri API funktsionaalsed testid
 
 Serveri funktsionaalsust testitakse läbi Serveri API liideste lõppkasutaja kliendirakendust emuleerides.
-
+Testid käivitatakse nii ECC kui RSA võtmetele.
 Positiivsed stsenaariumid:
 
-*	Saatjal õnnestub võtmekapsli edastamine Serverile
-*	Saatja on juba võtmekapsli edastanud ja saadab uuesti Serverile
-*	Vastuvõtjal õnnestub võtmekapsli pärimine
+*	Saatjal õnnestub võtmekapsli edastamine Serverile ([ECC|RSA]-PUT_CAPSULE-POS-01-ONCE)
+*	Saatja on juba võtmekapsli edastanud ja saadab uuesti Serverile ([ECC|RSA]-PUT_CAPSULE-POS-02-REPEATEDLY)
+*	Saatja edastab serverile suvalise baidijada, mis ei ületa ettenähtud mahupiirangut ([ECC|RSA]-PUT-CAPSULE-POS-03-RANDOM_CONTENT)
+*	Vastuvõtjal õnnestub võtmekapsli pärimine ([ECC|RSA]-GET_CAPSULE-POS-01-CORRECT_REQUEST)
 *	Edukas võtmekapsli edastamine mitme-õlgse süsteemi puhul -- kapsli võtab vastu üks süsteemi õlg ning väljastab teine õlg
-*	Saatja edastab serverile suvalise baidijada, mis ei ületa ettenähtud mahupiirangut
 
 Negatiivsed stsenaariumid
 
-*	Saatja saadab liiga suure võtmekapsli
-*	Vastuvõtja pärib võtmekapslit korrektse mitteeksisteeriva transaktsiooni identifikaatoriga
-*	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga
-*	Vastuvõtja pärib võtmekapslit korrektse transaktsiooni identifikaatoriga, aga vastuvõtja avalik võti ei klapi sellega
+*	Saatja saadab liiga suure võtmekapsli (PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG)
+*	Vastuvõtja pärib võtmekapslit korrektse mitteeksisteeriva korrektse transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-02-NON_EXISTING_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-03-RANDOM_UUID_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit liiga lühikese transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-04-TOO_SHORT_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit tühja transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-05-EMPTY_STRING_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit liiga pika transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-06-TOO_LONG_RANDOM_STRING_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit korrektse transaktsiooni identifikaatoriga, aga vastuvõtja avalik võti ei klapi sellega ([ECC|RSA]-GET_CAPSULE-NEG-07-PUBLIC_KEY_NOT_MATCHING)
 
 === Serveri koormustestid
 
