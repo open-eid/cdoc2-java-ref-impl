@@ -13,6 +13,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_02;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_03;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_04;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_05;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_06;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_07;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_01;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_02;
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
@@ -43,19 +51,34 @@ public class EccDetailsScenarios {
             .exec(this.getAndCheckEccDetails);
     }
 
+    //TODO: Add test for RSA-PUT_CAPSULE-POS-01-ONCE - Create ecc-details and
+    // RSA-GET_CAPSULE-POS-01-CORRECT_REQUEST - Get correct ecc-details
+
+    //TODO: Create tests for [ECC|RSA]-PUT_CAPSULE-POS-02-REPEATEDLY - Same correct capsule is sent to server
+    // repetedly.
+
+    //TODO: Create test for [ECC|RSA]-PUT-CAPSULE-POS-03-RANDOM_CONTENT - Upload random content with correct receiver
+    // info (like using server for sharing file pieces)
+
+    //TODO: create test case for PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG
+
+
     ScenarioBuilder createAndGetRecipientTransactionMismatch() {
-        return scenario("Request capsule with mismatching recipient and txId")
+        return scenario(NEG_07 + " - Request capsule with mismatching recipient and txId")
             .exec(this.createEccDetails(this.testData::generateCapsuleWithWrongRecipient))
             .exec(this.getEccDetailsTxIdMismatch);
     }
 
+    //TODO: Add test for RSA-GET_CAPSULE-NEG-08-PUBLIC_KEY_NOT_MATCHING
+
     ScenarioBuilder getWithInvalidTransactionIds() {
         return scenario("Request capsule with invalid transactionId values")
             .exec(
-                this.checkInvalidTransactionId("SD" + UUID.randomUUID()),
-                this.checkInvalidTransactionId(UUID.randomUUID().toString()),
-                this.checkInvalidTransactionId("123"),
-                this.checkInvalidTransactionId(
+                this.checkInvalidTransactionId(NEG_02, "SD" + UUID.randomUUID()),
+                this.checkInvalidTransactionId(NEG_03, UUID.randomUUID().toString()),
+                this.checkInvalidTransactionId(NEG_04, "123"),
+                this.checkInvalidTransactionId(NEG_05, ""),
+                this.checkInvalidTransactionId(NEG_06,
                     String.join("-", UUID.randomUUID().toString(), UUID.randomUUID().toString())
                 )
             )
@@ -74,7 +97,7 @@ public class EccDetailsScenarios {
 
     private ChainBuilder createEccDetails(Function<Long, GeneratedCapsule> capsuleGenerator) {
         return exec(
-            http("Create ecc-details")
+            http(POS_01 + " - Create ecc-details")
                 .post(ECC_DETAILS_API)
                 .body(StringBody(session -> {
                     var userId = session.userId();
@@ -94,10 +117,9 @@ public class EccDetailsScenarios {
         )
         .exitHereIfFailed();
     }
-
     private ChainBuilder getAndCheckEccDetails =
         exec(
-            http("Get correct ecc-details")
+            http(POS_02 + " - Get correct ecc-details")
                 .get(session -> session.getString(LOCATION))
                 .check(
                     status().is(HttpResponseStatus.OK.code()),
@@ -135,11 +157,10 @@ public class EccDetailsScenarios {
                 )
         )
         .exitHereIfFailed();
-
     // sends a request with the given transaction id and checks it to be handled as invalid input
-    private ChainBuilder checkInvalidTransactionId(String transactionId) {
+    private ChainBuilder checkInvalidTransactionId(String testId, String transactionId) {
         return exec(
-            http("Get ecc-details for invalid txId '" + transactionId + "'")
+            http(testId + " - with invalid txId '" + transactionId + "'")
                 .get(ECC_DETAILS_API + '/' + transactionId)
                 .check(
                     status().is(HttpResponseStatus.NOT_FOUND.code()),
