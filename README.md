@@ -182,15 +182,19 @@ See `cdoc20-cli/README.md`
 
 First update CHANGELOG.md - follow semantic versioning
 
-Will create tag with version v{x.y.z} in git
+Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git 
 ```
 mvn clean
-mvn release:prepare
+mvn --batch-mode release:prepare -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
-
 Verify that git repositories are synced (master points to same commit) and tags are pushed
 
-As maven repository doesn't exist yet, then maven deploy is not performed 
+As maven repository doesn't exist yet, then maven deploy is not performed
+
+For more info, see
+[Maven Non-interactive Release](https://maven.apache.org/maven-release/maven-release-plugin/examples/non-interactive-release.html)
+
+
 
 
