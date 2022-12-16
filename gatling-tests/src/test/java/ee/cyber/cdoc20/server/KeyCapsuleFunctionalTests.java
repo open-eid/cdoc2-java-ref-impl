@@ -17,24 +17,23 @@ import static io.gatling.javaapi.http.HttpDsl.http;
 
 
 /**
- * Functional tests for the ecc-details API endpoint
+ * Functional tests for the key-capsules API
  */
 @Slf4j
-public final class EccDetailsFunctionalTests extends Simulation {
+public final class KeyCapsuleFunctionalTests extends Simulation {
 
     private final TestConfig config = TestConfig.load(false);
     private final TestDataGenerator testData = new TestDataGenerator(this.config);
-    private final EccDetailsScenarios scenarios = new EccDetailsScenarios(this.testData);
+    private final EccKeyCapsuleScenarios scenarios = new EccKeyCapsuleScenarios(config, testData);
 
     HttpProtocolBuilder httpConf = http
-        .baseUrl(this.config.getServerBaseUrl())
         .acceptHeader("application/json")
         .perUserKeyManagerFactory(this::getKeyManager)
         .disableWarmUp();
 
     {
         setUp(
-            this.scenarios.createAndGetCreateEccDetails().injectOpen(atOnceUsers(1)),
+            this.scenarios.createAndGetEccKeyCapsule().injectOpen(atOnceUsers(1)),
             this.scenarios.createAndGetRecipientTransactionMismatch().injectOpen(atOnceUsers(1)),
             this.scenarios.getWithInvalidTransactionIds().injectOpen(atOnceUsers(1))
         )

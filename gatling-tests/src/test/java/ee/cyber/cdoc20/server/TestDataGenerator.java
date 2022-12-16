@@ -1,19 +1,19 @@
 package ee.cyber.cdoc20.server;
 
-import ee.cyber.cdoc20.crypto.EllipticCurve;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-
-import java.security.KeyPair;
-import java.security.interfaces.ECPublicKey;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import ee.cyber.cdoc20.server.conf.LoadedKeyStore;
 import ee.cyber.cdoc20.server.conf.TestConfig;
 import ee.cyber.cdoc20.server.datagen.CertUtil;
-import ee.cyber.cdoc20.server.dto.EccDetailsRequest;
+import ee.cyber.cdoc20.server.dto.GeneratedCapsule;
+import ee.cyber.cdoc20.server.dto.KeyCapsuleRequest;
+import ee.cyber.cdoc20.server.dto.KeyCapsuleType;
+import java.security.KeyPair;
+import java.security.interfaces.ECPublicKey;
+import java.util.Base64;
+import java.util.Random;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Generates test data
@@ -22,6 +22,7 @@ import ee.cyber.cdoc20.server.dto.EccDetailsRequest;
 @RequiredArgsConstructor
 public class TestDataGenerator {
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Random RANDOM = new Random();
 
     private final TestConfig conf;
 
@@ -31,7 +32,7 @@ public class TestDataGenerator {
         var keyStore = this.getClientKeyStore(userId);
         // ephemeral key pair
         var senderKeyPair = CertUtil.generateEcKeyPair();
-        var request = createRequest(keyStore, senderKeyPair);
+        var request = createEccKeyCapsuleRequest(keyStore, senderKeyPair);
 
         return new GeneratedCapsule(keyStore, senderKeyPair, request);
     }
@@ -45,7 +46,7 @@ public class TestDataGenerator {
         if (currentUserKeyStore.getPublicKey().equals(otherUserKeyStore.getPublicKey())) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Invalid test data detected: keystores %s and %s contain the same keys",
+                    "Invalid test data detected: key stores %s and %s contain the same keys",
                     currentUserKeyStore.getFile().getAbsolutePath(),
                     otherUserKeyStore.getFile().getAbsoluteFile()
                 )
@@ -53,7 +54,7 @@ public class TestDataGenerator {
         }
 
         var senderKeyPair = CertUtil.generateEcKeyPair();
-        var request = createRequest(otherUserKeyStore, senderKeyPair);
+        var request = createEccKeyCapsuleRequest(otherUserKeyStore, senderKeyPair);
         return new GeneratedCapsule(otherUserKeyStore, senderKeyPair, request);
     }
 
@@ -64,22 +65,33 @@ public class TestDataGenerator {
     public LoadedKeyStore getClientKeyStore(long userId) {
         var keyStores = this.conf.getKeyStores();
 
-        // use modulo in case the test uses more users than there are keystores
+        // use modulo in case the test uses more users than there are key stores
         int index = (int) userId % keyStores.size();
 
         return keyStores.get(index);
     }
 
-    private static EccDetailsRequest createRequest(LoadedKeyStore recipient, KeyPair sender) {
-        return new EccDetailsRequest(
+    private static KeyCapsuleRequest createEccKeyCapsuleRequest(LoadedKeyStore recipient, KeyPair sender) {
+        return new KeyCapsuleRequest(
             CertUtil.encodePublicKey(recipient.getPublicKey()),
             CertUtil.encodePublicKey((ECPublicKey) sender.getPublic()),
-            (int) EllipticCurve.secp384r1.getValue()
+            KeyCapsuleType.ecc_secp384r1
         );
     }
 
     @SneakyThrows
     public static String toJson(Object dto) {
         return JSON.writeValueAsString(dto);
+    }
+
+    /**
+     * Generates a random string
+     * @param length the length of the string
+     * @return a random string with the given length
+     */
+    public static String randomString(int length) {
+        var bytes = new byte[length];
+        RANDOM.nextBytes(bytes);
+        return Base64.getEncoder().encodeToString(bytes).substring(0, length);
     }
 }

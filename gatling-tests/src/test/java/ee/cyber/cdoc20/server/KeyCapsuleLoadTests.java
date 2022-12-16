@@ -13,17 +13,17 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.http;
 
 /**
- * Load tests for the ecc-details API endpoint
+ * Load tests for the key-capsules API
  */
 @Slf4j
-public final class EccDetailsLoadTests extends Simulation {
+public final class KeyCapsuleLoadTests extends Simulation {
 
     private final TestConfig config = TestConfig.load(true);
     private final TestDataGenerator testData = new TestDataGenerator(this.config);
-    private final EccDetailsScenarios scenarios = new EccDetailsScenarios(this.testData);
+    private final EccKeyCapsuleScenarios scenarios = new EccKeyCapsuleScenarios(this.config, this.testData);
 
     HttpProtocolBuilder httpConf = http
-        .baseUrl(this.config.getServerBaseUrl())
+        .baseUrl(this.config.getGetServerBaseUrl())
         .acceptHeader("application/json")
         .perUserKeyManagerFactory(this::getKeyManager)
         .disableWarmUp();
@@ -36,13 +36,13 @@ public final class EccDetailsLoadTests extends Simulation {
         var getConf = loadTestConfig.getGetCapsule();
 
         setUp(
-            this.scenarios.createEccDetails().injectOpen(
+            this.scenarios.createEccKeyCapsule().injectOpen(
                 incrementUsersPerSec(createConf.getIncrementUsersPerSec())
                     .times(createConf.getIncrementCycles())
                     .eachLevelLasting(createConf.getCycleDurationSec())
                     .startingFrom(createConf.getStartingUsersPerSec())
             ),
-            this.scenarios.getRandomEccDetails().injectOpen(
+            this.scenarios.getRandomEccKeyCapsule().injectOpen(
                 // wait for some capsules to be created and their urls returned
                 nothingFor(loadTestConfig.getGetCapsuleStartDelay()),
                 incrementUsersPerSec(getConf.getIncrementUsersPerSec())
