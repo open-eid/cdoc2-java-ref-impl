@@ -1,28 +1,33 @@
 package ee.cyber.cdoc20.server;
 
+import ee.cyber.cdoc20.server.conf.TestConfig;
+import ee.cyber.cdoc20.server.dto.GeneratedCapsule;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_02;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_03;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_04;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_05;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_06;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_07;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_01;
-import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_02;
-import static io.gatling.javaapi.core.CoreDsl.*;
-import static io.gatling.javaapi.http.HttpDsl.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_GET_02;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_GET_03;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_GET_04;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_GET_05;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.NEG_GET_06;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_PUT_01;
+import static ee.cyber.cdoc20.server.ScenarioIdentifiers.POS_GET_02;
+import static io.gatling.javaapi.core.CoreDsl.StringBody;
+import static io.gatling.javaapi.core.CoreDsl.bodyLength;
+import static io.gatling.javaapi.core.CoreDsl.bodyString;
+import static io.gatling.javaapi.core.CoreDsl.doIf;
+import static io.gatling.javaapi.core.CoreDsl.exec;
+import static io.gatling.javaapi.core.CoreDsl.scenario;
+import static io.gatling.javaapi.http.HttpDsl.header;
+import static io.gatling.javaapi.http.HttpDsl.http;
+import static io.gatling.javaapi.http.HttpDsl.status;
 
 /**
  * Test scenarios
@@ -30,25 +35,31 @@ import static io.gatling.javaapi.http.HttpDsl.*;
 @Slf4j
 @RequiredArgsConstructor
 @SuppressWarnings("unchecked") // compiler warning come from usage of Gatling API
-public class EccDetailsScenarios {
+public class EccKeyCapsuleScenarios {
     private static final Random RANDOM = new Random();
 
-    // context path of the ecc-details  API (
-    private static final String ECC_DETAILS_API = "/ecc-details";
+    // context path of the API (
+    private static final String API_ENDPOINT = "/key-capsules";
 
+    private final TestConfig conf;
     private final TestDataGenerator testData;
     // holds sent data for each user (used in verifying that the same data was received back)
     private final ConcurrentHashMap<Long, GeneratedCapsule> sentData = new ConcurrentHashMap<>();
     // holds received urls (with transaction ids) for created capsules
     private final Set<String> createdCapsuleUrls = ConcurrentHashMap.newKeySet();
 
+    // key capsule transactionId min length
+    private static final int MIN_TX_ID_LEN = 18;
+    // key capsule transactionId max length
+    private static final int MAX_TX_ID_LEN = 34;
+
     // Gatling session variables
     private static final String LOCATION = "location";
 
-    ScenarioBuilder createAndGetCreateEccDetails() {
+    ScenarioBuilder createAndGetEccKeyCapsule() {
         return scenario("Create and get capsule")
-            .exec(this.createEccDetails(this.testData::generateCapsule))
-            .exec(this.getAndCheckEccDetails);
+            .exec(this.createEccKeyCapsule(this.testData::generateCapsule))
+            .exec(this.getAndCheckEccKeyCapsule());
     }
 
     //TODO: Add test for RSA-PUT_CAPSULE-POS-01-ONCE - Create ecc-details and
@@ -62,11 +73,10 @@ public class EccDetailsScenarios {
 
     //TODO: create test case for PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG
 
-
     ScenarioBuilder createAndGetRecipientTransactionMismatch() {
-        return scenario(NEG_07 + " - Request capsule with mismatching recipient and txId")
-            .exec(this.createEccDetails(this.testData::generateCapsuleWithWrongRecipient))
-            .exec(this.getEccDetailsTxIdMismatch);
+        return scenario(NEG_GET_06 + " - Request capsule with mismatching recipient and txId")
+            .exec(this.createEccKeyCapsule(this.testData::generateCapsuleWithWrongRecipient))
+            .exec(this.getEccKeyCapsuleCheckTxIdMismatch());
     }
 
     //TODO: Add test for RSA-GET_CAPSULE-NEG-08-PUBLIC_KEY_NOT_MATCHING
@@ -74,36 +84,33 @@ public class EccDetailsScenarios {
     ScenarioBuilder getWithInvalidTransactionIds() {
         return scenario("Request capsule with invalid transactionId values")
             .exec(
-                this.checkInvalidTransactionId(NEG_02, "SD" + UUID.randomUUID()),
-                this.checkInvalidTransactionId(NEG_03, UUID.randomUUID().toString()),
-                this.checkInvalidTransactionId(NEG_04, "123"),
-                this.checkInvalidTransactionId(NEG_05, ""),
-                this.checkInvalidTransactionId(NEG_06,
-                    String.join("-", UUID.randomUUID().toString(), UUID.randomUUID().toString())
-                )
+                this.checkInvalidTransactionId(NEG_GET_02, this.testData.randomString(MIN_TX_ID_LEN)),
+                this.checkInvalidTransactionId(NEG_GET_03, "123"),
+                this.checkInvalidTransactionId(NEG_GET_04, ""),
+                this.checkInvalidTransactionId(NEG_GET_05, this.testData.randomString(MAX_TX_ID_LEN + 1))
             )
             .exitHereIfFailed();
     }
 
-    ScenarioBuilder createEccDetails() {
+    ScenarioBuilder createEccKeyCapsule() {
         return scenario("Create capsule").exec(
-            this.createEccDetails(this.testData::generateCapsule)
+            this.createEccKeyCapsule(this.testData::generateCapsule)
         );
     }
 
-    ScenarioBuilder getRandomEccDetails() {
-        return scenario("Get random capsule").exec(this.getSavedEccDetailsIfExists);
+    ScenarioBuilder getRandomEccKeyCapsule() {
+        return scenario("Get random capsule").exec(this.getSavedEccKeyCapsuleIfExists);
     }
 
-    private ChainBuilder createEccDetails(Function<Long, GeneratedCapsule> capsuleGenerator) {
+    private ChainBuilder createEccKeyCapsule(Function<Long, GeneratedCapsule> capsuleGenerator) {
         return exec(
-            http(POS_01 + " - Create ecc-details")
-                .post(ECC_DETAILS_API)
+            http(POS_PUT_01 + " - Create ecc key capsule")
+                .post(this.conf.getPutServerBaseUrl() + this.API_ENDPOINT)
                 .body(StringBody(session -> {
                     var userId = session.userId();
                     var capsule = capsuleGenerator.apply(userId);
                     this.sentData.put(userId, capsule);
-                    return TestDataGenerator.toJson(capsule.getRequest());
+                    return TestDataGenerator.toJson(capsule.request());
                 })).asJson()
                 .check(
                     status().is(HttpResponseStatus.CREATED.code()),
@@ -117,25 +124,26 @@ public class EccDetailsScenarios {
         )
         .exitHereIfFailed();
     }
-    private ChainBuilder getAndCheckEccDetails =
-        exec(
-            http(POS_02 + " - Get correct ecc-details")
-                .get(session -> session.getString(LOCATION))
+
+    private ChainBuilder getAndCheckEccKeyCapsule() {
+        return exec(
+            http(POS_GET_02 + " - Get correct ecc key capsule")
+                .get(session -> this.conf.getGetServerBaseUrl() + session.getString(LOCATION))
                 .check(
                     status().is(HttpResponseStatus.OK.code()),
                     // check that the same data we sent is returned
                     bodyString().is(session -> TestDataGenerator.toJson(
-                            this.getSentData(session.userId()).getRequest()
+                            this.getSentData(session.userId()).request()
                         )
                     )
                 )
-        )
-        .exitHereIfFailed();
+        ).exitHereIfFailed();
+    }
 
-    private ChainBuilder getSavedEccDetailsIfExists =
+    private ChainBuilder getSavedEccKeyCapsuleIfExists =
         doIf(session -> !this.createdCapsuleUrls.isEmpty()).then(
             exec(
-                http("Get ecc-details")
+                http("Get ecc key capsule")
                     .get(session -> this.getRandomSavedCapsuleUrl())
                     .check(
                         status().in(
@@ -147,21 +155,22 @@ public class EccDetailsScenarios {
             .exitHereIfFailed()
         );
 
-    private ChainBuilder getEccDetailsTxIdMismatch =
-        exec(
-            http("Get ecc-details for wrong transactionId")
-                .get(session -> session.getString(LOCATION))
+    private ChainBuilder getEccKeyCapsuleCheckTxIdMismatch() {
+        return exec(
+            http(NEG_GET_06 + " - Get ecc key capsule with wrong transactionId")
+                .get(session -> this.conf.getGetServerBaseUrl() + session.getString(LOCATION))
                 .check(
                     status().is(HttpResponseStatus.NOT_FOUND.code()),
                     bodyLength().is(0)
                 )
-        )
-        .exitHereIfFailed();
+        ).exitHereIfFailed();
+    }
+
     // sends a request with the given transaction id and checks it to be handled as invalid input
     private ChainBuilder checkInvalidTransactionId(String testId, String transactionId) {
         return exec(
             http(testId + " - with invalid txId '" + transactionId + "'")
-                .get(ECC_DETAILS_API + '/' + transactionId)
+                .get(this.conf.getGetServerBaseUrl() + API_ENDPOINT + '/' + transactionId)
                 .check(
                     status().is(HttpResponseStatus.NOT_FOUND.code()),
                     bodyLength().is(0)

@@ -103,12 +103,11 @@ Positiivsed stsenaariumid:
 Negatiivsed stsenaariumid
 
 *	Saatja saadab liiga suure võtmekapsli (PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG)
-*	Vastuvõtja pärib võtmekapslit korrektse mitteeksisteeriva korrektse transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-02-NON_EXISTING_TRANSACTION_ID)
-*	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-03-RANDOM_UUID_TRANSACTION_ID)
-*	Vastuvõtja pärib võtmekapslit liiga lühikese transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-04-TOO_SHORT_TRANSACTION_ID)
-*	Vastuvõtja pärib võtmekapslit tühja transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-05-EMPTY_STRING_TRANSACTION_ID)
-*	Vastuvõtja pärib võtmekapslit liiga pika transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-06-TOO_LONG_RANDOM_STRING_TRANSACTION_ID)
-*	Vastuvõtja pärib võtmekapslit korrektse transaktsiooni identifikaatoriga, aga vastuvõtja avalik võti ei klapi sellega ([ECC|RSA]-GET_CAPSULE-NEG-07-PUBLIC_KEY_NOT_MATCHING)
+*	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-02-RANDOM_UUID_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit liiga lühikese transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-03-TOO_SHORT_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit tühja transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-04-EMPTY_STRING_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit liiga pika transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-05-TOO_LONG_RANDOM_STRING_TRANSACTION_ID)
+*	Vastuvõtja pärib võtmekapslit korrektse transaktsiooni identifikaatoriga, aga vastuvõtja avalik võti ei klapi sellega ([ECC|RSA]-GET_CAPSULE-NEG-06-PUBLIC_KEY_NOT_MATCHING)
 
 === Serveri koormustestid
 

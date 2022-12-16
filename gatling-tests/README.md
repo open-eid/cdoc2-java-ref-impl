@@ -2,10 +2,22 @@
 
 ## Preconditions for executing tests
 
-* Server is running
-  * Can be started inside cdoc20-server catalog with command:
+* The latest cdoc20 java libraries are installed locally. From cdoc20_java directory run:
+
 ```
-mvn spring-boot:run
+mvn clean install
+```
+
+* CDOC2.0 key servers are is running
+  * Can be started inside cdoc20-server catalog with commands:
+```
+cd get-server
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-get-server-VER.jar
+```
+
+```
+cd put-server
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-put-server-VER.jar
 ```
 
 ## Configuration
@@ -13,7 +25,7 @@ mvn spring-boot:run
 In configuration file one can specify following parameters
 * Target server URL
 * Client certificate information (generated automatically, used for accessing server while getting capsules)
-  * location for generated client key-stores (make sure specified location folder exists)
+  * location for generated client key stores (make sure specified location folder exists)
   * password for key-stores
   * alias for key-store files
 * Load test configuration
@@ -38,16 +50,16 @@ From gatling-tests directory run:
 mvn clean compile exec:java -Damount=10
 ```
 
-This will generate 10 keystores (the ouput folder and other parameters are configured in pom.xml)
+This will generate 10 key stores (the ouput folder and other parameters are configured in pom.xml)
 with private keys and certificates that can be used later in Gatling tests.
-The number of generated keystores is specified by the `amount` system property.
+The number of generated key stores is specified by the `amount` system property.
 
 
 ## Running functional tests
 
 The following functional tests exist for testing {SERVER_NAME} server functionality
-* create and upload capsule to server (createAndGetCreateEccDetails)
-* Get successfully capsule from server (createAndGetCreateEccDetails)
+* create and upload capsule to server (createAndGetCreateEccCapsule)
+* Get successfully capsule from server (createAndGetCreateEccCapsule)
 * Get capsule with incorrect transactionId (createAndGetRecipientTransactionMismatch)
 * Get capsule with invalid transactionId (getWithInvalidTransactionIds)
 
@@ -55,16 +67,16 @@ A CDOC2.0 server must be running on the host:port as configured in the configura
 
 From gatling-tests directory run:
 ```
-mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.EccDetailsFunctionalTests
+mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleFunctionalTests
 ```
 
 ## Running load tests
 
 For running load tests first execution profile should be designed and configured. Load test execution models and configuring options are described in more detail here https://gatling.io/docs/gatling/reference/current/core/injection/#incrementuserspersec
 
-Open Model is implemented for CDOC 2.0 server load tests, meaning that continously growning load is applied to the server.
+Open Model is implemented for CDOC 2.0 server load tests, meaning that continuously growing load is applied to the server.
 
-* Sample configuration for continously growing load example:
+* Sample configuration for continuously growing load example:
   - start-users-per-second = 10
   - increment-users-per-second = 5
   - increment-cycles = 10
@@ -88,7 +100,7 @@ Initial load - 100 concurrent users will be applied and each next test cycle has
 For executing load tests run from gatling-tests directory:
 
 ```
-mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.EccDetailsLoadTests
+mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleLoadTests
 ```
 
 ## Server Keystore configuration
@@ -110,6 +122,5 @@ keytool -exportcert -keystore gatling-ca.p12 -alias gatling-ca -storepass secret
 To add the test CA certificate to the server's truststore:
 
 ```
-keytool -import -trustcacerts -file gatling-ca.pem -alias gatling-ca -storepass passwd -keystore
- path/to/servertruststore.jks
+keytool -import -trustcacerts -file gatling-ca.pem -alias gatling-ca -storepass passwd -keystore path/to/servertruststore.jks
 ```

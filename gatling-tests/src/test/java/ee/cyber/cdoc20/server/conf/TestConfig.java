@@ -27,7 +27,8 @@ import static ee.cyber.cdoc20.server.datagen.KeyStoreUtil.loadKeyStore;
 @ToString
 public class TestConfig {
 
-    private final String serverBaseUrl;
+    private final String getServerBaseUrl;
+    private final String putServerBaseUrl;
     @ToString.Exclude
     private final List<LoadedKeyStore> keyStores;
     private final Optional<LoadTestConfig> loadTestConfig;
@@ -43,7 +44,8 @@ public class TestConfig {
         var conf = ConfigFactory.load();
 
         var testConf = new TestConfig(
-            conf.getString("server.base-url"),
+            conf.getString("get-server.base-url"),
+            conf.getString("put-server.base-url"),
             readClientKeyStores(conf),
             isLoadTest ? Optional.of(readLoadTestConfig(conf)) : Optional.empty()
         );
@@ -102,7 +104,7 @@ public class TestConfig {
         if (keyStores.size() < 2) {
             throw new IllegalArgumentException("At least 2 client key stores are required");
         }
-        log.info("Found {} keystores", keyStores.size());
+        log.info("Found {} key stores", keyStores.size());
         return keyStores;
     }
 
