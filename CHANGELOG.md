@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] User error codes (2022-12-16)
+
+### Features
+* Add error codes for common user errors
+* Gatling test updates
+
 ## [0.1.0] Enable Posix extensions for tar (2022-12-12)
 Switch to semantic versioning
 
