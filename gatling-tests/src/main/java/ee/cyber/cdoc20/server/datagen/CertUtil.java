@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.server.datagen;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
+import ee.cyber.cdoc20.crypto.RsaUtils;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -8,6 +9,7 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -36,6 +38,7 @@ public final class CertUtil {
     private static final String BC = BouncyCastleProvider.PROVIDER_NAME;
     private static final String CERT_SIG_ALGO = "SHA512WITHECDSA";
     private static final Duration CERT_VALIDITY = Duration.ofDays(365L);
+    private static final int RSA_KEY_SIZE = 2048;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -74,8 +77,8 @@ public final class CertUtil {
             X509CertificateHolder certHolder = certBuilder.build(signer);
 
             log.info(
-                "Created cert(issuer={}, subject={})",
-                certHolder.getIssuer(), certHolder.getSubject()
+                "Created cert(issuer={}, subject={}, type={})",
+                certHolder.getIssuer(), certHolder.getSubject(), subjectKeyPair.getPrivate().getAlgorithm()
             );
 
             return getCertificate(certHolder);
@@ -99,6 +102,19 @@ public final class CertUtil {
     }
 
     @SneakyThrows
+    public static KeyPair generateRsaKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(RSA_KEY_SIZE, SecureRandom.getInstanceStrong());
+            return keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            log.error("Failed to generate RSA key pair", e);
+            throw e;
+        }
+    }
+
+
+    @SneakyThrows
     static X509Certificate getCertificate(X509CertificateHolder holder) {
         return new JcaX509CertificateConverter().setProvider(BC).getCertificate(holder);
     }
@@ -106,5 +122,10 @@ public final class CertUtil {
     @SneakyThrows
     public static String encodePublicKey(ECPublicKey pubKey) {
         return Base64.getEncoder().encodeToString(ECKeys.encodeEcPubKeyForTls(pubKey));
+    }
+
+    @SneakyThrows
+    public static String encodePublicKey(RSAPublicKey pubKey) {
+        return Base64.getEncoder().encodeToString(RsaUtils.encodeRsaPubKey(pubKey));
     }
 }

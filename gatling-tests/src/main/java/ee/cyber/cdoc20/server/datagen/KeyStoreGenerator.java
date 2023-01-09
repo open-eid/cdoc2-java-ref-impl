@@ -53,7 +53,8 @@ public final class KeyStoreGenerator {
                 keystorePassword,
                 "localhost",
                 rootKeyPair,
-                rootCert
+                rootCert,
+                i % 2 == 0 ? CertUtil::generateEcKeyPair : CertUtil::generateRsaKeyPair
             );
         }
     }

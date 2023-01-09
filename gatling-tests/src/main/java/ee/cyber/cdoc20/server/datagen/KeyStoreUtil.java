@@ -8,6 +8,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.function.Supplier;
 import javax.security.auth.x500.X500Principal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +30,14 @@ public final class KeyStoreUtil {
      * @param fullPath the absolute path of the file to write the keystore to
      * @param alias the alias
      * @param password the keystore password
-     * @param cn the CN for the certificatee
-     * @param caKeyPair the CA keypair to use to sign the certificaet
+     * @param cn the CN for the certificate
+     * @param caKeyPair the CA keypair to use to sign the certificate
      * @param caCert the CA certificate
+     * @param keyPairGenerator the key pair generator
      */
     @SneakyThrows
     public static void generateKeyStore(Path fullPath, String alias, String password, String cn,
-            KeyPair caKeyPair, X509Certificate caCert) {
+            KeyPair caKeyPair, X509Certificate caCert, Supplier<KeyPair> keyPairGenerator) {
         KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
         // no password
         ks.load(null, null);
@@ -44,7 +46,7 @@ public final class KeyStoreUtil {
             X500Principal subject = new X500Principal("CN=" + cn);
             X500Principal signer = caCert.getIssuerX500Principal();
 
-            var clientKeys = CertUtil.generateEcKeyPair();
+            var clientKeys = keyPairGenerator.get();
             var clientCert = CertUtil.generateCertificate(
                 subject, clientKeys, signer, caKeyPair, cn
             );

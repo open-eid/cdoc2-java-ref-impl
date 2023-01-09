@@ -9,6 +9,7 @@ import ee.cyber.cdoc20.server.dto.KeyCapsuleRequest;
 import ee.cyber.cdoc20.server.dto.KeyCapsuleType;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
@@ -26,44 +27,70 @@ public class TestDataGenerator {
 
     private final TestConfig conf;
 
-    public GeneratedCapsule generateCapsule(Long userId) {
-        log.debug("generateCapsule(userId={})", userId);
+    public GeneratedCapsule generateEccCapsule(Long userId) {
+        log.debug("generateEccCapsule(userId={})", userId);
 
-        var keyStore = this.getClientKeyStore(userId);
+        var keyStore = this.getEccKeyStore(userId);
         // ephemeral key pair
         var senderKeyPair = CertUtil.generateEcKeyPair();
-        var request = createEccKeyCapsuleRequest(keyStore, senderKeyPair);
 
-        return new GeneratedCapsule(keyStore, senderKeyPair, request);
+        return new GeneratedCapsule(
+            keyStore, createEccKeyCapsuleRequest(keyStore, senderKeyPair)
+        );
     }
 
-    public GeneratedCapsule generateCapsuleWithWrongRecipient(Long userId) {
-        log.debug("generateCapsuleWithWrongRecipient(userId={})", userId);
+    public GeneratedCapsule generateRsaCapsule(Long userId) {
+        log.debug("generateRsaCapsule(userId={})", userId);
 
-        var currentUserKeyStore = this.getClientKeyStore(userId);
-        var otherUserKeyStore = this.getClientKeyStore(userId + 1L);
+        var keyStore = this.getRsaKeyStore(userId);
+        return new GeneratedCapsule(keyStore, createRsaKeyCapsuleRequest(keyStore));
+    }
 
-        if (currentUserKeyStore.getPublicKey().equals(otherUserKeyStore.getPublicKey())) {
+    public GeneratedCapsule generateEccCapsuleWithWrongRecipient(Long userId) {
+        log.debug("generateEccCapsuleWithWrongRecipient(userId={})", userId);
+
+        var currentUserKeyStore = this.getEccKeyStore(userId);
+        var otherUserKeyStore = this.getEccKeyStore(userId + 1L);
+
+        if (currentUserKeyStore.publicKey().equals(otherUserKeyStore.publicKey())) {
             throw new IllegalArgumentException(
                 String.format(
                     "Invalid test data detected: key stores %s and %s contain the same keys",
-                    currentUserKeyStore.getFile().getAbsolutePath(),
-                    otherUserKeyStore.getFile().getAbsoluteFile()
+                    currentUserKeyStore.file().getAbsolutePath(),
+                    otherUserKeyStore.file().getAbsoluteFile()
                 )
             );
         }
 
         var senderKeyPair = CertUtil.generateEcKeyPair();
         var request = createEccKeyCapsuleRequest(otherUserKeyStore, senderKeyPair);
-        return new GeneratedCapsule(otherUserKeyStore, senderKeyPair, request);
+        return new GeneratedCapsule(otherUserKeyStore, request);
+    }
+
+    public GeneratedCapsule generateRsaCapsuleWithWrongRecipient(Long userId) {
+        log.debug("generateRsaCapsuleWithWrongRecipient(userId={})", userId);
+
+        var currentUserKeyStore = this.getRsaKeyStore(userId);
+        var otherUserKeyStore = this.getRsaKeyStore(userId + 1L);
+
+        if (currentUserKeyStore.publicKey().equals(otherUserKeyStore.publicKey())) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Invalid test data detected: key stores %s and %s contain the same keys",
+                    currentUserKeyStore.file().getAbsolutePath(),
+                    otherUserKeyStore.file().getAbsoluteFile()
+                )
+            );
+        }
+        return new GeneratedCapsule(otherUserKeyStore, createRsaKeyCapsuleRequest(otherUserKeyStore));
     }
 
     /**
      * @param userId the userId given by Gatling (starts from 1, increasing)
-     * @return n-th keystore from configuration
+     * @return n-th elliptic curve keystore from configuration
      */
-    public LoadedKeyStore getClientKeyStore(long userId) {
-        var keyStores = this.conf.getKeyStores();
+    public LoadedKeyStore getEccKeyStore(long userId) {
+        var keyStores = this.conf.getEccKeyStores();
 
         // use modulo in case the test uses more users than there are key stores
         int index = (int) userId % keyStores.size();
@@ -71,12 +98,71 @@ public class TestDataGenerator {
         return keyStores.get(index);
     }
 
-    private static KeyCapsuleRequest createEccKeyCapsuleRequest(LoadedKeyStore recipient, KeyPair sender) {
-        return new KeyCapsuleRequest(
-            CertUtil.encodePublicKey(recipient.getPublicKey()),
-            CertUtil.encodePublicKey((ECPublicKey) sender.getPublic()),
-            KeyCapsuleType.ecc_secp384r1
+    /**
+     * @param userId the userId given by Gatling (starts from 1, increasing)
+     * @return n-th RSA keystore from configuration
+     */
+    public LoadedKeyStore getRsaKeyStore(long userId) {
+        var keyStores = this.conf.getRsaKeyStores();
+
+        if (keyStores.isEmpty()) {
+            throw new IllegalStateException("No RSA key stores configured");
+        }
+
+        // use modulo in case the test uses more users than there are key stores
+        int index = (int) userId % keyStores.size();
+
+        return keyStores.get(index);
+    }
+
+    /**
+     * @return an elliptic curve keystore from configuration
+     */
+    public LoadedKeyStore getRandomEccKeyStore() {
+        return getEccKeyStore(1L);
+    }
+
+    /**
+     * @return a RSA keystore from configuration
+     */
+    public LoadedKeyStore getRandomRsaKeyStore() {
+        return getRsaKeyStore(1L);
+    }
+
+    public static KeyCapsuleRequest createEccKeyCapsuleRequest(LoadedKeyStore recipient, KeyPair sender) {
+        if (recipient.publicKey() instanceof ECPublicKey ecPublicKey) {
+            return new KeyCapsuleRequest(
+                CertUtil.encodePublicKey(ecPublicKey),
+                CertUtil.encodePublicKey((ECPublicKey) sender.getPublic()),
+                KeyCapsuleType.ecc_secp384r1
+            );
+        } else {
+            throw new IllegalArgumentException(
+                "Expecting key store with EcPublicKey, got " + recipient.publicKey().getClass()
+            );
+        }
+    }
+
+    public static KeyCapsuleRequest createRsaKeyCapsuleRequest(LoadedKeyStore recipient) {
+        return createRsaKeyCapsuleRequest(
+            recipient,
+            recipient.publicKey().getEncoded() // in reality, should be encrypted kek
         );
+    }
+
+    public static KeyCapsuleRequest createRsaKeyCapsuleRequest(LoadedKeyStore recipient,
+                                                               byte[] keyMaterial) {
+        if (recipient.publicKey() instanceof RSAPublicKey rsaPublicKey) {
+            return new KeyCapsuleRequest(
+                CertUtil.encodePublicKey(rsaPublicKey),
+                Base64.getEncoder().encodeToString(keyMaterial),
+                KeyCapsuleType.rsa
+            );
+        } else {
+            throw new IllegalArgumentException(
+                "Expecting key store with RSAPublicKey, got " + recipient.publicKey().getClass()
+            );
+        }
     }
 
     @SneakyThrows
@@ -90,8 +176,19 @@ public class TestDataGenerator {
      * @return a random string with the given length
      */
     public static String randomString(int length) {
+        return Base64.getEncoder()
+            .encodeToString(randomBytes(length))
+            .substring(0, length);
+    }
+
+    /**
+     * Generates random bytes
+     * @param length the number of bytes to generate
+     * @return random bytes
+     */
+    public static byte[] randomBytes(int length) {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);
-        return Base64.getEncoder().encodeToString(bytes).substring(0, length);
+        return bytes;
     }
 }

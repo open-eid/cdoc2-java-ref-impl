@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.server;
 
 import ee.cyber.cdoc20.server.conf.TestConfig;
+import ee.cyber.cdoc20.server.scenarios.EccKeyCapsuleScenarios;
 import io.gatling.commons.shared.unstable.util.Ssl;
 import io.gatling.javaapi.core.Simulation;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
@@ -20,7 +21,7 @@ public final class KeyCapsuleLoadTests extends Simulation {
 
     private final TestConfig config = TestConfig.load(true);
     private final TestDataGenerator testData = new TestDataGenerator(this.config);
-    private final EccKeyCapsuleScenarios scenarios = new EccKeyCapsuleScenarios(this.config, this.testData);
+    private final EccKeyCapsuleScenarios eccScenarios = new EccKeyCapsuleScenarios(this.config, this.testData);
 
     HttpProtocolBuilder httpConf = http
         .baseUrl(this.config.getGetServerBaseUrl())
@@ -36,13 +37,13 @@ public final class KeyCapsuleLoadTests extends Simulation {
         var getConf = loadTestConfig.getGetCapsule();
 
         setUp(
-            this.scenarios.createEccKeyCapsule().injectOpen(
+            this.eccScenarios.sendEccKeyCapsule().injectOpen(
                 incrementUsersPerSec(createConf.getIncrementUsersPerSec())
                     .times(createConf.getIncrementCycles())
                     .eachLevelLasting(createConf.getCycleDurationSec())
                     .startingFrom(createConf.getStartingUsersPerSec())
             ),
-            this.scenarios.getRandomEccKeyCapsule().injectOpen(
+            this.eccScenarios.getRandomKeyCapsule().injectOpen(
                 // wait for some capsules to be created and their urls returned
                 nothingFor(loadTestConfig.getGetCapsuleStartDelay()),
                 incrementUsersPerSec(getConf.getIncrementUsersPerSec())
@@ -57,11 +58,11 @@ public final class KeyCapsuleLoadTests extends Simulation {
 
     // returns the key store to use for the user injected by Gatling
     private KeyManagerFactory getKeyManager(long userId) {
-        var keyStore = this.testData.getClientKeyStore(userId);
+        var keyStore = this.testData.getEccKeyStore(userId);
         return Ssl.newKeyManagerFactory(
-            new Some<>(keyStore.getType()),
-            keyStore.getFile().getAbsolutePath(),
-            keyStore.getPassword(),
+            new Some<>(keyStore.keyStoreType()),
+            keyStore.file().getAbsolutePath(),
+            keyStore.password(),
             Option.empty()
         );
     }
