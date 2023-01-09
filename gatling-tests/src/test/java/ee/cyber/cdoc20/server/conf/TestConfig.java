@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +14,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-
 import static ee.cyber.cdoc20.server.datagen.KeyStoreUtil.KEY_STORE_TYPE;
 import static ee.cyber.cdoc20.server.datagen.KeyStoreUtil.getCertificate;
 import static ee.cyber.cdoc20.server.datagen.KeyStoreUtil.loadKeyStore;
@@ -30,7 +30,9 @@ public class TestConfig {
     private final String getServerBaseUrl;
     private final String putServerBaseUrl;
     @ToString.Exclude
-    private final List<LoadedKeyStore> keyStores;
+    private final List<LoadedKeyStore> eccKeyStores;
+    @ToString.Exclude
+    private final List<LoadedKeyStore> rsaKeyStores;
     private final Optional<LoadTestConfig> loadTestConfig;
 
     /**
@@ -43,12 +45,22 @@ public class TestConfig {
     public static TestConfig load(boolean isLoadTest) {
         var conf = ConfigFactory.load();
 
+        var keyStores = readClientKeyStores(conf);
+
         var testConf = new TestConfig(
             conf.getString("get-server.base-url"),
             conf.getString("put-server.base-url"),
-            readClientKeyStores(conf),
+            keyStores.stream().filter(x -> x.publicKey() instanceof ECPublicKey).toList(),
+            keyStores.stream().filter(x -> x.publicKey() instanceof RSAPublicKey).toList(),
             isLoadTest ? Optional.of(readLoadTestConfig(conf)) : Optional.empty()
         );
+
+        if (testConf.getEccKeyStores().size() < 2) {
+            throw new IllegalArgumentException("Not enough elliptic curve key stores configured");
+        }
+        if (testConf.getRsaKeyStores().size() < 2) {
+            throw new IllegalArgumentException("Not enough RSA key stores configured");
+        }
 
         log.info("Loaded test configuration: {}", testConf);
 
@@ -64,14 +76,14 @@ public class TestConfig {
 
         if (!keystoreDir.exists() || !keystoreDir.isAbsolute()) {
             throw new IllegalArgumentException(
-                "Invalid client keystore folder (must be absolute): " + keystoreDir.toString()
+                "Invalid client keystore folder (must be absolute): " + keystoreDir
             );
         }
 
         var files = keystoreDir.listFiles();
         if (files == null) {
             throw new IllegalArgumentException(
-                "Client keystore folder " + keystoreDir.toString() + " contains no files"
+                "Client keystore folder " + keystoreDir + " contains no files"
             );
         }
 
@@ -82,28 +94,18 @@ public class TestConfig {
                 try {
                     var ks = loadKeyStore(file.toPath(), KEY_STORE_TYPE, keystorePassword);
                     var cert = getCertificate(ks, keystorePassword, keyAlias);
-                    if (cert.getPublicKey() instanceof ECPublicKey) {
-                        keyStores.add(
-                            new LoadedKeyStore(
-                                (ECPublicKey) cert.getPublicKey(),
-                                file,
-                                KEY_STORE_TYPE,
-                                keystorePassword)
-                        );
-                    } else {
-                        log.error(
-                            "Unexpected public key in key store {}, expecting ECPublicKey",
-                            cert.getPublicKey().getClass()
-                        );
-                    }
+                    keyStores.add(
+                        new LoadedKeyStore(
+                            cert.getPublicKey(),
+                            file,
+                            KEY_STORE_TYPE,
+                            keystorePassword
+                        )
+                    );
                 } catch (Exception e) {
-                    log.error("Failed to load keystore {}", file.toString(), e);
+                    log.error("Failed to load keystore {}", file, e);
                 }
             });
-
-        if (keyStores.size() < 2) {
-            throw new IllegalArgumentException("At least 2 client key stores are required");
-        }
         log.info("Found {} key stores", keyStores.size());
         return keyStores;
     }

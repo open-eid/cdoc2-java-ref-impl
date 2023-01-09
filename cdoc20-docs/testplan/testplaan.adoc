@@ -96,13 +96,13 @@ Positiivsed stsenaariumid:
 
 *	Saatjal õnnestub võtmekapsli edastamine Serverile ([ECC|RSA]-PUT_CAPSULE-POS-01-ONCE)
 *	Saatja on juba võtmekapsli edastanud ja saadab uuesti Serverile ([ECC|RSA]-PUT_CAPSULE-POS-02-REPEATEDLY)
-*	Saatja edastab serverile suvalise baidijada, mis ei ületa ettenähtud mahupiirangut ([ECC|RSA]-PUT-CAPSULE-POS-03-RANDOM_CONTENT)
+*	Saatja edastab serverile RSA võtmematerjalina suvalise baidijada, mis ei ületa ettenähtud mahupiirangut (RSA-PUT-CAPSULE-POS-03-RANDOM_CONTENT)
 *	Vastuvõtjal õnnestub võtmekapsli pärimine ([ECC|RSA]-GET_CAPSULE-POS-01-CORRECT_REQUEST)
 *	Edukas võtmekapsli edastamine mitme-õlgse süsteemi puhul -- kapsli võtab vastu üks süsteemi õlg ning väljastab teine õlg
 
 Negatiivsed stsenaariumid
 
-*	Saatja saadab liiga suure võtmekapsli (PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG)
+*	Saatja saadab liiga suure võtmematerjaliga RSA võtmekapsli (RSA-PUT_CAPSULE-NEG-01-CAPSULE_TOO_BIG)
 *	Vastuvõtja pärib võtmekapslit juhusliku transaktsiooni identifikaatoriga (GET_CAPSULE-NEG-02-RANDOM_UUID_TRANSACTION_ID)
 *	Vastuvõtja pärib võtmekapslit liiga lühikese transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-03-TOO_SHORT_TRANSACTION_ID)
 *	Vastuvõtja pärib võtmekapslit tühja transaktsiooni identifikaatoriga(GET_CAPSULE-NEG-04-EMPTY_STRING_TRANSACTION_ID)
