@@ -150,18 +150,6 @@
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>6.2.1</version>
                 <executions>
-
-                    <execution>
-                        <id>generate-cdoc20-services</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/cdoc20services.yaml</inputSpec>
-                            <apiPackage>ee.cyber.cdoc20.server.api</apiPackage>
-                        </configuration>
-                    </execution>
-
                     <execution>
                         <id>generate-cdoc20-capsules</id>
                         <goals>
