@@ -1,7 +1,6 @@
 package ee.cyber.cdoc20.server.api;
 
 import ee.cyber.cdoc20.server.model.Capsule;
-import ee.cyber.cdoc20.server.model.ServerEccDetails;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleRepository;
 import java.net.URI;
@@ -23,7 +22,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 @Service
 @Slf4j
-public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDelegate {
+public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate {
 
     @Autowired
     private NativeWebRequest nativeWebRequest;
@@ -78,24 +77,6 @@ public class CreateKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsAp
     @Override
     public ResponseEntity<Capsule> getCapsuleByTransactionId(String transactionId) {
         log.error("getCapsuleByTransactionId() operation not supported on key capsule put server");
-        return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
-    }
-
-    @Deprecated // old api
-    @Override
-    public ResponseEntity<Void> createEccDetails(ServerEccDetails serverEccDetails) {
-        return this.createCapsule(
-            new Capsule()
-                .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1)
-                .recipientId(serverEccDetails.getRecipientPubKey())
-                .ephemeralKeyMaterial(serverEccDetails.getSenderPubKey())
-        );
-    }
-
-    @Deprecated // old api
-    @Override
-    public ResponseEntity<ServerEccDetails> getEccDetailsByTransactionId(String transactionId) {
-        log.error("getEccDetailsByTransactionId() operation not supported on key capsule put server");
         return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
     }
 

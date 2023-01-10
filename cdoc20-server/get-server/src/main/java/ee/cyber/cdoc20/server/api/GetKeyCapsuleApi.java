@@ -1,10 +1,8 @@
 package ee.cyber.cdoc20.server.api;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
-import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.server.model.Capsule;
-import ee.cyber.cdoc20.server.model.ServerEccDetails;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleRepository;
 import java.security.GeneralSecurityException;
@@ -28,7 +26,7 @@ import org.springframework.web.context.request.NativeWebRequest;
  */
 @Service
 @Slf4j
-public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDelegate {
+public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate {
 
     @Autowired
     private NativeWebRequest nativeWebRequest;
@@ -70,32 +68,6 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate, EccDetailsApiDe
     public ResponseEntity<Void> createCapsule(Capsule capsule) {
         log.error("createCapsule() operation not supported on key capsule get server");
         return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
-    }
-
-    @Deprecated // old api
-    @Override
-    public ResponseEntity<Void> createEccDetails(ServerEccDetails serverEccDetails) {
-        log.error("createEccDetails() operation not supported on get capsule server");
-        return new ResponseEntity<>(HttpStatus.METHOD_NOT_ALLOWED);
-    }
-
-    @Deprecated // old api
-    @Override
-    public ResponseEntity<ServerEccDetails> getEccDetailsByTransactionId(String transactionId) {
-        log.trace("getEccDetailsByTransactionId({})", transactionId);
-        var capsuleResponse = this.getCapsuleByTransactionId(transactionId);
-        if (capsuleResponse.getStatusCode() == HttpStatus.OK) {
-            var capsule = Optional.ofNullable(capsuleResponse.getBody())
-                .orElseThrow(() -> new IllegalArgumentException("No response body from capsule api"));
-            return ResponseEntity.ok(
-                new ServerEccDetails()
-                    .eccCurve((int) EllipticCurve.secp384r1.getValue())
-                    .recipientPubKey(capsule.getRecipientId())
-                    .senderPubKey(capsule.getEphemeralKeyMaterial())
-            );
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
     }
 
     private static boolean isRecipient(PublicKey publicKey, KeyCapsuleDb capsule) {
