@@ -38,7 +38,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpStatus;
 import static ee.cyber.cdoc20.server.TestData.getKeysDirectory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -367,6 +369,31 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         assertArrayEquals(rsaCapsule.getRecipientId(), response.getBody().getRecipientId());
         assertArrayEquals(rsaCapsule.getEphemeralKeyMaterial(), response.getBody().getEphemeralKeyMaterial());
     }
+
+    @Test
+    void shouldGetHttp400() throws Exception {
+        // constraint errors should be converted to HTTP 400, see GlobalExceptionHandler
+
+        String txId = "KC123"; // too short tx
+        HttpClientErrorException ex = assertThrows(
+                HttpClientErrorException.class,
+                () -> this.restTemplate.getForEntity(new URI(this.capsuleApiUrl() + "/" + txId), Capsule.class)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    @Test
+    void shouldGetHttp404() throws Exception {
+        String txId = "KC12345678901234567890"; // certificate provided and passes validation, but capsule not found
+        HttpClientErrorException ex = assertThrows(
+                HttpClientErrorException.class,
+                () -> this.restTemplate.getForEntity(new URI(this.capsuleApiUrl() + "/" + txId), Capsule.class)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
 
     @Test
     void shouldThrowUserExceptions() throws Exception {

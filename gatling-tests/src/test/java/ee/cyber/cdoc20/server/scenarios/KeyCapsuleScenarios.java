@@ -132,12 +132,13 @@ public abstract class KeyCapsuleScenarios {
     }
 
     // sends a request with the given transaction id and checks it to be handled as invalid input
-    protected ChainBuilder checkInvalidTransactionId(String testId, String transactionId) {
+    protected ChainBuilder checkInvalidTransactionId(String testId, String transactionId,
+            HttpResponseStatus expectedResponse) {
         return exec(
             http(testId + " - with invalid txId '" + transactionId + "'")
                 .get(this.testConf.getGetServerBaseUrl() + API_ENDPOINT + '/' + transactionId)
                 .check(
-                    status().is(HttpResponseStatus.NOT_FOUND.code()),
+                    status().is(expectedResponse.code()),
                     bodyLength().is(0)
                 )
         );

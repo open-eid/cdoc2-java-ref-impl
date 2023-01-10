@@ -3,6 +3,7 @@ package ee.cyber.cdoc20.server.scenarios;
 import io.gatling.commons.shared.unstable.util.Ssl;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
 import scala.Option;
 import scala.Some;
@@ -54,10 +55,16 @@ public class EccKeyCapsuleScenarios extends KeyCapsuleScenarios {
     public ScenarioBuilder getWithInvalidTransactionIds() {
         return scenario("Request capsule with invalid transactionId values")
             .exec(
-                this.checkInvalidTransactionId(NEG_GET_02, TestDataGenerator.randomString(TX_ID_MIN_LENGTH)),
-                this.checkInvalidTransactionId(NEG_GET_03, "123"),
-                this.checkInvalidTransactionId(NEG_GET_04, ""),
-                this.checkInvalidTransactionId(NEG_GET_05, TestDataGenerator.randomString(TX_ID_MAX_LENGTH + 1))
+                this.checkInvalidTransactionId(
+                    NEG_GET_02, TestDataGenerator.randomString(TX_ID_MIN_LENGTH),
+                    HttpResponseStatus.NOT_FOUND
+                ),
+                this.checkInvalidTransactionId(NEG_GET_03, "123", HttpResponseStatus.BAD_REQUEST),
+                this.checkInvalidTransactionId(NEG_GET_04, "", HttpResponseStatus.METHOD_NOT_ALLOWED),
+                this.checkInvalidTransactionId(
+                    NEG_GET_05, TestDataGenerator.randomString(TX_ID_MAX_LENGTH + 1),
+                    HttpResponseStatus.BAD_REQUEST
+                )
             )
             .exitHereIfFailed();
     }
