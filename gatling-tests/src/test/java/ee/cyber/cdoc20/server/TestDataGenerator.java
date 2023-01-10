@@ -178,7 +178,8 @@ public class TestDataGenerator {
     public static String randomString(int length) {
         return Base64.getEncoder()
             .encodeToString(randomBytes(length))
-            .substring(0, length);
+            .substring(0, length)
+            .replaceAll("/", "-"); // make url safe
     }
 
     /**

@@ -47,6 +47,7 @@ public final class KeyCapsuleFunctionalTests extends Simulation {
             this.eccScenarios.getWithInvalidTransactionIds()
                 .injectOpen(atOnceUsers(1))
                 .protocols(this.eccClient),
+
             this.rsaScenarios.sendRsaKeyCapsuleRandomKeyMaterial()
                 .injectOpen(atOnceUsers(1))
                 .protocols(this.eccClient),
