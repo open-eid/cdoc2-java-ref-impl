@@ -77,6 +77,9 @@ server.ssl.key-alias=cdoc20-server
 # Enable server TLS
 server.ssl.enabled=true
 
+# allow only TLSv1.3
+server.ssl.enabled-protocols=TLSv1.3
+
 # The port the server is started on
 server.port=8443
 
@@ -142,6 +145,8 @@ server.ssl.key-alias=cdoc20-server
 
 # Enable server TLS
 server.ssl.enabled=true
+# allow only TLSv1.3
+server.ssl.enabled-protocols=TLSv1.3
 
 # The port the server is started on
 server.port=8444
