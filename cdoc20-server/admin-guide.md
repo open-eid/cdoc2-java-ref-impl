@@ -175,22 +175,99 @@ To run the server, execute the following command:
 java -jar -Dspring.config.location=application.properties cdoc20-get-server-VER.jar
 `
 
-## Monitoring (*TODO: not implemented yet*)
+## Monitoring
 
-Both server components return basic status info from the `https://HOST:port/status` endpoint.
-
-The format of the response is:
-
-HTTP status code: 200
-HTTP body in json:
+To enable standard Spring monitoring endpoints, `application.properties` must contain following lines:
 ```
-  {
-    // returns the number of successful and failed database queries since server startup
-    "database": {
-      "successfulRequests": 155,
-      "failedRequests": 12
+# https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.monitoring
+# run management on separate port
+management.server.port=18443
+management.server.ssl.enabled=true
+management.server.ssl.key-store-type=PKCS12
+# The path to the keystore containing the certificate
+# See copy-keys-and-certificates in pom.xml
+management.server.ssl.key-store=../keys/cdoc20server.p12
+# The password used to generate the certificate
+management.server.ssl.key-store-password=passwd
+# The alias mapped to the certificate
+management.server.ssl.key-alias=cdoc20
+
+# configure monitoring endpoints
+management.endpoints.enabled-by-default=false
+management.endpoints.web.discovery.enabled=false
+
+# explicitly enable endpoints
+management.endpoint.info.enabled=true
+management.endpoint.health.enabled=true
+management.endpoint.health.show-details=always
+management.endpoint.startup.enabled=true
+
+# expose endpoints
+management.endpoints.web.exposure.include=info,health,startup
+```
+
+NB! Currently, the monitoring endpoints require no authentication. As these endpoints are
+running on a separate HTTP port, the access to the monitoring endpoints must be implemented by network access rules (e.g firewall).
+
+
+### Info endpoint 
+`curl -X GET https://<management_host>:<management_port>/actuator/info | jq`
+
+```json
+
+{
+  "build": {
+    "artifact": "cdoc20-put-server",
+    "name": "cdoc20-put-server",
+    "time": "2023-01-17T14:31:18.918Z",
+    "version": "0.3.0-SNAPSHOT",
+    "group": "ee.cyber.cdoc20"
+  },
+  "system.time": "2023-01-17T14:48:39Z"
+}
+```
+
+### Health endpoint
+`curl -X GET https://<management_host>:<management_port>/actuator/health | jq`
+
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": {
+      "status": "UP",
+      "details": {
+        "database": "PostgreSQL",
+        "validationQuery": "isValid()"
+      }
+    },
+    "diskSpace": {
+      "status": "UP",
+      "details": {
+        "total": 499596230656,
+        "free": 415045992448,
+        "threshold": 10485760,
+        "exists": true
+      }
+    },
+    "ping": {
+      "status": "UP"
     }
   }
+}
+```
+
+### Startup endpoint
+`curl -X GET https://<management_host>:<management_port>/actuator/startup | jq`
+
+```json
+{
+  "springBootVersion": "2.7.5",
+  "timeline": {
+    "startTime": "2023-01-17T14:36:17.935227352Z",
+    "events": []
+  }
+}
 ```
 
 [^1]: https://docs.oracle.com/cd/E54932_01/doc.705/e54936/cssg_create_ssl_cert.htm#CSVSG182
