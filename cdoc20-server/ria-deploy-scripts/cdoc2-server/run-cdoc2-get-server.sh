@@ -12,6 +12,7 @@ docker rm -f $CONTAINER_NAME
 # decrease thread count (default 250) to run on machine with 1 GB RAM
 docker run -d --restart unless-stopped --name $CONTAINER_NAME --user "$(id -u):$(id -g)" \
 	-p 8444:8444 \
+	-p 18444:18444 \
 	-v $PWD/get-server-conf:/conf \
        	--env BPL_JVM_THREAD_COUNT=25 \
       	--env JAVA_OPTS="-Dspring.config.location=/conf/application.properties" \
