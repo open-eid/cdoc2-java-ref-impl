@@ -155,6 +155,7 @@ server.port=8444
 server.ssl.client-auth=need
 server.ssl.trust-store=/path/to/server-truststore.jks
 server.ssl.trust-store-password=passwd
+#cdoc20.ssl.client-auth.revocation-checks.enabled=false
 
 # Database configuration
 spring.datasource.url=jdbc:postgresql://HOST/DB_NAME
@@ -171,9 +172,29 @@ logging.level.ee.cyber.cdoc20=trace
 
 To run the server, execute the following command:
 
-`
-java -jar -Dspring.config.location=application.properties cdoc20-get-server-VER.jar
-`
+`java -jar -Dspring.config.location=application.properties cdoc20-get-server-VER.jar`
+
+####  Client authentication certificate revocation checking
+By default, client authentication certificate revocation checking is enabled for get-server.
+
+This option requires connection to external OCSP servers. Est-eID certificates are checked from http://aia.sk.ee/.
+Depending on your network and firewall setup, it may be necessary to also configure your firewalls and/or networking proxy servers.
+
+Timeouts in seconds for connection and read timeouts can be specified by setting
+`com.sun.security.ocsp.timeout` Java system properties (-D for java executable)
+
+To enable certificate revocation debug use `-Djava.security.debug="certpath"`
+
+Other options available for fine-tuning certificate revocation are described in
+
+https://docs.oracle.com/en/java/javase/17/security/java-pki-programmers-guide.html#GUID-EB250086-0AC1-4D60-AE2A-FC7461374746
+
+To disable client certificate checking over OCSP `application.properties` must have:
+```
+cdoc20.ssl.client-auth.revocation-checks.enabled=false
+```
+
+
 
 ## Monitoring
 
