@@ -185,7 +185,7 @@ First update CHANGELOG.md - follow semantic versioning
 Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git 
 ```
 mvn clean
-mvn --batch-mode release:prepare -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT
+mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 Verify that git repositories are synced (master points to same commit) and tags are pushed

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] (2023-01-23)
+
+### Features
+
+* client authenticate certificate revocation checks (OCSP) for get-server
+* enable monitoring endpoints, see cdoc20-server/admin-guide.md
+* only tls v1.3 is supported by servers
+* remove deprecated ecc-details API
+* gatling-tests updates
+
+### Bug Fixes
+* constraint violation in OpenAPI spec are reported as http 400 (previously http 500)
+
+
 ## [0.2.0] User error codes (2022-12-16)
 
 ### Features
