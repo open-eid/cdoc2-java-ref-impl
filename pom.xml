@@ -16,6 +16,8 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+
         <!-- by default slow and pcks11 tests are excluded from running-->
         <!-- ldap test require connection to external esteid.ldap.sk.ee server -->
         <tests>!(pkcs11 | slow | ldap)</tests>
