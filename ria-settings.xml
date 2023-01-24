@@ -22,6 +22,14 @@
         </profile>
     </profiles>
 
+    <servers>
+        <server>
+            <id>credentials</id>
+            <username>${NEXUS_user}</username>
+            <password>${NEXUS_pass}</password>
+        </server>
+    </servers>
+  
     <activeProfiles>
         <activeProfile>RIA</activeProfile>
     </activeProfiles>
