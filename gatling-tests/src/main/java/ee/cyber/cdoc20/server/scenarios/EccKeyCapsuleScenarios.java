@@ -1,19 +1,23 @@
 package ee.cyber.cdoc20.server.scenarios;
 
+import ee.cyber.cdoc20.server.TestDataGenerator;
+import ee.cyber.cdoc20.server.conf.TestConfig;
 import io.gatling.commons.shared.unstable.util.Ssl;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import javax.net.ssl.KeyManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import scala.Option;
 import scala.Some;
-
-import javax.net.ssl.KeyManagerFactory;
-
-import ee.cyber.cdoc20.server.TestDataGenerator;
-import ee.cyber.cdoc20.server.conf.TestConfig;
-
-import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.*;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_02;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_03;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_04;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_05;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_06;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_GET_02;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_PUT_01;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_PUT_03;
 import static io.gatling.javaapi.core.CoreDsl.scenario;
 
 /**
@@ -40,8 +44,7 @@ public class EccKeyCapsuleScenarios extends KeyCapsuleScenarios {
 
     public ScenarioBuilder sendAndGetEccKeyCapsule() {
         return scenario("Send and get ecc capsule")
-            .exec(this.sendEccKeyCapsule())
-            .exec(this.getAndCheckEccKeyCapsule());
+            .exec(this.sendEccKeyCapsule(), this.getAndCheckEccKeyCapsule());
     }
 
     public ScenarioBuilder getRecipientMismatch() {
@@ -69,9 +72,9 @@ public class EccKeyCapsuleScenarios extends KeyCapsuleScenarios {
             .exitHereIfFailed();
     }
 
-    public ScenarioBuilder sendEccKeyCapsule() {
-        return scenario("Send ecc capsule").exec(
-            this.sendKeyCapsuleCheckSuccess(this.testData::generateEccCapsule, POS_PUT_01 + " - Create ecc key capsule")
+    public ChainBuilder sendEccKeyCapsule() {
+        return this.sendKeyCapsuleCheckSuccess(
+            this.testData::generateEccCapsule, POS_PUT_01 + " - Create ecc key capsule"
         );
     }
 
