@@ -57,14 +57,14 @@ Serveri võimekusele otseselt nõudmisi esitatud ei ole, kuid sellegipoolest on 
 Selle info hankimiseks kasutatakse koormusteste, millega otsitakse vastuseid alljärgnevatele küsimustele:
 
 *	Milline on süsteemi vasteaeg kasutajale erinevate süsteemi koormuste juures?
-*	Kui palju kasutajaid korraga suudab süsteem teenindada kokkulepitud vasteaga ületamata?
+*	Kui palju kasutajaid korraga suudab süsteem teenindada kokkulepitud vasteaega ületamata?
 *	Kuidas käitub süsteem piirsituatsioonides (väga palju kasutajaid korraga, väga palju võtmeosakuid baasis) ?
 *	Kuidas taastub süsteem tippkoormuse taandumisel?
 *	Kuidas käitub süsteem pikemaajalise mõõduka või suurema koormuse korral?
 
 == Testimise korraldus ja tulemid
 
-Testimise planeerimine on jätkuv tegevus mida korratakse projekti jooksul korduvalt uue täiendava olulise info lisandumisel. Testimise planeerimise tulemiks on testiplaan (käesolev dokument).
+Testimise planeerimine on jätkuv tegevus, mida korratakse projekti jooksul korduvalt uue täiendava olulise info lisandumisel. Testimise planeerimise tulemiks on testiplaan (käesolev dokument).
 
 Funktsionaalne testimine on võtmeedastusserveri puhul kaetud ühiktestidega ning Serveri API vastu rakendatud API testidega.
 
@@ -111,45 +111,67 @@ Negatiivsed stsenaariumid
 
 === Serveri koormustestid
 
-Serveri käitumise kohta info hankimiseks on vaja serverit koormata päringutega, mis võimalikult täpselt püüavad jäljendada võimalikku reaalelulist kasutajate käitumismustrit.
+Koormuse all serveri käitumise kohta info hankimiseks on vaja serverit koormata päringutega, mis võimalikult täpselt püüavad jäljendada võimalikku reaalelulist kasutajate käitumismustrit.
 
-Võtmeedastusserveri koormuse tekitamiseks saab kasutada kahte erinevat teoreetilist stsenaariumit - planeeritult positiivsete vastustega päringud ja kombinatsioon positiivse vastusega ning veaga lõppevastest päringutest
+Lähtuvalt võtmeedastusserveri ülesehitusest ja funktsionaalsusest jagunevad serverile tehtavad päringud kahte suuremasse rühma - võtmekapslite laadimine serverisse ning võtmekapslite pärimine läbi kasutaja autentimise. Kuna serveri puhul kasutatakse kahe erineva tasemega autentimist, siis sisuliselt on tegemist ka kahe iseseisva erinevalt konfigureeritud veebiserveriga, mille ühisosaks on ühtne andmebaas võtmeosakute hoidmiseks.
 
-==== Stsenaarium A
+Võtmeserveri koormuse tekitamiseks on vaja kasutada päringuid võtmeosakute serverisse laadimiseks ning võtmeosakute serverist küsimiseks.
 
-Serverit koormatakse seadistatava aja jooksul tippkoormuseni tõusva ning seadistatava aja jooksul stabiilselt püsiva tippkoormusega eeldatavalt positiivseid vastuseid saavate päringutega.
+* Võtmekapslite serverisse laadimise päringute puhul kasutatakse funktsionaalselt edukaid päringuid, mille puhul võtmekapslid salvestatakse serveri andmebaasi.
+* Võtmekapslite serverist küsimisel valitakse päringus kasutatav võtmekapsel ning autenditud kasutaja juhuslikkuse alusel ning serveri poolt tagastatav vastus võib olla nii positiivne (sisaldab võtmekapslit) kui ka negatiivne (tagastatakse veakood).
 
-*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli saatmise päringuid
-*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli pärimise päringuid
+Päringu vastuse sisu ei oma koormustestimise puhul tähtsust, kuna nii positiivse kui negatiivse tulemuseni jõudmiseks on vaja teha samad sisemised päringud ja võrdlused.
 
-==== Stsenaarium B
 
-Serverit koormatakse seadistatava aja jooksul tippkoormuseni tõusva ning seadistatava aja jooksul stabiilselt püsiva tippkoormusega seadistatava osakaaluga nii positiivseid vastuseid kui veateateid saavate päringutega.
+==== Koormuse tekitamine
 
-*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli saatmise päringuid
-*	kasutaja poolt seadistatav hulk samaaegseid edukaid võtmekapsli pärimise päringuid
-*	kasutaja poolt seadistatav hulk samaaegseid veaga lõppevaid võtmekapsli saatmise päringuid
-*	kasutaja poolt seadistatav hulk samaaegseid võtmekapsli küsimise päringuid korrektse transaktsiooni identifikaatoriga, mille vastuvõtja avalik võti ei klapi
-*	kasutaja poolt seadistatav hulk samaaegseid võtmekapsli küsimise päringuid mitteeksisteeriva transaktsiooni identifikaatoriga
+Koormustestimisel on sarnaselt funktsionaalsetele testidele kasutusel Gatling testiraamistik, mille puhul on võimalik soovitud koormus testitavale tarkvarale saavutada järgmiseid parameetreid kasutades:
+
+- start-users-per-second - testide käivitamisel koheselt rakenduv aktiivsete kasutajate arv (päringut sekundis)
+- increment-users-per-second - igal järgneval testitsüklil lisanduv aktiivsete kasutajate arv
+- increment-cycles - läbitavate testitsüklite arv
+- cycle-duration-seconds - testitsükli kestus (sekundites)
+
+Koormustesti kestus sõltub testitsüklite arvust ning tsükli pikkusest.
+Testitavale tarkvarale tehtav päringute hulk sõltub esialgsest kasutajate arvust ning iga järgneva testitsükliga lisanduvate kasutajate hulgast.
+Näiteks ühtlaselt kasvava koormuse tekitamiseks võib esialgselt rakendatava kasutajate arvu seada mõõdukalt väikeseks ning kasutada suuremat hulka lisanduvaid kasutajaid testitsükli jooksul.
+
+Alljärgneva seadistuse puhul kestab test 600 sekundit (10 minutit) ning testi alguses on päringute hulk 10 päringut sekundis ning testi viimases tsüklis 110 päringut sekundis:
+
+- start-users-per-second = 10
+- increment-users-per-second = 10
+- increment-cycles = 10
+- cycle-duration-seconds = 60
+
+Ühtlase koormuse saavutamiseks tuleks seadistada koheselt rakendatav kasutajate hulk soovitud koormusele ning jätta igas testitsüklis lisanduvate kasutajate hulk minimaalseks
+
+Alljärgneva seadistuse puhul kestab test 600 sekundit (10 minutit) ning kohe testi alguses on päringute hulk 75 päringut sekundis ning testi viimases tsüklis 85 päringut sekundis:
+
+- start-users-per-second = 10
+- increment-users-per-second = 1
+- increment-cycles = 10
+- cycle-duration-seconds = 60
+
+
 
 ==== Stsenaariumite rakendamine koormustestides
 
 * Milline on süsteemi vasteaeg kasutajale erinevate süsteemi koormuste juures?
 * Kui palju kasutajaid korraga suudab süsteem teenindada kokkulepitud vasteaga ületamata?
 
-Nendele küsimustele vastuste leidmiseks saab kasutada lihtsamat *stsenaariumit A* erinevate koormuste juures.
+Kuna süsteemi käideldavus sõltub otseselt keskkonnast, milles süsteemi jooksutatakse, siis nendele küsimustele vastuste leidmiseks tuleb koormusteste käivitada korduvalt erinevate koormuste juures. Esmalt võib kasutada järjest kasvavat koormust võimalike piiride tuvastamiseks.
 
 * Kuidas käitub süsteem piirsituatsioonides -- väga palju kasutajaid korraga, väga palju võtmeosakuid baasis?
 
-Sellise testi puhul püütakse süsteem viia piirsituatsiooni või üle selle ning jälgitakse süsteemi käitumist sellistes oludes. Piirsituatsioonide kompamisel võiks kasutada *stsenaariumi B*. Piirsituatsioonid tekivad tõenäoliselt rünnete tagajärjel ning sisaldavad oletatavasti märkimisväärsel hulgal ka mittekorrektseid päringuid.
+Sellise testi puhul püütakse süsteem viia piirsituatsiooni või üle selle ning jälgitakse süsteemi käitumist sellistes oludes. Piirsituatsioonide kompamisel võiks kasutada püsivamat ühtlast koormust pikema aja vältel.
 
 * Milline on süsteemi taastumise võime peale piirkoormuse taandumist?
 
-Selle testi puhul kogutakse infot tipukoormusest taastumise võime kohta. Sellegi küsimuse vastuse otsimisel on asjakohane kasutada *stsenaariumi B*.
+Selle testi puhul kogutakse infot tipukoormusest taastumise võime kohta. Siinkohal võib kasutada mitut samaaegset koormustekitajat, millest üks on ühtlase koormusega pikemaajalisem test ning teine lühiajaline kasvava koormusega test.
 
 * Kuidas käitub süsteem pikemaajalise mõõduka või suurema koormuse korral?
 
-Süsteemi käitatakse pikema aja jooksul ühtlase mõõduka koormusega ning püütakse leida anomaaliaid või vigu, mis võivad ilmneda süsteemi pikemaajalisel tööl (väikesed mälulekked jne). Pikemaajalist koormamist võib rakendada nii *stsenaariumi A kui B*.
+Süsteemi käitatakse pikema aja jooksul ühtlase mõõduka koormusega ning püütakse leida anomaaliaid või vigu, mis võivad ilmneda süsteemi pikemaajalisel tööl (väikesed mälulekked jne). Küsimusele vastuse leidmiseks võib kasutada ühtlase koormusega suurema arvu pikemat aega kestvate testitsüklitega testi.
 
 == Testkeskkond
 
