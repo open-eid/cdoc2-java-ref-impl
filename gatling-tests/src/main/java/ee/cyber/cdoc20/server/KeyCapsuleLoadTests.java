@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.server;
 
 import ee.cyber.cdoc20.server.conf.TestConfig;
 import ee.cyber.cdoc20.server.scenarios.EccKeyCapsuleScenarios;
+import ee.cyber.cdoc20.server.scenarios.RsaKeyCapsuleScenarios;
 import io.gatling.commons.shared.unstable.util.Ssl;
 import io.gatling.javaapi.core.Simulation;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
@@ -24,6 +25,7 @@ public final class KeyCapsuleLoadTests extends Simulation {
     private final TestConfig config = TestConfig.load(true);
     private final TestDataGenerator testData = new TestDataGenerator(this.config);
     private final EccKeyCapsuleScenarios eccScenarios = new EccKeyCapsuleScenarios(this.config, this.testData);
+    private final RsaKeyCapsuleScenarios rsaScenarios = new RsaKeyCapsuleScenarios(this.config, this.testData);
 
     HttpProtocolBuilder httpConf = http
         .baseUrl(this.config.getGetServerBaseUrl())
@@ -38,23 +40,47 @@ public final class KeyCapsuleLoadTests extends Simulation {
         var createConf = loadTestConfig.getCreateCapsule();
         var getConf = loadTestConfig.getGetCapsule();
 
+        // divide conf values by 2 to get equal amount of ec and rsa scenarios executed
+        var createScnIncUsersPerSec = createConf.getIncrementUsersPerSec() / 2.0;
+        var createScnStartUsersPerSec = createConf.getStartingUsersPerSec() / 2.0;
+        var getScnIncUsersPerSec = getConf.getIncrementUsersPerSec() / 2.0;
+        var getScnStartUsersPerSec = getConf.getStartingUsersPerSec() / 2.0;
+
         setUp(
             scenario("Send ecc key capsule")
                 .exec(this.eccScenarios.sendEccKeyCapsule())
                 .injectOpen(
-                    incrementUsersPerSec(createConf.getIncrementUsersPerSec())
+                    incrementUsersPerSec(createScnIncUsersPerSec)
                         .times(createConf.getIncrementCycles())
                         .eachLevelLasting(createConf.getCycleDurationSec())
-                        .startingFrom(createConf.getStartingUsersPerSec())
+                        .startingFrom(createScnStartUsersPerSec)
                 ),
-            this.eccScenarios.getRandomKeyCapsule().injectOpen(
-                // wait for some capsules to be created and their urls returned
-                nothingFor(loadTestConfig.getGetCapsuleStartDelay()),
-                incrementUsersPerSec(getConf.getIncrementUsersPerSec())
-                    .times(getConf.getIncrementCycles())
-                    .eachLevelLasting(getConf.getCycleDurationSec())
-                    .startingFrom(getConf.getStartingUsersPerSec())
-            )
+            scenario("Send rsa key capsule")
+                .exec(this.rsaScenarios.sendRsaKeyCapsule())
+                .injectOpen(
+                    incrementUsersPerSec(createScnIncUsersPerSec)
+                        .times(createConf.getIncrementCycles())
+                        .eachLevelLasting(createConf.getCycleDurationSec())
+                        .startingFrom(createScnStartUsersPerSec)
+                ),
+            this.eccScenarios.getRandomKeyCapsule("Get random ecc key capsule")
+                .injectOpen(
+                    // wait for some capsules to be created and their urls returned
+                    nothingFor(loadTestConfig.getGetCapsuleStartDelay()),
+                    incrementUsersPerSec(getScnIncUsersPerSec)
+                        .times(getConf.getIncrementCycles())
+                        .eachLevelLasting(getConf.getCycleDurationSec())
+                        .startingFrom(getScnStartUsersPerSec)
+                ),
+            this.rsaScenarios.getRandomKeyCapsule("Get random rsa key capsule")
+                .injectOpen(
+                    // wait for some capsules to be created and their urls returned
+                    nothingFor(loadTestConfig.getGetCapsuleStartDelay()),
+                    incrementUsersPerSec(getScnIncUsersPerSec)
+                        .times(getConf.getIncrementCycles())
+                        .eachLevelLasting(getConf.getCycleDurationSec())
+                        .startingFrom(getScnStartUsersPerSec)
+                )
         )
         .protocols(this.httpConf)
         .assertions(global().successfulRequests().percent().is(100.0));
