@@ -6,20 +6,22 @@ import ee.cyber.cdoc20.server.datagen.CertUtil;
 import ee.cyber.cdoc20.server.dto.GeneratedCapsule;
 import ee.cyber.cdoc20.server.dto.KeyCapsuleRequest;
 import ee.cyber.cdoc20.server.dto.KeyCapsuleType;
-
 import io.gatling.commons.shared.unstable.util.Ssl;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import javax.net.ssl.KeyManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import scala.Option;
 import scala.Some;
-
-import java.security.interfaces.RSAPublicKey;
-
-import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.*;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_GET_08;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.NEG_PUT_01;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_GET_01;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_PUT_02;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_PUT_04;
+import static ee.cyber.cdoc20.server.scenarios.ScenarioIdentifiers.POS_PUT_06;
 import static io.gatling.javaapi.core.CoreDsl.scenario;
 
 /**
@@ -46,8 +48,7 @@ public class RsaKeyCapsuleScenarios extends KeyCapsuleScenarios {
 
     public ScenarioBuilder sendAndGetRsaKeyCapsule() {
         return scenario("Send and get rsa capsule")
-            .exec(this.sendRsaKeyCapsule())
-            .exec(this.getAndCheckRsaKeyCapsule());
+            .exec(this.sendRsaKeyCapsule(), this.getAndCheckRsaKeyCapsule());
     }
 
     public ScenarioBuilder sendAndGetRecipientMismatch() {
@@ -97,9 +98,10 @@ public class RsaKeyCapsuleScenarios extends KeyCapsuleScenarios {
         );
     }
 
-    public ScenarioBuilder sendRsaKeyCapsule() {
-        return scenario("Send rsa capsule").exec(
-            this.sendKeyCapsuleCheckSuccess(this.testData::generateRsaCapsule, POS_PUT_02 + " - Create rsa key capsule")
+    public ChainBuilder sendRsaKeyCapsule() {
+        return this.sendKeyCapsuleCheckSuccess(
+            this.testData::generateRsaCapsule,
+            POS_PUT_02 + " - Create rsa key capsule"
         );
     }
 

@@ -24,9 +24,12 @@
         <lombok.version>1.18.24</lombok.version>
         <logback-classic.version>1.2.11</logback-classic.version>
         <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+        <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
         <bouncycastle.version>1.70</bouncycastle.version>
         <spring-boot.version>2.7.5</spring-boot.version>
         <spring.version>5.3.23</spring.version>
+        <gatling.version>3.9.0</gatling.version>
+        <gatling-maven-plugin.version>4.1.6</gatling-maven-plugin.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,

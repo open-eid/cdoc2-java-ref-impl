@@ -9,8 +9,10 @@ import javax.net.ssl.KeyManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import scala.Option;
 import scala.Some;
-
-import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.core.CoreDsl.global;
+import static io.gatling.javaapi.core.CoreDsl.incrementUsersPerSec;
+import static io.gatling.javaapi.core.CoreDsl.nothingFor;
+import static io.gatling.javaapi.core.CoreDsl.scenario;
 import static io.gatling.javaapi.http.HttpDsl.http;
 
 /**
@@ -37,12 +39,14 @@ public final class KeyCapsuleLoadTests extends Simulation {
         var getConf = loadTestConfig.getGetCapsule();
 
         setUp(
-            this.eccScenarios.sendEccKeyCapsule().injectOpen(
-                incrementUsersPerSec(createConf.getIncrementUsersPerSec())
-                    .times(createConf.getIncrementCycles())
-                    .eachLevelLasting(createConf.getCycleDurationSec())
-                    .startingFrom(createConf.getStartingUsersPerSec())
-            ),
+            scenario("Send ecc key capsule")
+                .exec(this.eccScenarios.sendEccKeyCapsule())
+                .injectOpen(
+                    incrementUsersPerSec(createConf.getIncrementUsersPerSec())
+                        .times(createConf.getIncrementCycles())
+                        .eachLevelLasting(createConf.getCycleDurationSec())
+                        .startingFrom(createConf.getStartingUsersPerSec())
+                ),
             this.eccScenarios.getRandomKeyCapsule().injectOpen(
                 // wait for some capsules to be created and their urls returned
                 nothingFor(loadTestConfig.getGetCapsuleStartDelay()),

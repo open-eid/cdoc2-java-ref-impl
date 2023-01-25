@@ -27,7 +27,7 @@ public final class KeyStoreGenerator {
         int amount = Integer.parseInt(getRequiredProperty("amount"));
 
         String rootKeyStorePath = getRequiredProperty("root-keystore");
-        String rootKeyStoreType = getRequiredProperty("root-keystore-type");
+        String rootKeyStoreType = System.getProperty("root-keystore-type", "pkcs12");
         String rootKeyStorePassword = getRequiredProperty("root-keystore-password");
         String rootKeyAlias = getRequiredProperty("root-key-alias");
 
