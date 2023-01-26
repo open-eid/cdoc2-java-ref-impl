@@ -33,34 +33,36 @@ pipeline {
     agent any
 
     node {
-        stage('Clone sources') {
-            steps {
-                git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
-                script {
-                    if ("${checkoutLatestTag}".toBoolean()) {
-                        echo 'Checking out latest tag'
-                        sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
+        stages {
+            stage('Clone sources') {
+                steps {
+                    git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
+                    script {
+                        if ("${checkoutLatestTag}".toBoolean()) {
+                            echo 'Checking out latest tag'
+                            sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
+                        }
                     }
                 }
             }
-        }
 
-        stage('Deploy java artifacts to Nexus') {
-            agent {
-                docker {
-                    image "${javaDockerImageUrl}"
-                    args "--volume $HOME/.m2:/var/maven/.m2 "+
-                    "--volume $PWD:/usr/src/project "+
-                    "--workdir /usr/src/project " +
-                    "--env MAVEN_CONFIG=/var/maven/.m2 "
+            stage('Deploy java artifacts to Nexus') {
+                agent {
+                    docker {
+                        image "${javaDockerImageUrl}"
+                        args "--volume $HOME/.m2:/var/maven/.m2 "+
+                        "--volume $PWD:/usr/src/project "+
+                        "--workdir /usr/src/project " +
+                        "--env MAVEN_CONFIG=/var/maven/.m2 "
+                    }
                 }
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
-                    sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
-                        ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
-                        ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
-                    )
+                steps {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
+                        sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
+                            ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
+                            ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
+                        )
+                    }
                 }
             }
         }
