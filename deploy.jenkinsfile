@@ -1,0 +1,70 @@
+def javaDockerImage = 'maven:3.8.5-openjdk-17-slim'
+def javaDockerImageUrl = "nexus.riaint.ee:8500/library/${javaDockerImage}"
+
+def gitUrl = 'ssh://git@stash.ria.ee:7799/cdoc2/cdoc20_java.git'
+def gitCredentialsId = 'bitbucket-ssh'
+def deploymentUrl = 'credentials::default::https://nexus.riaint.ee/repository/cdoc2-maven-local/'
+
+node {
+    withCredentials([string(credentialsId: 'webhook_token', variable: 'webhooktoken')]) {
+        properties([
+            pipelineTriggers([
+                [$class          : 'GenericTrigger',
+                 genericVariables: [
+                     [key: 'webhookActorDisplayName', value: '$.actor.displayName'],
+                 ],
+                 token           : webhooktoken,
+                 causeString     : 'See töö käivitati $webhookActorDisplayName poolt bitbucketi webhooki kaudu',
+                 printPostContent: true,
+                 silentResponse  : false
+                ]
+            ])
+        ])
+    }
+}
+
+pipeline {
+
+    parameters {
+        string(name: 'branch', defaultValue: 'master', description: 'git branch to checkout', trim: true)
+        booleanParam(name: 'checkoutLatestTag', defaultValue: true, description: 'Checkout latest git tag (release)')
+    }
+
+    agent any
+
+    stages {
+        stage('Clone sources') {
+            steps {
+                git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
+                script {
+                    if ("${checkoutLatestTag}".toBoolean()) {
+                        echo 'Checking out latest tag'
+                        sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy java artifacts to Nexus') {
+            agent {
+                docker {
+                    image "${javaDockerImageUrl}"
+                    args "--volume $HOME/.m2:/var/maven/.m2 "+
+                    "--volume $PWD:/usr/src/project "+
+                    "--workdir /usr/src/project " +
+                    "--env MAVEN_CONFIG=/var/maven/.m2 "
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
+                    sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
+                        ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
+                        ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
+                    )
+                }
+            }
+        }
+    }
+}
+
+
