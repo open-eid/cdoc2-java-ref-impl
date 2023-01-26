@@ -32,7 +32,7 @@ pipeline {
 
     agent any
 
-    stages {
+    node {
         stage('Clone sources') {
             steps {
                 git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
