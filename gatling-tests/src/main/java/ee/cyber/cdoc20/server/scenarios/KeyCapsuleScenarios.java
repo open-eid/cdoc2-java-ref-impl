@@ -54,8 +54,8 @@ public abstract class KeyCapsuleScenarios {
     // Gatling session variables
     protected static final String LOCATION = "location";
 
-    public ScenarioBuilder getRandomKeyCapsule() {
-        return scenario("Get random capsule").exec(this.getRandomKeyCapsule);
+    public ScenarioBuilder getRandomKeyCapsule(String scenarioName) {
+        return scenario(scenarioName).exec(this.getRandomKeyCapsule);
     }
 
     /**
@@ -164,7 +164,7 @@ public abstract class KeyCapsuleScenarios {
             .exitHereIfFailed()
         ).orElse(
             exec(session -> {
-                log.error("Failed to get random capsule: no capsules create yet");
+                log.error("Failed to get random capsule: no capsules created yet");
                 return session;
             })
         );
