@@ -46,15 +46,18 @@ pipeline {
         }
 
         stage('Deploy java artifacts to Nexus') {
+            agent {
+                docker {
+                    image "${javaDockerImageUrl}"
+                    args "--volume $HOME/.m2:/var/maven/.m2 "+
+                    "--volume $PWD:/usr/src/project "+
+                    "--workdir /usr/src/project " +
+                    "--env MAVEN_CONFIG=/var/maven/.m2 "
+                }
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
-                    sh('docker run --rm ' +
-                        " --volume $HOME/.m2:/var/maven/.m2 " +
-                        " --volume $PWD:/usr/src/project " +
-                        " --workdir /usr/src/project " +
-                        " --env MAVEN_CONFIG=/var/maven/.m2 " +
-                        " ${javaDockerImageUrl} " +
-                        "mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project " +
+                    sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
                         ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
                         ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
                     )
