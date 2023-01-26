@@ -30,20 +30,7 @@ pipeline {
         booleanParam(name: 'checkoutLatestTag', defaultValue: true, description: 'Checkout latest git tag (release)')
     }
 
-    agent any
-
     stages {
-        stage('Clone sources') {
-            steps {
-                git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
-                script {
-                    if ("${checkoutLatestTag}".toBoolean()) {
-                        echo 'Checking out latest tag'
-                        sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
-                    }
-                }
-            }
-        }
 
         stage('Deploy java artifacts to Nexus') {
             agent {
@@ -56,6 +43,13 @@ pipeline {
                 }
             }
             steps {
+                git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
+                script {
+                    if ("${checkoutLatestTag}".toBoolean()) {
+                        echo 'Checking out latest tag'
+                        sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
+                    }
+                }
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
                     sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
                         ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
