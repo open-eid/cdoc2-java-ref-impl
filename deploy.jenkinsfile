@@ -36,28 +36,25 @@ pipeline {
         stage('Clone sources') {
             steps {
                 git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
-            }
-        }
-
-        stage('Deploy java artifacts to Nexus') {
-            agent {
-                docker {
-                    image "${javaDockerImageUrl}"
-                    args "--volume $HOME/.m2:/var/maven/.m2 "+
-                    "--volume $PWD:/usr/src/project "+
-                    "--workdir /usr/src/project " +
-                    "--env MAVEN_CONFIG=/var/maven/.m2 "
-                }
-            }
-            steps {
                 script {
                     if ("${checkoutLatestTag}".toBoolean()) {
                         echo 'Checking out latest tag'
                         sh 'git checkout $(git describe --tags $(git rev-list --tags --max-count=1))'
                     }
                 }
+            }
+        }
+
+        stage('Deploy java artifacts to Nexus') {
+            steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
-                    sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project '+
+                    sh('docker run --rm ' +
+                        " --volume $HOME/.m2:/var/maven/.m2 " +
+                        " --volume $PWD:/usr/src/project " +
+                        " --workdir /usr/src/project " +
+                        " --env MAVEN_CONFIG=/var/maven/.m2 " +
+                        " ${javaDockerImageUrl} " +
+                        "mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project " +
                         ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
                         ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
                     )
