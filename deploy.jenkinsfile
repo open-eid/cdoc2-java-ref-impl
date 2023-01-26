@@ -30,22 +30,26 @@ pipeline {
         booleanParam(name: 'checkoutLatestTag', defaultValue: true, description: 'Checkout latest git tag (release)')
     }
 
-    agent {
-        docker {
-            image "${javaDockerImageUrl}"
-            args "--volume $HOME/.m2:/var/maven/.m2 "+
-                "--volume $PWD:/usr/src/project "+
-                "--workdir /usr/src/project " +
-                "--env MAVEN_CONFIG=/var/maven/.m2 "
-        }
-    }
+    agent any
 
     stages {
-
-        stage('Deploy java artifacts to Nexus') {
-
+        stage('Clone sources') {
             steps {
                 git branch: "${branch}", credentialsId: "${gitCredentialsId}", url: "${gitUrl}"
+            }
+        }
+
+        stage('Deploy java artifacts to Nexus') {
+            agent {
+                docker {
+                    image "${javaDockerImageUrl}"
+                    args "--volume $HOME/.m2:/var/maven/.m2 "+
+                    "--volume $PWD:/usr/src/project "+
+                    "--workdir /usr/src/project " +
+                    "--env MAVEN_CONFIG=/var/maven/.m2 "
+                }
+            }
+            steps {
                 script {
                     if ("${checkoutLatestTag}".toBoolean()) {
                         echo 'Checking out latest tag'
