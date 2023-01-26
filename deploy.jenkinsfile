@@ -59,7 +59,7 @@ pipeline {
                 }
             }
             steps {
-                sh('mvn -s ria-settings.xml -Duser.home=/usr/src/project -e -x' +
+                sh('mvn -s ria-settings.xml -Duser.home=/usr/src/project -e --debug' +
                     ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml clean install'
                 )
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
