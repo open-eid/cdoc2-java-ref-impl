@@ -64,7 +64,7 @@ pipeline {
                         ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean install -DskipTests;' +
                         'mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
                         //                                 ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
-                        ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"'
+                        ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
                     )
                     /*sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
                                 ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
