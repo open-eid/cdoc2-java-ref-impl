@@ -59,7 +59,7 @@ pipeline {
                    ' --volume /dev/urandom:/dev/random' +
                    ' --workdir /usr/src/project' +
                    " ${javaDockerImageUrl} " +
-                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean'
+                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean install -DskipTests'
                 )
                withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
                             sh 'echo $PWD; ls -al'
