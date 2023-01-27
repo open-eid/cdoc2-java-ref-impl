@@ -52,6 +52,7 @@ pipeline {
             steps {
                 // Running-as-non-root inside Docker currently not done, because using Docker inside Docker requires
                 // root inside Docker or setting up more detailed permissions for /var/run/docker.sock
+                sh 'echo $PWD; ls -al'
                 sh('docker run --rm ' +
                    ' --volume /var/run/docker.sock:/var/run/docker.sock ' +
                    ' --volume "$PWD:/usr/src/project"' +
@@ -75,6 +76,7 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
+                    sh 'echo $PWD; ls -al'
                     sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
                         ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
                         ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
