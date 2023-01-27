@@ -59,10 +59,10 @@ pipeline {
                    ' --volume /dev/urandom:/dev/random' +
                    ' --workdir /usr/src/project' +
                    " ${javaDockerImageUrl} " +
-                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests=false clean'
+                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean'
                 )
             }
-        }/
+        }
 
         stage('Deploy java artifacts to Nexus') {
             agent {
