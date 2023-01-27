@@ -48,6 +48,21 @@ pipeline {
             }
         }
 
+        stage('Compile and test') {
+            steps {
+                // Running-as-non-root inside Docker currently not done, because using Docker inside Docker requires
+                // root inside Docker or setting up more detailed permissions for /var/run/docker.sock
+                sh('docker run --rm ' +
+                   ' --volume /var/run/docker.sock:/var/run/docker.sock ' +
+                   ' --volume "$PWD:/usr/src/project"' +
+                   ' --volume /dev/urandom:/dev/random' +
+                   ' --workdir /usr/src/project' +
+                   " ${javaDockerImageUrl} " +
+                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests=false clean install'
+                )
+            }
+        }
+
         stage('Deploy java artifacts to Nexus') {
             agent {
                 docker {
@@ -59,9 +74,6 @@ pipeline {
                 }
             }
             steps {
-                sh('mvn -s ria-settings.xml -Duser.home=/usr/src/project -e --debug' +
-                    ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml clean install'
-                )
                 withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
                     sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
                         ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
