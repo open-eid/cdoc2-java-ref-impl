@@ -62,7 +62,7 @@ pipeline {
                         ' --workdir /usr/src/project' +
                         " ${javaDockerImageUrl} " +
                         ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean install -DskipTests;' +
-                        'mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
+                        'mvn --batch-mode -e --debug -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
                         //                                 ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
                         ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
                     )
