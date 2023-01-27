@@ -48,7 +48,7 @@ pipeline {
             }
         }
 
-        /*stage('Compile and test') {
+        stage('Compile and test') {
             steps {
                 // Running-as-non-root inside Docker currently not done, because using Docker inside Docker requires
                 // root inside Docker or setting up more detailed permissions for /var/run/docker.sock
@@ -59,10 +59,10 @@ pipeline {
                    ' --volume /dev/urandom:/dev/random' +
                    ' --workdir /usr/src/project' +
                    " ${javaDockerImageUrl} " +
-                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests=false clean install'
+                   ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests=false clean'
                 )
             }
-        }*/
+        }/
 
         stage('Deploy java artifacts to Nexus') {
             agent {
