@@ -67,7 +67,11 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             throws GeneralSecurityException, IOException {
         if (log.isDebugEnabled()) {
             log.debug("KeyServer properties:");
-            p.forEach((key, value) -> log.debug("{}={}", key, value));
+            p.forEach((k, v) -> {
+                String key = (String) k;
+                String value = key.contains("pass") ? "***" : (String)v;
+                log.debug("{}={}", key, value);
+            });
         }
 
         String serverId = p.getProperty("cdoc20.client.server.id");
