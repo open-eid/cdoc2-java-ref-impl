@@ -62,8 +62,8 @@ pipeline {
                         ' --workdir /usr/src/project' +
                         " ${javaDockerImageUrl} " +
                         ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean install -DskipTests;' +
-                        'mvn --batch-mode -e --debug -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
-                        ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
+                        'mvn --batch-mode -e --debug -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests -Dcheckstyle.skip' +
+                        //' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
                         ' deploy -Dmaven.repo.local=/tmp/cdoc2-deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
                     )
                     /*sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
