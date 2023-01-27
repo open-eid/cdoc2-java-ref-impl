@@ -61,10 +61,17 @@ pipeline {
                    " ${javaDockerImageUrl} " +
                    ' mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project clean'
                 )
+               withCredentials([usernamePassword(credentialsId: 'nexus-cdoc2-maven-local', usernameVariable: 'NEXUS_user', passwordVariable: 'NEXUS_pass')]) {
+                            sh 'echo $PWD; ls -al'
+                            sh('mvn --batch-mode -s ria-settings.xml -Duser.home=/usr/src/project -DskipTests' +
+                                ' -Dcheckstyle.output.file=/tmp/cdoc2-checkstyle.xml ' +
+                                ' deploy -DaltDeploymentRepository=' + "${deploymentUrl}"
+                            )
+                        }
             }
         }
 
-        stage('Deploy java artifacts to Nexus') {
+        /*stage('Deploy java artifacts to Nexus') {
             agent {
                 docker {
                     image "${javaDockerImageUrl}"
@@ -84,7 +91,7 @@ pipeline {
                     )
                 }
             }
-        }
+        }*/
     }
 }
 
