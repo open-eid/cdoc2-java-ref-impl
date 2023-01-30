@@ -169,7 +169,7 @@ public class EnvelopeTest {
         RecipientRecord recipient = header.recipients(0);
 
         assertEquals(keyLabel, recipient.keyLabel());
-        assertEquals(recipient.capsuleType(), recipients_RSAPublicKeyCapsule);
+        assertEquals(recipients_RSAPublicKeyCapsule, recipient.capsuleType());
 
         RSAPublicKeyCapsule rsaPublicKeyCapsule = (RSAPublicKeyCapsule) recipient.capsule(new RSAPublicKeyCapsule());
         assertNotNull(rsaPublicKeyCapsule);
@@ -356,10 +356,10 @@ public class EnvelopeTest {
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
-        assertEquals(keyPair.getPublic(), EllipticCurve.secp384r1.decodeFromTls(
+        assertEquals(keyPair.getPublic(), EllipticCurve.SECP384R1.decodeFromTls(
                 ByteBuffer.wrap(capsuleData.getRecipientId())));
-        assertTrue(EllipticCurve.secp384r1.isValidKey(
-                    EllipticCurve.secp384r1.decodeFromTls(
+        assertTrue(EllipticCurve.SECP384R1.isValidKey(
+                    EllipticCurve.SECP384R1.decodeFromTls(
                         ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial())))
         );
     }

@@ -96,7 +96,7 @@ public final class SymmetricKeyUtil {
             log.debug("Decoded {} bytes from secret", secretBytes.length);
         }
 
-        log.info("Label for symmetric key: " + label);
+        log.info("Label for symmetric key: {}", label);
         SecretKey key = new SecretKeySpec(secretBytes, "");
         return new AbstractMap.SimpleEntry<>(key, label);
     }

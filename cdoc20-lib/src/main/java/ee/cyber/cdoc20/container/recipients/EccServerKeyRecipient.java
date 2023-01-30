@@ -4,7 +4,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.fbs.recipients.EccKeyDetails;
@@ -26,10 +25,6 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
         super(eccCurve, recipientPubKey, recipientPubKeyLabel, encryptedFmk);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
-    }
-
-    public byte[] getRecipientPubKeyTlsEncoded() {
-        return ECKeys.encodeEcPubKeyForTls(this.ellipticCurve, this.recipientPubKey);
     }
 
     @Override

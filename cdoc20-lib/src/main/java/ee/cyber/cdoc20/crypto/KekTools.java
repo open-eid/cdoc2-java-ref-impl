@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 public final class KekTools {
 
     private static final Logger log = LoggerFactory.getLogger(KekTools.class);
+    private static final String MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO =
+            "must contain RSA key pair for RSA scenario";
 
     private KekTools() { }
 
@@ -113,7 +115,7 @@ public final class KekTools {
                 () -> new IllegalArgumentException("must contain RSA key pair for RSA Server scenario"));
 
         if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
-            throw new IllegalArgumentException("must contain RSA key pair for RSA scenario");
+            throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
         if (transactionId == null) {
@@ -145,10 +147,10 @@ public final class KekTools {
             throws GeneralSecurityException {
 
         KeyPair recipientKeyPair = keyMaterial.getKeyPair().orElseThrow(
-                () -> new IllegalArgumentException("must contain RSA key pair for RSA scenario"));
+                () -> new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO));
 
         if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
-            throw new IllegalArgumentException("must contain RSA key pair for RSA scenario");
+            throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
         RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();

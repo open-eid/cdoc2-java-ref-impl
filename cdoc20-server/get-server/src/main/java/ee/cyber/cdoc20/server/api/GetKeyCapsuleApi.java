@@ -110,7 +110,9 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate {
 
     private Optional<X509Certificate> getClientCertFromRequest() {
         HttpServletRequest req = this.nativeWebRequest.getNativeRequest(HttpServletRequest.class);
-        X509Certificate[] certs = (X509Certificate[]) req.getAttribute("javax.servlet.request.X509Certificate");
+        X509Certificate[] certs = (req != null)
+                ? (X509Certificate[]) req.getAttribute("javax.servlet.request.X509Certificate")
+                : new X509Certificate[0];
         if (certs.length > 0) {
             var clientCert = certs[0];
             log.info("Got client certificate(subject='{}')", getCertSubjectName(clientCert));

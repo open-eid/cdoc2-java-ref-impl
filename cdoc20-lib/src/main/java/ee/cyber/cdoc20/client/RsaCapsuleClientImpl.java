@@ -2,16 +2,12 @@ package ee.cyber.cdoc20.client;
 
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.crypto.RsaUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 
 
 public class RsaCapsuleClientImpl implements RsaCapsuleClient {
-    private static final Logger log = LoggerFactory.getLogger(RsaCapsuleClientImpl.class);
-
     final KeyCapsuleClient keyCapsulesClient;
 
     public RsaCapsuleClientImpl(KeyCapsuleClient serverClient) {

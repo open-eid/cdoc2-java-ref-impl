@@ -15,6 +15,7 @@ import static io.gatling.javaapi.http.HttpDsl.http;
  * Functional tests for the key-capsules API
  */
 @Slf4j
+@SuppressWarnings("squid:S2187") //SonarQube: TestCases should contain tests
 public final class KeyCapsuleFunctionalTests extends Simulation {
 
     private final TestConfig config = TestConfig.load(false);
