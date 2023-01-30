@@ -29,7 +29,7 @@
             <password>${NEXUS_pass}</password>
         </server>
     </servers>
-  
+
     <activeProfiles>
         <activeProfile>RIA</activeProfile>
     </activeProfiles>

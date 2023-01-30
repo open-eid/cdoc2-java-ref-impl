@@ -36,7 +36,7 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
             throw new ExtApiException(gse);
         }
 
-        if (EllipticCurve.secp384r1 != curve) {
+        if (EllipticCurve.SECP384R1 != curve) {
             // API doesn't support other curves beside secp384r1
             throw new IllegalArgumentException("Unsupported EC curve " + curve);
         }
@@ -62,7 +62,7 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
                 }
 
                 return Optional.of(
-                    EllipticCurve.secp384r1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
+                    EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
                 );
             }
 

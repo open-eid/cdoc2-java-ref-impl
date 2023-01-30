@@ -58,8 +58,8 @@ public class CDocDecrypter {
         return this;
     }
 
-    public List<String> decrypt() throws IOException, CDocException {
-        //TODO: validate
+    public List<String> decrypt() throws IOException, CDocException, CDocValidationException {
+        validate(true);
 
         try {
             if ((filesToExtract == null) || (filesToExtract.isEmpty())) {
@@ -79,7 +79,8 @@ public class CDocDecrypter {
      * List file names in CDoc.
      * @return List of files in cDocFile
      */
-    public List<ArchiveEntry> list() throws IOException, CDocException {
+    public List<ArchiveEntry> list() throws IOException, CDocException, CDocValidationException {
+        validate(false);
         try {
             return Envelope.list(cDocInputStream, recipientKeyMaterial, keyServerClientFactory);
         } catch (GeneralSecurityException | CDocParseException ex) {
@@ -87,5 +88,26 @@ public class CDocDecrypter {
             throw new CDocException("Error decrypting " + fileName, ex);
         }
     }
+
+    public void validate(boolean extract) throws CDocValidationException {
+        if (cDocFile == null) {
+            throw new CDocValidationException("Must provide CDOC input file");
+        }
+
+        if (extract && (destinationDirectory == null)) {
+            throw new CDocValidationException("Must provide CDOC destination directory");
+        }
+
+        if (extract && (!destinationDirectory.exists()
+                || !destinationDirectory.isDirectory()
+                || !destinationDirectory.canWrite())) {
+            throw new CDocValidationException("Destination directory " + destinationDirectory + " is not writable");
+        }
+
+        if (recipientKeyMaterial == null) {
+            throw new CDocValidationException("Must provide decryption key material");
+        }
+    }
+
 
 }

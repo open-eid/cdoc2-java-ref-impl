@@ -12,13 +12,14 @@ public enum OperatingSystem {
     MAC;
 
     private static final Logger log = LoggerFactory.getLogger(OperatingSystem.class);
+    private static final String OS_NAME = "os.name";
 
     /**
      * @return the operating system
      */
     public static OperatingSystem getOS() {
-        log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty("os.name"));
-        String os = System.getProperty("os.name").toLowerCase();
+        log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty(OS_NAME));
+        String os = System.getProperty(OS_NAME).toLowerCase();
 
         if (os.contains("win")) {
             return OperatingSystem.WINDOWS;
@@ -31,7 +32,7 @@ public enum OperatingSystem {
         }
 
         log.error("Unknown operating system: os.family: {}, os.name: {}",
-            System.getProperty("os.family"), System.getProperty("os.name")
+            System.getProperty("os.family"), System.getProperty(OS_NAME)
         );
         throw new IllegalStateException("Unknown OS");
     }

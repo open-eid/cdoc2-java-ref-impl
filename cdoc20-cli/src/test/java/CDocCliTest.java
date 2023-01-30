@@ -14,7 +14,7 @@ import picocli.CommandLine;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CDocCliTest {
+class CDocCliTest {
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
 
     final PrintStream originalOut = System.out;

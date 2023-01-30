@@ -50,6 +50,14 @@ From gatling-tests directory run:
 mvn clean compile exec:java -Damount=10
 ```
 
+Or using a compiled jar:
+
+```
+export JAVA_OPTS="-Doutput-dir=/tmp -Dkeystore-password=secret -Dkey-alias=client-key -Droot-keystore=/tmp/gatling-ca.p12 -Droot-keystore-password=secret -Droot-key-alias=gatling-ca -Damount=3"
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar ee.cyber.cdoc20.server.datagen.KeyStoreGenerator
+```
+
+
 This will generate 10 key stores (the ouput folder and other parameters are configured in pom.xml)
 with private keys and certificates that can be used later in Gatling tests.
 The number of generated key stores is specified by the `amount` system property.
@@ -68,6 +76,13 @@ A CDOC2.0 server must be running on the host:port as configured in the configura
 From gatling-tests directory run:
 ```
 mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleFunctionalTests
+```
+
+Or using a compiled jar:
+
+```
+export JAVA_OPTS="-Dconfig.file=src/test/resources/application.conf -Dlogback.configurationFile=src/test/resources/logback-test.xml"
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc20.server.KeyCapsuleFunctionalTests
 ```
 
 ## Running load tests
@@ -102,6 +117,14 @@ For executing load tests run from gatling-tests directory:
 ```
 mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleLoadTests
 ```
+
+Or using a compiled jar:
+
+```
+export JAVA_OPTS="-Dconfig.file=src/test/resources/application.conf -Dlogback.configurationFile=src/test/resources/logback-test.xml"
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc20.server.KeyCapsuleLoadTests
+```
+
 
 ## Server Keystore configuration
 

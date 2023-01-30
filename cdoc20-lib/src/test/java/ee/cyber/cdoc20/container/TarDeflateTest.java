@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 // test are executed sequentially without any other tests running at the same time
 @Isolated
-class TarGzTest {
-    private static final  Logger log = LoggerFactory.getLogger(TarGzTest.class);
+class TarDeflateTest {
+    private static final  Logger log = LoggerFactory.getLogger(TarDeflateTest.class);
 
     private static final String TGZ_FILE_NAME = "archive.tgz";
     private static final String PAYLOAD = "payload\n";
@@ -34,7 +34,8 @@ class TarGzTest {
         "CON", "con", "PRN", "AUX", "aux", "NUL", "nul", "COM2", "LPT1", "com1", "lpt1",
         "abc:", "test ", "test.", "abc>", "abc<", "abc\\",
         "abc|", "abc?", "abc*", "abc\"",
-        "test ", "test.", "test\n", "test\t", "-test.text"
+        "test ", "test.", "test\n", "test\t", "-test.text",
+        "ann\u202Etxt.exe" //.exe file that is rendered as annexe.txt on unicode supporting UI
     );
 
     private static final List<String> VALID_FILE_NAMES = List.of("control", "test");
@@ -79,8 +80,8 @@ class TarGzTest {
         Files.createDirectories(outDir);
 
         log.debug("Extracting {} to {}", tarGZipFile, outDir);
-        try (FileInputStream fis = new FileInputStream(tarGZipFile)) {
-            Tar.extractToDir(fis, outDir);
+        try (FileInputStream fis = new FileInputStream(tarGZipFile); TarDeflate tar = new TarDeflate(fis)) {
+            tar.extractToDir(outDir);
         }
 
         Set<String> extractedFiles;
@@ -114,7 +115,7 @@ class TarGzTest {
         }
 
         try (FileInputStream is = new FileInputStream(outFile.toFile())) {
-            List<String> filesList = Tar.listFiles(is);
+            List<String> filesList = TarDeflate.listFiles(is);
             assertEquals(List.of(tarEntryName), filesList);
         }
 
@@ -166,8 +167,8 @@ class TarGzTest {
 
         log.debug("Extracting {} to {}", bombPath, outDir);
         Exception exception = assertThrows(IllegalStateException.class, () -> {
-            try (InputStream is = Files.newInputStream(bombPath)) {
-                Tar.extractToDir(is, outDir);
+            try (TarDeflate tar = new TarDeflate(Files.newInputStream(bombPath))) {
+                tar.extractToDir(outDir);
             }
         });
 
@@ -229,16 +230,17 @@ class TarGzTest {
 
             assertThrows(
                 InvalidPathException.class,
-                () -> Tar.processTarGz(new FileInputStream(file), tempDir, List.of(fileName), true),
+                () -> TarDeflate.process(new FileInputStream(file), tempDir, List.of(fileName), true),
                 "File with name '" + fileName + "' should not be extracted from tar"
             );
+
         }
 
         // should pass
         int i = 0;
         for (String fileName: VALID_FILE_NAMES) {
             File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
-            var result = Tar.processTarGz(new FileInputStream(file), tempDir, List.of(fileName), true);
+            var result = TarDeflate.process(new FileInputStream(file), tempDir, List.of(fileName), true);
             assertTrue(result.size() == 1);
         }
     }
@@ -276,7 +278,7 @@ class TarGzTest {
         log.debug("Compressed empty.tar {}", destEmptyTarZ.size()); //17
 
         // Tar is able to process empty tar without exceptions
-        assertTrue(Tar.listFiles(new ByteArrayInputStream(destEmptyTarZ.toByteArray())).isEmpty());
+        assertTrue(TarDeflate.listFiles(new ByteArrayInputStream(destEmptyTarZ.toByteArray())).isEmpty());
     }
 
     @Test
@@ -296,8 +298,32 @@ class TarGzTest {
 
 
         ByteArrayInputStream is = new ByteArrayInputStream(destTarZ.toByteArray());
-        List<String> filesList = Tar.listFiles(is);
+        List<String> filesList = TarDeflate.listFiles(is);
         assertEquals(List.of(longFileName), filesList);
+    }
+
+    @Test
+    void testTarDeflateAutoClose() throws Exception {
+        byte[] emptyTarBytes = new byte[1024]; //1024 bytes of 0x00 is valid tar
+        InputStream emptyTar = new ByteArrayInputStream(emptyTarBytes);
+
+        ByteArrayOutputStream deflateTarOs = new ByteArrayOutputStream();
+        try (DeflateCompressorOutputStream zOs =
+                     new DeflateCompressorOutputStream(new BufferedOutputStream(deflateTarOs))) {
+            emptyTar.transferTo(zOs);
+        }
+
+        final boolean[] closeWasCalled = {false};
+        ByteArrayInputStream deflateTarStream = new ByteArrayInputStream(deflateTarOs.toByteArray()) {
+            @Override
+            public void close() throws IOException {
+                closeWasCalled[0] = true;
+                super.close();
+            }
+        };
+
+        TarDeflate.process(deflateTarStream, null, null, false);
+        assertTrue(closeWasCalled[0]);
     }
 
     private static File createAndWriteToFile(Path path, String fileName, String contents) throws IOException {

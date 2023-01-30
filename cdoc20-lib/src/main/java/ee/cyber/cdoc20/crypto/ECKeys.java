@@ -168,9 +168,9 @@ public final class ECKeys {
             System.arraycopy(array, 0, padded, len - array.length, array.length);
             return padded;
         } else {
-            if (array.length != len) {
+            if ((array.length != len) && (log.isWarnEnabled())) {
                 log.warn("Expected EC key to be {} bytes, but was {}. bigInteger: {}",
-                        len, array.length, bigInteger.toString(16));
+                            len, array.length, bigInteger.toString(16));
             }
             return array;
         }

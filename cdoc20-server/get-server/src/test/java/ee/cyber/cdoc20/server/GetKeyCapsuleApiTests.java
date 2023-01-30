@@ -120,11 +120,11 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
         //recipientPubKey must match with pub key in mutual TLS
         ECPublicKey recipientPubKey = (ECPublicKey) cert.getPublicKey();
 
-        ECPublicKey senderPubKey = (ECPublicKey) EllipticCurve.secp384r1.generateEcKeyPair().getPublic();
+        ECPublicKey senderPubKey = (ECPublicKey) EllipticCurve.SECP384R1.generateEcKeyPair().getPublic();
 
         log.debug("Sender pub key: {}",
             Base64.getEncoder().encodeToString(
-                ECKeys.encodeEcPubKeyForTls(EllipticCurve.secp384r1, senderPubKey)
+                ECKeys.encodeEcPubKeyForTls(EllipticCurve.SECP384R1, senderPubKey)
             )
         );
         assertNotNull(client.getServerIdentifier());
@@ -228,7 +228,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
 
-        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.SECP384R1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
 
         // Storing clientKeyStore in KeyServerPropertiesClient is a bit of hack for tests.
@@ -315,7 +315,7 @@ class GetKeyCapsuleApiTests extends BaseIntegrationTest {
 
         Capsule capsule = new Capsule();
 
-        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.SECP384R1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
 
         PublicKey pubKey = cert.getPublicKey();

@@ -66,6 +66,9 @@ abstract class BaseIntegrationTest {
     @Test
     void contextLoads() {
         // tests that server is configured properly (no exceptions means success)
+        // In case configuration errors, spring fails run-time during initialization
+        assertNotNull(capsuleRepository);
+        assertTrue(postgresContainer.isRunning());
     }
 
     @Test

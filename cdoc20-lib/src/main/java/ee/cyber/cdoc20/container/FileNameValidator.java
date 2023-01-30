@@ -14,6 +14,8 @@ public final class FileNameValidator {
     );
     private static final Pattern WIN_RESERVED_SYMBOLS = Pattern.compile("[<>:\"/\\\\|?*]");
 
+    private static final Pattern MASQUERADING_CHARACTERS = Pattern.compile("[\u202E]");
+
     private FileNameValidator() {
         // utility class
     }
@@ -42,9 +44,12 @@ public final class FileNameValidator {
             errorMessage = "Filename cannot contain reserved symbols.";
         } else if (WIN_RESERVED_NAMES.matcher(baseName).find()) {
             errorMessage = "Filename cannot be a reserved name.";
+        } else if (MASQUERADING_CHARACTERS.matcher(baseName).find()) {
+            errorMessage = "Filename cannot contain masquerading characters.";
         }
 
-        // check for control characters
+
+            // check for control characters
         for (char c: baseName.toCharArray()) {
             if (Character.getType(c) == Character.CONTROL) {
                 errorMessage = "Filename cannot contain control symbols.";

@@ -6,7 +6,6 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -15,6 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -24,6 +27,7 @@ import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+
 
 /**
  * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys.
@@ -52,8 +56,32 @@ public class CDocBuilder {
     }
 
     public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
-        try (OutputStream outputStream = new FileOutputStream(outputCDocFile)) {
+        if (outputCDocFile == null) {
+            throw new CDocValidationException("Must provide CDOC output filename ");
+        }
+
+        OpenOption openOption = (CDocConfiguration.isOverWriteAllowed())
+                ? StandardOpenOption.CREATE
+                : StandardOpenOption.CREATE_NEW;
+        if (!CDocConfiguration.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
+            log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
+            throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
+        }
+
+        try (OutputStream outputStream = Files.newOutputStream(outputCDocFile.toPath(), openOption)) {
             buildToOutputStream(outputStream);
+        } catch (Exception ex) {
+            log.info("Failed to create {}. Exception: {}", outputCDocFile, ex.getMessage());
+            try {
+                boolean deleted = Files.deleteIfExists(outputCDocFile.toPath());
+                if (deleted) {
+                    log.info("Deleted {}", outputCDocFile);
+                }
+
+            } catch (IOException ioException) {
+                log.error("Error when deleting {} {}", outputCDocFile, ioException);
+            }
+            throw ex;
         }
     }
 
