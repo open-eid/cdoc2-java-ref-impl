@@ -34,7 +34,8 @@ class TarDeflateTest {
         "CON", "con", "PRN", "AUX", "aux", "NUL", "nul", "COM2", "LPT1", "com1", "lpt1",
         "abc:", "test ", "test.", "abc>", "abc<", "abc\\",
         "abc|", "abc?", "abc*", "abc\"",
-        "test ", "test.", "test\n", "test\t", "-test.text"
+        "test ", "test.", "test\n", "test\t", "-test.text",
+        "ann\u202Etxt.exe" //.exe file that is rendered as annexe.txt on unicode supporting UI
     );
 
     private static final List<String> VALID_FILE_NAMES = List.of("control", "test");
