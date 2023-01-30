@@ -1,8 +1,7 @@
 package ee.cyber.cdoc20.container;
 
-import ee.cyber.cdoc20.client.ExtApiException;
+import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.client.KeyCapsuleClient;
-import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.container.recipients.EccRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
@@ -19,6 +18,7 @@ import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,32 +40,35 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.compress.utils.CountingInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc20.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -77,6 +80,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// as tests create and write files, and set/read System Properties, then it's safer to run tests isolated
+// some tests can be run parallel, but this is untested
+@Isolated
 @ExtendWith(MockitoExtension.class)
 public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
@@ -170,7 +176,7 @@ public class EnvelopeTest {
         RecipientRecord recipient = header.recipients(0);
 
         assertEquals(keyLabel, recipient.keyLabel());
-        assertEquals(recipient.capsuleType(), recipients_RSAPublicKeyCapsule);
+        assertEquals(recipients_RSAPublicKeyCapsule, recipient.capsuleType());
 
         RSAPublicKeyCapsule rsaPublicKeyCapsule = (RSAPublicKeyCapsule) recipient.capsule(new RSAPublicKeyCapsule());
         assertNotNull(rsaPublicKeyCapsule);
@@ -329,7 +335,8 @@ public class EnvelopeTest {
     @Test
     void testECContainer(@TempDir Path tempDir) throws Exception {
         KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
-        testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair), "testECContainer", null);
+        testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
+                "testECContainer", null);
     }
 
     @Test
@@ -356,10 +363,10 @@ public class EnvelopeTest {
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
-        assertEquals(keyPair.getPublic(), EllipticCurve.secp384r1.decodeFromTls(
+        assertEquals(keyPair.getPublic(), EllipticCurve.SECP384R1.decodeFromTls(
                 ByteBuffer.wrap(capsuleData.getRecipientId())));
-        assertTrue(EllipticCurve.secp384r1.isValidKey(
-                    EllipticCurve.secp384r1.decodeFromTls(
+        assertTrue(EllipticCurve.SECP384R1.isValidKey(
+                    EllipticCurve.SECP384R1.decodeFromTls(
                         ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial())))
         );
     }
@@ -445,8 +452,8 @@ public class EnvelopeTest {
 
         var encKM = EncryptionKeyMaterial.from(bobKeyPair.getPublic(), "testContainerWrongPoly1305Mac");
 
-        byte[] cdocContainerBytes = createContainer(payloadFile, payloadData.getBytes(StandardCharsets.UTF_8),
-                encKM, List.of(biggerFile), null);
+        byte[] cdocContainerBytes = EnvelopeTestUtils.createContainer(payloadFile,
+                payloadData.getBytes(StandardCharsets.UTF_8), encKM, List.of(biggerFile), null);
 
         log.debug("cdoc size: {}", cdocContainerBytes.length);
 
@@ -456,113 +463,194 @@ public class EnvelopeTest {
 
         var ex = assertThrows(
             Exception.class,
-            () -> checkContainerDecrypt(cdocContainerBytes, outDir,
+            () -> EnvelopeTestUtils.checkContainerDecrypt(cdocContainerBytes, outDir,
                     DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
                     List.of(payloadFileName), payloadFileName, payloadData, null)
         );
 
         assertInstanceOf(AEADBadTagException.class, ex.getCause());
+        assertEquals("mac check in ChaCha20Poly1305 failed", ex.getCause().getMessage());
 
         assertNotNull(outDir.toFile().listFiles());
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
     }
 
+    @Test
+    void testThatIncompleteCDocFilesAreRemoved(@TempDir Path tempDir)
+            throws IOException, GeneralSecurityException {
+        KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "-payload:" + uuid + ".txt"; //invalid
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-    /**
-     * Creates payloadFile, adds payloadData to payloadFile and creates encrypted container for recipientPubKey
-     * @param payloadFile input payload file to be created and added to container
-     * @param payloadData data to be written to payloadFile
-     * @param encKeyMaterial encryption key material (either public key or symmetric key)
-     * @param additionalFiles optional additional file to add
-     * @param capsuleClient
-     * @return created container as byte[]
-     * @throws IOException if IOException happens
-     * @throws GeneralSecurityException if GeneralSecurityException happens
-     */
-    public static byte[] createContainer(File payloadFile, byte[] payloadData,
-                EncryptionKeyMaterial encKeyMaterial, @Nullable List<File> additionalFiles,
-                @Nullable KeyCapsuleClient capsuleClient)
-            throws IOException, GeneralSecurityException, ExtApiException {
 
-        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
-            payloadFos.write(payloadData);
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        var encKM = EncryptionKeyMaterial.from(bobKeyPair.getPublic(), "blah");
+
+        File cdocFile = tempDir.resolve("incomplete.cdoc").toFile();
+
+        Files.createFile(cdocFile.toPath());
+        assertTrue(cdocFile.exists());
+
+        String overwrite = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
+        System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, "true");
+        try {
+            var ex = assertThrows(
+                    Exception.class,
+                    () -> EnvelopeTestUtils.createContainerUsingCDocBuilder(cdocFile, payloadFile,
+                            payloadData.getBytes(StandardCharsets.UTF_8), encKM, null, null)
+            );
+
+            assertFalse(cdocFile.exists());
+        } finally {
+            if (overwrite != null) {
+                System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, overwrite);
+            }
         }
-
-        List<File> files = new LinkedList<>();
-        files.add(payloadFile);
-        if (additionalFiles != null) {
-            files.addAll(additionalFiles);
-        }
-
-        byte[] cdocContainerBytes;
-        Envelope senderEnvelope = Envelope.prepare(List.of(encKeyMaterial), capsuleClient);
-        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
-            senderEnvelope.encrypt(files, dst);
-            cdocContainerBytes = dst.toByteArray();
-        }
-        assertNotNull(cdocContainerBytes);
-        assertTrue(cdocContainerBytes.length > 0);
-        return cdocContainerBytes;
     }
 
-    /**
-     * Creates CDOC2 container in tempDir and encrypts/decrypts it with keyPair. If capsulesClient is provided, then
-     * test server scenarios
-     */
-    public static void testContainer(Path tempDir, DecryptionKeyMaterial keyMaterial, String keyLabel,
-            @Nullable KeyCapsuleClient capsulesClient) throws Exception {
+    // tar processing is ended after zero block has encountered. It is possible to add extra data after this and tar lib
+    // won't process it. Verify that all data is processed and Poly1305 MAC is validated
+    @Test
+    void testTarWithExtraData(@TempDir Path tempDir) throws Exception {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
         String payloadData = "payload-" + uuid;
         File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        byte[] secret = new byte[Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES];
+        SecureRandom.getInstanceStrong().nextBytes(secret);
+        SecretKey preSharedKey = new SecretKeySpec(secret, "");
+        String keyLabel = "testTarWithExtraData";
+
+        byte[] cdocBytes =  EnvelopeTestUtils.createContainer(payloadFile, payloadData.getBytes(StandardCharsets.UTF_8),
+                EncryptionKeyMaterial.from(preSharedKey, keyLabel), null, null);
+
+        assertTrue(cdocBytes.length > 0);
+
+        log.debug("cdoc length: {}", cdocBytes.length);
+
+        byte[] tarWithExtraDataPayload = EnvelopeTestUtils.createTarWithExtraData();
+        byte[] newCdocBytes =
+                EnvelopeTestUtils.replacePayload(cdocBytes, preSharedKey, keyLabel, tarWithExtraDataPayload);
+
+        log.debug("CDOC size {}", newCdocBytes.length);
+
+        CountingInputStream countingInputStream = new CountingInputStream(new ByteArrayInputStream(newCdocBytes));
+
+        IOException ioex = assertThrows(IOException.class, () -> Envelope.list(
+                    countingInputStream,
+                    DecryptionKeyMaterial.fromSecretKey(keyLabel, preSharedKey), null
+                ));
+
+        assertEquals("Unexpected data after tar", ioex.getMessage());
+
+        assertEquals(newCdocBytes.length, countingInputStream.getBytesRead());
+
+        // Although IOException is thrown, it should not be reported if MAC is wrong
+        // MAC check exception is thrown instead of "Unexpected data after tar"
+        byte[] wrongPoly1305MacCdoc = Arrays.copyOf(newCdocBytes, newCdocBytes.length);
+        wrongPoly1305MacCdoc[wrongPoly1305MacCdoc.length - 1] = (byte) 0xff; //corrupt MAC
+
+        CountingInputStream wrongMacIs =
+                new CountingInputStream(new ByteArrayInputStream(wrongPoly1305MacCdoc));
+
+        IOException ex = assertThrows(IOException.class, () -> Envelope.list(
+                wrongMacIs,
+                DecryptionKeyMaterial.fromSecretKey(keyLabel, preSharedKey), null
+        ));
+
+        assertInstanceOf(AEADBadTagException.class, ex.getCause());
+        assertEquals("mac check in ChaCha20Poly1305 failed", ex.getCause().getMessage());
+
+        assertEquals(newCdocBytes.length, wrongMacIs.getBytesRead());
+    }
+
+    @Test
+    void testIllegalTarEntryType(@TempDir Path tempDir) throws Exception {
+
+        byte[] tarWithIllegalFileTypeBytes = EnvelopeTestUtils.createTarWithIllegalFileType();
+
+        Path outDir = tempDir.resolve("testIllegalTarEntryType.out");
         Files.createDirectories(outDir);
 
-        EncryptionKeyMaterial encKeyMaterial = (keyMaterial.getKeyPair().isPresent())
-                ? EncryptionKeyMaterial.from(keyMaterial.getKeyPair().get().getPublic(), keyLabel)
-                : EncryptionKeyMaterial.from(keyMaterial.getSecretKey().orElseThrow(), keyLabel);
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-        byte[] cdocContainerBytes = createContainer(payloadFile,
-                payloadData.getBytes(StandardCharsets.UTF_8), encKeyMaterial, null,
-                capsulesClient);
-
-        assertTrue(cdocContainerBytes.length > 0);
-
-        checkContainerDecrypt(cdocContainerBytes, outDir, keyMaterial,
-                List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
-    }
-
-    public static void checkContainerDecrypt(byte[] cdocBytes, Path outDir, DecryptionKeyMaterial keyMaterial,
-            List<String> expectedFilesExtracted, String payloadFileName, String expectedPayloadData,
-            KeyCapsuleClient capsulesClient)  throws Exception {
-
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
-
-            KeyCapsuleClientFactory clientFactory = (capsulesClient == null) ? null : new KeyCapsuleClientFactory() {
-                @Override
-                public KeyCapsuleClient getForId(String serverId) {
-                    Objects.requireNonNull(serverId);
-                    if ((capsulesClient != null)
-                            && (serverId.equals(capsulesClient.getServerIdentifier()))) {
-                        return capsulesClient;
-                    }
-
-                    log.warn("No KeyCapsulesClient for {}", serverId);
-                    return null;
-                }
-            };
-
-            List<String> filesExtracted = Envelope.decrypt(bis, keyMaterial, outDir, clientFactory);
-
-            assertEquals(expectedFilesExtracted, filesExtracted);
-            Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
-
-            assertEquals(expectedPayloadData, Files.readString(payloadPath));
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
+
+        byte[] secret = new byte[Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES];
+        SecureRandom.getInstanceStrong().nextBytes(secret);
+        SecretKey preSharedKey = new SecretKeySpec(secret, "");
+
+
+        String keyLabel = "testTarWithExtraData";
+
+
+        byte[] cdocBytes =  EnvelopeTestUtils.createContainer(payloadFile, payloadData.getBytes(StandardCharsets.UTF_8),
+                EncryptionKeyMaterial.from(preSharedKey, keyLabel), null, null);
+
+        assertTrue(cdocBytes.length > 0);
+
+        log.debug("original cdoc length: {}", cdocBytes.length);
+
+        byte[] newCdocBytes =
+                EnvelopeTestUtils.replacePayload(cdocBytes, preSharedKey, keyLabel, tarWithIllegalFileTypeBytes);
+        log.debug("replaced payload");
+
+        log.debug("modified CDOC size {}", newCdocBytes.length);
+
+        CountingInputStream countingInputStream = new CountingInputStream(new ByteArrayInputStream(newCdocBytes));
+
+        IOException ioex = assertThrows(IOException.class, () -> Envelope.decrypt(
+                countingInputStream,
+                DecryptionKeyMaterial.fromSecretKey(keyLabel, preSharedKey), outDir, null
+        ));
+
+        assertEquals("Tar entry with illegal type found", ioex.getMessage());
+
+        // all cdoc bytes were processed and Poly1305 MAC checked
+        assertEquals(newCdocBytes.length, countingInputStream.getBytesRead());
+
+        //extracted files were deleted
+        assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
+
+
+
+        // MAC check exception is thrown instead of "Unexpected data after tar"
+        byte[] wrongPoly1305MacCdoc = Arrays.copyOf(newCdocBytes, newCdocBytes.length);
+        wrongPoly1305MacCdoc[wrongPoly1305MacCdoc.length - 1] = (byte) 0xff; //corrupt MAC
+
+        CountingInputStream wrongMacIs =
+                new CountingInputStream(new ByteArrayInputStream(wrongPoly1305MacCdoc));
+
+        IOException ex = assertThrows(IOException.class, () -> Envelope.decrypt(
+                wrongMacIs,
+                DecryptionKeyMaterial.fromSecretKey(keyLabel, preSharedKey), outDir, null
+        ));
+
+        assertInstanceOf(AEADBadTagException.class, ex.getCause());
+        assertEquals("mac check in ChaCha20Poly1305 failed", ex.getCause().getMessage());
+
+        assertEquals(newCdocBytes.length, wrongMacIs.getBytesRead());
+
+        //extracted files were deleted
+        assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
     }
+
 
     // test that near max size header can be created and parsed
     @Test
@@ -734,6 +822,7 @@ public class EnvelopeTest {
         log.debug("Done.");
         log.debug("Created {} {}B", bigDotCdoc, bigDotCdoc.length());
 
+        log.debug("Decrypting {}", bigDotCdoc);
         try (FileInputStream cdoc = new FileInputStream(bigDotCdoc)) {
             // use list, instead of decrypt. Container is decrypted, but files are not extracted - save disk space
             List<ArchiveEntry> entryList =
@@ -745,5 +834,6 @@ public class EnvelopeTest {
             assertEquals("bigFile", entryList.get(1).getName());
             assertEquals(mbWanted * oneMb.length, entryList.get(1).getSize());
         }
+        log.debug("Done.");
     }
 }

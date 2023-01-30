@@ -310,7 +310,7 @@ public final class Pkcs11Tools {
 
     private static synchronized Provider initSunPkcs11Provider(Path confPath) {
         log.debug("initSunPkcs11Provider({})", confPath);
-        log.info("Configuring SunPKCS11 from {}", confPath.toString());
+        log.info("Configuring SunPKCS11 from {}", confPath);
         Provider sunPkcs11Provider = Security.getProvider("SunPKCS11").configure(confPath.toString());
 
         log.debug("Provider info {}", sunPkcs11Provider.getInfo());

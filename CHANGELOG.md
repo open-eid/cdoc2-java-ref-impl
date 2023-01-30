@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] ChaCha Poly1305 MAC is checked before other errors are reported (2023-01-30)
+
+### Features
+
+* Rewrite tar processing/ChaCha decryption so that Poly1305 MAC is always checked (even when zlib/tar processing errors happen)
+* Added sample CDOC 2.0 containers with keys and configuration files
+* Added Unicode Right-To-Left Override (U+202E) to forbidden characters
+
+### Bug Fixes
+
+* Incomplete CDOC container file is removed, when creation of CDOC container fails
+* Remove keyserver secrets logging from CLI debug log
+
+
 ## [0.3.0] (2023-01-23)
 
 ### Features

@@ -13,8 +13,9 @@ import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class RsaTest {
+class RsaTest {
 
     // openssl genrsa -out rsa_priv.pem 2048
     @SuppressWarnings("checkstyle:OperatorWrap")
@@ -148,6 +149,7 @@ public class RsaTest {
         String m = "MIIBCgKCAQEAxKTvy+zUftuk3gK5SbUW6RUG3VQYTgqFQrjcAuLyquhSIun06xu9nz4N3Vfqg9h4BUYQKmcGNwoYC7ka1bjnQcblUy7FSznlwQssddE7BL4r3av52atU90Dvr3K9eaJmlfTpbpEa1JpUkDpnDCKf2vM6wPxhxNQYDDoA6QnKFjxOlfzJno/pHFnHKqdDBqmoJlU2o2XcTHzm5vtkg/Z4jjb7tHkrLV75tl+puXK1Kr598cl8pvsLRQHm0L+zKMs+btLZv2LlLNkXEl6dIm73a60bSf65Ya5fLeC+/znde3QibmlmN3yJenP/5bZsqmxExQmX9mFLrAr1g/8jw6O2xwIDAQAB";
         //should not throw exceptions
         RSAPublicKey rsaPublicKey = RsaUtils.decodeRsaPubKey(Base64.getDecoder().decode(m));
+        assertNotNull(rsaPublicKey);
     }
 }
 

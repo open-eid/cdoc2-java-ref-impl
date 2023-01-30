@@ -35,7 +35,7 @@ public final class CapsuleValidator {
 
     private static boolean validateEcSecp34r1Capsule(Capsule capsule) {
         try {
-            var curve = EllipticCurve.secp384r1;
+            var curve = EllipticCurve.SECP384R1;
             int tlsEncodedKeyLen = 2 * curve.getKeyLength() + 1;
 
             if (capsule.getRecipientId() == null || capsule.getEphemeralKeyMaterial() == null) {

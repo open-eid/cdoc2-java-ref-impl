@@ -34,3 +34,4 @@ hs_err_pid*
 /cdoc20-client/src/test/resources/test.properties
 
 /cdoc20-server/src/test/resources/test.properties
+/test/testvectors/zipbomb.cdoc

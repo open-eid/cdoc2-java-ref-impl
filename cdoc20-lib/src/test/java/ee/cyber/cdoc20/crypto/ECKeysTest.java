@@ -58,7 +58,7 @@ class ECKeysTest {
         assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
         assertEquals(0x04, encodedEcPubKey[0]);
 
-        ECPublicKey decoded = EllipticCurve.secp384r1.decodeFromTls(ByteBuffer.wrap(encodedEcPubKey));
+        ECPublicKey decoded = EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(encodedEcPubKey));
         assertEquals(ecPublicKey.getW(), decoded.getW());
         assertEquals(ecPublicKey, decoded);
     }

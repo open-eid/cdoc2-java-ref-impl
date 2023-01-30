@@ -200,7 +200,6 @@ public final class Crypto {
     public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
 
-        //log.debug("ECDH provider {}", ka.getProvider());
         ka.init(ecPrivateKey);
         ka.doPhase(otherPublicKey, true);
 

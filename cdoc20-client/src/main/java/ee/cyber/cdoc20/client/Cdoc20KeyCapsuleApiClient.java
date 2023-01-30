@@ -6,7 +6,6 @@ import ee.cyber.cdoc20.client.api.ApiResponse;
 import ee.cyber.cdoc20.client.api.Cdoc20KeyCapsulesApi;
 import ee.cyber.cdoc20.client.model.Capsule;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
@@ -154,7 +153,7 @@ public final class Cdoc20KeyCapsuleApiClient {
             }
         }
 
-        public Cdoc20KeyCapsuleApiClient build() throws GeneralSecurityException, IOException {
+        public Cdoc20KeyCapsuleApiClient build() throws GeneralSecurityException {
             validate();
 
             final SSLContext finalSslContext = createSslContext();
