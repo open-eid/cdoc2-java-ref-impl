@@ -1,8 +1,0 @@
-Gatling functional tests' Docker container needs network access to cdoc20-get-server and cdoc20-put-server Docker containers.
-
-This can be achieved using Docker network:
-
-docker network create cdoc2-network
-docker network connect cdoc2-network cdoc20-get-server
-docker network connect cdoc2-network cdoc20-put-server
-docker network connect cdoc2-network cdoc2-server-gatling-func-tests
