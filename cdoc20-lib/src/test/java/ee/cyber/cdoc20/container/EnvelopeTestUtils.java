@@ -1,5 +1,8 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.CDocException;
+import ee.cyber.cdoc20.CDocValidationException;
 import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClient;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
@@ -38,6 +41,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
@@ -291,5 +295,31 @@ public final class EnvelopeTestUtils {
 
             assertEquals(expectedPayloadData, Files.readString(payloadPath));
         }
+    }
+
+    public static void createContainerUsingCDocBuilder(File cdocFileToCreate,
+                                                       File payloadFile, byte[] payloadData,
+                                                       EncryptionKeyMaterial encKeyMaterial,
+                                                       @Nullable List<File> additionalFiles,
+                                                       @Nullable Properties serverProperties)
+            throws IOException, CDocException, CDocValidationException {
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData);
+        }
+
+        List<File> files = new LinkedList<>();
+        files.add(payloadFile);
+        if (additionalFiles != null) {
+            files.addAll(additionalFiles);
+        }
+
+        CDocBuilder builder = new CDocBuilder()
+                .withPayloadFiles(files)
+                .withRecipients(List.of(encKeyMaterial))
+                .withServerProperties(serverProperties);
+
+        builder.buildToFile(cdocFileToCreate);
+
     }
 }
