@@ -35,13 +35,14 @@ import javax.annotation.Nullable;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
+
+import org.apache.commons.compress.utils.CountingInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@SuppressWarnings("checkstyle:FinalClass")
-public class Envelope {
+public final class Envelope {
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
     protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
@@ -256,8 +257,9 @@ public class Envelope {
                                               @Nullable KeyCapsuleClientFactory capsulesClientFac)
             throws GeneralSecurityException, IOException, CDocException {
 
-        byte[] fbsHeaderBytes = readFBSHeader(cdocInputStream);
-        byte[] hmac = readHmac(cdocInputStream);
+        CountingInputStream countingIs = new CountingInputStream(cdocInputStream);
+        byte[] fbsHeaderBytes = readFBSHeader(countingIs);
+        byte[] hmac = readHmac(countingIs);
         Header header = deserializeFBSHeader(fbsHeaderBytes);
         List<Recipient> recipients = getRecipients(header);
 
@@ -277,15 +279,52 @@ public class Envelope {
 
                 checkHmac(hmac, fbsHeaderBytes, hmacKey);
 
-                log.debug("payload available (at least) {}", cdocInputStream.available());
+                log.debug("Processed {} header bytes", countingIs.getBytesRead());
+                log.debug("payload available (at least) {}", countingIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
                     byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
-                    try (CipherInputStream cis =
-                                 ChaChaCipher.initChaChaInputStream(cdocInputStream, cekKey, additionalData)) {
 
-                        return Tar.processTarGz(cis, outputDir, filesToExtract, extract);
+                    long headerSize = countingIs.getBytesRead();
+                    List<ArchiveEntry> result = List.of();
+
+                    // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
+                    // automatically verified, when all bytes were read from CipherInputStream
+                    try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
+                         TarDeflate tar = new TarDeflate(cis)) {
+
+                        try {
+                            result = tar.process(outputDir, filesToExtract, extract);
+                        } catch (Exception tarException) {
+                            // read remaining bytes to force Poly1305 MAC check
+                            // only report caught exception after ChaCha stream is drained and MAC checked
+
+                            long processedBytes = countingIs.getBytesRead();
+                            drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
+                            // since exception was thrown from TarDeflate, then created files are deleted by
+                            // TarDeflate::close() when exiting try with resources block
+                            if (countingIs.getBytesRead() - processedBytes > 0) {
+                                log.debug("Decrypted {} unprocessed bytes after \"{}\"",
+                                        countingIs.getBytesRead() - processedBytes, tarException.toString());
+                            }
+                            throw tarException; //no exception from drainStream, re-throw original exception
+                        } finally {
+                            // deflate/tar stream processing is finished, drain any remaining bytes to force
+                            // ChaCha Poly1305 MAC check
+                            long processedBytes = countingIs.getBytesRead();
+                            drainStream(cis, tar::deleteCreatedFiles); //may throw IOException
+
+                            if (countingIs.getBytesRead() - processedBytes > 0) {
+                                log.debug("Decrypted {} unprocessed bytes ",
+                                        countingIs.getBytesRead() - processedBytes);
+                            }
+                        }
+
+                    } finally  {
+                        log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
+                                countingIs.getBytesRead() - headerSize, countingIs.getBytesRead());
                     }
+                    return result;
                 } else {
                     throw new CDocParseException("Unknown payload encryption method "
                             + header.payloadEncryptionMethod());
@@ -298,12 +337,33 @@ public class Envelope {
     }
 
     /**
+     * Read all bytes from Cipher Input Stream
+     * @param cis Cipher Input Stream to drain
+     * @param cleanUpFunc clean up function to run, when IOException happened during draining
+     * @throws IOException if an I/O error has occurred during draining
+     */
+    @SuppressWarnings("checkstyle:EmptyBlock")
+    private static void drainStream(CipherInputStream cis, @Nullable Runnable cleanUpFunc)
+            throws IOException {
+
+        byte ignored[] = new byte[1024];
+        try {
+            while (cis.read(ignored) > 0) { }
+        } catch (IOException drainingException) { // MAC check error is thrown as IOException
+            if (cleanUpFunc != null) {
+                cleanUpFunc.run();
+            }
+            throw drainingException;
+        }
+    }
+
+    /**
      * Check that hmac read from cdocInputStream and hmac calculated from headerBytes match
      * @param hmac read from CDOC
      * @param headerBytes header bytes
      * @param hmacKey header HMAC key, derived from FMK
      * @throws GeneralSecurityException  if security/crypto error has occurred
-     * @throws CDocParseException if calculated HMAC doesn't match with HMAC in header
+     * @throws CDocParseException if calculated HMAC does not match with HMAC in header
      */
     private static void checkHmac(byte[] hmac, byte[] headerBytes, SecretKey hmacKey)
             throws GeneralSecurityException, CDocParseException {
