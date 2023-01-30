@@ -274,7 +274,7 @@ java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar decrypt -f file-for-etoken.cdoc 
 ```
 
 #### ee.cyber.cdoc20.overwrite 
-When decrypting, is overwriting files allowed. Default is true
+When decrypting, is overwriting files allowed. Default is false
 
 #### ee.cyber.cdoc20.maxDiskUsagePercentage
 default 98.0
