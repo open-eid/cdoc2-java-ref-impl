@@ -123,6 +123,7 @@ cdoc20_java does not provide solution for securely storing the secret, but most 
 - cdoc20-server  - Optional server backend for securely exchanging key capsules
 - cdoc20-client  - Optional client for server backend
 - gatling-tests  - Functional and load tests for cdoc20-server
+- test           - Sample CDOC 2.0 containers (with script to create and decrypt them)
 
 ## Preconditions for building
 * Java 17

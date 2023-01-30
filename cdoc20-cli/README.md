@@ -18,6 +18,11 @@ java -jar target/cdoc20-cli-<version>.jar
 
 where `<version>` must be replaced with the latest version built. Example `0.0.12-SNAPSHOT`
 
+Sample generated CDOC2 documents are located at `cdoc20_java/test/testvectors`
+
+Commands for creating and decrypting sample files using cdoc-cli are in `cdoc20_java/test/generate_documents.sh`
+
+
 ### Encryption
 To create:
 - Output file `/tmp/mydoc.cdoc`
