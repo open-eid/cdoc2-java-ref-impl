@@ -3,7 +3,7 @@
     <parent>
         <artifactId>cdoc20</artifactId>
         <groupId>ee.cyber.cdoc20</groupId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
