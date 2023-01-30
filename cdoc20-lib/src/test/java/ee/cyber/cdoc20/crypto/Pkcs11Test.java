@@ -1,6 +1,5 @@
 package ee.cyber.cdoc20.crypto;
 
-import ee.cyber.cdoc20.container.EnvelopeTest;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -8,6 +7,8 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
+
+import ee.cyber.cdoc20.container.EnvelopeTestUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -82,7 +83,7 @@ public class Pkcs11Test {
 
         log.debug("Using hardware private key for decrypting");
 
-        EnvelopeTest.testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(keyPair),
+        EnvelopeTestUtils.testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(keyPair),
                 "testContainerUsingPKCS11Key", null);
     }
 
