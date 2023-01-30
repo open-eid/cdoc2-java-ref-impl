@@ -65,14 +65,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
             throws GeneralSecurityException, IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("KeyServer properties:");
-            p.forEach((k, v) -> {
-                String key = (String) k;
-                String value = key.contains("pass") ? "***" : (String)v;
-                log.debug("{}={}", key, value);
-            });
-        }
 
         String serverId = p.getProperty("cdoc20.client.server.id");
 
