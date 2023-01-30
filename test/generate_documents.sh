@@ -30,10 +30,11 @@ CLI_CONF=${CDOC_DIR}/cdoc20-cli/config
 
 SERVER_KEYS_DIR=${CDOC_DIR}/cdoc20-server/keys
 
+#by default overwrite of files is not allowed
+OVERWRITE_FILES=true
 
-
-CDOC_CREATE_CMD="java -jar ${CLI_JAR} create"
-CDOC_DECRYPT_CMD="java -jar ${CLI_JAR} decrypt"
+CDOC_CREATE_CMD="java -Dee.cyber.cdoc20.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} create"
+CDOC_DECRYPT_CMD="java -Dee.cyber.cdoc20.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} decrypt"
 CDOC_LIST_CMD="java -jar ${CLI_JAR} list"
 
 create_simple_ec() {

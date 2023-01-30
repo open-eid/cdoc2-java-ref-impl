@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.container;
 
+import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.client.KeyCapsuleClient;
 import ee.cyber.cdoc20.client.model.Capsule;
 import ee.cyber.cdoc20.container.recipients.EccRecipient;
@@ -29,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
@@ -55,6 +57,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -65,6 +68,7 @@ import static ee.cyber.cdoc20.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
 import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,6 +80,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// as tests create and write files, and set/read System Properties, then it's safer to run tests isolated
+// some tests can be run parallel, but this is untested
+@Isolated
 @ExtendWith(MockitoExtension.class)
 public class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
@@ -467,6 +474,43 @@ public class EnvelopeTest {
         assertNotNull(outDir.toFile().listFiles());
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
+    }
+
+    @Test
+    void testThatIncompleteCDocFilesAreRemoved(@TempDir Path tempDir)
+            throws IOException, GeneralSecurityException {
+        KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "-payload:" + uuid + ".txt"; //invalid
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        var encKM = EncryptionKeyMaterial.from(bobKeyPair.getPublic(), "blah");
+
+        File cdocFile = tempDir.resolve("incomplete.cdoc").toFile();
+
+        Files.createFile(cdocFile.toPath());
+        assertTrue(cdocFile.exists());
+
+        String overwrite = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
+        System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, "true");
+        try {
+            var ex = assertThrows(
+                    Exception.class,
+                    () -> EnvelopeTestUtils.createContainerUsingCDocBuilder(cdocFile, payloadFile,
+                            payloadData.getBytes(StandardCharsets.UTF_8), encKM, null, null)
+            );
+
+            assertFalse(cdocFile.exists());
+        } finally {
+            if (overwrite != null) {
+                System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, overwrite);
+            }
+        }
     }
 
     // tar processing is ended after zero block has encountered. It is possible to add extra data after this and tar lib

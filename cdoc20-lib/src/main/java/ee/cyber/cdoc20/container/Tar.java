@@ -1,6 +1,5 @@
 package ee.cyber.cdoc20.container;
 
-import ee.cyber.cdoc20.CDocConfiguration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -39,9 +38,6 @@ public final class Tar {
     public static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
 
     public static final int DEFAULT_TAR_ENTRIES_THRESHOLD = 1000;
-
-    // whether overwrite of extracted files is allowed
-    public static final boolean DEFAULT_OVERWRITE = true;
 
     private Tar() {
     }
@@ -190,17 +186,4 @@ public final class Tar {
         return value;
     }
 
-    public static boolean isOverWriteAllowed() {
-        boolean overwrite = DEFAULT_OVERWRITE;
-        if (System.getProperties().containsKey(CDocConfiguration.OVERWRITE_PROPERTY)) {
-            String overwriteStr = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
-
-            if (overwriteStr != null) {
-                //only "true" is considered as true
-                overwrite = Boolean.parseBoolean(overwriteStr);
-            }
-        }
-        return overwrite;
-
-    }
 }
