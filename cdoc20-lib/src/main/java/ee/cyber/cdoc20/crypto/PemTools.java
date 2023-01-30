@@ -140,7 +140,7 @@ public final class PemTools {
             RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
             // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
             if (rsaPublicKey.getModulus().bitLength() <= 512) {
-                new InvalidKeyException("RSA key does not meet length requirements");
+                throw new InvalidKeyException("RSA key does not meet length requirements");
             }
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());

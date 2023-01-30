@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public enum EllipticCurve {
     UNKNOWN(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.UNKNOWN, null, null),
-    secp384r1(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID);
+    SECP384R1(ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID);
 
     private static final Logger log = LoggerFactory.getLogger(EllipticCurve.class);
 
@@ -44,7 +44,7 @@ public enum EllipticCurve {
 
     public boolean isValidKey(ECPublicKey key) throws GeneralSecurityException {
         switch (this) {
-            case secp384r1:
+            case SECP384R1:
                 return ECKeys.isValidSecP384R1(key);
             default:
                 throw new IllegalStateException("isValidKey not implemented for " + this);
@@ -53,7 +53,7 @@ public enum EllipticCurve {
 
     public boolean isValidKeyPair(KeyPair keyPair) throws GeneralSecurityException {
         switch (this) {
-            case secp384r1:
+            case SECP384R1:
                 return ECKeys.isECSecp384r1(keyPair);
             default:
                 throw new IllegalStateException("isValidKeyPair not implemented for " + this);
@@ -65,7 +65,7 @@ public enum EllipticCurve {
      */
     public int getKeyLength() {
         switch (this) {
-            case secp384r1:
+            case SECP384R1:
                 return ECKeys.SECP_384_R_1_LEN_BYTES;
             default:
                 throw new IllegalStateException("getKeyLength not implemented for " + this);
@@ -74,7 +74,7 @@ public enum EllipticCurve {
 
     public ECPublicKey decodeFromTls(ByteBuffer encoded) throws GeneralSecurityException {
         switch (this) {
-            case secp384r1:
+            case SECP384R1:
                 // calls also isValidSecP384R1
                 return ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
             default:
@@ -88,14 +88,14 @@ public enum EllipticCurve {
 
     public static EllipticCurve forName(String name) throws NoSuchAlgorithmException {
         if (ECKeys.SECP_384_R_1.equalsIgnoreCase(name)) {
-            return secp384r1;
+            return SECP384R1;
         }
         throw new NoSuchAlgorithmException("Unknown curve name " + name);
     }
 
     public static EllipticCurve forOid(String oid) throws NoSuchAlgorithmException {
         if (ECKeys.SECP_384_OID.equals(oid)) {
-            return secp384r1;
+            return SECP384R1;
         }
         throw new NoSuchAlgorithmException("Unknown EC curve oid " + oid);
     }
@@ -103,7 +103,7 @@ public enum EllipticCurve {
     public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
         switch (value) {
             case ee.cyber.cdoc20.fbs.recipients.EllipticCurve.secp384r1:
-                return secp384r1;
+                return SECP384R1;
             default:
                 throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
         }

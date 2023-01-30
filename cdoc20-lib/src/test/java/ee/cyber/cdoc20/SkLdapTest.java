@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class SkLdapTest {
+class SkLdapTest {
     private static final Logger log = LoggerFactory.getLogger(SkLdapTest.class);
 
     // Igor cert is not available from SKs

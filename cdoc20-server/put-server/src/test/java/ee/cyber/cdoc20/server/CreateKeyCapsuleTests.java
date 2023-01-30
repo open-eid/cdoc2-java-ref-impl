@@ -114,11 +114,11 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
         File[] certs = {getKeysDirectory().resolve("ca_certs/client-certificate.pem").toFile()};
         ECPublicKey recipientPubKey = ECKeys.loadCertKeys(certs).get(0);
 
-        ECPublicKey senderPubKey = (ECPublicKey) EllipticCurve.secp384r1.generateEcKeyPair().getPublic();
+        ECPublicKey senderPubKey = (ECPublicKey) EllipticCurve.SECP384R1.generateEcKeyPair().getPublic();
 
         log.debug("Sender pub key: {}",
             Base64.getEncoder().encodeToString(
-                ECKeys.encodeEcPubKeyForTls(EllipticCurve.secp384r1, senderPubKey)
+                ECKeys.encodeEcPubKeyForTls(EllipticCurve.SECP384R1, senderPubKey)
             )
         );
 
@@ -208,7 +208,7 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
 
         KeyCapsuleClientImpl client = (KeyCapsuleClientImpl) KeyCapsuleClientImpl.create(p);
 
-        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.SECP384R1.generateEcKeyPair();
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
 
         // Storing clientKeyStore in KeyCapsulesClientImpl is a bit of hack for tests.
@@ -288,7 +288,7 @@ class CreateKeyCapsuleTests extends BaseIntegrationTest {
 
         //recipient must match to client's cert pub key or GET will fail with 404
         PublicKey recipientPubKey = cert.getPublicKey();
-        KeyPair senderKeyPair = EllipticCurve.secp384r1.generateEcKeyPair();
+        KeyPair senderKeyPair = EllipticCurve.SECP384R1.generateEcKeyPair();
         EllipticCurve curve = EllipticCurve.forPubKey(recipientPubKey);
         ECPublicKey senderPubKey = (ECPublicKey) senderKeyPair.getPublic();
 

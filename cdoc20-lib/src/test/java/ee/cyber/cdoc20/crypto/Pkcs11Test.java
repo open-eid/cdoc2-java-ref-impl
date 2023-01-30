@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see Pkcs11DeviceConfiguration for details
  */
 @Isolated
-public class Pkcs11Test {
+class Pkcs11Test {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
     // load pkcs11 devive properties
@@ -41,7 +41,7 @@ public class Pkcs11Test {
         );
 
         if (Crypto.isECPKCS11Key(keyPair.getPrivate())) {
-            assertTrue(EllipticCurve.secp384r1.isValidKeyPair(keyPair));
+            assertTrue(EllipticCurve.SECP384R1.isValidKeyPair(keyPair));
         }
     }
 

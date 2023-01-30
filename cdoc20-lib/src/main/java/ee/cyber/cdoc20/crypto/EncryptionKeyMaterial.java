@@ -42,7 +42,9 @@ public interface EncryptionKeyMaterial extends Destroyable {
             }
 
             @Override
-            public void destroy() { } // no secret key material that needs to be destroyed
+            public void destroy() {
+                // no secret key material that needs to be destroyed
+            }
         };
     }
 

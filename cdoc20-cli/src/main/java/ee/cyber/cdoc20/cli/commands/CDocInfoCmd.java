@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+//S106 Standard outputs should not be used directly to log anything
+//CLI needs to interact with standard outputs
+@SuppressWarnings("java:S106")
 @CommandLine.Command(name = "info",  showAtFileInUsageHelp = true)
 public class CDocInfoCmd implements Callable<Void> {
     @CommandLine.Option(names = {"-f", "--file" }, required = true,

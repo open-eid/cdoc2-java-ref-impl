@@ -37,6 +37,7 @@ import java.util.Objects;
 public final class RecipientFactory {
 
     private static final Logger log = LoggerFactory.getLogger(RecipientFactory.class);
+    private static final String INVALID_FMK_LEN = "Invalid FMK len";
 
     private RecipientFactory() { }
 
@@ -58,7 +59,7 @@ public final class RecipientFactory {
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientKeys);
         if (fmk.length != Crypto.FMK_LEN_BYTES) {
-            throw new IllegalArgumentException("Invalid FMK len");
+            throw new IllegalArgumentException(INVALID_FMK_LEN);
         }
 
         if (recipientKeys.isEmpty()) {
@@ -184,7 +185,7 @@ public final class RecipientFactory {
         Objects.requireNonNull(recipientPubKey);
         Objects.requireNonNull(serverClient);
         if (fmk.length != Crypto.CEK_LEN_BYTES) {
-            throw new IllegalArgumentException("Invalid FMK len");
+            throw new IllegalArgumentException(INVALID_FMK_LEN);
         }
 
         EccPubKeyRecipient eccPubKeyRecipient = buildEccRecipient(fmk, recipientPubKey, keyLabel);
@@ -208,7 +209,7 @@ public final class RecipientFactory {
         Objects.requireNonNull(serverClient);
 
         if (fmk.length != Crypto.CEK_LEN_BYTES) {
-            throw new IllegalArgumentException("Invalid FMK len");
+            throw new IllegalArgumentException(INVALID_FMK_LEN);
         }
 
         RSAPubKeyRecipient rsaPubKeyRecipient = buildRsaRecipient(fmk, recipientPubKey, keyLabel);
