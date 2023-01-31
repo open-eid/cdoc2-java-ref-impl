@@ -189,7 +189,7 @@ mvn clean
 mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
-Verify that git repositories are synced (master points to same commit) and tags are pushed
+Verify that git repositories are synced (master points to same commit) and the tag is pushed (using `git push <remote> v{x.y.z}`).
 
 As maven repository doesn't exist yet, then maven deploy is not performed
 
