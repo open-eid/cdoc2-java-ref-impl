@@ -1,6 +1,6 @@
 # cdoc20_java
 
-[CDOC 2.0](https://overleaf.cloud.cyber.ee/project/6322f8bcf962db0089c4cd08) reference implementation (Java)
+[CDOC 2.0](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
 CDOC 2.0 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC 2.0](https://www.ria.ee/sites/default/files/content-editors/EID/arne.ansperi_cdoc2_eidinfopaev_20_09_22.pdf).
 
@@ -10,7 +10,7 @@ Current CDoc 2.0 supports five scenarios
 ## CDoc 2.0 ECDH scenario
 
 **Warning**: This description is simplification to give general idea, details and **final truth is in 
-[CDOC 2.0 specification](https://overleaf.cloud.cyber.ee/project/6322f8bcf962db0089c4cd08)**.
+[CDOC 2.0 specification](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf)**.
 
 1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
    EC public key.

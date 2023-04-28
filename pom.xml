@@ -93,11 +93,12 @@
         </profile>
     </profiles>
 
+    <!-- Configuration for Maven Release plugin -->
     <scm>
-        <developerConnection>scm:git:git@gitlab.cyber.ee:cdoc-2.0/cdoc20_java</developerConnection>
-        <url>git@gitlab.cyber.ee:cdoc-2.0/cdoc20_java</url>
-      <tag>v0.0.12</tag>
-  </scm>
+      <developerConnection>scm:git:git@repo-url</developerConnection>
+      <url>git@repo-url</url>
+      <tag>v0.0.1</tag>
+    </scm>
 
     <modules>
         <module>cdoc20-schema</module>

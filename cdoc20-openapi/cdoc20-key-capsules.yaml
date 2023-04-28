@@ -2,7 +2,7 @@
 openapi: 3.0.3
 info:
   contact:
-    url: http://cyber.ee
+    url: http://ria.ee
   title: cdoc20-key-capsules
   version: '2.0'
   description: API for exchanging CDOC2.0 ephemeral key material in key capsules
