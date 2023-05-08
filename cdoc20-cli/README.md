@@ -31,7 +31,7 @@ To create:
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.pem README.md
+java -jar target/cdoc20-cli-*.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.pem README.md
 ```
 
 ### Encryption with server scenario
@@ -41,19 +41,19 @@ To store keys in key server, specify addition `--server` option:
 
 When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
+java -jar target/cdoc20-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
 ```
 
 Optionally cdoc20-cli also supports encrypting with "soft" key or certificate
 
 Public key (`-p`)
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc20client_pub.pem README.md
+java -jar target/cdoc20-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc20client_pub.pem README.md
 ```
 
 Certificate (`-c` option):
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc20client-certificate.pem README.md
+java -jar target/cdoc20-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc20client-certificate.pem README.md
 ```
 
 ### Encryption with symmetric key
@@ -68,12 +68,12 @@ Base64 encoded keys must be prefixed with 'base64,', so that key becomes "base64
 
 Encrypt with generated key and label 'mylabel':
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create --secret "mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create --secret "mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=" -f /tmp/symmetric.cdoc README.md
 ```
 
 Or clear text:
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
 ```
 
 Or secret read from file (so that secret is not exposed through process list)
@@ -88,7 +88,7 @@ cat keys/b64secret.option
 
 Decryption is done with the same label and key used for encryption
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
+java -jar target/cdoc20-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
 ```
 
 Key and label can be safely stored in a password manager.
@@ -102,7 +102,7 @@ To decrypt:
 - to output directory `/tmp`
 
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
+java -jar target/cdoc20-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
 ```
 
 ### Decrypting with server scenario
@@ -112,27 +112,27 @@ To decrypt CDOC document that has its keys distributed through key server, cdoc-
 
 Configuration for id-card (certificate for mutual TLS and private key is read from smart-card)
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
+java -jar target/cdoc20-cli*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
 ```
 
 It is also possible to decrypt documents created with "soft" keys, but configuration for mutual TLS (properties file) and
 key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
 mutual TLS.
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem -o /tmp/
+java -jar target/cdoc20-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem -o /tmp/
 ```
 
 
 ### List
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
+java -jar target/cdoc20-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
 ```
 
 or
 
 ```
-java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
+java -jar target/cdoc20-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
 ```
 
 ### List recipients
@@ -140,7 +140,7 @@ java -jar target/cdoc20-cli-0.0.12-SNAPSHOT.jar list --server=config/localhost/l
 List recipients. Prints recipient types and key labels from CDOC header.
 
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar info -f /tmp/id.cdoc
+java -jar target/cdoc20-cli-*.jar info -f /tmp/id.cdoc
 ```
 
 
@@ -154,7 +154,7 @@ https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine
 
 To create cdoc for recipient with id code 37101010021 use:
 ```
-java -jar target/cdoc20-cli-0.0.5-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -r 37101010021 README.md
+java -jar target/cdoc20-cli-*.jar create --file /tmp/mydoc.cdoc -r 37101010021 README.md
 ```
 
 
@@ -165,7 +165,7 @@ To decrypt:
 - use private key from ID-card slot 0 (Isikutuvastus PIN1)
 - Decrypt files from cdoc file into current directory
 ```
-java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -f mydoc.cdoc
+java -jar target/cdoc20-cli-*.jar decrypt -f mydoc.cdoc
 ```
 
 ### Certificate extraction
@@ -192,7 +192,7 @@ To create:
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc20-cli-0.0.1-SNAPSHOT.jar create --file /tmp/mydoc.cdoc -c keys/37101010021.cer README.md
+java -jar target/cdoc20-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/37101010021.cer README.md
 ```
 
 
@@ -204,7 +204,7 @@ cdoc20-cli will try to configure itself automatically. If OpenSC library is inst
 specify its location by setting 'pkcs11-library' property:
 
 ```
-java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dpkcs11-library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
+java -jar target/cdoc20-cli-*.jar decrypt -Dpkcs11-library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
 ```
 
 More tips for debugging ID-card related issues are provided in cdoc20-lib/pkcs11.README file
@@ -215,7 +215,7 @@ More tips for debugging ID-card related issues are provided in cdoc20-lib/pkcs11
 Set with -D option
 
 ```
-java -jar target/cdoc20-cli-0.0.4-SNAPSHOT.jar decrypt -Dee.cyber.cdoc20.overwrite=false -f mydoc.cdoc
+java -jar target/cdoc20-cli-*.jar decrypt -Dee.cyber.cdoc20.overwrite=false -f mydoc.cdoc
 ```
 
 #### pkcs11-library
@@ -264,13 +264,13 @@ Encrypt certificate as described in the "Encrypting documents with certificate" 
 List files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar list -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc20-cli-*.jar list -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
 ```
 
 Decrypt files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar decrypt -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc20-cli-*.jar decrypt -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
 ```
 
 #### ee.cyber.cdoc20.overwrite 
