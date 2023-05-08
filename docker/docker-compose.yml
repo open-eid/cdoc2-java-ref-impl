@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+  cdoc2-postgres:
+    container_name: cdoc2-postgres
+    image: postgres
+    restart: always
+    ports:
+      - "7432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+
+  cdoc2-liquibase:
+    container_name: cdoc2-liquibase
+    image: liquibase/liquibase:4.19
+    depends_on:
+      cdoc2-postgres:
+        condition: service_started
+    volumes:
+      - ../cdoc20-server/server-db/src/main/resources/db/changelog/changes/:/liquibase/changelog/db/changelog/changes/
+      - ../cdoc20-server/server-db/src/main/resources/db/changelog/db.changelog-master.yaml:/liquibase/db.changelog-master.yaml
+      - ../cdoc20-server/server-db/src/main/resources/db/liquibase.properties.docker:/liquibase/changelog/liquibase.properties
+    command: liquibase --url="jdbc:postgresql://cdoc2-postgres:5432/postgres?user=postgres&password=postgres" --defaults-file=/liquibase/changelog/liquibase.properties update
+
+  cdoc2-put-server:
+    container_name: cdoc2-put-server
+    build:
+      context: ../cdoc20-server/
+      dockerfile: put-server/docker/Dockerfile
+      args:
+        NAME: cdoc2-put-server
+    ports:
+      - "8443:8443"
+      # monitoring
+      - "18443:18443"
+    depends_on:
+      cdoc2-liquibase:
+        condition: service_completed_successfully
+    mem_limit: 1g
+
+  cdoc2-get-server:
+    container_name: cdoc2-get-server
+    build:
+      context: ../cdoc20-server/
+      dockerfile: get-server/docker/Dockerfile
+      args:
+        NAME: cdoc2-get-server
+    ports:
+      - "8444:8443"
+      # monitoring
+      - "18444:18443"
+    depends_on:
+      cdoc2-liquibase:
+        condition: service_completed_successfully
+    mem_limit: 1g
