@@ -196,5 +196,3 @@ For more info, see
 [Maven Non-interactive Release](https://maven.apache.org/maven-release/maven-release-plugin/examples/non-interactive-release.html)
 
 
-
-
