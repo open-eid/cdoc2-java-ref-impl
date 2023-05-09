@@ -7,10 +7,10 @@ info:
   version: '2.0'
   description: API for exchanging CDOC2.0 ephemeral key material in key capsules
 servers:
-  - url: 'https://cdoc2-keyserver-01.test.riaint.ee:8443'
-    description: RIA test no auth (for creating key capsules)
-  - url: 'https://cdoc2-keyserver-01.test.riaint.ee:8444'
-    description: RIA test mutual TLS authentication
+  - url: 'https://localhost:8443'
+    description: no auth (for creating key capsules)
+  - url: 'https://localhost:8444'
+    description: mutual TLS authentication (for retrieving key capsules)
 
 paths:
   '/key-capsules/{transactionId}':
