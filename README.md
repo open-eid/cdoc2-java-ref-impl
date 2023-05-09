@@ -4,7 +4,6 @@
 
 CDOC 2.0 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC 2.0](https://www.ria.ee/media/2340/download).
 
-
 Current CDoc 2.0 supports five scenarios
 
 ## CDoc 2.0 ECDH scenario
