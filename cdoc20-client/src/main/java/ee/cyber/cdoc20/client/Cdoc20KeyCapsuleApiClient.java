@@ -75,7 +75,7 @@ public final class Cdoc20KeyCapsuleApiClient {
 
         /**
          * Init server base url
-         * @param url server base url, example https://cdoc2-keyserver-01.dev.riaint.ee:8443
+         * @param url server base url, example https://host:8443
          * @return
          */
         public Builder withBaseUrl(String url) {

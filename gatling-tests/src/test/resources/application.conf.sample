@@ -4,14 +4,12 @@
 put-server {
 # the base url of the server
   base-url = "https://localhost:8443"
-  #base-url = "https://cdoc2-keyserver-01.dev.riaint.ee:8443"
 }
 
 # fetch capsule server configuration
 get-server {
   # the base url of the server
   base-url = "https://localhost:8444"
-  #base-url = "https://cdoc2-keyserver-01.dev.riaint.ee:8444"
 }
 
 # key stores to use in communicating with the server
