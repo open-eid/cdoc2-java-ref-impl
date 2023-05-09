@@ -1,4 +1,4 @@
-#Running locally (dev)
+# Running locally (dev)
 
 This file describes how to run cdoc20 key servers in your local development machine, without external dependencies
 
@@ -41,7 +41,7 @@ where VER is the version of the package built by mvn package previously.
 Note: to enable TLS handshake debugging, add `-Djavax.net.debug=ssl:handshake` option
 
 
-#Testing
+# Testing
 ## Create Key Capsule
 Run from cdoc20-server/keys directory or adjust paths to certificates and keys
 
