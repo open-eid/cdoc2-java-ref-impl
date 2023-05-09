@@ -101,7 +101,6 @@ Open Model is implemented for CDOC 2.0 server load tests, meaning that continuou
   Test lasts 10 cycles x 60 seconds = 600 seconds = 10 minutes.
   Each next test cycle has 5 concurrent users more. Last cycle will have 60 concurrent users for 1 minute.
 
-
 * Sample configuration for relatively stable slowly growing load:
 
   - start-users-per-second = 100
