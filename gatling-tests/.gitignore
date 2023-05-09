@@ -1,0 +1,2 @@
+/src/test/resources/application.conf
+/src/test/resources/keys/test-clients/*.p12

@@ -1,0 +1,9 @@
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "c=EE" "(cn=KUSMAN,JANNO,37903130370)"
+
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38207162766)"
+
+Certificate type (digi-id vs id-kaart)
+https://github.com/open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3116dff450/client/SslCertificate.cpp#L302
+https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
+
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38207162766)"

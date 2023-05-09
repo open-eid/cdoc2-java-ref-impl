@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <version>0.6.0-SNAPSHOT</version>
+    <groupId>ee.cyber.cdoc20</groupId>
+    <artifactId>cdoc20</artifactId>
+    <description>CDOC 2.0 reference implementation </description>
+
+    <packaging>pom</packaging>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+
+        <!-- by default slow and pcks11 tests are excluded from running-->
+        <!-- ldap test require connection to external esteid.ldap.sk.ee server -->
+        <tests>!(pkcs11 | slow | ldap)</tests>
+
+        <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <lombok.version>1.18.24</lombok.version>
+        <logback-classic.version>1.2.11</logback-classic.version>
+        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+        <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
+        <bouncycastle.version>1.70</bouncycastle.version>
+        <spring-boot.version>2.7.5</spring-boot.version>
+        <spring.version>5.3.23</spring.version>
+        <gatling.version>3.9.0</gatling.version>
+        <gatling-maven-plugin.version>4.1.6</gatling-maven-plugin.version>
+
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc20-schema/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc20-cli/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>allTests</id>
+            <properties>
+                <!-- empty, means all tests-->
+                <tests />
+            </properties>
+        </profile>
+
+        <profile>
+            <id>excludeSlowTests</id>
+            <properties>
+                <tests>!slow</tests>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>excludePkcs11AndSlowTests</id>
+            <properties>
+                <tests>!(pkcs11 | slow)</tests>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.7</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <!-- Configuration for Maven Release plugin -->
+    <scm>
+      <developerConnection>scm:git:git@repo-url</developerConnection>
+      <url>git@repo-url</url>
+      <tag>v0.0.1</tag>
+    </scm>
+
+    <modules>
+        <module>cdoc20-schema</module>
+        <module>cdoc20-lib</module>
+        <module>cdoc20-cli</module>
+        <module>cdoc20-openapi</module>
+        <module>cdoc20-server</module>
+        <module>cdoc20-client</module>
+        <module>gatling-tests</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.jupiter.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+
+               <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.2.0</version>
+
+                    <configuration>
+                        <configLocation>checkstyle.xml</configLocation>
+                        <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+
+                        <sourceDirectories>
+                            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                        </sourceDirectories>
+
+
+                        <encoding>UTF-8</encoding>
+                        <consoleOutput>true</consoleOutput>
+
+                        <failsOnError>true</failsOnError>
+                        <failOnViolation>false</failOnViolation>
+
+                        <linkXRef>false</linkXRef>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+
+                    <configuration>
+                        <excludes>
+                            <exclude>**/*-dev.properties</exclude>
+                            <exclude>**/logback.xml</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.0</version>
+                    <configuration>
+                        <trimStackTrace>false</trimStackTrace>
+                        <groups>${tests}</groups>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>2.22.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>3.0.0-M5</version>
+                    <configuration>
+                        <tagNameFormat>v@{project.version}</tagNameFormat>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.5.2.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <!--configuration>
+                    <skip>true</skip>
+                </configuration-->
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

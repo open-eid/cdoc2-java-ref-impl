@@ -1,0 +1,2 @@
+classpath: /liquibase/changelog
+changelog-file: db.changelog-master.yaml
