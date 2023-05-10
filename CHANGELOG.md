@@ -5,9 +5,8 @@
 
 ### Features
 
-* Added Jenkins pipeline for uploading cdoc2.0 jar artifacts to RIA Nexus repository
-* Update and run key server instances also on cdoc2-keyserver-02.dev.riaint.ee host
-
+* Added Jenkins pipeline for uploading cdoc2.0 jar to artifact repository
+* Update and run key server also on second server instance
 
 ## [0.4.0] ChaCha Poly1305 MAC is checked before other errors are reported (2023-01-30)
 
