@@ -49,9 +49,14 @@ public final class RecipientSerializer {
 
         int keyLabelOffset = builder.createString(getKeyLabelValue(eccServerRecipient)); //required field
 
-        int recipientOffset = fillRecipientRecord(builder, recipients_KeyServerCapsule,
-                capsuleOffset, keyLabelOffset, encFmkOffset, eccServerRecipient.getFmkEncryptionMethod());
-        return recipientOffset;
+        return fillRecipientRecord(
+            builder,
+            recipients_KeyServerCapsule,
+            capsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            eccServerRecipient.getFmkEncryptionMethod()
+        );
     }
 
     public static int serialize(EccPubKeyRecipient eccRecipient, FlatBufferBuilder builder) {
@@ -69,9 +74,14 @@ public final class RecipientSerializer {
 
         int keyLabelOffset = builder.createString(getKeyLabelValue(eccRecipient)); //required field
 
-        int recipientOffset = fillRecipientRecord(builder, recipients_ECCPublicKeyCapsule,
-                eccPubKeyOffset, keyLabelOffset, encFmkOffset, eccRecipient.getFmkEncryptionMethod());
-        return recipientOffset;
+        return fillRecipientRecord(
+            builder,
+            recipients_ECCPublicKeyCapsule,
+            eccPubKeyOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            eccRecipient.getFmkEncryptionMethod()
+        );
     }
 
     public static int serialize(RSAServerKeyRecipient rsaServerRecipient, FlatBufferBuilder builder) {
@@ -98,9 +108,14 @@ public final class RecipientSerializer {
 
         int keyLabelOffset = builder.createString(getKeyLabelValue(rsaServerRecipient));
 
-        int recipientOffset = fillRecipientRecord(builder, recipients_KeyServerCapsule,
-                capsuleOffset, keyLabelOffset, encFmkOffset, rsaServerRecipient.getFmkEncryptionMethod());
-        return recipientOffset;
+        return fillRecipientRecord(
+            builder,
+            recipients_KeyServerCapsule,
+            capsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            rsaServerRecipient.getFmkEncryptionMethod()
+        );
     }
 
     public static int serialize(RSAPubKeyRecipient rsaRecipient, FlatBufferBuilder builder) {
@@ -116,9 +131,14 @@ public final class RecipientSerializer {
 
         int keyLabelOffset = builder.createString(getKeyLabelValue(rsaRecipient));
 
-        int recipientOffset = fillRecipientRecord(builder, recipients_RSAPublicKeyCapsule,
-                rsaPublicKeyCapsule, keyLabelOffset, encFmkOffset, rsaRecipient.getFmkEncryptionMethod());
-        return recipientOffset;
+        return fillRecipientRecord(
+            builder,
+            recipients_RSAPublicKeyCapsule,
+            rsaPublicKeyCapsule,
+            keyLabelOffset,
+            encFmkOffset,
+            rsaRecipient.getFmkEncryptionMethod()
+        );
     }
 
     public static int serializeSymmetricKeyRecipient(SymmetricKeyRecipient symRecipient, FlatBufferBuilder builder) {
@@ -129,9 +149,14 @@ public final class RecipientSerializer {
                 RecipientRecord.createEncryptedFmkVector(builder, symRecipient.getEncryptedFileMasterKey());
         int keyLabelOffset = builder.createString(getKeyLabelValue(symRecipient));
 
-        int recipientOffset = fillRecipientRecord(builder, recipients_SymmetricKeyCapsule,
-                symmetricKeyCapsuleOffset, keyLabelOffset, encFmkOffset, symRecipient.getFmkEncryptionMethod());
-        return recipientOffset;
+        return fillRecipientRecord(
+            builder,
+            recipients_SymmetricKeyCapsule,
+            symmetricKeyCapsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            symRecipient.getFmkEncryptionMethod()
+        );
     }
 
     /**
