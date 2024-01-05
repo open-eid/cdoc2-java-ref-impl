@@ -24,9 +24,9 @@ public interface EncryptionKeyMaterial extends Destroyable {
     /**
      * Create EncryptionKeyMaterial from publicKey and keyLabel. To decrypt CDOC, recipient must have
      * the private key part of the public key. RSA and EC public keys are supported by CDOC.
-     * @param publicKey
-     * @param keyLabel
-     * @return
+     * @param publicKey public key
+     * @param keyLabel  key label
+     * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial from(PublicKey publicKey, String keyLabel) {
         return new EncryptionKeyMaterial() {
@@ -52,8 +52,8 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * Create EncryptionKeyMaterial from preSharedKey and keyLabel. To decrypt CDOC, recipient must also have same
      * preSharedKey that is identified by the same keyLabel
      * @param preSharedKey preSharedKey will be used to generate key encryption key
-     * @param keyLabel unique identifier for preSharedKey
-     * @return
+     * @param keyLabel     unique identifier for preSharedKey
+     * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial from(SecretKey preSharedKey, String keyLabel) {
         return new EncryptionKeyMaterial() {

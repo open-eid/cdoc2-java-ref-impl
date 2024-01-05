@@ -10,6 +10,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
@@ -110,17 +111,20 @@ public final class Crypto {
 
     /**
      * Derive KEK from salt and secret. Used in symmetric key scenario only.
-     * @param label Label identifying pre shared secret
-     * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to derive KEK.
-     *                           Min len of 32 bytes
-     * @param salt salt minimum length of 32 bytes
-     * @param fmkEncMethod fmk encryption method from {@link FMKEncryptionMethod#names}.
-     *                     Currently, only "XOR" is valid value
-     * @return
+     * @param label              Label identifying pre shared secret
+     * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to
+     *                           derive KEK. Min len of 32 bytes
+     * @param salt               salt minimum length of 32 bytes
+     * @param fmkEncMethod       fmk encryption method from {@link FMKEncryptionMethod#names}.
+     *                           Currently, only "XOR" is valid value
+     * @return SecretKey
      */
-    public static SecretKey deriveKeyEncryptionKey(String label, SecretKey preSharedSecretKey, byte[] salt,
-                                                   String fmkEncMethod) {
-
+    public static SecretKey deriveKeyEncryptionKey(
+        String label,
+        SecretKey preSharedSecretKey,
+        byte[] salt,
+        String fmkEncMethod
+    ) {
         final int minSaltLen = 256 / 8;
         Objects.requireNonNull(label);
         Objects.requireNonNull(preSharedSecretKey);
@@ -151,7 +155,6 @@ public final class Crypto {
         return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
     }
 
-
     public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
 
@@ -160,8 +163,9 @@ public final class Crypto {
         // KeyAgreement instances (software and pkcs11) don't work with other provider private keys
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
-        if (isECPKCS11Key(ecPrivateKey) && (Pkcs11Tools.getConfiguredPKCS11Provider() != null)) {
-            keyAgreement = KeyAgreement.getInstance("ECDH", Pkcs11Tools.getConfiguredPKCS11Provider());
+        Provider configuredPKCS11Provider = Pkcs11Tools.getConfiguredPKCS11Provider();
+        if (isECPKCS11Key(ecPrivateKey) && (configuredPKCS11Provider != null)) {
+            keyAgreement = KeyAgreement.getInstance("ECDH", configuredPKCS11Provider);
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");
         }

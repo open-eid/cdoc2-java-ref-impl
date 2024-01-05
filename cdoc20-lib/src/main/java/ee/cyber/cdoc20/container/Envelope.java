@@ -249,13 +249,14 @@ public final class Envelope {
      * @throws CDocParseException if cdocInputStream is in invalid format and can not be parsed
      * @throws ExtApiException if error happened when communicating with key server
      */
-    private static List<ArchiveEntry> decrypt(InputStream cdocInputStream,
-                                              DecryptionKeyMaterial keyMaterial,
-                                              boolean extract,
-                                              @Nullable Path outputDir,
-                                              @Nullable List<String> filesToExtract,
-                                              @Nullable KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, IOException, CDocException {
+    private static List<ArchiveEntry> decrypt(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial keyMaterial,
+        boolean extract,
+        @Nullable Path outputDir,
+        @Nullable List<String> filesToExtract,
+        @Nullable KeyCapsuleClientFactory capsulesClientFac
+    ) throws GeneralSecurityException, IOException, CDocException {
 
         CountingInputStream countingIs = new CountingInputStream(cdocInputStream);
         byte[] fbsHeaderBytes = readFBSHeader(countingIs);
@@ -283,57 +284,70 @@ public final class Envelope {
                 log.debug("payload available (at least) {}", countingIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
-                    byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
-
-                    long headerSize = countingIs.getBytesRead();
-                    List<ArchiveEntry> result = List.of();
-
-                    // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
-                    // automatically verified, when all bytes were read from CipherInputStream
-                    try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
-                         TarDeflate tar = new TarDeflate(cis)) {
-
-                        try {
-                            result = tar.process(outputDir, filesToExtract, extract);
-                        } catch (Exception tarException) {
-                            // read remaining bytes to force Poly1305 MAC check
-                            // only report caught exception after ChaCha stream is drained and MAC checked
-
-                            long processedBytes = countingIs.getBytesRead();
-                            drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
-                            // since exception was thrown from TarDeflate, then created files are deleted by
-                            // TarDeflate::close() when exiting try with resources block
-                            if (countingIs.getBytesRead() - processedBytes > 0) {
-                                log.debug("Decrypted {} unprocessed bytes after \"{}\"",
-                                        countingIs.getBytesRead() - processedBytes, tarException.toString());
-                            }
-                            throw tarException; //no exception from drainStream, re-throw original exception
-                        } finally {
-                            // deflate/tar stream processing is finished, drain any remaining bytes to force
-                            // ChaCha Poly1305 MAC check
-                            long processedBytes = countingIs.getBytesRead();
-                            drainStream(cis, tar::deleteCreatedFiles); //may throw IOException
-
-                            if (countingIs.getBytesRead() - processedBytes > 0) {
-                                log.debug("Decrypted {} unprocessed bytes ",
-                                        countingIs.getBytesRead() - processedBytes);
-                            }
-                        }
-
-                    } finally  {
-                        log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
-                                countingIs.getBytesRead() - headerSize, countingIs.getBytesRead());
-                    }
-                    return result;
+                    return extractDecryptedFiles(
+                        fbsHeaderBytes, hmac, cekKey, extract, outputDir, filesToExtract, countingIs
+                    );
                 } else {
                     throw new CDocParseException("Unknown payload encryption method "
-                            + header.payloadEncryptionMethod());
+                        + header.payloadEncryptionMethod());
                 }
             }
         }
 
         log.error("Recipient {} not present in CDOC. Cannot decrypt CDOC.", keyMaterial.getRecipientId());
         throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, cannot decrypt");
+    }
+
+    private static List<ArchiveEntry> extractDecryptedFiles(
+        byte[] fbsHeaderBytes,
+        byte[] hmac,
+        SecretKey cekKey,
+        boolean extract,
+        @Nullable Path outputDir,
+        @Nullable List<String> filesToExtract,
+        CountingInputStream countingIs
+    ) throws GeneralSecurityException, IOException {
+        byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
+        long headerSize = countingIs.getBytesRead();
+        List<ArchiveEntry> result;
+
+        // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
+        // automatically verified, when all bytes were read from CipherInputStream
+        try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
+             TarDeflate tar = new TarDeflate(cis)) {
+
+            try {
+                result = tar.process(outputDir, filesToExtract, extract);
+            } catch (Exception tarException) {
+                // read remaining bytes to force Poly1305 MAC check
+                // only report caught exception after ChaCha stream is drained and MAC checked
+
+                long processedBytes = countingIs.getBytesRead();
+                drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
+                // since exception was thrown from TarDeflate, then created files are deleted by
+                // TarDeflate::close() when exiting try with resources block
+                if (countingIs.getBytesRead() - processedBytes > 0) {
+                    log.debug("Decrypted {} unprocessed bytes after \"{}\"",
+                        countingIs.getBytesRead() - processedBytes, tarException.toString());
+                }
+                throw tarException; //no exception from drainStream, re-throw original exception
+            } finally {
+                // deflate/tar stream processing is finished, drain any remaining bytes to force
+                // ChaCha Poly1305 MAC check
+                long processedBytes = countingIs.getBytesRead();
+                drainStream(cis, tar::deleteCreatedFiles); //may throw IOException
+
+                if (countingIs.getBytesRead() - processedBytes > 0) {
+                    log.debug("Decrypted {} unprocessed bytes ",
+                        countingIs.getBytesRead() - processedBytes);
+                }
+            }
+
+        } finally  {
+            log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
+                countingIs.getBytesRead() - headerSize, countingIs.getBytesRead());
+        }
+        return result;
     }
 
     /**
@@ -346,7 +360,7 @@ public final class Envelope {
     private static void drainStream(CipherInputStream cis, @Nullable Runnable cleanUpFunc)
             throws IOException {
 
-        byte ignored[] = new byte[1024];
+        byte[] ignored = new byte[1024];
         try {
             while (cis.read(ignored) > 0) { }
         } catch (IOException drainingException) { // MAC check error is thrown as IOException
