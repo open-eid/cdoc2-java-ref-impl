@@ -12,7 +12,6 @@ enum EllipticCurve:byte {
     secp384r1
 }
 
-
 table RsaKeyDetails {
     //RSA pub key in DER - RFC8017 RSA Public Key Syntax (A.1.1) https://www.rfc-editor.org/rfc/rfc8017#page-54
     recipient_public_key:   [ubyte] (required);
@@ -47,8 +46,12 @@ table KeyServerCapsule {
     transaction_id:        string (required);
 }
 
-
 // symmetric long term crypto
 table SymmetricKeyCapsule {
+    salt:                 [ubyte] (required);
+}
+
+// password derived key
+table PBKDF2Capsule {
     salt:                 [ubyte] (required);
 }
