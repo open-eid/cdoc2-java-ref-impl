@@ -12,6 +12,7 @@ import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
@@ -47,6 +48,19 @@ public final class KekTools {
                 secretKey,
                 recipient.getSalt(),
                 FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
+        return kek.getEncoded();
+    }
+
+    public static byte[] deriveKekForSymmetricKey(
+        PBKDF2Recipient recipient,
+        DecryptionKeyMaterial keyMaterial
+    ) {
+        SecretKey secretKey = keyMaterial.getSecretKey().orElseThrow(
+            () -> new IllegalArgumentException("Expected SecretKey for PBKDF2Recipient"));
+        SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
+            secretKey,
+            recipient.getSalt(),
+            FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
         return kek.getEncoded();
     }
 
@@ -98,7 +112,7 @@ public final class KekTools {
             log.error("Key not found for id {} from {}", transactionId, serverId);
             throw new ExtApiException("Sender key not found for " + transactionId);
         } catch (ExtApiException apiException) {
-            log.error("Error querying {} for {} ({})", serverId, transactionId, apiException);
+            log.error("Error querying {} for {} ({})", serverId, transactionId, apiException.getMessage());
             throw apiException;
         }
     }

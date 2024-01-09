@@ -8,14 +8,12 @@ import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyCapsule;
 import ee.cyber.cdoc20.fbs.recipients.EccKeyDetails;
 import ee.cyber.cdoc20.fbs.recipients.KeyDetailsUnion;
 import ee.cyber.cdoc20.fbs.recipients.KeyServerCapsule;
+import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc20.fbs.recipients.RsaKeyDetails;
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
 
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_ECCPublicKeyCapsule;
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_KeyServerCapsule;
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
+import static ee.cyber.cdoc20.fbs.header.Capsule.*;
 
 /**
  * Utility class to serialize Recipient into flatbuffers FlatBufferBuilder
@@ -156,6 +154,24 @@ public final class RecipientSerializer {
             keyLabelOffset,
             encFmkOffset,
             symRecipient.getFmkEncryptionMethod()
+        );
+    }
+
+    public static int serializePBKDF2Recipient(PBKDF2Recipient passwordRecipient, FlatBufferBuilder builder) {
+
+        int saltOffset = builder.createByteVector(passwordRecipient.getSalt());
+        int passwordCapsuleOffset = PBKDF2Capsule.createPBKDF2Capsule(builder, saltOffset);
+        int encFmkOffset =
+            RecipientRecord.createEncryptedFmkVector(builder, passwordRecipient.getEncryptedFileMasterKey());
+        int keyLabelOffset = builder.createString(getKeyLabelValue(passwordRecipient));
+
+        return fillRecipientRecord(
+            builder,
+            recipients_PBKDF2Capsule,
+            passwordCapsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            passwordRecipient.getFmkEncryptionMethod()
         );
     }
 
