@@ -49,8 +49,8 @@ public interface EncryptionKeyMaterial extends Destroyable {
     }
 
     /**
-     * Create EncryptionKeyMaterial from preSharedKey and keyLabel. To decrypt CDOC, recipient must also have same
-     * preSharedKey that is identified by the same keyLabel
+     * Create EncryptionKeyMaterial from preSharedKey and keyLabel. To decrypt CDOC, recipient must
+     * also have same preSharedKey that is identified by the same keyLabel
      * @param preSharedKey preSharedKey will be used to generate key encryption key
      * @param keyLabel     unique identifier for preSharedKey
      * @return EncryptionKeyMaterial object

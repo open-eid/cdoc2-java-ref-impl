@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.crypto;
 
 import at.favre.lib.crypto.HKDF;
+
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,8 @@ import java.util.Objects;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +38,6 @@ public final class Crypto {
      */
     public static final int FMK_LEN_BYTES = 256 / 8;
 
-
     /**
      * Kek is used to encrypt FMK. For XOR length must match FMK
      */
@@ -53,8 +55,11 @@ public final class Crypto {
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
 
-    public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
+    public static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256";
+    public static final int PBKDF2_ITERATIONS = 600_000; // recommended by NIST for HMAC-SHA-256
+    public static final int PBKDF2_KEY_LENGTH_BITS = 256;
 
+    public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
 
 
     private Crypto() {
@@ -63,7 +68,7 @@ public final class Crypto {
 
     /**
      * Get SecureRandom instance
-     * @return SecureRandom
+     * @return SecureRandom secure random
      * @throws NoSuchAlgorithmException if SecureRandom initialization failed
      */
     public static synchronized SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
@@ -75,6 +80,7 @@ public final class Crypto {
 
     /**
      * Create SecureRandom
+     * @return SecureRandom secure random
      * @throws NoSuchAlgorithmException if SecureRandom initialization failed
      */
     private static SecureRandom createSecureRandom() throws NoSuchAlgorithmException {
@@ -117,7 +123,7 @@ public final class Crypto {
      * @param salt               salt minimum length of 32 bytes
      * @param fmkEncMethod       fmk encryption method from {@link FMKEncryptionMethod#names}.
      *                           Currently, only "XOR" is valid value
-     * @return SecretKey
+     * @return SecretKey with derived KEK
      */
     public static SecretKey deriveKeyEncryptionKey(
         String label,
@@ -153,6 +159,26 @@ public final class Crypto {
         byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), FMK_LEN_BYTES);
 
         return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
+    }
+
+    /**
+     * Derive KEK from password.
+     * @param passwordBytes password between parties (sender and recipient) used to derive KEK.
+     *                      Min len of 32 bytes
+     * @return SecretKey with derived KEK
+     * @throws GeneralSecurityException if key creation has failed
+     */
+    public static SecretKey deriveKekFromPassword(
+        final byte[] passwordBytes
+    ) throws GeneralSecurityException {
+        char[] passwordChars = new String(passwordBytes, StandardCharsets.UTF_8).toCharArray();
+
+        byte[] salt = new byte[256 / 8];
+        Crypto.getSecureRandom().nextBytes(salt);
+
+        SecretKeyFactory skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
+        PBEKeySpec spec = new PBEKeySpec(passwordChars, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH_BITS);
+        return skf.generateSecret(spec);
     }
 
     public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
@@ -224,12 +250,12 @@ public final class Crypto {
 
     /**
      * Derive KEK for EC scenarios
-     * @param ecKeyPair
-     * @param otherPublicKey
-     * @param keyLen
-     * @param isEncryptionMode
-     * @return
-     * @throws GeneralSecurityException
+     * @param ecKeyPair        key pair
+     * @param otherPublicKey   public key
+     * @param keyLen           key length
+     * @param isEncryptionMode if encryption mode enabled or not
+     * @return bytes of derived KEK
+     * @throws GeneralSecurityException if key creation has failed
      */
     private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
             throws GeneralSecurityException {
@@ -255,11 +281,11 @@ public final class Crypto {
 
     /**
      * Calculate HMAC
-     * @param hhk HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
+     * @param hhk  HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
      * @param data input – data in bytes. For CDOC2 this is header FlatBuffers bytes
-     * @return the MAC result.
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
+     * @return the MAC result
+     * @throws NoSuchAlgorithmException if no Provider supports a MacSpi implementation for the specified algorithm
+     * @throws InvalidKeyException if Mac initialization has failed
      */
     public static byte[] calcHmacSha256(SecretKey hhk, byte[] data)
             throws NoSuchAlgorithmException, InvalidKeyException {

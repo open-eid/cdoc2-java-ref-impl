@@ -45,6 +45,10 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = SymmetricKeyUtil.SECRET_DESCRIPTION)
     String secret;
 
+    @Option(names = {"-pass", "--password"},
+        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
+    String password;
+
     @Option (names = {"--slot"},
             description = "Smart card key slot to use for decrypting. Default: 0")
     Integer slot = 0;
@@ -55,7 +59,7 @@ public class CDocDecryptCmd implements Callable<Void> {
 
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
-    private File outputPath = new File(".");
+    private final File outputPath = new File(".");
 
     @Option(names = {"--server"}, paramLabel = "FILE.properties"
             // commented out until public key server is in live

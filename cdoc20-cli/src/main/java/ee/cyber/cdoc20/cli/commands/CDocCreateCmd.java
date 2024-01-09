@@ -58,6 +58,10 @@ public class CDocCreateCmd implements Callable<Void> {
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
                 description = SymmetricKeyUtil.SECRET_DESCRIPTION)
         String[] secrets;
+
+        @Option(names = {"-pass", "--password"},
+            paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
+        String password;
     }
 
     // allow -Dkey for setting System properties
@@ -74,7 +78,6 @@ public class CDocCreateCmd implements Callable<Void> {
             //, fallbackValue = DEFAULT_SERVER_PROPERTIES
     )
     String keyServerPropertiesFile;
-
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     File[] inputFiles;
@@ -112,8 +115,14 @@ public class CDocCreateCmd implements Callable<Void> {
                 .collect(Collectors.toList());
 
         // add symmetric keys with labels
-        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterial(recipient.secrets));
-
+        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
+            recipient.secrets)
+        );
+        if (null != recipient.password) {
+            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(
+                recipient.password)
+            );
+        }
 
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withRecipients(recipients)

@@ -21,7 +21,7 @@ public interface DecryptionKeyMaterial extends Destroyable {
 
     /**
      * KeyPair used by EC and RSA scenario
-     * @return
+     * @return KeyPair if exists
      */
     default Optional<KeyPair> getKeyPair() {
         return Optional.empty();
@@ -29,7 +29,7 @@ public interface DecryptionKeyMaterial extends Destroyable {
 
     /**
      * Symmetric Key used by Symmetric Key scenario
-     * @return
+     * @return SecretKey if exists
      */
     default Optional<SecretKey> getSecretKey() {
         return Optional.empty();
@@ -80,7 +80,6 @@ public interface DecryptionKeyMaterial extends Destroyable {
             public boolean isDestroyed() {
                 return recipientKeyPair.getPrivate().isDestroyed();
             }
-
         };
     }
 }
