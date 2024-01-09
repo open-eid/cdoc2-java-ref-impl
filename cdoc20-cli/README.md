@@ -86,6 +86,21 @@ cat keys/b64secret.option
 --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
 ```
 
+Or encrypt with password clear text:
+```
+java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:myplaintextpassword" -f /tmp/symmetric.cdoc README.md
+```
+
+Or with base64 encoded password:
+```
+java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc README.md
+```
+
+Or with both password and secret:
+```
+java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" --password "passwordlabel:myplaintextpassword" -f /tmp/symmetric.cdoc README.md
+```
+
 Decryption is done with the same label and key used for encryption
 ```
 java -jar target/cdoc20-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
