@@ -2,6 +2,8 @@ package ee.cyber.cdoc20.cli.commands;
 
 
 import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.CDocValidationException;
+import ee.cyber.cdoc20.cli.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
@@ -59,7 +61,7 @@ public class CDocCreateCmd implements Callable<Void> {
                 description = SymmetricKeyUtil.SECRET_DESCRIPTION)
         String[] secrets;
 
-        @Option(names = {"-pass", "--password"},
+        @Option(names = {"-pass", "--password"}, arity = "0..1",
             paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
         String password;
     }
@@ -119,9 +121,8 @@ public class CDocCreateCmd implements Callable<Void> {
             recipient.secrets)
         );
         if (null != recipient.password) {
-            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(
-                recipient.password)
-            );
+            FormattedOptionParts password = getSplitPasswordAndLabel();
+            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
         }
 
         CDocBuilder cDocBuilder = new CDocBuilder()
@@ -139,6 +140,15 @@ public class CDocCreateCmd implements Callable<Void> {
         log.info("Created {}", cdocFile.getAbsolutePath());
 
         return null;
+    }
+
+    private FormattedOptionParts getSplitPasswordAndLabel() throws CDocValidationException {
+        if (recipient.password.isEmpty()) {
+            return SymmetricKeyUtil.readPasswordAndLabelInteractively();
+        }
+
+        // ToDo add password validation somewhere here #55910
+        return SymmetricKeyUtil.splitFormattedOption(recipient.password, "password");
     }
 
 }

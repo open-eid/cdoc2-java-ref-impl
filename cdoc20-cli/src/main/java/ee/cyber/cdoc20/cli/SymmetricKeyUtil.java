@@ -1,18 +1,23 @@
 package ee.cyber.cdoc20.cli;
 
+import java.io.Console;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.swing.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.CDocValidationException;
+import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
@@ -25,6 +30,12 @@ import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 public final class SymmetricKeyUtil {
 
     public static final String BASE_64_PREFIX = "base64,";
+
+    public static final String LABEL_LOG_MSG = "Label for symmetric key: {}";
+
+    public static final String PROMPT_LABEL = "Please enter label: ";
+    public static final String PROMPT_PASSWORD = "Password is missing. Please enter: ";
+    public static final String PROMPT_PASSWORD_REENTER = "Re-enter password: ";
 
     private static final String SYMMETRIC_KEY_DESCRIPTION = "symmetric key with label. "
         + "Must have format";
@@ -61,10 +72,10 @@ public final class SymmetricKeyUtil {
     }
 
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
-        String password
-    ) throws GeneralSecurityException, CDocValidationException {
-        var entry = extractKeyMaterialFromPassword(password);
-        return EncryptionKeyMaterial.from(entry.getKey(), entry.getValue());
+        FormattedOptionParts passwordAndLabel
+    ) throws GeneralSecurityException {
+        SecretKey secretKey = Crypto.deriveKekFromPassword(passwordAndLabel.optionBytes());
+        return EncryptionKeyMaterial.from(secretKey, passwordAndLabel.label());
     }
 
     /**
@@ -92,14 +103,84 @@ public final class SymmetricKeyUtil {
      *                          prefixed with 'base64,', followed by base64 string
      * @return DecryptionKeyMaterial created from password
      * @throws GeneralSecurityException if key extraction from password has failed
-     * @throws CDocValidationException if password is not in format specified
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        String formattedPassword
-    ) throws GeneralSecurityException, CDocValidationException {
-        var entry = extractKeyMaterialFromPassword(formattedPassword);
+        FormattedOptionParts formattedPassword
+    ) throws GeneralSecurityException {
+        SecretKey secretKey = Crypto.deriveKekFromPassword(formattedPassword.optionBytes());
 
-        return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
+        return DecryptionKeyMaterial.fromSecretKey(formattedPassword.label(), secretKey);
+    }
+
+    public static FormattedOptionParts readPasswordAndLabelInteractively() {
+        Console console = System.console();
+        byte[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
+        byte[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
+
+        // ToDo add full password validation here via separate method. #55910
+        if (!Arrays.equals(password, reenteredPassword)) {
+            log.info("Passwords don't match");
+            throw new IllegalArgumentException("Passwords don't match");
+        }
+        String label = readLabelInteractively(console);
+        return new FormattedOptionParts(password, label);
+    }
+
+    /**
+     * Ask password interactively. If System.console() is available then password is red via
+     * console. Otherwise, password is asked using GUI prompt.
+     * @param prompt Prompt text to ask
+     * @return password entered by recipient
+     * @throws CDocUserException if password finally wasn't entered
+     */
+    public static byte[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
+        if (console != null) {
+            char[] passwordChars = console.readPassword(prompt);
+
+            return new String(passwordChars).getBytes(StandardCharsets.UTF_8);
+        } else { //running from IDE, console is null
+            JPasswordField passField = new JPasswordField();
+            int result = JOptionPane.showConfirmDialog(
+                null,
+                passField,
+                prompt,
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (result == JOptionPane.OK_OPTION) {
+                String password = new String(passField.getPassword());
+
+                return password.getBytes(StandardCharsets.UTF_8);
+            } else if (result == JOptionPane.OK_CANCEL_OPTION) {
+                log.info("Password enter is cancelled");
+                throw new CDocUserException(
+                    UserErrorCode.USER_CANCEL, "Password entry cancelled by user"
+                );
+            } else {
+                log.info("Password is not entered");
+                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
+            }
+        }
+    }
+
+    private static String readLabelInteractively(Console console) {
+        if (console != null) {
+            String label = console.readLine(PROMPT_LABEL);
+            log.info(LABEL_LOG_MSG, label);
+            return label;
+        } else { //running from IDE, console is null
+            JFrame labelField = new JFrame();
+            String label = JOptionPane.showInputDialog(
+                labelField,
+                PROMPT_LABEL
+            );
+            log.info(LABEL_LOG_MSG, label);
+            if (label == null || label.isBlank()) {
+                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Label not entered");
+            }
+            return label;
+        }
     }
 
     /**
@@ -115,31 +196,23 @@ public final class SymmetricKeyUtil {
     private static AbstractMap.SimpleEntry<SecretKey, String> extractKeyMaterialFromSecret(
         String formattedSecret
     ) throws CDocValidationException {
-        var entry = splitPasswordAndLabel(formattedSecret, "secret");
-        SecretKey key = new SecretKeySpec(entry.getKey(), "");
-        return new AbstractMap.SimpleEntry<>(key, entry.getValue());
+        var splitOption = splitFormattedOption(formattedSecret, "secret");
+        SecretKey key = new SecretKeySpec(splitOption.optionBytes(), "");
+        return new AbstractMap.SimpleEntry<>(key, splitOption.label());
     }
 
     /**
-     * Extract symmetric key material from formatted password "label:Password123!" or "label:base64,
-     * UGFzc3dvcmQxMjMh"
-     * @param formattedPassword formatted as label:password where password can be base64 encoded
-     *                          bytes or regular utf-8 string. Base64 encoded string must be
-     *                          prefixed with 'base64,', followed by base64 string
-     * @return SecretKey with derived key from password
-     * @throws GeneralSecurityException if key extraction from password has failed
-     * @throws CDocValidationException if password is not in format specified
+     * Extract symmetric key material from formatted secret or password "label:topsecret123!"
+     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param formattedOption formatted as label:secret or label:password where 2nd param can be
+     *                        base64 encoded bytes or regular utf-8 string. Base64 encoded string
+     *                        must be prefixed with 'base64,', followed by base64 string
+     * @param optionName      inserted CLI option name
+     * @return AbstractMap.SimpleEntry<SecretKey, String> with extracted SecretKey and label
+     * @throws CDocValidationException if formattedOption is not in format specified
+     * @throws IllegalArgumentException if base64 secret or password cannot be decoded
      */
-    private static AbstractMap.SimpleEntry<SecretKey, String> extractKeyMaterialFromPassword(
-        String formattedPassword
-    ) throws CDocValidationException, GeneralSecurityException {
-
-        var entry = splitPasswordAndLabel(formattedPassword, "password");
-        SecretKey key = Crypto.deriveKekFromPassword(entry.getKey());
-        return new AbstractMap.SimpleEntry<>(key, entry.getValue());
-    }
-
-    private static AbstractMap.SimpleEntry<byte[], String> splitPasswordAndLabel(
+    public static FormattedOptionParts splitFormattedOption(
         String formattedOption,
         String optionName
     ) throws CDocValidationException {
@@ -152,19 +225,19 @@ public final class SymmetricKeyUtil {
         }
 
         String label = parts[0];
-        String password = parts[1];
+        String option = parts[1];
 
         byte[] optionBytes;
 
-        if (password.startsWith(BASE_64_PREFIX)) {
-            optionBytes = Base64.getDecoder().decode(password.substring(BASE_64_PREFIX.length()));
+        if (option.startsWith(BASE_64_PREFIX)) {
+            optionBytes = Base64.getDecoder().decode(option.substring(BASE_64_PREFIX.length()));
             log.debug("Decoded {} bytes from {} (base64)", optionBytes.length, optionName);
         } else {
-            optionBytes = password.getBytes(StandardCharsets.UTF_8);
+            optionBytes = option.getBytes(StandardCharsets.UTF_8);
             log.debug("Decoded {} bytes from {}", optionBytes.length, optionName);
         }
-        log.info("Label for symmetric key: {}", label);
+        log.info(LABEL_LOG_MSG, label);
 
-        return new AbstractMap.SimpleEntry<>(optionBytes, label);
+        return new FormattedOptionParts(optionBytes, label);
     }
 }

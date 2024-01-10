@@ -45,7 +45,7 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = SymmetricKeyUtil.SECRET_DESCRIPTION)
     String secret;
 
-    @Option(names = {"-pass", "--password"},
+    @Option(names = {"-pass", "--password"}, arity = "0..1",
         paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
     String password;
 
