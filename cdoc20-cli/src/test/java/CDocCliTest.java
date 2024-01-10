@@ -11,8 +11,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class CDocCliTest {
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
@@ -49,6 +49,15 @@ class CDocCliTest {
     @Test
     void testCreateDecryptDocRSA(@TempDir Path tempPath) throws IOException {
         checkCreateDecryptDoc("keys/rsa_pub.pem", "keys/rsa_priv.pem", tempPath);
+    }
+
+    @Test
+    void testEncryptDocWithPassword(@TempDir Path tempPath) {
+        checkDocEncryptionWithPassword(
+            "passwordlabel:myplaintextpassword",
+            "keys/rsa_pub.pem",
+            tempPath
+        );
     }
 
     void checkCreateDecryptDoc(String pubKeyFile, String privateKeyFile, Path tempPath) throws IOException {
@@ -104,4 +113,41 @@ class CDocCliTest {
 
         assertEquals(inReadme, outReadme);
     }
+
+    void checkDocEncryptionWithPassword(
+        String password,
+        String pubKeyFile,
+        Path tempPath
+    ) {
+        CDocCli app = new CDocCli();
+        CommandLine cmd = new CommandLine(app);
+
+        log.debug("Current dir {}", Path.of(".").toAbsolutePath());
+
+        Path cdocCliPath = Path.of(".").toAbsolutePath().normalize();
+
+        log.debug("Temp dir {}", tempPath.toAbsolutePath());
+        Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
+        int exitCode = cmd.execute("create",
+            "--pubkey=" + pubKeyFile,
+            "--file=" + cdocFile,
+            "--password=" + password,
+            cdocCliPath.resolve("README.md").toString()
+        );
+
+        assertEquals(0, exitCode);
+
+        var resultFile = cdocFile.toFile();
+        assertTrue(resultFile.exists());
+        assertTrue(resultFile.length() > 0);
+
+        Path outPath = tempPath.resolve("out");
+        outPath.toFile().mkdir();
+
+        out.reset();
+        err.reset();
+
+        log.debug("Expected: {}", "Encrypting " + cdocFile.toFile() + " " + outPath);
+    }
+
 }
