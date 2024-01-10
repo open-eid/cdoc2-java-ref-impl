@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CryptoTest {
 
     public static final String LABEL = "label_for_salt";
-    final static char[] PASSWORD_CHARS = {'m', 'y', 'p', 'l', 'a', 'i', 'n', 't', 'e', 'x', 't',
-        'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
+    static final char[] PASSWORD_CHARS = {'m', 'y', 'p', 'l', 'a', 'i', 'n', 't', 'e', 'x',
+        't', 'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
 
     @Test
     void testSecretKeyExtractionFromPassword() throws Exception {
