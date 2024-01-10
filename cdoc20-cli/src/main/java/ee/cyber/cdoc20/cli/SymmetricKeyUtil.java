@@ -74,7 +74,7 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.deriveKekFromPassword(passwordAndLabel.optionBytes());
+        SecretKey secretKey = Crypto.deriveKekFromPassword(passwordAndLabel.optionChars());
         return EncryptionKeyMaterial.from(secretKey, passwordAndLabel.label());
     }
 
@@ -107,15 +107,15 @@ public final class SymmetricKeyUtil {
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
         FormattedOptionParts formattedPassword
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.deriveKekFromPassword(formattedPassword.optionBytes());
+        SecretKey secretKey = Crypto.deriveKekFromPassword(formattedPassword.optionChars());
 
         return DecryptionKeyMaterial.fromSecretKey(formattedPassword.label(), secretKey);
     }
 
     public static FormattedOptionParts readPasswordAndLabelInteractively() {
         Console console = System.console();
-        byte[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
-        byte[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
+        char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
+        char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
 
         // ToDo add full password validation here via separate method. #55910
         if (!Arrays.equals(password, reenteredPassword)) {
@@ -130,14 +130,12 @@ public final class SymmetricKeyUtil {
      * Ask password interactively. If System.console() is available then password is red via
      * console. Otherwise, password is asked using GUI prompt.
      * @param prompt Prompt text to ask
-     * @return password entered by recipient
+     * @return chars of password entered by recipient
      * @throws CDocUserException if password finally wasn't entered
      */
-    public static byte[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
+    public static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
         if (console != null) {
-            char[] passwordChars = console.readPassword(prompt);
-
-            return new String(passwordChars).getBytes(StandardCharsets.UTF_8);
+            return console.readPassword(prompt);
         } else { //running from IDE, console is null
             JPasswordField passField = new JPasswordField();
             int result = JOptionPane.showConfirmDialog(
@@ -149,9 +147,7 @@ public final class SymmetricKeyUtil {
             );
 
             if (result == JOptionPane.OK_OPTION) {
-                String password = new String(passField.getPassword());
-
-                return password.getBytes(StandardCharsets.UTF_8);
+                return passField.getPassword();
             } else if (result == JOptionPane.OK_CANCEL_OPTION) {
                 log.info("Password enter is cancelled");
                 throw new CDocUserException(
@@ -197,7 +193,8 @@ public final class SymmetricKeyUtil {
         String formattedSecret
     ) throws CDocValidationException {
         var splitOption = splitFormattedOption(formattedSecret, "secret");
-        SecretKey key = new SecretKeySpec(splitOption.optionBytes(), "");
+        byte[] secretBytes = String.valueOf(splitOption.optionChars()).getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(secretBytes, "");
         return new AbstractMap.SimpleEntry<>(key, splitOption.label());
     }
 
@@ -227,17 +224,18 @@ public final class SymmetricKeyUtil {
         String label = parts[0];
         String option = parts[1];
 
-        byte[] optionBytes;
+        char[] optionChars;
 
         if (option.startsWith(BASE_64_PREFIX)) {
-            optionBytes = Base64.getDecoder().decode(option.substring(BASE_64_PREFIX.length()));
-            log.debug("Decoded {} bytes from {} (base64)", optionBytes.length, optionName);
+            byte[] optionBytes = Base64.getDecoder().decode(option.substring(BASE_64_PREFIX.length()));
+            optionChars = Arrays.toString(optionBytes).toCharArray();
+            log.debug("Decoded {} bytes from {} (base64)", optionChars.length, optionName);
         } else {
-            optionBytes = option.getBytes(StandardCharsets.UTF_8);
-            log.debug("Decoded {} bytes from {}", optionBytes.length, optionName);
+            optionChars = option.toCharArray();
+            log.debug("Decoded {} bytes from {}", optionChars.length, optionName);
         }
         log.info(LABEL_LOG_MSG, label);
 
-        return new FormattedOptionParts(optionBytes, label);
+        return new FormattedOptionParts(optionChars, label);
     }
 }

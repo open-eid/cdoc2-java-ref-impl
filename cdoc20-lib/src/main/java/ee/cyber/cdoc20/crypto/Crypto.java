@@ -163,16 +163,14 @@ public final class Crypto {
 
     /**
      * Derive KEK from password.
-     * @param passwordBytes password between parties (sender and recipient) used to derive KEK.
+     * @param passwordChars password chars between parties (sender and recipient) used to derive KEK.
      *                      Min len of 32 bytes
      * @return SecretKey with derived KEK
      * @throws GeneralSecurityException if key creation has failed
      */
     public static SecretKey deriveKekFromPassword(
-        final byte[] passwordBytes
+        final char[] passwordChars
     ) throws GeneralSecurityException {
-        char[] passwordChars = new String(passwordBytes, StandardCharsets.UTF_8).toCharArray();
-
         byte[] salt = new byte[256 / 8];
         Crypto.getSecureRandom().nextBytes(salt);
 
