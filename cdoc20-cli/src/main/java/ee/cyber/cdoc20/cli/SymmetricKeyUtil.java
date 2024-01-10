@@ -74,8 +74,11 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.deriveKekFromPassword(passwordAndLabel.optionChars());
-        return EncryptionKeyMaterial.from(secretKey, passwordAndLabel.label());
+        String label = passwordAndLabel.label();
+        SecretKey secretKey = Crypto.deriveKekFromPassword(
+            passwordAndLabel.optionChars(), label
+        );
+        return EncryptionKeyMaterial.from(secretKey, label);
     }
 
     /**
@@ -96,20 +99,20 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from formatted password "label:Password123!" or "label:base64,
-     * UGFzc3dvcmQxMjMh".
-     * @param formattedPassword formatted as label:password where password can be base64 encoded
-     *                          bytes or regular utf-8 string. Base64 encoded string must be
-     *                          prefixed with 'base64,', followed by base64 string
+     * Extract symmetric key material from password and label.
+     * @param passwordAndLabel split password chars and label
      * @return DecryptionKeyMaterial created from password
      * @throws GeneralSecurityException if key extraction from password has failed
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts formattedPassword
+        FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.deriveKekFromPassword(formattedPassword.optionChars());
+        String label = passwordAndLabel.label();
+        SecretKey secretKey = Crypto.deriveKekFromPassword(
+            passwordAndLabel.optionChars(), label
+        );
 
-        return DecryptionKeyMaterial.fromSecretKey(formattedPassword.label(), secretKey);
+        return DecryptionKeyMaterial.fromSecretKey(label, secretKey);
     }
 
     public static FormattedOptionParts readPasswordAndLabelInteractively() {

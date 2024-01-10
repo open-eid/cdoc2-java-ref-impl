@@ -162,20 +162,23 @@ public final class Crypto {
     }
 
     /**
-     * Derive KEK from password.
+     * Derive KEK from password and label.
      * @param passwordChars password chars between parties (sender and recipient) used to derive KEK.
      *                      Min len of 32 bytes
+     * @param label         label
      * @return SecretKey with derived KEK
      * @throws GeneralSecurityException if key creation has failed
      */
     public static SecretKey deriveKekFromPassword(
-        final char[] passwordChars
+        final char[] passwordChars, String label
     ) throws GeneralSecurityException {
-        byte[] salt = new byte[256 / 8];
-        Crypto.getSecureRandom().nextBytes(salt);
-
         SecretKeyFactory skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
-        PBEKeySpec spec = new PBEKeySpec(passwordChars, salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH_BITS);
+        PBEKeySpec spec = new PBEKeySpec(
+            passwordChars,
+            label.getBytes(StandardCharsets.UTF_8),
+            PBKDF2_ITERATIONS,
+            PBKDF2_KEY_LENGTH_BITS
+        );
         return skf.generateSecret(spec);
     }
 
