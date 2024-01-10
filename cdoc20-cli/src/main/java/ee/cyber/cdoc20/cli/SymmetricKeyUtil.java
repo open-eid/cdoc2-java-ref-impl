@@ -118,11 +118,17 @@ public final class SymmetricKeyUtil {
         char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
 
         // ToDo add full password validation here via separate method. #55910
+        if (password.length == 0) {
+            log.info("Password is not entered");
+            throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
+        }
         if (!Arrays.equals(password, reenteredPassword)) {
             log.info("Passwords don't match");
             throw new IllegalArgumentException("Passwords don't match");
         }
+
         String label = readLabelInteractively(console);
+
         return new FormattedOptionParts(password, label);
     }
 
