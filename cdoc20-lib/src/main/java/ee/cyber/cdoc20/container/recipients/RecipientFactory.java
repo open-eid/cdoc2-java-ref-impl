@@ -10,14 +10,17 @@ import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -86,13 +89,13 @@ public final class RecipientFactory {
                 } else {
                     result.add(buildEccRecipient(fmk, ecPublicKey, keyLabel));
                 }
-            } else if (key instanceof SecretKey) {
+            } else if (key instanceof SecretKey preSharedKey) {
                 if (serverClient != null) {
                     log.info("For symmetric key scenario, key server will not be used.");
                 }
-                SecretKey preSharedKey = (SecretKey) key;
-                result.add(buildSymmetricKeyRecipient(fmk,  preSharedKey, keyLabel,
-                        FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
+                checkKeyTypeAndBuildRecipient(
+                    result, fmk, preSharedKey, keyLabel, encKeyMaterial.getKeyOrigin()
+                );
             } else {
                 throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
             }
@@ -101,6 +104,21 @@ public final class RecipientFactory {
         return result.toArray(new Recipient[0]);
     }
 
+    private static void checkKeyTypeAndBuildRecipient(
+        List<Recipient> recipients,
+        byte[] fmk,
+        SecretKey preSharedKey,
+        String keyLabel,
+        EncryptionKeyOrigin keyType
+    ) throws GeneralSecurityException {
+        if (EncryptionKeyOrigin.FROM_PASSWORD.equals(keyType)) {
+            recipients.add(buildPBKDF2Recipient(fmk,  preSharedKey, keyLabel,
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
+        } else {
+            recipients.add(buildSymmetricKeyRecipient(fmk,  preSharedKey, keyLabel,
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
+        }
+    }
 
     /**
      * Fill RSAPubKeyRecipient with data, so that it is ready to be serialized into CDOC header.
@@ -137,7 +155,7 @@ public final class RecipientFactory {
      * @throws GeneralSecurityException if other crypto related exceptions happen
      */
     static EccPubKeyRecipient buildEccRecipient(byte[] fmk, ECPublicKey recipientPubKey, String keyLabel)
-            throws InvalidKeyException, GeneralSecurityException {
+            throws GeneralSecurityException {
 
         Objects.requireNonNull(recipientPubKey);
         Objects.requireNonNull(fmk);
@@ -226,12 +244,11 @@ public final class RecipientFactory {
 
     /**
      * Derive KEK from preSharedKey, keyLabel and generated salt and encrypt fmk with derived KEK
-     * @param fmk fmk to be encrypted
-     * @param preSharedKey
-     * @param keyLabel
-     * @param fmkEncMethod
-     * @return SymmetricKeyRecipient that can be serialized into
-     *          FBS {@link SymmetricKeyCapsule}
+     * @param fmk          fmk to be encrypted
+     * @param preSharedKey pre-shared key, composed of the secret
+     * @param keyLabel     key label
+     * @param fmkEncMethod FMKEncryptionMethod
+     * @return SymmetricKeyRecipient that can be serialized into FBS {@link SymmetricKeyCapsule}
      * @throws GeneralSecurityException
      */
     static SymmetricKeyRecipient buildSymmetricKeyRecipient(byte[] fmk, SecretKey preSharedKey,
@@ -249,4 +266,28 @@ public final class RecipientFactory {
         byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
         return new SymmetricKeyRecipient(salt, encryptedFmk, keyLabel);
     }
+
+    /**
+     * Derive KEK from preSharedKey and keyLabel and encrypt fmk with derived KEK
+     * @param fmk          fmk to be encrypted
+     * @param preSharedKey pre-shared key, composed of the password
+     * @param keyLabel     key label
+     * @param fmkEncMethod FMKEncryptionMethod
+     * @return PBKDF2Recipient that can be serialized into FBS {@link PBKDF2Capsule}
+     */
+    static PBKDF2Recipient buildPBKDF2Recipient(
+        byte[] fmk, SecretKey preSharedKey, String keyLabel, String fmkEncMethod
+    ) {
+
+        Objects.requireNonNull(fmk);
+        Objects.requireNonNull(preSharedKey);
+        Objects.requireNonNull(keyLabel);
+
+        byte[] salt = keyLabel.getBytes(StandardCharsets.UTF_8);
+        SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
+
+        byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
+        return new PBKDF2Recipient(salt, encryptedFmk, keyLabel);
+    }
+
 }

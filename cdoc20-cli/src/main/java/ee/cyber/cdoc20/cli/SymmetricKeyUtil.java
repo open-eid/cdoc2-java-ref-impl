@@ -21,6 +21,7 @@ import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 /**
  * Symmetric key usage in CDOC is supported by CDOC format, but its use cases are not finalized.
@@ -65,7 +66,9 @@ public final class SymmetricKeyUtil {
 
         for (String secret: secrets) {
             var entry = extractKeyMaterialFromSecret(secret);
-            EncryptionKeyMaterial km = EncryptionKeyMaterial.from(entry.getKey(), entry.getValue());
+            EncryptionKeyMaterial km = EncryptionKeyMaterial.from(
+                entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_SECRET
+            );
             result.add(km);
         }
         return result;
@@ -78,7 +81,7 @@ public final class SymmetricKeyUtil {
         SecretKey secretKey = Crypto.deriveKekFromPassword(
             passwordAndLabel.optionChars(), label
         );
-        return EncryptionKeyMaterial.from(secretKey, label);
+        return EncryptionKeyMaterial.from(secretKey, label, EncryptionKeyOrigin.FROM_PASSWORD);
     }
 
     /**
