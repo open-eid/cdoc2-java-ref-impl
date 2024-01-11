@@ -52,7 +52,7 @@ public final class RecipientFactory {
      * @param serverClient if server client is provided, then key material for deriving KEK or encrypted KEK is stored
      *                     in key server
      * @return Recipients list created from provided key material
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws ExtApiException if communication with key server failed
      */
     public static Recipient[] buildRecipients(byte[] fmk, List<EncryptionKeyMaterial> recipientKeys,
@@ -74,48 +74,81 @@ public final class RecipientFactory {
             Key key = encKeyMaterial.getKey();
             String keyLabel = encKeyMaterial.getLabel();
 
-            if (key instanceof RSAPublicKey rsaPublicKey) {
-                if (serverClient != null) {
-                    RsaCapsuleClient rsaCapsuleClient = new RsaCapsuleClientImpl(serverClient);
-                    result.add(buildRsaServerKeyRecipient(fmk, rsaPublicKey, keyLabel, rsaCapsuleClient));
-                } else {
-                    result.add(buildRsaRecipient(fmk, rsaPublicKey, keyLabel));
-                }
-
-            } else if (key instanceof ECPublicKey ecPublicKey) {
-                if (serverClient != null) {
-                    result.add(buildEccServerKeyRecipient(fmk, ecPublicKey, keyLabel,
-                            new EcCapsuleClientImpl(serverClient)));
-                } else {
-                    result.add(buildEccRecipient(fmk, ecPublicKey, keyLabel));
-                }
-            } else if (key instanceof SecretKey preSharedKey) {
-                if (serverClient != null) {
-                    log.info("For symmetric key scenario, key server will not be used.");
-                }
-                checkKeyTypeAndBuildRecipient(
-                    result, fmk, preSharedKey, keyLabel, encKeyMaterial.getKeyOrigin()
-                );
-            } else {
-                throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
-            }
+            addRecipientsByKeyOrigin(result, key, serverClient, fmk, keyLabel, encKeyMaterial);
         }
 
         return result.toArray(new Recipient[0]);
     }
 
-    private static void checkKeyTypeAndBuildRecipient(
+    private static void addRecipientsByKeyOrigin(
         List<Recipient> recipients,
-        byte[] fmk,
+        Key key,
+        KeyCapsuleClient serverClient,
+        byte[] fileMasterKey,
+        String keyLabel,
+        EncryptionKeyMaterial encKeyMaterial
+    ) throws GeneralSecurityException, ExtApiException {
+        if (key instanceof RSAPublicKey rsaPublicKey) {
+            addRsaRecipient(recipients, serverClient, fileMasterKey, rsaPublicKey, keyLabel);
+        } else if (key instanceof ECPublicKey ecPublicKey) {
+            addEccRecipient(recipients, serverClient, fileMasterKey, ecPublicKey, keyLabel);
+        } else if (key instanceof SecretKey preSharedKey) {
+            addSymmetricKeyRecipient(recipients, serverClient, fileMasterKey, preSharedKey,
+                keyLabel, encKeyMaterial.getKeyOrigin());
+        } else {
+            throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
+        }
+    }
+
+    private static void addEccRecipient(
+        List<Recipient> recipients,
+        KeyCapsuleClient serverClient,
+        byte[] fileMasterKey,
+        ECPublicKey ecPublicKey,
+        String keyLabel
+    ) throws ExtApiException, GeneralSecurityException {
+        if (serverClient != null) {
+            recipients.add(buildEccServerKeyRecipient(fileMasterKey, ecPublicKey, keyLabel,
+                new EcCapsuleClientImpl(serverClient)));
+        } else {
+            recipients.add(buildEccRecipient(fileMasterKey, ecPublicKey, keyLabel));
+        }
+    }
+
+    private static void addRsaRecipient(
+        List<Recipient> recipients,
+        KeyCapsuleClient serverClient,
+        byte[] fileMasterKey,
+        RSAPublicKey rsaPublicKey,
+        String keyLabel
+    ) throws ExtApiException, GeneralSecurityException {
+        if (serverClient != null) {
+            RsaCapsuleClient rsaCapsuleClient = new RsaCapsuleClientImpl(serverClient);
+            recipients.add(buildRsaServerKeyRecipient(
+                fileMasterKey, rsaPublicKey, keyLabel, rsaCapsuleClient)
+            );
+        } else {
+            recipients.add(buildRsaRecipient(fileMasterKey, rsaPublicKey, keyLabel));
+        }
+    }
+
+    private static void addSymmetricKeyRecipient(
+        List<Recipient> recipients,
+        KeyCapsuleClient serverClient,
+        byte[] fileMasterKey,
         SecretKey preSharedKey,
         String keyLabel,
         EncryptionKeyOrigin keyType
     ) throws GeneralSecurityException {
+        if (serverClient != null) {
+            log.info("For symmetric key scenario, key server will not be used.");
+        }
+
         if (EncryptionKeyOrigin.FROM_PASSWORD.equals(keyType)) {
-            recipients.add(buildPBKDF2Recipient(fmk,  preSharedKey, keyLabel,
+            recipients.add(buildPBKDF2Recipient(fileMasterKey,  preSharedKey, keyLabel,
                 FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
         } else {
-            recipients.add(buildSymmetricKeyRecipient(fmk,  preSharedKey, keyLabel,
+            recipients.add(buildSymmetricKeyRecipient(fileMasterKey,  preSharedKey, keyLabel,
                 FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
         }
     }
@@ -249,7 +282,7 @@ public final class RecipientFactory {
      * @param keyLabel     key label
      * @param fmkEncMethod FMKEncryptionMethod
      * @return SymmetricKeyRecipient that can be serialized into FBS {@link SymmetricKeyCapsule}
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException if security/crypto error has occurred
      */
     static SymmetricKeyRecipient buildSymmetricKeyRecipient(byte[] fmk, SecretKey preSharedKey,
                 String keyLabel, String fmkEncMethod) throws GeneralSecurityException {
@@ -268,25 +301,25 @@ public final class RecipientFactory {
     }
 
     /**
-     * Derive KEK from preSharedKey and keyLabel and encrypt fmk with derived KEK
-     * @param fmk          fmk to be encrypted
-     * @param preSharedKey pre-shared key, composed of the password
-     * @param keyLabel     key label
-     * @param fmkEncMethod FMKEncryptionMethod
+     * Derive KEK from preSharedKey and keyLabel and encrypt fileMasterKey with derived KEK
+     * @param fileMasterKey fileMasterKey to be encrypted
+     * @param preSharedKey  pre-shared key, composed of the password
+     * @param keyLabel      key label
+     * @param fmkEncMethod  FMKEncryptionMethod
      * @return PBKDF2Recipient that can be serialized into FBS {@link PBKDF2Capsule}
      */
     static PBKDF2Recipient buildPBKDF2Recipient(
-        byte[] fmk, SecretKey preSharedKey, String keyLabel, String fmkEncMethod
+        byte[] fileMasterKey, SecretKey preSharedKey, String keyLabel, String fmkEncMethod
     ) {
 
-        Objects.requireNonNull(fmk);
+        Objects.requireNonNull(fileMasterKey);
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
         byte[] salt = keyLabel.getBytes(StandardCharsets.UTF_8);
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
 
-        byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
+        byte[] encryptedFmk = Crypto.xor(fileMasterKey, kek.getEncoded());
         return new PBKDF2Recipient(salt, encryptedFmk, keyLabel);
     }
 
