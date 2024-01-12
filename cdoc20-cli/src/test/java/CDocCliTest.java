@@ -54,7 +54,7 @@ class CDocCliTest {
     @Test
     void testEncryptDocWithPassword(@TempDir Path tempPath) {
         checkDocEncryptionWithPassword(
-            "passwordlabel:myplaintextpassword",
+            "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword",
             "keys/rsa_pub.pem",
             tempPath
         );

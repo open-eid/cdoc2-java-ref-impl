@@ -250,4 +250,14 @@ public final class SymmetricKeyUtil {
 
         return new FormattedOptionParts(optionChars, label);
     }
+
+    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
+        throws CDocValidationException {
+        if (formattedPassword.isEmpty()) {
+            return readPasswordAndLabelInteractively();
+        }
+
+        // ToDo add password validation somewhere here #55910
+        return splitFormattedOption(formattedPassword, "password");
+    }
 }
