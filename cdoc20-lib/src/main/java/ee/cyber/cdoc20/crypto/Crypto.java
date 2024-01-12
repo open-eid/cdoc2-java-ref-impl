@@ -55,6 +55,8 @@ public final class Crypto {
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
 
+    public static final int MIN_SALT_LENGTH = 256 / 8;
+
     public static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256";
     public static final int PBKDF2_ITERATIONS = 600_000; // recommended by NIST for HMAC-SHA-256
     public static final int PBKDF2_KEY_LENGTH_BITS = 256;
@@ -131,7 +133,6 @@ public final class Crypto {
         byte[] salt,
         String fmkEncMethod
     ) {
-        final int minSaltLen = 256 / 8;
         Objects.requireNonNull(label);
         Objects.requireNonNull(preSharedSecretKey);
         Objects.requireNonNull(preSharedSecretKey.getEncoded());
@@ -143,8 +144,8 @@ public final class Crypto {
                     + SYMMETRIC_KEY_MIN_LEN_BYTES + " bytes");
         }
 
-        if (salt.length < minSaltLen) {
-            throw new IllegalArgumentException("Salt must be at least " + minSaltLen + " bytes");
+        if (salt.length < MIN_SALT_LENGTH) {
+            throw new IllegalArgumentException("Salt must be at least " + MIN_SALT_LENGTH + " bytes");
         }
 
         // Currently, only XOR is supported

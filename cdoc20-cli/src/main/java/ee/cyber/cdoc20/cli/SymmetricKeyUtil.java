@@ -23,6 +23,8 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
+import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
+
 /**
  * Symmetric key usage in CDOC is supported by CDOC format, but its use cases are not finalized.
  * In the future, symmetric key may be derived using password-based key-derivation algorithm or from hardware token.
@@ -187,6 +189,7 @@ public final class SymmetricKeyUtil {
             if (label == null || label.isBlank()) {
                 throw new CDocUserException(UserErrorCode.USER_CANCEL, "Label not entered");
             }
+
             return label;
         }
     }
@@ -253,11 +256,24 @@ public final class SymmetricKeyUtil {
 
     public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
         throws CDocValidationException {
+        FormattedOptionParts passwordAndLabel;
         if (formattedPassword.isEmpty()) {
-            return readPasswordAndLabelInteractively();
+            passwordAndLabel = readPasswordAndLabelInteractively();
+        } else {
+            passwordAndLabel = splitFormattedOption(formattedPassword, "password");
         }
 
         // ToDo add password validation somewhere here #55910
-        return splitFormattedOption(formattedPassword, "password");
+        validatePasswordLabelLength(passwordAndLabel.label());
+
+        return passwordAndLabel;
+    }
+
+    private static void validatePasswordLabelLength(String label) {
+        if (label.length() < MIN_SALT_LENGTH) {
+            String errorMsg = "Label for password must be at least " + MIN_SALT_LENGTH + " bytes";
+            log.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
     }
 }
