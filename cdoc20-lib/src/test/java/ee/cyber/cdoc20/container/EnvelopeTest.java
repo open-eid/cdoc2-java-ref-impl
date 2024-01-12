@@ -17,6 +17,7 @@ import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
+import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
 
@@ -66,8 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static ee.cyber.cdoc20.container.EnvelopeTestUtils.testContainer;
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_RSAPublicKeyCapsule;
-import static ee.cyber.cdoc20.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
+import static ee.cyber.cdoc20.fbs.header.Capsule.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -297,7 +297,6 @@ class EnvelopeTest {
 
     @Test
     void testSymmetricKeySerialization(@TempDir Path tempDir) throws Exception {
-
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
         String payloadData = "payload-" + uuid;
@@ -344,6 +343,53 @@ class EnvelopeTest {
         assertNotNull(saltBuf);
     }
 
+    @Test
+    void testPasswordKeySerialization(@TempDir Path tempDir) throws Exception {
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        String password = "myplaintextpassword";
+        String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
+        SecretKey preSharedKey = Crypto.deriveKekFromPassword(password.toCharArray(), keyLabel);
+
+        Envelope envelope = Envelope.prepare(
+            List.of(EncryptionKeyMaterial.from(preSharedKey, keyLabel, EncryptionKeyOrigin.FROM_PASSWORD)),
+            null
+        );
+
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        envelope.encrypt(List.of(payloadFile), dst);
+
+        byte[] cdocBytes = dst.toByteArray();
+
+        assertTrue(cdocBytes.length > 0);
+
+        log.debug("available: {}", cdocBytes.length);
+
+        byte[] fbsBytes = Envelope.readFBSHeader(new ByteArrayInputStream(cdocBytes));
+        Header header = Envelope.deserializeFBSHeader(fbsBytes);
+
+        assertNotNull(header);
+        assertEquals(1, header.recipientsLength());
+
+        RecipientRecord recipient = header.recipients(0);
+
+        assertEquals(keyLabel, recipient.keyLabel());
+        assertEquals(recipients_PBKDF2Capsule, recipient.capsuleType());
+
+        PBKDF2Capsule passwordKeyCapsule =
+            (PBKDF2Capsule) recipient.capsule(new PBKDF2Capsule());
+        assertNotNull(passwordKeyCapsule);
+
+        ByteBuffer saltBuf = passwordKeyCapsule.saltAsByteBuffer();
+        assertNotNull(saltBuf);
+    }
 
     @Test
     void testECContainer(@TempDir Path tempDir) throws Exception {
@@ -402,6 +448,15 @@ class EnvelopeTest {
         SecretKey key = new SecretKeySpec(secret, "");
 
         testContainer(tempDir, DecryptionKeyMaterial.fromSecretKey(label, key), label, null);
+    }
+
+    @Test
+    void testPasswordKeyScenario(@TempDir Path tempDir) throws Exception {
+        String password = "myplaintextpassword";
+        String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
+        SecretKey preSharedKey = Crypto.deriveKekFromPassword(password.toCharArray(), keyLabel);
+
+        testContainer(tempDir, DecryptionKeyMaterial.fromSecretKey(keyLabel, preSharedKey), keyLabel, null);
     }
 
     @Test
@@ -771,8 +826,10 @@ class EnvelopeTest {
             EncryptionKeyOrigin.FROM_PUBLIC_KEY)
         );
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
-            Envelope.prepare(recipients, null).serializeHeader());
+        Envelope prepare = Envelope.prepare(recipients, null);
+        IllegalStateException exception =
+            assertThrows(IllegalStateException.class, prepare::serializeHeader);
+
         assertTrue(exception.getMessage().contains("Header serialization failed"));
 
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
