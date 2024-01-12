@@ -3,6 +3,8 @@ package ee.cyber.cdoc20.crypto;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -129,7 +131,7 @@ class CryptoTest {
         // sharedSecret should be initialized from SecureRandom, for test repeatability sharedSecret in this test is
         // initialized to 0 bytes
 
-        byte[] salt = new byte[32];
+        byte[] salt = new byte[MIN_SALT_LENGTH];
         salt[0] = 's';
         salt[1] = 'a';
         salt[2] = 'l';

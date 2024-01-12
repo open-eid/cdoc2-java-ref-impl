@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
+
 /**
  * Factory to create Recipients from different cryptographic keys
  */
@@ -291,13 +293,18 @@ public final class RecipientFactory {
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
-        byte[] salt = new byte[256 / 8]; //spec: salt length should be 256bits
-        Crypto.getSecureRandom().nextBytes(salt);
+        byte[] salt = generateSaltForKey();
 
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
 
         byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
         return new SymmetricKeyRecipient(salt, encryptedFmk, keyLabel);
+    }
+
+    public static byte[] generateSaltForKey() throws NoSuchAlgorithmException {
+        byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
+        Crypto.getSecureRandom().nextBytes(salt);
+        return salt;
     }
 
     /**
