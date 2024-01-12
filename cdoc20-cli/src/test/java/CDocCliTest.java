@@ -52,12 +52,8 @@ class CDocCliTest {
     }
 
     @Test
-    void testEncryptDocWithPassword(@TempDir Path tempPath) {
-        checkDocEncryptionWithPassword(
-            "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword",
-            "keys/rsa_pub.pem",
-            tempPath
-        );
+    void testCreateDecryptDocWithPassword(@TempDir Path tempPath) throws IOException {
+        checkCreateDecryptDocWithPassword(tempPath);
     }
 
     void checkCreateDecryptDoc(String pubKeyFile, String privateKeyFile, Path tempPath) throws IOException {
@@ -114,11 +110,7 @@ class CDocCliTest {
         assertEquals(inReadme, outReadme);
     }
 
-    void checkDocEncryptionWithPassword(
-        String password,
-        String pubKeyFile,
-        Path tempPath
-    ) {
+    void checkCreateDecryptDocWithPassword(Path tempPath) throws IOException {
         CDocCli app = new CDocCli();
         CommandLine cmd = new CommandLine(app);
 
@@ -128,8 +120,9 @@ class CDocCliTest {
 
         log.debug("Temp dir {}", tempPath.toAbsolutePath());
         Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+
         int exitCode = cmd.execute("create",
-            "--pubkey=" + pubKeyFile,
             "--file=" + cdocFile,
             "--password=" + password,
             cdocCliPath.resolve("README.md").toString()
@@ -147,7 +140,26 @@ class CDocCliTest {
         out.reset();
         err.reset();
 
-        log.debug("Expected: {}", "Encrypting " + cdocFile.toFile() + " " + outPath);
+        int decryptExitCode = cmd.execute("decrypt",
+            "--file=" + cdocFile,
+            "--password=" + password,
+            "--output=" + outPath
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(0, decryptExitCode);
+
+        log.debug("Expected: {}", "Decrypting " + cdocFile.toFile() + " " + outPath);
+
+        assertTrue(out.toString().startsWith("Decrypting " + cdocFile.toFile() + " to " + outPath));
+        assertTrue(out.toString().contains("README.md"));
+
+        String inReadme = Files.readString(cdocCliPath.resolve("README.md"));
+        String outReadme = Files.readString(outPath.resolve("README.md"));
+
+        assertEquals(inReadme, outReadme);
     }
 
 }

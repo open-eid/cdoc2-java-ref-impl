@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
+import static ee.cyber.cdoc20.crypto.Crypto.PBKDF2_ALGORITHM;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ class CryptoTest {
         assertEquals(Crypto.FMK_LEN_BYTES, fmk.length);
 
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-        String format = cekKey.getFormat();
+
         byte[] cekBytes = cekKey.getEncoded();
         assertEquals(Crypto.CEK_LEN_BYTES, cekBytes.length);
 
@@ -49,7 +50,6 @@ class CryptoTest {
         byte[] hhkBytes = hhkKey.getEncoded();
         assertEquals(Crypto.HHK_LEN_BYTES, hhkBytes.length);
     }
-
 
     @Test
     void testGenSharedSecret() throws GeneralSecurityException {
@@ -124,7 +124,6 @@ class CryptoTest {
         assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
     }
 
-
     @Test
     void deriveKeyEncryptionKeyFromSharedSecret() {
         byte[] sharedSecret = new byte[32];
@@ -150,5 +149,26 @@ class CryptoTest {
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
                 HexFormat.of().formatHex(kek));
+    }
+
+    @Test
+    void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
+        String label = "passwordlabellengthmustbemin32bytes";
+
+        SecretKey kekSecretKey = Crypto.deriveKekFromPassword(
+            "myplaintextpassword".toCharArray(),
+            label
+        );
+
+        assertEquals(PBKDF2_ALGORITHM, kekSecretKey.getAlgorithm());
+        assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using PBKDF2
+
+        byte[] kek = kekSecretKey.getEncoded();
+        assertNotNull(kek);
+        assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
+        assertEquals(
+            "aa198d22438cba54bb2fe89c59b0c02791087cae19d9f18361370fd615c464c0",
+            HexFormat.of().formatHex(kek)
+        );
     }
 }
