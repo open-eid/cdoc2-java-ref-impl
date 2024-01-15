@@ -67,7 +67,9 @@ public final class SymmetricKeyUtil {
         List<EncryptionKeyMaterial> result = new LinkedList<>();
 
         for (String secret: secrets) {
-            var entry = extractKeyMaterialFromSecret(secret);
+            FormattedOptionParts splitSecret
+                = SymmetricKeyUtil.splitFormattedOption(secret, EncryptionKeyOrigin.FROM_SECRET);
+            var entry = extractKeyMaterialFromSecret(splitSecret);
             EncryptionKeyMaterial km = EncryptionKeyMaterial.fromSecret(
                 entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_SECRET
             );
@@ -90,19 +92,14 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from formatted secret  "label:topsecret123!"
-     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
-     * @param formattedSecret formatted as label:secret where secret can be base64 encoded bytes or
-     *                        regular utf-8 string. Base64 encoded string must be prefixed with
-     *                        'base64,', followed by base64 string
+     * Extract symmetric key material from secret.
+     * @param secretAndLabel split secret chars and label
      * @return DecryptionKeyMaterial created from formattedSecret
-     * @throws CDocValidationException if formattedSecret is not in format specified
-     * @throws IllegalArgumentException if base64 secret cannot be decoded
      */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSecret(String formattedSecret)
-            throws CDocValidationException {
-
-        var entry = extractKeyMaterialFromSecret(formattedSecret);
+    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSecret(
+        FormattedOptionParts secretAndLabel
+    ) {
+        var entry = extractKeyMaterialFromSecret(secretAndLabel);
         return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
     }
 
@@ -198,23 +195,17 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from formatted secret "label:topsecret123!"
-     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
-     * @param formattedSecret formatted as label:secret where secret can be base64 encoded bytes
-     *                        or regular utf-8 string. Base64 encoded string must be prefixed with
-     *                        'base64,', followed by base64 string
+     * Extract symmetric key material from secret.
+     * @param secretAndLabel split secret and label
      * @return AbstractMap.SimpleEntry<SecretKey, String> with extracted SecretKey and label
-     * @throws CDocValidationException if formattedSecret is not in format specified
-     * @throws IllegalArgumentException if base64 secret cannot be decoded
      */
     private static AbstractMap.SimpleEntry<SecretKey, String> extractKeyMaterialFromSecret(
-        String formattedSecret
-    ) throws CDocValidationException {
-        var splitOption
-            = splitFormattedOption(formattedSecret, EncryptionKeyOrigin.FROM_SECRET);
-        byte[] secretBytes = String.valueOf(splitOption.optionChars()).getBytes(StandardCharsets.UTF_8);
+        FormattedOptionParts secretAndLabel
+    ) {
+        byte[] secretBytes = String.valueOf(secretAndLabel.optionChars())
+            .getBytes(StandardCharsets.UTF_8);
         SecretKey key = new SecretKeySpec(secretBytes, "");
-        return new AbstractMap.SimpleEntry<>(key, splitOption.label());
+        return new AbstractMap.SimpleEntry<>(key, secretAndLabel.label());
     }
 
     /**
