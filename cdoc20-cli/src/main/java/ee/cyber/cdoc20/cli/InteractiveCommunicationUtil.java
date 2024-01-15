@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.UserErrorCode;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 import static ee.cyber.cdoc20.cli.SymmetricKeyUtil.LABEL_LOG_MSG;
 
@@ -48,7 +49,7 @@ public final class InteractiveCommunicationUtil {
 
         String label = readLabelInteractively(console);
 
-        return new FormattedOptionParts(password, label);
+        return new FormattedOptionParts(password, label, EncryptionKeyOrigin.FROM_PASSWORD);
     }
 
     private static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {

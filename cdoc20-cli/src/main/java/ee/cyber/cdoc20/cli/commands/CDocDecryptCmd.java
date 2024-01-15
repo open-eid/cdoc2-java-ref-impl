@@ -7,6 +7,7 @@ import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
@@ -101,7 +102,7 @@ public class CDocDecryptCmd implements Callable<Void> {
         DecryptionKeyMaterial decryptionKm = null;
         if (password != null) {
             FormattedOptionParts splitPassword
-                = SymmetricKeyUtil.splitFormattedOption(this.password, "password");
+                = SymmetricKeyUtil.splitFormattedOption(this.password, EncryptionKeyOrigin.FROM_PASSWORD);
             decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword);
         }
         if (secret != null) {

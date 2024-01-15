@@ -83,7 +83,7 @@ public final class SymmetricKeyUtil {
         SecretKey secretKey = Crypto.deriveKekFromPassword(
             passwordAndLabel.optionChars(), label
         );
-        return EncryptionKeyMaterial.from(secretKey, label, EncryptionKeyOrigin.FROM_PASSWORD);
+        return EncryptionKeyMaterial.from(secretKey, label, passwordAndLabel.keyOrigin());
     }
 
     /**
@@ -137,7 +137,7 @@ public final class SymmetricKeyUtil {
 
         String label = readLabelInteractively(console);
 
-        return new FormattedOptionParts(password, label);
+        return new FormattedOptionParts(password, label, EncryptionKeyOrigin.FROM_PASSWORD);
     }
 
     /**
@@ -207,7 +207,8 @@ public final class SymmetricKeyUtil {
     private static AbstractMap.SimpleEntry<SecretKey, String> extractKeyMaterialFromSecret(
         String formattedSecret
     ) throws CDocValidationException {
-        var splitOption = splitFormattedOption(formattedSecret, "secret");
+        var splitOption
+            = splitFormattedOption(formattedSecret, EncryptionKeyOrigin.FROM_SECRET);
         byte[] secretBytes = String.valueOf(splitOption.optionChars()).getBytes(StandardCharsets.UTF_8);
         SecretKey key = new SecretKeySpec(secretBytes, "");
         return new AbstractMap.SimpleEntry<>(key, splitOption.label());
@@ -219,17 +220,17 @@ public final class SymmetricKeyUtil {
      * @param formattedOption formatted as label:secret or label:password where 2nd param can be
      *                        base64 encoded bytes or regular utf-8 string. Base64 encoded string
      *                        must be prefixed with 'base64,', followed by base64 string
-     * @param optionName      inserted CLI option name
+     * @param keyOrigin       encryption key origin
      * @return AbstractMap.SimpleEntry<SecretKey, String> with extracted SecretKey and label
      * @throws CDocValidationException if formattedOption is not in format specified
      * @throws IllegalArgumentException if base64 secret or password cannot be decoded
      */
     public static FormattedOptionParts splitFormattedOption(
         String formattedOption,
-        String optionName
+        EncryptionKeyOrigin keyOrigin
     ) throws CDocValidationException {
         var parts = formattedOption.split(":");
-
+        String optionName = keyOrigin.getKeyName();
         if (parts.length != 2) {
             throw new CDocValidationException(
                 String.format("%s must have format label:%s", optionName, optionName)
@@ -251,7 +252,7 @@ public final class SymmetricKeyUtil {
         }
         log.info(LABEL_LOG_MSG, label);
 
-        return new FormattedOptionParts(optionChars, label);
+        return new FormattedOptionParts(optionChars, label, keyOrigin);
     }
 
     public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
@@ -260,7 +261,7 @@ public final class SymmetricKeyUtil {
         if (formattedPassword.isEmpty()) {
             passwordAndLabel = readPasswordAndLabelInteractively();
         } else {
-            passwordAndLabel = splitFormattedOption(formattedPassword, "password");
+            passwordAndLabel = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
         }
 
         // ToDo add password validation somewhere here #55910

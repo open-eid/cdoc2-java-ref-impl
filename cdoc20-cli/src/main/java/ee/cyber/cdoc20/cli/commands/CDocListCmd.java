@@ -44,6 +44,10 @@ public class CDocListCmd implements Callable<Void> {
             description = SymmetricKeyUtil.SECRET_DESCRIPTION)
     String secret;
 
+    @Option(names = {"-pass", "--password"}, arity = "0..1",
+        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
+    String password;
+
     @Option (names = {"--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
     Integer slot = 0;
