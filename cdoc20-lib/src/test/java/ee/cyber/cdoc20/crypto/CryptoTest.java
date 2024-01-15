@@ -153,11 +153,12 @@ class CryptoTest {
 
     @Test
     void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
+        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
         String label = "passwordlabellengthmustbemin32bytes";
 
         SecretKey kekSecretKey = Crypto.deriveKekFromPassword(
             "myplaintextpassword".toCharArray(),
-            label
+            label.getBytes(StandardCharsets.UTF_8)
         );
 
         assertEquals(PBKDF2_ALGORITHM, kekSecretKey.getAlgorithm());

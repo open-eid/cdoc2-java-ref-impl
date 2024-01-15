@@ -114,7 +114,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
         List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
                 .map(entry ->
-                    EncryptionKeyMaterial.from(
+                    EncryptionKeyMaterial.fromPublicKey(
                         entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_PUBLIC_KEY
                     )
                 )

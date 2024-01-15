@@ -12,6 +12,7 @@ import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -103,7 +104,11 @@ public class CDocDecryptCmd implements Callable<Void> {
         if (password != null) {
             FormattedOptionParts splitPassword
                 = SymmetricKeyUtil.splitFormattedOption(this.password, EncryptionKeyOrigin.FROM_PASSWORD);
-            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword);
+            // ToDo replace with the extracted salt from PBKDF2Recipient
+            byte[] salt = splitPassword.label().getBytes(StandardCharsets.UTF_8);
+
+            decryptionKm
+                = SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword, salt);
         }
         if (secret != null) {
             decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterial(secret);

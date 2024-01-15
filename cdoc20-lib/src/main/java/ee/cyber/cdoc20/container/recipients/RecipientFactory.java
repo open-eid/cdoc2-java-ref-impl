@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -34,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
+import static ee.cyber.cdoc20.crypto.Crypto.generateSaltForKey;
 
 /**
  * Factory to create Recipients from different cryptographic keys
@@ -94,9 +93,8 @@ public final class RecipientFactory {
             addRsaRecipient(recipients, serverClient, fileMasterKey, rsaPublicKey, keyLabel);
         } else if (key instanceof ECPublicKey ecPublicKey) {
             addEccRecipient(recipients, serverClient, fileMasterKey, ecPublicKey, keyLabel);
-        } else if (key instanceof SecretKey preSharedKey) {
-            addSymmetricKeyRecipient(recipients, serverClient, fileMasterKey, preSharedKey,
-                keyLabel, encKeyMaterial.getKeyOrigin());
+        } else if (key instanceof SecretKey) {
+            addSymmetricKeyRecipient(recipients, serverClient, fileMasterKey, encKeyMaterial);
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
         }
@@ -138,20 +136,28 @@ public final class RecipientFactory {
         List<Recipient> recipients,
         KeyCapsuleClient serverClient,
         byte[] fileMasterKey,
-        SecretKey preSharedKey,
-        String keyLabel,
-        EncryptionKeyOrigin keyType
+        EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException {
         if (serverClient != null) {
             log.info("For symmetric key scenario, key server will not be used.");
         }
 
-        if (EncryptionKeyOrigin.FROM_PASSWORD.equals(keyType)) {
-            recipients.add(buildPBKDF2Recipient(fileMasterKey,  preSharedKey, keyLabel,
-                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
+        if (EncryptionKeyOrigin.FROM_PASSWORD.equals(encKeyMaterial.getKeyOrigin())) {
+            recipients.add(buildPBKDF2Recipient(
+                fileMasterKey,
+                (SecretKey) encKeyMaterial.getKey(),
+                encKeyMaterial.getLabel(),
+                FMKEncryptionMethod.name(
+                    Envelope.FMK_ENC_METHOD_BYTE),
+                encKeyMaterial.getPasswordSalt())
+            );
         } else {
-            recipients.add(buildSymmetricKeyRecipient(fileMasterKey,  preSharedKey, keyLabel,
-                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)));
+            recipients.add(buildSymmetricKeyRecipient(
+                fileMasterKey,
+                (SecretKey) encKeyMaterial.getKey(),
+                encKeyMaterial.getLabel(),
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)
+                ));
         }
     }
 
@@ -301,12 +307,6 @@ public final class RecipientFactory {
         return new SymmetricKeyRecipient(salt, encryptedFmk, keyLabel);
     }
 
-    public static byte[] generateSaltForKey() throws NoSuchAlgorithmException {
-        byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
-        Crypto.getSecureRandom().nextBytes(salt);
-        return salt;
-    }
-
     /**
      * Derive KEK from preSharedKey and keyLabel and encrypt fileMasterKey with derived KEK
      * @param fileMasterKey fileMasterKey to be encrypted
@@ -316,14 +316,16 @@ public final class RecipientFactory {
      * @return PBKDF2Recipient that can be serialized into FBS {@link PBKDF2Capsule}
      */
     static PBKDF2Recipient buildPBKDF2Recipient(
-        byte[] fileMasterKey, SecretKey preSharedKey, String keyLabel, String fmkEncMethod
+        byte[] fileMasterKey,
+        SecretKey preSharedKey,
+        String keyLabel,
+        String fmkEncMethod,
+        byte[] salt
     ) {
-
         Objects.requireNonNull(fileMasterKey);
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
-        byte[] salt = keyLabel.getBytes(StandardCharsets.UTF_8);
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
 
         byte[] encryptedFmk = Crypto.xor(fileMasterKey, kek.getEncoded());

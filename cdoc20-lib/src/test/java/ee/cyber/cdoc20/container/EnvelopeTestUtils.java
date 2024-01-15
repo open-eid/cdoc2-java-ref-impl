@@ -255,10 +255,10 @@ public final class EnvelopeTestUtils {
         Files.createDirectories(outDir);
 
         EncryptionKeyMaterial encKeyMaterial = (keyMaterial.getKeyPair().isPresent())
-                ? EncryptionKeyMaterial.from(
+                ? EncryptionKeyMaterial.fromPublicKey(
                     keyMaterial.getKeyPair().get().getPublic(), keyLabel, EncryptionKeyOrigin.FROM_PUBLIC_KEY
         )
-                : EncryptionKeyMaterial.from(
+                : EncryptionKeyMaterial.fromSecret(
                     keyMaterial.getSecretKey().orElseThrow(), keyLabel, EncryptionKeyOrigin.FROM_SECRET
         );
 

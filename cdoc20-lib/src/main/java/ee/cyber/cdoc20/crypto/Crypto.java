@@ -63,10 +63,8 @@ public final class Crypto {
 
     public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
 
-
     private Crypto() {
     }
-
 
     /**
      * Get SecureRandom instance
@@ -166,17 +164,17 @@ public final class Crypto {
      * Derive KEK from password and label.
      * @param passwordChars password chars between parties (sender and recipient) used to derive KEK.
      *                      Min len of 32 bytes
-     * @param label         label
+     * @param salt          generate salt
      * @return SecretKey with derived KEK
      * @throws GeneralSecurityException if key creation has failed
      */
     public static SecretKey deriveKekFromPassword(
-        final char[] passwordChars, String label
+        final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
         SecretKeyFactory skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
         PBEKeySpec spec = new PBEKeySpec(
             passwordChars,
-            label.getBytes(StandardCharsets.UTF_8),
+            salt,
             PBKDF2_ITERATIONS,
             PBKDF2_KEY_LENGTH_BITS
         );
@@ -317,5 +315,15 @@ public final class Crypto {
             out[i] = (byte)(x1[i] ^ x2[i]);
         }
         return out;
+    }
+
+    /**
+     * Generate salt for the symmetric key.
+     * @return bytes of generated salt
+     */
+    public static byte[] generateSaltForKey() throws NoSuchAlgorithmException {
+        byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
+        Crypto.getSecureRandom().nextBytes(salt);
+        return salt;
     }
 }

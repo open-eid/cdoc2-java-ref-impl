@@ -1,3 +1,5 @@
+import java.nio.charset.StandardCharsets;
+
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc20.crypto.Crypto;
@@ -13,8 +15,10 @@ class CryptoTest {
 
     @Test
     void testSecretKeyExtractionFromPassword() throws Exception {
-        byte[] secret1 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, LABEL).getEncoded();
-        byte[] secret2 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, LABEL).getEncoded();
+        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
+        byte[] salt = LABEL.getBytes(StandardCharsets.UTF_8);
+        byte[] secret1 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, salt).getEncoded();
+        byte[] secret2 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, salt).getEncoded();
 
         assertEquals(Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES, secret1.length);
         assertArrayEquals(secret1, secret2);

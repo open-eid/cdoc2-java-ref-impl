@@ -68,7 +68,7 @@ public final class SymmetricKeyUtil {
 
         for (String secret: secrets) {
             var entry = extractKeyMaterialFromSecret(secret);
-            EncryptionKeyMaterial km = EncryptionKeyMaterial.from(
+            EncryptionKeyMaterial km = EncryptionKeyMaterial.fromSecret(
                 entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_SECRET
             );
             result.add(km);
@@ -79,11 +79,14 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        String label = passwordAndLabel.label();
+        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
+        byte[] salt = passwordAndLabel.label().getBytes(StandardCharsets.UTF_8);
         SecretKey secretKey = Crypto.deriveKekFromPassword(
-            passwordAndLabel.optionChars(), label
+            passwordAndLabel.optionChars(), salt
         );
-        return EncryptionKeyMaterial.from(secretKey, label, passwordAndLabel.keyOrigin());
+        return EncryptionKeyMaterial.fromPassword(
+            secretKey, passwordAndLabel.label(), passwordAndLabel.keyOrigin(), salt
+        );
     }
 
     /**
@@ -104,20 +107,20 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from password and label.
+     * Extract symmetric key material from password and salt.
      * @param passwordAndLabel split password chars and label
+     * @param salt             salt used for encryption
      * @return DecryptionKeyMaterial created from password
      * @throws GeneralSecurityException if key extraction from password has failed
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel
+        FormattedOptionParts passwordAndLabel, byte[] salt
     ) throws GeneralSecurityException {
-        String label = passwordAndLabel.label();
         SecretKey secretKey = Crypto.deriveKekFromPassword(
-            passwordAndLabel.optionChars(), label
+            passwordAndLabel.optionChars(), salt
         );
 
-        return DecryptionKeyMaterial.fromSecretKey(label, secretKey);
+        return DecryptionKeyMaterial.fromPassword(passwordAndLabel.label(), secretKey, salt);
     }
 
     public static FormattedOptionParts readPasswordAndLabelInteractively() {
