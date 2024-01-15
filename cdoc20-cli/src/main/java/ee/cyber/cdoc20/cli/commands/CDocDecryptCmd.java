@@ -111,7 +111,7 @@ public class CDocDecryptCmd implements Callable<Void> {
                 = SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword, salt);
         }
         if (secret != null) {
-            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterial(secret);
+            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(secret);
         }
 
         if (decryptionKm == null)  {

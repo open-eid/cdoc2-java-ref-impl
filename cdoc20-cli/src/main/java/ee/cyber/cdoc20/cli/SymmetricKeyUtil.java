@@ -99,7 +99,7 @@ public final class SymmetricKeyUtil {
      * @throws CDocValidationException if formattedSecret is not in format specified
      * @throws IllegalArgumentException if base64 secret cannot be decoded
      */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterial(String formattedSecret)
+    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSecret(String formattedSecret)
             throws CDocValidationException {
 
         var entry = extractKeyMaterialFromSecret(formattedSecret);

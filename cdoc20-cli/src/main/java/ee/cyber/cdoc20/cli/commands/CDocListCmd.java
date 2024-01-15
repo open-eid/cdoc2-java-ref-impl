@@ -90,7 +90,7 @@ public class CDocListCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKm = null;
         if (secret != null) {
-            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterial(secret);
+            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(secret);
         }
 
         if (decryptionKm == null)  {
