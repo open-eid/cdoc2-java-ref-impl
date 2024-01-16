@@ -1,7 +1,10 @@
 package ee.cyber.cdoc20.cli;
 
 import java.io.Console;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -18,6 +21,11 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.CDocValidationException;
 import ee.cyber.cdoc20.UserErrorCode;
+import ee.cyber.cdoc20.container.CDocParseException;
+import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
+import ee.cyber.cdoc20.container.recipients.Recipient;
+import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
@@ -247,6 +255,14 @@ public final class SymmetricKeyUtil {
         return new FormattedOptionParts(optionChars, label, keyOrigin);
     }
 
+    /**
+     * Split formatted password "label:topsecret123!" or "label123:base64,
+     * aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @return FormattedOptionParts with extracted password and label
+     */
     public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
         throws CDocValidationException {
         FormattedOptionParts passwordAndLabel;
@@ -260,4 +276,54 @@ public final class SymmetricKeyUtil {
 
         return passwordAndLabel;
     }
+
+    /**
+     * Extract symmetric key material from formatted secret or password "label:topsecret123!"
+     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param cDocFilePath      path to CDOC file
+     * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @param formattedSecret   formatted as label:secret where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @return DecryptionKeyMaterial decryption key material
+     * @throws CDocValidationException if formatted option is not in format specified
+     * @throws GeneralSecurityException if decryption key material extraction from password has
+     *                                  failed
+     * @throws IOException if header parsing has failed
+     * @throws CDocParseException if recipients deserializing has failed
+     */
+    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSymmetricKey(
+        Path cDocFilePath,
+        String formattedPassword,
+        String formattedSecret
+    ) throws CDocValidationException,
+        GeneralSecurityException,
+        IOException,
+        CDocParseException {
+
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
+        for (Recipient recipient : recipients) {
+            if (recipient instanceof PBKDF2Recipient pbkdf2Recipient && formattedPassword != null) {
+                FormattedOptionParts splitPassword = SymmetricKeyUtil.splitFormattedOption(
+                    formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD
+                );
+                byte[] salt = pbkdf2Recipient.getSalt();
+
+                return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
+                    splitPassword, salt
+                );
+            } else if (recipient instanceof SymmetricKeyRecipient && formattedSecret != null) {
+                FormattedOptionParts splitSecret = SymmetricKeyUtil.splitFormattedOption(
+                    formattedSecret, EncryptionKeyOrigin.FROM_SECRET
+                );
+                if (recipient.getRecipientKeyLabel().equals(splitSecret.label())) {
+                    return SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
+                }
+            }
+        }
+        return null;
+    }
+
 }

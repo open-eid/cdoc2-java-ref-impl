@@ -164,10 +164,20 @@ java -jar target/cdoc20-cli-*.jar decrypt --server=config/localhost/localhost_pk
 java -jar target/cdoc20-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
 ```
 
-or
+or with server scenario:
 
 ```
 java -jar target/cdoc20-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
+```
+
+or with password:
+```
+java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --password "passwordlabel:myplaintextpassword"
+```
+
+or with secret:
+```
+java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow"
 ```
 
 ### List recipients

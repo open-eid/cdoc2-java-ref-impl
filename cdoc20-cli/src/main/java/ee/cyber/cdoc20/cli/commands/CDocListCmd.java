@@ -2,12 +2,10 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
-import ee.cyber.cdoc20.cli.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
@@ -90,12 +88,10 @@ public class CDocListCmd implements Callable<Void> {
             keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
         }
 
-        DecryptionKeyMaterial decryptionKm = null;
-        if (secret != null) {
-            FormattedOptionParts splitSecret
-                = SymmetricKeyUtil.splitFormattedOption(this.secret, EncryptionKeyOrigin.FROM_SECRET);
-            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
-        }
+        DecryptionKeyMaterial decryptionKm =
+            SymmetricKeyUtil.extractDecryptionKeyMaterialFromSymmetricKey(
+                this.cdocFile.toPath(), this.password, this.secret
+            );
 
         if (decryptionKm == null)  {
             KeyPair keyPair;
