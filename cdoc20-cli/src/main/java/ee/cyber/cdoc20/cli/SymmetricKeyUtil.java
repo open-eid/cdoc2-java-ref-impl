@@ -269,7 +269,8 @@ public final class SymmetricKeyUtil {
         if (formattedPassword.isEmpty()) {
             passwordAndLabel = readPasswordAndLabelInteractively();
         } else {
-            passwordAndLabel = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
+            passwordAndLabel
+                = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
         }
 
         // ToDo add password validation somewhere here #55910
@@ -306,9 +307,8 @@ public final class SymmetricKeyUtil {
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
         for (Recipient recipient : recipients) {
             if (recipient instanceof PBKDF2Recipient pbkdf2Recipient && formattedPassword != null) {
-                FormattedOptionParts splitPassword = SymmetricKeyUtil.splitFormattedOption(
-                    formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD
-                );
+                FormattedOptionParts splitPassword
+                    = SymmetricKeyUtil.getSplitPasswordAndLabel(formattedPassword);
                 byte[] salt = pbkdf2Recipient.getSalt();
 
                 return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
