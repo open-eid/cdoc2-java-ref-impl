@@ -23,7 +23,6 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
-import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
 
 /**
  * Symmetric key usage in CDOC is supported by CDOC format, but its use cases are not finalized.
@@ -258,16 +257,7 @@ public final class SymmetricKeyUtil {
         }
 
         // ToDo add password validation somewhere here #55910
-        validatePasswordLabelLength(passwordAndLabel.label());
 
         return passwordAndLabel;
-    }
-
-    private static void validatePasswordLabelLength(String label) {
-        if (label.length() < MIN_SALT_LENGTH) {
-            String errorMsg = "Label for password must be at least " + MIN_SALT_LENGTH + " bytes";
-            log.error(errorMsg);
-            throw new IllegalArgumentException(errorMsg);
-        }
     }
 }

@@ -88,12 +88,12 @@ cat keys/b64secret.option
 
 Or encrypt with password clear text:
 ```
-java -jar target/cdoc20-cli-*.jar create --password "passwordlabellengthmustbemin32bytes:myplaintextpassword" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:myplaintextpassword" -f /tmp/symmetric.cdoc README.md
 ```
 
 Or with base64 encoded password:
 ```
-java -jar target/cdoc20-cli-*.jar create --password "passwordlabellengthmustbemin32bytes:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc README.md
 ```
 
 Or with both password and secret:
@@ -108,12 +108,12 @@ java -jar target/cdoc20-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetr
 
 Or with the same label and password used for encryption:
 ```
-java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabellengthmustbemin32bytes:myplaintextpassword" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:myplaintextpassword" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Or with the same label and base64 encoded password used for encryption:
 ```
-java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabellengthmustbemin32bytes:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Or with the same label and secret used for encryption:
