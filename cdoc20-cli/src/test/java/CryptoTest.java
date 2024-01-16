@@ -13,8 +13,8 @@ class CryptoTest {
     @Test
     void testSecretKeyExtractionFromPassword() throws Exception {
         byte[] salt = Crypto.generateSaltForKey();
-        byte[] secret1 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, salt).getEncoded();
-        byte[] secret2 = Crypto.deriveKekFromPassword(PASSWORD_CHARS, salt).getEncoded();
+        byte[] secret1 = Crypto.extractKeyMaterialFromPassword(PASSWORD_CHARS, salt).getEncoded();
+        byte[] secret2 = Crypto.extractKeyMaterialFromPassword(PASSWORD_CHARS, salt).getEncoded();
 
         assertEquals(Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES, secret1.length);
         assertArrayEquals(secret1, secret2);

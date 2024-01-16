@@ -146,7 +146,7 @@ class CryptoTest {
 
     @Test
     void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
-        SecretKey kekSecretKey = Crypto.deriveKekFromPassword(
+        SecretKey kekSecretKey = Crypto.extractKeyMaterialFromPassword(
             "myplaintextpassword".toCharArray(),
             getSalt()
         );

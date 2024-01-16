@@ -89,7 +89,7 @@ public final class SymmetricKeyUtil {
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
         byte[] salt = Crypto.generateSaltForKey();
-        SecretKey secretKey = Crypto.deriveKekFromPassword(
+        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
             passwordAndLabel.optionChars(), salt
         );
         return EncryptionKeyMaterial.fromPassword(
@@ -119,7 +119,7 @@ public final class SymmetricKeyUtil {
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel, byte[] salt
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.deriveKekFromPassword(
+        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
             passwordAndLabel.optionChars(), salt
         );
 

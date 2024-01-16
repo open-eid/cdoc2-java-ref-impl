@@ -161,14 +161,14 @@ public final class Crypto {
     }
 
     /**
-     * Derive KEK from password and label.
-     * @param passwordChars password chars between parties (sender and recipient) used to derive KEK.
-     *                      Min len of 32 bytes
-     * @param salt          generate salt
-     * @return SecretKey with derived KEK
+     * Create Symmetric Key from password and salt.
+     * @param passwordChars password chars between parties (sender and recipient) used to create
+     *                      a symmetric key. Min len of 32 bytes
+     * @param salt          generated salt
+     * @return SecretKey with symmetric key
      * @throws GeneralSecurityException if key creation has failed
      */
-    public static SecretKey deriveKekFromPassword(
+    public static SecretKey extractKeyMaterialFromPassword(
         final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
         SecretKeyFactory skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
