@@ -2,18 +2,27 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.CDocConfiguration;
 import ee.cyber.cdoc20.CDocDecrypter;
+import ee.cyber.cdoc20.CDocValidationException;
 import ee.cyber.cdoc20.cli.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc20.container.CDocParseException;
+import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
+import ee.cyber.cdoc20.container.recipients.Recipient;
+import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
@@ -100,21 +109,7 @@ public class CDocDecryptCmd implements Callable<Void> {
             keyCapsulesClientFactory = KeyCapsuleClientImpl.createFactory(p);
         }
 
-        DecryptionKeyMaterial decryptionKm = null;
-        if (password != null) {
-            FormattedOptionParts splitPassword
-                = SymmetricKeyUtil.splitFormattedOption(this.password, EncryptionKeyOrigin.FROM_PASSWORD);
-            // ToDo replace with the extracted salt from PBKDF2Recipient
-            byte[] salt = splitPassword.label().getBytes(StandardCharsets.UTF_8);
-
-            decryptionKm
-                = SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword, salt);
-        }
-        if (secret != null) {
-            FormattedOptionParts splitSecret
-                = SymmetricKeyUtil.splitFormattedOption(this.secret, EncryptionKeyOrigin.FROM_SECRET);
-            decryptionKm = SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
-        }
+        DecryptionKeyMaterial decryptionKm = getDecryptionKeyMaterialFromSymmetricKey();
 
         if (decryptionKm == null)  {
             KeyPair keyPair;
@@ -139,6 +134,34 @@ public class CDocDecryptCmd implements Callable<Void> {
         System.out.println("Decrypting " + cdocFile + " to " + outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();
         extractedFileNames.forEach(System.out::println);
+        return null;
+    }
+
+    private DecryptionKeyMaterial getDecryptionKeyMaterialFromSymmetricKey()
+        throws CDocValidationException,
+        GeneralSecurityException,
+        IOException,
+        CDocParseException {
+
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
+        for (Recipient recipient : recipients) {
+            if (recipient instanceof PBKDF2Recipient && password != null) {
+                FormattedOptionParts splitPassword
+                    = SymmetricKeyUtil.splitFormattedOption(this.password, EncryptionKeyOrigin.FROM_PASSWORD);
+                // ToDo replace with the extracted salt from PBKDF2Recipient
+//                    byte[] salt = ((PBKDF2Recipient) recipient).getSalt();
+                byte[] salt = splitPassword.label().getBytes(StandardCharsets.UTF_8);
+
+                return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(splitPassword,
+                    salt);
+            } else if (recipient instanceof SymmetricKeyRecipient && secret != null) {
+                FormattedOptionParts splitSecret
+                    = SymmetricKeyUtil.splitFormattedOption(this.secret, EncryptionKeyOrigin.FROM_SECRET);
+                if (recipient.getRecipientKeyLabel().equals(splitSecret.label())) {
+                    return SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
+                }
+            }
+        }
         return null;
     }
 }

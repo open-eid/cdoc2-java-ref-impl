@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.opentest4j.AssertionFailedError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -16,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CDocCliTest {
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
+
+    private static final int SUCCESSFUL_EXIT_CODE = 0;
+    private static final int FAILURE_EXIT_CODE = 1;
 
     final PrintStream originalOut = System.out;
     final PrintStream originalErr = System.err;
@@ -38,25 +43,120 @@ class CDocCliTest {
 
     @Test
     void testCreateDecryptDocEC(@TempDir Path tempPath) throws IOException {
-        checkCreateDecryptDoc("keys/bob_pub.pem", "keys/bob.pem", tempPath);
+        checkCreateDecryptDocWithPublicKey(tempPath, "keys/bob_pub.pem", "keys/bob.pem");
     }
 
     @Test
-    void testCreateDecyptDocECShort(@TempDir Path tempPath) throws IOException {
-        checkCreateDecryptDoc("keys/cdoc20client_pub.pem", "keys/cdoc20client.pem", tempPath);
+    void testCreateDecryptDocECShort(@TempDir Path tempPath) throws IOException {
+        String publicKey = "keys/cdoc20client_pub.pem";
+        String privateKey = "keys/cdoc20client.pem";
+
+        checkCreateDecryptDocWithPublicKey(tempPath, publicKey, privateKey);
     }
 
     @Test
     void testCreateDecryptDocRSA(@TempDir Path tempPath) throws IOException {
-        checkCreateDecryptDoc("keys/rsa_pub.pem", "keys/rsa_priv.pem", tempPath);
+        String publicKey = "keys/rsa_pub.pem";
+        String privateKey = "keys/rsa_priv.pem";
+
+        checkCreateDecryptDocWithPublicKey(tempPath, publicKey, privateKey);
     }
 
     @Test
-    void testCreateDecryptDocWithPassword(@TempDir Path tempPath) throws IOException {
-        checkCreateDecryptDocWithPassword(tempPath);
+    void testSuccessfulCreateDecryptDocWithPassword(@TempDir Path tempPath) throws IOException {
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+        String passwordArg = "--password=" + password;
+        checkCreateDecryptDoc(tempPath, passwordArg, passwordArg, SUCCESSFUL_EXIT_CODE);
     }
 
-    void checkCreateDecryptDoc(String pubKeyFile, String privateKeyFile, Path tempPath) throws IOException {
+    @Test
+    void testSuccessfulCreateDecryptDocWithSecret(@TempDir Path tempPath) throws IOException {
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretArg = "--secret=" + secret;
+        checkCreateDecryptDoc(tempPath, secretArg, secretArg, SUCCESSFUL_EXIT_CODE);
+    }
+
+    @Test
+    void shouldFailToEncryptDocWithSecretButDecryptWithPassword(@TempDir Path tempPath) {
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretForEncrypt = "--secret=" + secret;
+
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+        String passwordForDecrypt = "--password=" + password;
+
+        assertThrows(AssertionFailedError.class, () ->
+            checkCreateDecryptDoc(tempPath, secretForEncrypt, passwordForDecrypt, FAILURE_EXIT_CODE)
+        );
+    }
+
+    @Test
+    void shouldFailToEncryptDocWithPasswordButDecryptWithSecret(@TempDir Path tempPath) {
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+        String passwordForEncrypt = "--password=" + password;
+
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretForDecrypt = "--secret=" + secret;
+
+        assertThrows(AssertionFailedError.class, () ->
+            checkCreateDecryptDoc(tempPath, passwordForEncrypt, secretForDecrypt, FAILURE_EXIT_CODE)
+        );
+    }
+
+    @Test
+    void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithPassword(@TempDir Path tempPath) throws IOException {
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+        String passwordForEncrypt = "--password=" + password;
+
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretForEncrypt = "--secret=" + secret;
+
+        String passwordForDecrypt = "--password=" + password;
+
+        checkCreateDecryptDocWithFewKeys(
+            tempPath,
+            passwordForEncrypt,
+            secretForEncrypt,
+            passwordForDecrypt,
+            SUCCESSFUL_EXIT_CODE
+        );
+    }
+
+    @Test
+    void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithSecret(@TempDir Path tempPath) throws IOException {
+        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
+        String passwordForEncrypt = "--password=" + password;
+
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretForEncrypt = "--secret=" + secret;
+
+        String secretForDecrypt = "--secret=" + secret;
+
+        checkCreateDecryptDocWithFewKeys(
+            tempPath,
+            passwordForEncrypt,
+            secretForEncrypt,
+            secretForDecrypt,
+            SUCCESSFUL_EXIT_CODE
+        );
+    }
+
+    private void checkCreateDecryptDocWithPublicKey(
+        Path tempPath,
+        String publicKey,
+        String privateKey
+    ) throws IOException {
+        String publicKeyArg = "--pubkey=" + publicKey;
+        String privateKeyArg = "--key=" + privateKey;
+
+        checkCreateDecryptDoc(tempPath, publicKeyArg, privateKeyArg, SUCCESSFUL_EXIT_CODE);
+    }
+
+    private void checkCreateDecryptDoc(
+        Path tempPath,
+        String encryptionArgument,
+        String decryptionArgument,
+        int expectedDecryptExitCode
+    ) throws IOException {
 
         CDocCli app = new CDocCli();
         CommandLine cmd = new CommandLine(app);
@@ -68,7 +168,7 @@ class CDocCliTest {
         log.debug("Temp dir {}", tempPath.toAbsolutePath());
         Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
         int exitCode = cmd.execute("create",
-                "--pubkey=" + pubKeyFile,
+                encryptionArgument,
                 "--file=" + cdocFile,
                 cdocCliPath.resolve("README.md").toString()
         );
@@ -90,14 +190,14 @@ class CDocCliTest {
 
         int decryptExitCode = cmd.execute("decrypt",
                 "--file=" + cdocFile,
-                "--key=" + privateKeyFile,
+                decryptionArgument,
                 "--output=" + outPath
         );
 
         log.debug("Output was: {}", out);
         log.debug("Err was: {}", err);
 
-        assertEquals(0, decryptExitCode);
+        assertEquals(expectedDecryptExitCode, decryptExitCode);
 
         log.debug("Expected: {}", "Decrypting " + cdocFile.toFile() + " " + outPath);
 
@@ -110,7 +210,14 @@ class CDocCliTest {
         assertEquals(inReadme, outReadme);
     }
 
-    void checkCreateDecryptDocWithPassword(Path tempPath) throws IOException {
+    void checkCreateDecryptDocWithFewKeys(
+        Path tempPath,
+        String encryptionArgument1,
+        String encryptionArgument2,
+        String decryptionArgument,
+        int expectedDecryptExitCode
+    ) throws IOException {
+
         CDocCli app = new CDocCli();
         CommandLine cmd = new CommandLine(app);
 
@@ -120,13 +227,15 @@ class CDocCliTest {
 
         log.debug("Temp dir {}", tempPath.toAbsolutePath());
         Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
-        String password = "passwordlabelpasswordlabelpasswordlabel:myplaintextpassword";
-
         int exitCode = cmd.execute("create",
+            encryptionArgument1,
+            encryptionArgument2,
             "--file=" + cdocFile,
-            "--password=" + password,
             cdocCliPath.resolve("README.md").toString()
         );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
 
         assertEquals(0, exitCode);
 
@@ -142,14 +251,14 @@ class CDocCliTest {
 
         int decryptExitCode = cmd.execute("decrypt",
             "--file=" + cdocFile,
-            "--password=" + password,
+            decryptionArgument,
             "--output=" + outPath
         );
 
         log.debug("Output was: {}", out);
         log.debug("Err was: {}", err);
 
-        assertEquals(0, decryptExitCode);
+        assertEquals(expectedDecryptExitCode, decryptExitCode);
 
         log.debug("Expected: {}", "Decrypting " + cdocFile.toFile() + " " + outPath);
 
