@@ -102,8 +102,6 @@ class CryptoTest {
         byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), fmk.length);
         byte[] decryptedFmk = Crypto.xor(encryptedFmk, bobKek);
 
-
-
         log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
         log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
         log.debug("encrypted: {}", HexFormat.of().formatHex(encryptedFmk));
@@ -130,16 +128,11 @@ class CryptoTest {
         // sharedSecret should be initialized from SecureRandom, for test repeatability sharedSecret in this test is
         // initialized to 0 bytes
 
-        byte[] salt = new byte[MIN_SALT_LENGTH];
-        salt[0] = 's';
-        salt[1] = 'a';
-        salt[2] = 'l';
-        salt[3] = 't';
-
         SecretKey kekSecretKey = Crypto.deriveKeyEncryptionKey("deriveKeyEncryptionKeyFromSharedSecret",
                 new SecretKeySpec(sharedSecret, ""),
-                salt,
-                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
+                getSalt(),
+                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR)
+        );
 
         assertEquals("XOR", kekSecretKey.getAlgorithm());
         assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using SecretKeySpec
@@ -153,12 +146,9 @@ class CryptoTest {
 
     @Test
     void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
-        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
-        String label = "passwordlabellengthmustbemin32bytes";
-
         SecretKey kekSecretKey = Crypto.deriveKekFromPassword(
             "myplaintextpassword".toCharArray(),
-            label.getBytes(StandardCharsets.UTF_8)
+            getSalt()
         );
 
         assertEquals(PBKDF2_ALGORITHM, kekSecretKey.getAlgorithm());
@@ -168,8 +158,18 @@ class CryptoTest {
         assertNotNull(kek);
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals(
-            "aa198d22438cba54bb2fe89c59b0c02791087cae19d9f18361370fd615c464c0",
+            "629194b6c2ebeead89669f80e3a36c174db7c8857debfd63e9a1134f4fb4aab2",
             HexFormat.of().formatHex(kek)
         );
+    }
+
+    private byte[] getSalt() {
+        byte[] salt = new byte[MIN_SALT_LENGTH];
+        salt[0] = 's';
+        salt[1] = 'a';
+        salt[2] = 'l';
+        salt[3] = 't';
+
+        return salt;
     }
 }

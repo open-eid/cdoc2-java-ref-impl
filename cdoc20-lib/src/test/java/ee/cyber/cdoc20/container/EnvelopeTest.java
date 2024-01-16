@@ -359,9 +359,8 @@ class EnvelopeTest {
         }
 
         String password = "myplaintextpassword";
-        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
-        byte[] salt = keyLabel.getBytes(StandardCharsets.UTF_8);
+        byte[] salt = Crypto.generateSaltForKey();
         SecretKey preSharedKey = Crypto.deriveKekFromPassword(password.toCharArray(), salt);
 
         Envelope envelope = Envelope.prepare(
@@ -461,9 +460,8 @@ class EnvelopeTest {
     @Test
     void testPasswordKeyScenario(@TempDir Path tempDir) throws Exception {
         String password = "myplaintextpassword";
-        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
-        byte[] salt = keyLabel.getBytes(StandardCharsets.UTF_8);
+        byte[] salt = Crypto.generateSaltForKey();
         SecretKey preSharedKey = Crypto.deriveKekFromPassword(password.toCharArray(), salt);
 
         testContainer(

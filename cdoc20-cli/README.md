@@ -106,9 +106,24 @@ Decryption is done with the same label and key used for encryption
 java -jar target/cdoc20-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
 ```
 
-Or with password:
+Or with the same label and password used for encryption:
 ```
-java -jar target/cdoc20-cli-0.6.0-SNAPSHOT.jar decrypt --password "passwordlabellengthmustbemin32bytes:myplaintextpassword" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabellengthmustbemin32bytes:myplaintextpassword" -f /tmp/symmetric.cdoc --output /tmp
+```
+
+Or with the same label and base64 encoded password used for encryption:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabellengthmustbemin32bytes:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc --output /tmp
+```
+
+Or with the same label and secret used for encryption:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp
+```
+
+Or with the same label and base64 encoded secret used for encryption:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Key and label can be safely stored in a password manager.

@@ -81,8 +81,7 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        // ToDo replace salt via Crypto.generateSaltForKey() after extracting it for decryption flow
-        byte[] salt = passwordAndLabel.label().getBytes(StandardCharsets.UTF_8);
+        byte[] salt = Crypto.generateSaltForKey();
         SecretKey secretKey = Crypto.deriveKekFromPassword(
             passwordAndLabel.optionChars(), salt
         );
