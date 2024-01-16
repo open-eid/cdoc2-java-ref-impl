@@ -112,7 +112,7 @@ class CDocCliTest {
 
         String passwordForDecrypt = "--password=" + password;
 
-        checkCreateDecryptDocWithFewKeys(
+        createDocWithFewKeysButDecryptWithOneOfThem(
             tempPath,
             passwordForEncrypt,
             secretForEncrypt,
@@ -131,11 +131,30 @@ class CDocCliTest {
 
         String secretForDecrypt = "--secret=" + secret;
 
-        checkCreateDecryptDocWithFewKeys(
+        createDocWithFewKeysButDecryptWithOneOfThem(
             tempPath,
             passwordForEncrypt,
             secretForEncrypt,
             secretForDecrypt,
+            SUCCESSFUL_EXIT_CODE
+        );
+    }
+
+    @Test
+    void shouldSucceedToEncryptDocWithOneKeyButTryToDecryptWithTwo(@TempDir Path tempPath) throws IOException {
+        String password = "passwordlabel:myplaintextpassword";
+        String passwordForEncrypt = "--password=" + password;
+
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+
+        String secretForDecrypt = "--secret=" + secret;
+        String passwordForDecrypt = "--password=" + password;
+
+        createDocWithOneKeyAndTryToDecryptWithFewKeys(
+            tempPath,
+            passwordForEncrypt,
+            secretForDecrypt,
+            passwordForDecrypt,
             SUCCESSFUL_EXIT_CODE
         );
     }
@@ -210,7 +229,7 @@ class CDocCliTest {
         assertEquals(inReadme, outReadme);
     }
 
-    void checkCreateDecryptDocWithFewKeys(
+    void createDocWithFewKeysButDecryptWithOneOfThem(
         Path tempPath,
         String encryptionArgument1,
         String encryptionArgument2,
@@ -252,6 +271,67 @@ class CDocCliTest {
         int decryptExitCode = cmd.execute("decrypt",
             "--file=" + cdocFile,
             decryptionArgument,
+            "--output=" + outPath
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(expectedDecryptExitCode, decryptExitCode);
+
+        log.debug("Expected: {}", "Decrypting " + cdocFile.toFile() + " " + outPath);
+
+        assertTrue(out.toString().startsWith("Decrypting " + cdocFile.toFile() + " to " + outPath));
+        assertTrue(out.toString().contains("README.md"));
+
+        String inReadme = Files.readString(cdocCliPath.resolve("README.md"));
+        String outReadme = Files.readString(outPath.resolve("README.md"));
+
+        assertEquals(inReadme, outReadme);
+    }
+
+    void createDocWithOneKeyAndTryToDecryptWithFewKeys(
+        Path tempPath,
+        String encryptionArgument,
+        String decryptionArgument1,
+        String decryptionArgument2,
+        int expectedDecryptExitCode
+    ) throws IOException {
+
+        CDocCli app = new CDocCli();
+        CommandLine cmd = new CommandLine(app);
+
+        log.debug("Current dir {}", Path.of(".").toAbsolutePath());
+
+        Path cdocCliPath = Path.of(".").toAbsolutePath().normalize();
+
+        log.debug("Temp dir {}", tempPath.toAbsolutePath());
+        Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
+        int exitCode = cmd.execute("create",
+            encryptionArgument,
+            "--file=" + cdocFile,
+            cdocCliPath.resolve("README.md").toString()
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(0, exitCode);
+
+        var resultFile = cdocFile.toFile();
+        assertTrue(resultFile.exists());
+        assertTrue(resultFile.length() > 0);
+
+        Path outPath = tempPath.resolve("out");
+        outPath.toFile().mkdir();
+
+        out.reset();
+        err.reset();
+
+        int decryptExitCode = cmd.execute("decrypt",
+            "--file=" + cdocFile,
+            decryptionArgument1,
+            decryptionArgument2,
             "--output=" + outPath
         );
 
