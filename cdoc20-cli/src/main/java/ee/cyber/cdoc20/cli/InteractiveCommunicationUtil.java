@@ -35,13 +35,14 @@ public final class InteractiveCommunicationUtil {
     public static FormattedOptionParts readPasswordAndLabelInteractively() {
         Console console = System.console();
         char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
-        char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
-
         // ToDo add full password validation here via separate method. #55910
         if (password.length == 0) {
             log.info("Password is not entered");
-            throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
+            throw new IllegalArgumentException("Password not entered");
         }
+
+        char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
+
         if (!Arrays.equals(password, reenteredPassword)) {
             log.info("Passwords don't match");
             throw new IllegalArgumentException("Passwords don't match");
@@ -94,6 +95,7 @@ public final class InteractiveCommunicationUtil {
             if (label == null || label.isBlank()) {
                 throw new CDocUserException(UserErrorCode.USER_CANCEL, "Label not entered");
             }
+
             return label;
         }
     }

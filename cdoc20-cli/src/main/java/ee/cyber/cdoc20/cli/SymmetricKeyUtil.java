@@ -1,6 +1,5 @@
 package ee.cyber.cdoc20.cli;
 
-import java.io.Console;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,14 +12,11 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.swing.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.CDocValidationException;
-import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
@@ -42,10 +38,6 @@ public final class SymmetricKeyUtil {
     public static final String BASE_64_PREFIX = "base64,";
 
     public static final String LABEL_LOG_MSG = "Label for symmetric key: {}";
-
-    public static final String PROMPT_LABEL = "Please enter label: ";
-    public static final String PROMPT_PASSWORD = "Password is missing. Please enter: ";
-    public static final String PROMPT_PASSWORD_REENTER = "Re-enter password: ";
 
     private static final String SYMMETRIC_KEY_DESCRIPTION = "symmetric key with label. "
         + "Must have format";
@@ -126,80 +118,6 @@ public final class SymmetricKeyUtil {
         return DecryptionKeyMaterial.fromPassword(passwordAndLabel.label(), secretKey, salt);
     }
 
-    public static FormattedOptionParts readPasswordAndLabelInteractively() {
-        Console console = System.console();
-        char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
-        char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
-
-        // ToDo add full password validation here via separate method. #55910
-        if (password.length == 0) {
-            log.info("Password is not entered");
-            throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
-        }
-        if (!Arrays.equals(password, reenteredPassword)) {
-            log.info("Passwords don't match");
-            throw new IllegalArgumentException("Passwords don't match");
-        }
-
-        String label = readLabelInteractively(console);
-
-        return new FormattedOptionParts(password, label, EncryptionKeyOrigin.FROM_PASSWORD);
-    }
-
-    /**
-     * Ask password interactively. If System.console() is available then password is red via
-     * console. Otherwise, password is asked using GUI prompt.
-     * @param prompt Prompt text to ask
-     * @return chars of password entered by recipient
-     * @throws CDocUserException if password finally wasn't entered
-     */
-    public static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
-        if (console != null) {
-            return console.readPassword(prompt);
-        } else { //running from IDE, console is null
-            JPasswordField passField = new JPasswordField();
-            int result = JOptionPane.showConfirmDialog(
-                null,
-                passField,
-                prompt,
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-            );
-
-            if (result == JOptionPane.OK_OPTION) {
-                return passField.getPassword();
-            } else if (result == JOptionPane.OK_CANCEL_OPTION) {
-                log.info("Password enter is cancelled");
-                throw new CDocUserException(
-                    UserErrorCode.USER_CANCEL, "Password entry cancelled by user"
-                );
-            } else {
-                log.info("Password is not entered");
-                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
-            }
-        }
-    }
-
-    private static String readLabelInteractively(Console console) {
-        if (console != null) {
-            String label = console.readLine(PROMPT_LABEL);
-            log.info(LABEL_LOG_MSG, label);
-            return label;
-        } else { //running from IDE, console is null
-            JFrame labelField = new JFrame();
-            String label = JOptionPane.showInputDialog(
-                labelField,
-                PROMPT_LABEL
-            );
-            log.info(LABEL_LOG_MSG, label);
-            if (label == null || label.isBlank()) {
-                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Label not entered");
-            }
-
-            return label;
-        }
-    }
-
     /**
      * Extract symmetric key material from secret.
      * @param secretAndLabel split secret and label
@@ -267,7 +185,7 @@ public final class SymmetricKeyUtil {
         throws CDocValidationException {
         FormattedOptionParts passwordAndLabel;
         if (formattedPassword.isEmpty()) {
-            passwordAndLabel = readPasswordAndLabelInteractively();
+            passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively();
         } else {
             passwordAndLabel
                 = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
