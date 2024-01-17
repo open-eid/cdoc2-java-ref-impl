@@ -13,6 +13,7 @@ import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 import static ee.cyber.cdoc20.cli.SymmetricKeyUtil.LABEL_LOG_MSG;
 
+
 /**
  * Utility class for asking password or label interactively.
  */
@@ -35,11 +36,7 @@ public final class InteractiveCommunicationUtil {
     public static FormattedOptionParts readPasswordAndLabelInteractively() {
         Console console = System.console();
         char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
-        // ToDo add full password validation here via separate method. #55910
-        if (password.length == 0) {
-            log.info("Password is not entered");
-            throw new IllegalArgumentException("Password not entered");
-        }
+        PasswordValidationUtil.validatePassword(password);
 
         char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
 
@@ -99,4 +96,5 @@ public final class InteractiveCommunicationUtil {
             return label;
         }
     }
+
 }
