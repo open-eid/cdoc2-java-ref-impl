@@ -14,6 +14,21 @@ class PasswordValidationTest {
     }
 
     @Test
+    void shouldAllowSpecialCharacter() {
+        PasswordValidationUtil.validatePassword("Password_with_special_characters!".toCharArray());
+    }
+
+    @Test
+    void shouldAllowNumber() {
+        PasswordValidationUtil.validatePassword("PasswordWithNumbers123".toCharArray());
+    }
+
+    @Test
+    void shouldAllowWhitespace() {
+        PasswordValidationUtil.validatePassword("Password With whitespaces".toCharArray());
+    }
+
+    @Test
     void shouldFailPwValidationWithoutUpperCaseCharacter() {
         assertThrowsIllegalArgumentException(() ->
                 PasswordValidationUtil.validatePassword("password_without_upper_case".toCharArray())
