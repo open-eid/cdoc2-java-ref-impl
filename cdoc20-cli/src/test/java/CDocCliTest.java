@@ -64,7 +64,7 @@ class CDocCliTest {
 
     @Test
     void testSuccessfulCreateDecryptDocWithPassword(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordArg = "--password=" + password;
         checkCreateDecryptDoc(tempPath, passwordArg, passwordArg, SUCCESSFUL_EXIT_CODE);
     }
@@ -81,7 +81,7 @@ class CDocCliTest {
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
         String secretForEncrypt = "--secret=" + secret;
 
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordForDecrypt = "--password=" + password;
 
         assertThrows(AssertionFailedError.class, () ->
@@ -91,7 +91,7 @@ class CDocCliTest {
 
     @Test
     void shouldFailToEncryptDocWithPasswordButDecryptWithSecret(@TempDir Path tempPath) {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordForEncrypt = "--password=" + password;
 
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
@@ -104,7 +104,7 @@ class CDocCliTest {
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithPassword(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordForEncrypt = "--password=" + password;
 
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
@@ -123,7 +123,7 @@ class CDocCliTest {
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithSecret(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordForEncrypt = "--password=" + password;
 
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
@@ -142,7 +142,7 @@ class CDocCliTest {
 
     @Test
     void shouldSucceedToEncryptDocWithOneKeyButTryToDecryptWithTwo(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:myPlainTextPassword";
         String passwordForEncrypt = "--password=" + password;
 
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";

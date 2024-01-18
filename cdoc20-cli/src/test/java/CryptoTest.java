@@ -19,4 +19,5 @@ class CryptoTest {
         assertEquals(Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES, secret1.length);
         assertArrayEquals(secret1, secret2);
     }
+
 }
