@@ -26,6 +26,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 
 /**

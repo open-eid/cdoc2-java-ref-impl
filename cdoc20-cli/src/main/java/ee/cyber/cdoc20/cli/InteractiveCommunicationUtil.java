@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 import static ee.cyber.cdoc20.cli.SymmetricKeyUtil.LABEL_LOG_MSG;
 

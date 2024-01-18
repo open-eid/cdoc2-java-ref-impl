@@ -1,4 +1,4 @@
-package ee.cyber.cdoc20.cli;
+package ee.cyber.cdoc20.util;
 
 import org.passay.CharacterRule;
 import org.passay.EnglishCharacterData;
@@ -26,6 +26,12 @@ public final class PasswordValidationUtil {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordValidationUtil.class);
 
+    /**
+     * Validates password strength for min requirements to have at least one lower case and one
+     * upper case character.
+     * @param password password chars
+     * @throws IllegalArgumentException if password validation has failed
+     */
     public static void validatePassword(char[] password) {
         if (!passwordIsValid(String.valueOf(password))) {
             log.error(PW_REQUIREMENTS);

@@ -1,7 +1,7 @@
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
-import ee.cyber.cdoc20.cli.PasswordValidationUtil;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
