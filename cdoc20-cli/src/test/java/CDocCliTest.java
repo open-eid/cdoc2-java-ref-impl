@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 import org.opentest4j.AssertionFailedError;
 import org.slf4j.Logger;
@@ -84,7 +85,7 @@ class CDocCliTest {
         String password = "passwordlabel:myPlainTextPassword";
         String passwordForDecrypt = "--password=" + password;
 
-        assertThrows(AssertionFailedError.class, () ->
+        assertThrowsException(() ->
             checkCreateDecryptDoc(tempPath, secretForEncrypt, passwordForDecrypt, FAILURE_EXIT_CODE)
         );
     }
@@ -97,7 +98,20 @@ class CDocCliTest {
         String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
         String secretForDecrypt = "--secret=" + secret;
 
-        assertThrows(AssertionFailedError.class, () ->
+        assertThrowsException(() ->
+            checkCreateDecryptDoc(tempPath, passwordForEncrypt, secretForDecrypt, FAILURE_EXIT_CODE)
+        );
+    }
+
+    @Test
+    void shouldFailToEncryptDocWithPasswordIfItsValidationHasFailed(@TempDir Path tempPath) {
+        String password = "passwordlabel:myplaintextpassword";
+        String passwordForEncrypt = "--password=" + password;
+
+        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
+        String secretForDecrypt = "--secret=" + secret;
+
+        assertThrowsException(() ->
             checkCreateDecryptDoc(tempPath, passwordForEncrypt, secretForDecrypt, FAILURE_EXIT_CODE)
         );
     }
@@ -349,6 +363,10 @@ class CDocCliTest {
         String outReadme = Files.readString(outPath.resolve("README.md"));
 
         assertEquals(inReadme, outReadme);
+    }
+
+    private void assertThrowsException(Executable validation) {
+        assertThrows(AssertionFailedError.class, validation);
     }
 
 }
