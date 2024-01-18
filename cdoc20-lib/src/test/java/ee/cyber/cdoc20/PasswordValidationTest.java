@@ -1,3 +1,5 @@
+package ee.cyber.cdoc20;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
