@@ -114,7 +114,7 @@ public final class SymmetricKeyUtil {
             passwordAndLabel.optionChars(), salt
         );
 
-        return DecryptionKeyMaterial.fromPassword(passwordAndLabel.label(), secretKey);
+        return DecryptionKeyMaterial.fromSecretKey(passwordAndLabel.label(), secretKey);
     }
 
     /**

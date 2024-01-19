@@ -59,30 +59,6 @@ public interface DecryptionKeyMaterial extends Destroyable {
         };
     }
 
-    static DecryptionKeyMaterial fromPassword(String label, SecretKey secretKey) {
-        return new DecryptionKeyMaterial() {
-            @Override
-            public Object getRecipientId() {
-                return label;
-            }
-
-            @Override
-            public Optional<SecretKey> getSecretKey() {
-                return Optional.of(secretKey);
-            }
-
-            @Override
-            public void destroy() throws DestroyFailedException {
-                secretKey.destroy();
-            }
-
-            @Override
-            public boolean isDestroyed() {
-                return secretKey.isDestroyed();
-            }
-        };
-    }
-
     static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair) {
         return new DecryptionKeyMaterial() {
             @Override
