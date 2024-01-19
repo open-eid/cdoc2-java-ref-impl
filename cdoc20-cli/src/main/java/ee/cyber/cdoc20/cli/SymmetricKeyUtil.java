@@ -22,7 +22,6 @@ import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
-import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
@@ -81,10 +80,8 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        byte[] salt = Crypto.generateSaltForKey();
-
         return PasswordDerivedEncryptionKeyMaterial.fromPassword(
-            passwordAndLabel.optionChars(), passwordAndLabel.label(), salt
+            passwordAndLabel.optionChars(), passwordAndLabel.label()
         );
     }
 

@@ -18,12 +18,12 @@ public interface PasswordDerivedEncryptionKeyMaterial extends EncryptionKeyMater
      * the same keyLabel
      * @param password     password chars for extracting pre-shared SecretKey
      * @param keyLabel     unique identifier for preSharedKey
-     * @param salt         the salt used to derive the key from the password
      * @return PasswordDerivedEncryptionKeyMaterial object
      */
     static PasswordDerivedEncryptionKeyMaterial fromPassword(
-        char[] password, String keyLabel, byte[] salt
+        char[] password, String keyLabel
     ) throws GeneralSecurityException {
+        byte[] salt = Crypto.generateSaltForKey();
         SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password, salt);
 
         return new PasswordDerivedEncryptionKeyMaterial() {

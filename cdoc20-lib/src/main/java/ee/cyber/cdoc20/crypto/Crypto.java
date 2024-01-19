@@ -323,7 +323,7 @@ public final class Crypto {
      */
     public static byte[] generateSaltForKey() throws NoSuchAlgorithmException {
         byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
-        Crypto.getSecureRandom().nextBytes(salt);
+        getSecureRandom().nextBytes(salt);
         return salt;
     }
 }
