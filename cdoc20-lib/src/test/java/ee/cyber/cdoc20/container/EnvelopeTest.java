@@ -455,7 +455,7 @@ class EnvelopeTest {
 
         testContainer(
             tempDir,
-            DecryptionKeyMaterial.fromPassword(keyLabel, preSharedKey, salt),
+            DecryptionKeyMaterial.fromPassword(keyLabel, preSharedKey),
             keyLabel,
             null
         );

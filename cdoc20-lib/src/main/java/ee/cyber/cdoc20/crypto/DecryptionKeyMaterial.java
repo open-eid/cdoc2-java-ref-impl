@@ -35,14 +35,6 @@ public interface DecryptionKeyMaterial extends Destroyable {
         return Optional.empty();
     }
 
-    /**
-     * Salt used for encryption
-     * @return byte array
-     */
-    default byte[] getPasswordSalt() {
-        return new byte[0];
-    }
-
     static DecryptionKeyMaterial fromSecretKey(String label, SecretKey secretKey) {
         return new DecryptionKeyMaterial() {
             @Override
@@ -67,7 +59,7 @@ public interface DecryptionKeyMaterial extends Destroyable {
         };
     }
 
-    static DecryptionKeyMaterial fromPassword(String label, SecretKey secretKey, byte[] salt) {
+    static DecryptionKeyMaterial fromPassword(String label, SecretKey secretKey) {
         return new DecryptionKeyMaterial() {
             @Override
             public Object getRecipientId() {
@@ -77,11 +69,6 @@ public interface DecryptionKeyMaterial extends Destroyable {
             @Override
             public Optional<SecretKey> getSecretKey() {
                 return Optional.of(secretKey);
-            }
-
-            @Override
-            public byte[] getPasswordSalt() {
-                return salt;
             }
 
             @Override
