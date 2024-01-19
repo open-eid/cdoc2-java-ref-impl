@@ -353,11 +353,10 @@ class EnvelopeTest {
         String password = "myplaintextpassword";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
         byte[] salt = Crypto.generateSaltForKey();
-        SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password.toCharArray(), salt);
 
         Envelope envelope = Envelope.prepare(
             List.of(PasswordDerivedEncryptionKeyMaterial.fromPassword(
-                preSharedKey, keyLabel, salt)
+                password.toCharArray(), keyLabel, salt)
             ),
             null
         );

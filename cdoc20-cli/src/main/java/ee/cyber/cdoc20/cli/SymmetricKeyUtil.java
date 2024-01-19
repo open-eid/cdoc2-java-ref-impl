@@ -82,11 +82,9 @@ public final class SymmetricKeyUtil {
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
         byte[] salt = Crypto.generateSaltForKey();
-        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
-            passwordAndLabel.optionChars(), salt
-        );
+
         return PasswordDerivedEncryptionKeyMaterial.fromPassword(
-            secretKey, passwordAndLabel.label(), salt
+            passwordAndLabel.optionChars(), passwordAndLabel.label(), salt
         );
     }
 
