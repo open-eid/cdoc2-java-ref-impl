@@ -98,8 +98,7 @@ sender public key).
 
 ## CDoc 2.0 with symmetric key from password
 
-Similar to ECDH scenario, but KEK is derived from symmetric key (password) identified by key_label 
-using HKDF algorithm.
+Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
 
 1. Sender and recipient have a pre shared password identified by key_label
 2. Symmetric key is created from password and salt (generated using secure random) using PBKDF2 algorithm
@@ -120,7 +119,8 @@ can do that.
 Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
 
 1. Sender and recipient have a pre shared secret identified by key_label 
-2. Sender derives key encryption key (KEK) from symmetric key and salt (generated using secure random) using HKDF algorithm
+2. Sender derives key encryption key (KEK) from symmetric key, key_label and salt (generated 
+   using secure random) using HKDF algorithm
 3. *Follow steps from ECDH scenario 4-6*
 4. Sender adds encrypted FMK with key_label to CDoc header
 5. *Follow steps from ECDH scenario 8-10*
