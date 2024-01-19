@@ -26,6 +26,7 @@ import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
 
 
 /**
@@ -84,7 +85,7 @@ public final class SymmetricKeyUtil {
         SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
             passwordAndLabel.optionChars(), salt
         );
-        return EncryptionKeyMaterial.fromPassword(
+        return PasswordDerivedEncryptionKeyMaterial.fromPassword(
             secretKey, passwordAndLabel.label(), salt
         );
     }

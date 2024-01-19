@@ -12,6 +12,7 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
@@ -355,7 +356,9 @@ class EnvelopeTest {
         SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password.toCharArray(), salt);
 
         Envelope envelope = Envelope.prepare(
-            List.of(EncryptionKeyMaterial.fromPassword(preSharedKey, keyLabel, salt)),
+            List.of(PasswordDerivedEncryptionKeyMaterial.fromPassword(
+                preSharedKey, keyLabel, salt)
+            ),
             null
         );
 

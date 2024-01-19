@@ -10,7 +10,7 @@ import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
@@ -142,14 +142,14 @@ public final class RecipientFactory {
             log.info("For symmetric key scenario, key server will not be used.");
         }
 
-        if (EncryptionKeyOrigin.FROM_PASSWORD.equals(encKeyMaterial.getKeyOrigin())) {
+        if (encKeyMaterial instanceof PasswordDerivedEncryptionKeyMaterial pbkdfKeyMaterial) {
             recipients.add(buildPBKDF2Recipient(
                 fileMasterKey,
                 (SecretKey) encKeyMaterial.getKey(),
                 encKeyMaterial.getLabel(),
                 FMKEncryptionMethod.name(
                     Envelope.FMK_ENC_METHOD_BYTE),
-                encKeyMaterial.getPasswordSalt())
+                pbkdfKeyMaterial.getPasswordSalt())
             );
         } else {
             recipients.add(buildSymmetricKeyRecipient(
