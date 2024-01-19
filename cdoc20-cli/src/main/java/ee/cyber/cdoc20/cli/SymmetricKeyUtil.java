@@ -70,7 +70,7 @@ public final class SymmetricKeyUtil {
                 = SymmetricKeyUtil.splitFormattedOption(secret, EncryptionKeyOrigin.FROM_SECRET);
             var entry = extractKeyMaterialFromSecret(splitSecret);
             EncryptionKeyMaterial km = EncryptionKeyMaterial.fromSecret(
-                entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_SECRET
+                entry.getKey(), entry.getValue()
             );
             result.add(km);
         }
@@ -85,7 +85,7 @@ public final class SymmetricKeyUtil {
             passwordAndLabel.optionChars(), salt
         );
         return EncryptionKeyMaterial.fromPassword(
-            secretKey, passwordAndLabel.label(), passwordAndLabel.keyOrigin(), salt
+            secretKey, passwordAndLabel.label(), salt
         );
     }
 

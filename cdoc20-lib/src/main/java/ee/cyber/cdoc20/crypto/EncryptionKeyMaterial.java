@@ -38,12 +38,9 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * the private key part of the public key. RSA and EC public keys are supported by CDOC.
      * @param publicKey public key
      * @param keyLabel  key label
-     * @param keyOrigin encryption key origin
      * @return EncryptionKeyMaterial object
      */
-    static EncryptionKeyMaterial fromPublicKey(
-        PublicKey publicKey, String keyLabel, EncryptionKeyOrigin keyOrigin
-    ) {
+    static EncryptionKeyMaterial fromPublicKey(PublicKey publicKey, String keyLabel) {
         return new EncryptionKeyMaterial() {
 
             @Override
@@ -58,7 +55,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
 
             @Override
             public EncryptionKeyOrigin getKeyOrigin() {
-                return keyOrigin;
+                return EncryptionKeyOrigin.FROM_PUBLIC_KEY;
             }
 
             @Override
@@ -74,12 +71,9 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * keyLabel
      * @param preSharedKey preSharedKey will be used to generate key encryption key
      * @param keyLabel     unique identifier for preSharedKey
-     * @param keyOrigin    encryption key origin
      * @return EncryptionKeyMaterial object
      */
-    static EncryptionKeyMaterial fromSecret(
-        SecretKey preSharedKey, String keyLabel, EncryptionKeyOrigin keyOrigin
-    ) {
+    static EncryptionKeyMaterial fromSecret(SecretKey preSharedKey, String keyLabel) {
         return new EncryptionKeyMaterial() {
 
             @Override
@@ -94,7 +88,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
 
             @Override
             public EncryptionKeyOrigin getKeyOrigin() {
-                return keyOrigin;
+                return EncryptionKeyOrigin.FROM_SECRET;
             }
 
             @Override
@@ -115,12 +109,11 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * the same keyLabel
      * @param preSharedKey preSharedKey will be used to generate key encryption key
      * @param keyLabel     unique identifier for preSharedKey
-     * @param keyOrigin    encryption key origin
      * @param salt         the salt used to derive the key from the password
      * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial fromPassword(
-        SecretKey preSharedKey, String keyLabel, EncryptionKeyOrigin keyOrigin, byte[] salt
+        SecretKey preSharedKey, String keyLabel, byte[] salt
     ) {
         return new EncryptionKeyMaterial() {
 
@@ -136,7 +129,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
 
             @Override
             public EncryptionKeyOrigin getKeyOrigin() {
-                return keyOrigin;
+                return EncryptionKeyOrigin.FROM_PASSWORD;
             }
 
             @Override

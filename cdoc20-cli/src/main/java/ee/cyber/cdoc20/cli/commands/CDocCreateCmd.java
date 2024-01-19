@@ -6,7 +6,6 @@ import ee.cyber.cdoc20.cli.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import ee.cyber.cdoc20.util.Resources;
@@ -113,11 +112,7 @@ public class CDocCreateCmd implements Callable<Void> {
         recipientsMap.putAll(ldapKeysWithLabels);
 
         List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
-                .map(entry ->
-                    EncryptionKeyMaterial.fromPublicKey(
-                        entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_PUBLIC_KEY
-                    )
-                )
+                .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
 
         // add symmetric keys with labels
