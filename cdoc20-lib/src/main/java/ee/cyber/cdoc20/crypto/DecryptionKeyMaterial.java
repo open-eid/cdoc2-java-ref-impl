@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.crypto;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -36,6 +37,34 @@ public interface DecryptionKeyMaterial extends Destroyable {
     }
 
     static DecryptionKeyMaterial fromSecretKey(String label, SecretKey secretKey) {
+        return new DecryptionKeyMaterial() {
+            @Override
+            public Object getRecipientId() {
+                return label;
+            }
+
+            @Override
+            public Optional<SecretKey> getSecretKey() {
+                return Optional.of(secretKey);
+            }
+
+            @Override
+            public void destroy() throws DestroyFailedException {
+                secretKey.destroy();
+            }
+
+            @Override
+            public boolean isDestroyed() {
+                return secretKey.isDestroyed();
+            }
+        };
+    }
+
+    static DecryptionKeyMaterial fromPassword(char[] password, String label, byte[] salt)
+        throws GeneralSecurityException {
+
+        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(password, salt);
+
         return new DecryptionKeyMaterial() {
             @Override
             public Object getRecipientId() {

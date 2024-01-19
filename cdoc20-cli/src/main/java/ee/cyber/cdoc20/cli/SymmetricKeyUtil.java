@@ -110,11 +110,12 @@ public final class SymmetricKeyUtil {
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel, byte[] salt
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
-            passwordAndLabel.optionChars(), salt
-        );
 
-        return DecryptionKeyMaterial.fromSecretKey(passwordAndLabel.label(), secretKey);
+        return DecryptionKeyMaterial.fromPassword(
+            passwordAndLabel.optionChars(),
+            passwordAndLabel.label(),
+            salt
+        );
     }
 
     /**
