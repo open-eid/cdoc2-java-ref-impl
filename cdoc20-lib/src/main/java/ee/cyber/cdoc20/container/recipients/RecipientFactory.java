@@ -72,10 +72,7 @@ public final class RecipientFactory {
 
         List<Recipient> result = new ArrayList<>(recipientKeys.size());
         for (EncryptionKeyMaterial encKeyMaterial : recipientKeys) {
-            Key key = encKeyMaterial.getKey();
-            String keyLabel = encKeyMaterial.getLabel();
-
-            addRecipientsByKeyOrigin(result, key, serverClient, fmk, keyLabel, encKeyMaterial);
+            addRecipientsByKeyOrigin(result, serverClient, fmk, encKeyMaterial);
         }
 
         return result.toArray(new Recipient[0]);
@@ -83,16 +80,27 @@ public final class RecipientFactory {
 
     private static void addRecipientsByKeyOrigin(
         List<Recipient> recipients,
-        Key key,
         KeyCapsuleClient serverClient,
         byte[] fileMasterKey,
-        String keyLabel,
         EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException, ExtApiException {
+        Key key = encKeyMaterial.getKey();
         if (key instanceof RSAPublicKey rsaPublicKey) {
-            addRsaRecipient(recipients, serverClient, fileMasterKey, rsaPublicKey, keyLabel);
+            addRsaRecipient(
+                recipients,
+                serverClient,
+                fileMasterKey,
+                rsaPublicKey,
+                encKeyMaterial.getLabel()
+            );
         } else if (key instanceof ECPublicKey ecPublicKey) {
-            addEccRecipient(recipients, serverClient, fileMasterKey, ecPublicKey, keyLabel);
+            addEccRecipient(
+                recipients,
+                serverClient,
+                fileMasterKey,
+                ecPublicKey,
+                encKeyMaterial.getLabel()
+            );
         } else if (key instanceof SecretKey) {
             addSymmetricKeyRecipient(recipients, serverClient, fileMasterKey, encKeyMaterial);
         } else {
