@@ -60,10 +60,10 @@ public interface DecryptionKeyMaterial extends Destroyable {
         };
     }
 
-    static DecryptionKeyMaterial fromPassword(char[] password, String label, byte[] salt)
+    static DecryptionKeyMaterial fromPassword(char[] password, String label, byte[] passwordSalt)
         throws GeneralSecurityException {
 
-        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(password, salt);
+        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(password, passwordSalt);
 
         return new DecryptionKeyMaterial() {
             @Override

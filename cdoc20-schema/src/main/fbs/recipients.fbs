@@ -55,6 +55,6 @@ table SymmetricKeyCapsule {
 table PBKDF2Capsule {
     encryption_salt:          [ubyte] (required);
     password_salt:            [ubyte] (required);
-    kdf_algorithm_identifier: string (required);
-    kdf_iterations:           [uint] (required);
+    kdf_algorithm_identifier: string  (required);
+    kdf_iterations:           int32;
 }

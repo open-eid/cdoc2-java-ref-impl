@@ -98,20 +98,20 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from password and salt.
+     * Extract symmetric key material from password.
      * @param passwordAndLabel split password chars and label
-     * @param salt             salt used for encryption
+     * @param passwordSalt     salt used for extracting symmetric key from the password
      * @return DecryptionKeyMaterial created from password
      * @throws GeneralSecurityException if key extraction from password has failed
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel, byte[] salt
+        FormattedOptionParts passwordAndLabel, byte[] passwordSalt
     ) throws GeneralSecurityException {
 
         return DecryptionKeyMaterial.fromPassword(
             passwordAndLabel.optionChars(),
             passwordAndLabel.label(),
-            salt
+            passwordSalt
         );
     }
 
@@ -224,7 +224,7 @@ public final class SymmetricKeyUtil {
             if (recipient instanceof PBKDF2Recipient pbkdf2Recipient && formattedPassword != null) {
                 FormattedOptionParts splitPassword
                     = SymmetricKeyUtil.getSplitPasswordAndLabel(formattedPassword);
-                byte[] salt = pbkdf2Recipient.getSalt();
+                byte[] salt = pbkdf2Recipient.getPasswordSalt();
 
                 return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
                     splitPassword, salt

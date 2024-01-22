@@ -380,11 +380,10 @@ class EnvelopeTest {
         assertEquals(keyLabel, recipient.keyLabel());
         assertEquals(recipients_PBKDF2Capsule, recipient.capsuleType());
 
-        PBKDF2Capsule passwordKeyCapsule =
-            (PBKDF2Capsule) recipient.capsule(new PBKDF2Capsule());
+        PBKDF2Capsule passwordKeyCapsule = (PBKDF2Capsule) recipient.capsule(new PBKDF2Capsule());
         assertNotNull(passwordKeyCapsule);
 
-        ByteBuffer saltBuf = passwordKeyCapsule.saltAsByteBuffer();
+        ByteBuffer saltBuf = passwordKeyCapsule.encryptionSaltAsByteBuffer();
         assertNotNull(saltBuf);
     }
 

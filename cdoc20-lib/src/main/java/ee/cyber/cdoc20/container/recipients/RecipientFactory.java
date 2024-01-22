@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static ee.cyber.cdoc20.crypto.Crypto.generateSaltForKey;
+import static ee.cyber.cdoc20.crypto.Crypto.*;
 
 /**
  * Factory to create Recipients from different cryptographic keys
@@ -155,8 +155,7 @@ public final class RecipientFactory {
                 fileMasterKey,
                 (SecretKey) encKeyMaterial.getKey(),
                 encKeyMaterial.getLabel(),
-                FMKEncryptionMethod.name(
-                    Envelope.FMK_ENC_METHOD_BYTE),
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE),
                 pbkdfKeyMaterial.getPasswordSalt())
             );
         } else {
@@ -321,6 +320,7 @@ public final class RecipientFactory {
      * @param preSharedKey  pre-shared key, composed of the password
      * @param keyLabel      key label
      * @param fmkEncMethod  FMKEncryptionMethod
+     * @param passwordSalt  salt used for extracting symmetric key from the password
      * @return PBKDF2Recipient that can be serialized into FBS {@link PBKDF2Capsule}
      */
     static PBKDF2Recipient buildPBKDF2Recipient(
@@ -328,16 +328,26 @@ public final class RecipientFactory {
         SecretKey preSharedKey,
         String keyLabel,
         String fmkEncMethod,
-        byte[] salt
-    ) {
+        byte[] passwordSalt
+    ) throws NoSuchAlgorithmException {
         Objects.requireNonNull(fileMasterKey);
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
-        SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
+        byte[] encryptionSalt = generateSaltForKey();
+        SecretKey kek = Crypto.deriveKeyEncryptionKey(
+            keyLabel, preSharedKey, encryptionSalt, fmkEncMethod
+        );
 
         byte[] encryptedFmk = Crypto.xor(fileMasterKey, kek.getEncoded());
-        return new PBKDF2Recipient(salt, encryptedFmk, keyLabel);
+        return new PBKDF2Recipient(
+            encryptionSalt,
+            encryptedFmk,
+            keyLabel,
+            passwordSalt,
+            PBKDF2_ALGORITHM,
+            PBKDF2_ITERATIONS
+        );
     }
 
 }
