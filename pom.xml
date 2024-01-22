@@ -95,8 +95,8 @@
 
     <!-- Configuration for Maven Release plugin -->
     <scm>
-      <developerConnection>scm:git:git@repo-url</developerConnection>
-      <url>git@repo-url</url>
+      <connection>scm:git:https://repo-url</connection>
+        <url>https://repo-url</url>
       <tag>v1.0.0</tag>
     </scm>
 
