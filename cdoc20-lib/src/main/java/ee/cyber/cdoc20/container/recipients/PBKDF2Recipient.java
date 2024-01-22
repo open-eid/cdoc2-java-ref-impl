@@ -42,10 +42,16 @@ public class PBKDF2Recipient extends Recipient {
         return recipientKeyLabel;
     }
 
+    /**
+     * Salt used to encrypt/decrypt CDOC2 container.
+     */
     public byte[] getEncryptionSalt() {
         return encryptionSalt;
     }
 
+    /**
+     * Salt used to derive the symmetric key from the password.
+     */
     public byte[] getPasswordSalt() {
         return passwordSalt;
     }

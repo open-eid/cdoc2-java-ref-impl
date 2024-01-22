@@ -16,15 +16,15 @@ public interface PasswordDerivedEncryptionKeyMaterial extends EncryptionKeyMater
      * Create PasswordDerivedEncryptionKeyMaterial from password.
      * To decrypt CDOC, recipient must also have same preSharedKey and salt that are identified by
      * the same keyLabel
-     * @param password     password chars for extracting pre-shared SecretKey
-     * @param keyLabel     unique identifier for preSharedKey
+     * @param password password chars for extracting pre-shared SecretKey
+     * @param keyLabel unique identifier for preSharedKey
      * @return PasswordDerivedEncryptionKeyMaterial object
      */
     static PasswordDerivedEncryptionKeyMaterial fromPassword(
         char[] password, String keyLabel
     ) throws GeneralSecurityException {
-        byte[] salt = Crypto.generateSaltForKey();
-        SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password, salt);
+        byte[] passwordSalt = Crypto.generateSaltForKey();
+        SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password, passwordSalt);
 
         return new PasswordDerivedEncryptionKeyMaterial() {
 
@@ -40,7 +40,7 @@ public interface PasswordDerivedEncryptionKeyMaterial extends EncryptionKeyMater
 
             @Override
             public byte[] getPasswordSalt() {
-                return salt;
+                return passwordSalt;
             }
 
             @Override
