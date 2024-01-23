@@ -186,9 +186,11 @@ First update CHANGELOG.md - follow semantic versioning
 Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git 
 ```
 mvn clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT
+mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -Darguments="-DdeveloperConnectionUrl=scm:git:ssh://git@gitlab.cyber.ee/cdoc-2.0/cdoc20_java.git"
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
+
+For testing the result before release`-DpushChanges=false` can be added to `release:prepare` command in order to skip pushing changes to the repository.
 Verify that git repositories are synced (master points to same commit) and the tag is pushed (using `git push <remote> v{x.y.z}`).
 
 As maven repository doesn't exist yet, then maven deploy is not performed

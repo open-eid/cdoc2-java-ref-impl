@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.0] Version update (2024-01-23)
+No changes, only version update in all components.
+
 
 ## [0.5.0] Jenkins pipeline updates (2023-01-31)
 
