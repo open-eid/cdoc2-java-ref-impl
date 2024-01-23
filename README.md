@@ -185,7 +185,7 @@ First update CHANGELOG.md - follow semantic versioning
 
 Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git
 
-# Interactive mode without pushing changes (for testing purpose)
+# Interactive mode without pushing changes (for release simulation)
 ```
 mvn clean
 mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DpushChanges=false -Darguments="-DdeveloperConnectionUrl=scm:git:ssh://git@gitlab.cyber.ee/cdoc-2.0/cdoc20_java.git"
@@ -195,7 +195,7 @@ mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 # Interactive mode
 ```
 mvn clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -Darguments="-DdeveloperConnectionUrl=scm:git:ssh://git@gitlab.cyber.ee/cdoc-2.0/cdoc20_java.git"
+mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdeveloperConnectionUrl=scm:git:${git.repo.url}"
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 
