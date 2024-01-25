@@ -88,13 +88,15 @@ import static org.mockito.Mockito.when;
 class EnvelopeTest {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
-    @SuppressWarnings("checkstyle:OperatorWrap")
-    private final String bobKeyPem = "-----BEGIN EC PRIVATE KEY-----\n" +
-            "MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL\n" +
-            "mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B\n" +
-            "LqnEv1cUVHROnhw3hAW63F3H2PI93ZzB/BT6+C+gOLt3XkCT/H3C9X1ZktCd5lS2\n" +
-            "BmC8zN4UciwrTb68gt4ylKUCd5g30KY=\n" +
-            "-----END EC PRIVATE KEY-----\n";
+    @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
+    private final String bobKeyPem = """
+        -----BEGIN EC PRIVATE KEY-----
+        MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL
+        mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B
+        LqnEv1cUVHROnhw3hAW63F3H2PI93ZzB/BT6+C+gOLt3XkCT/H3C9X1ZktCd5lS2
+        BmC8zN4UciwrTb68gt4ylKUCd5g30KY=
+        -----END EC PRIVATE KEY-----
+        """;
 
     @Mock
     KeyCapsuleClient capsuleClientMock;
@@ -350,7 +352,7 @@ class EnvelopeTest {
             payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
 
-        String password = "myplaintextpassword";
+        String password = "myPlainTextPassword";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         Envelope envelope = Envelope.prepare(
@@ -448,7 +450,7 @@ class EnvelopeTest {
 
     @Test
     void testPasswordKeyScenario(@TempDir Path tempDir) throws Exception {
-        String password = "myplaintextpassword";
+        String password = "myPlainTextPassword";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
         byte[] salt = Crypto.generateSaltForKey();
 
