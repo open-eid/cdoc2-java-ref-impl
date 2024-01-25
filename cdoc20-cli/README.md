@@ -82,23 +82,12 @@ java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create @keys/b64secret.option -f
 ```
 
 ```
-cat keys/b64secret.option
---secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
 ```
 
 Or encrypt with password clear text:
 ```
 java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
-```
-
-Or with base64 encoded password:
-```
-java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc README.md
-```
-
-Or with both password and secret:
-```
-java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
 ```
 
 Decryption is done with the same label and key used for encryption
@@ -111,19 +100,9 @@ Or with the same label and password used for encryption:
 java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
-Or with the same label and base64 encoded password used for encryption:
-```
-java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:base64,0Lkr6JT51SdGDzdHkwh1n5WrpnPS/TJRckKaforVNWQ=" -f /tmp/symmetric.cdoc --output /tmp
-```
-
 Or with the same label and secret used for encryption:
 ```
 java -jar target/cdoc20-cli-*.jar decrypt --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp
-```
-
-Or with the same label and base64 encoded secret used for encryption:
-```
-java -jar target/cdoc20-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Key and label can be safely stored in a password manager.

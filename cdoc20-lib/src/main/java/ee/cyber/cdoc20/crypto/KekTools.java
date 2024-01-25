@@ -59,7 +59,7 @@ public final class KekTools {
             () -> new IllegalArgumentException("Expected SecretKey for PBKDF2Recipient"));
         SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
             secretKey,
-            recipient.getSalt(),
+            recipient.getEncryptionSalt(),
             FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
         return kek.getEncoded();
     }

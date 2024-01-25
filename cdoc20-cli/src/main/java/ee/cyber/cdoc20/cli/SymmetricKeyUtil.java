@@ -22,10 +22,10 @@ import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
-import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
 import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 
@@ -71,7 +71,7 @@ public final class SymmetricKeyUtil {
                 = SymmetricKeyUtil.splitFormattedOption(secret, EncryptionKeyOrigin.FROM_SECRET);
             var entry = extractKeyMaterialFromSecret(splitSecret);
             EncryptionKeyMaterial km = EncryptionKeyMaterial.fromSecret(
-                entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_SECRET
+                entry.getKey(), entry.getValue()
             );
             result.add(km);
         }
@@ -81,12 +81,8 @@ public final class SymmetricKeyUtil {
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) throws GeneralSecurityException {
-        byte[] salt = Crypto.generateSaltForKey();
-        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
-            passwordAndLabel.optionChars(), salt
-        );
-        return EncryptionKeyMaterial.fromPassword(
-            secretKey, passwordAndLabel.label(), passwordAndLabel.keyOrigin(), salt
+        return PasswordDerivedEncryptionKeyMaterial.fromPassword(
+            passwordAndLabel.optionChars(), passwordAndLabel.label()
         );
     }
 
@@ -103,20 +99,21 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from password and salt.
+     * Extract symmetric key material from password.
      * @param passwordAndLabel split password chars and label
-     * @param salt             salt used for encryption
+     * @param passwordSalt     salt used for extracting symmetric key from the password
      * @return DecryptionKeyMaterial created from password
      * @throws GeneralSecurityException if key extraction from password has failed
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel, byte[] salt
+        FormattedOptionParts passwordAndLabel, byte[] passwordSalt
     ) throws GeneralSecurityException {
-        SecretKey secretKey = Crypto.extractKeyMaterialFromPassword(
-            passwordAndLabel.optionChars(), salt
-        );
 
-        return DecryptionKeyMaterial.fromPassword(passwordAndLabel.label(), secretKey, salt);
+        return DecryptionKeyMaterial.fromPassword(
+            passwordAndLabel.optionChars(),
+            passwordAndLabel.label(),
+            passwordSalt
+        );
     }
 
     /**
@@ -227,7 +224,7 @@ public final class SymmetricKeyUtil {
             if (recipient instanceof PBKDF2Recipient pbkdf2Recipient && formattedPassword != null) {
                 FormattedOptionParts splitPassword
                     = SymmetricKeyUtil.getSplitPasswordAndLabel(formattedPassword);
-                byte[] salt = pbkdf2Recipient.getSalt();
+                byte[] salt = pbkdf2Recipient.getPasswordSalt();
 
                 return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
                     splitPassword, salt

@@ -157,10 +157,19 @@ public final class RecipientSerializer {
         );
     }
 
-    public static int serializePBKDF2Recipient(PBKDF2Recipient passwordRecipient, FlatBufferBuilder builder) {
-
-        int saltOffset = builder.createByteVector(passwordRecipient.getSalt());
-        int passwordCapsuleOffset = PBKDF2Capsule.createPBKDF2Capsule(builder, saltOffset);
+    public static int serializePBKDF2Recipient(
+        PBKDF2Recipient passwordRecipient, FlatBufferBuilder builder
+    ) {
+        int encSaltOffset = builder.createByteVector(passwordRecipient.getEncryptionSalt());
+        int pwSaltOffset = builder.createByteVector(passwordRecipient.getPasswordSalt());
+        int kdfAlgorithmIdentifierOffset = builder.createString(passwordRecipient.getKdfAlgorithm());
+        int passwordCapsuleOffset = PBKDF2Capsule.createPBKDF2Capsule(
+            builder,
+            encSaltOffset,
+            pwSaltOffset,
+            kdfAlgorithmIdentifierOffset,
+            passwordRecipient.getKdfIterations()
+        );
         int encFmkOffset =
             RecipientRecord.createEncryptedFmkVector(builder, passwordRecipient.getEncryptedFileMasterKey());
         int keyLabelOffset = builder.createString(getKeyLabelValue(passwordRecipient));

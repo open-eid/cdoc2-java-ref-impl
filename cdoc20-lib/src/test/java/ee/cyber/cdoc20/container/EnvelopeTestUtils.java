@@ -10,7 +10,6 @@ import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
@@ -256,10 +255,10 @@ public final class EnvelopeTestUtils {
 
         EncryptionKeyMaterial encKeyMaterial = (keyMaterial.getKeyPair().isPresent())
                 ? EncryptionKeyMaterial.fromPublicKey(
-                    keyMaterial.getKeyPair().get().getPublic(), keyLabel, EncryptionKeyOrigin.FROM_PUBLIC_KEY
+                    keyMaterial.getKeyPair().get().getPublic(), keyLabel
         )
                 : EncryptionKeyMaterial.fromSecret(
-                    keyMaterial.getSecretKey().orElseThrow(), keyLabel, EncryptionKeyOrigin.FROM_SECRET
+                    keyMaterial.getSecretKey().orElseThrow(), keyLabel
         );
 
         byte[] cdocContainerBytes = createContainer(payloadFile,

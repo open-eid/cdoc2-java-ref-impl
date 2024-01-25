@@ -2,11 +2,11 @@ package ee.cyber.cdoc20.cli.commands;
 
 
 import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.CDocValidationException;
 import ee.cyber.cdoc20.cli.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.SkLdapUtil;
 import ee.cyber.cdoc20.util.Resources;
@@ -18,6 +18,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
+import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -113,22 +114,10 @@ public class CDocCreateCmd implements Callable<Void> {
         recipientsMap.putAll(ldapKeysWithLabels);
 
         List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
-                .map(entry ->
-                    EncryptionKeyMaterial.fromPublicKey(
-                        entry.getKey(), entry.getValue(), EncryptionKeyOrigin.FROM_PUBLIC_KEY
-                    )
-                )
+                .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
 
-        // add symmetric keys with labels
-        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
-            recipient.secrets)
-        );
-        if (null != recipient.password) {
-            FormattedOptionParts password
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password);
-            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
-        }
+        addSymmetricKeysWithLabels(recipients);
 
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withRecipients(recipients)
@@ -145,6 +134,19 @@ public class CDocCreateCmd implements Callable<Void> {
         log.info("Created {}", cdocFile.getAbsolutePath());
 
         return null;
+    }
+
+    private void addSymmetricKeysWithLabels(List<EncryptionKeyMaterial> recipients)
+        throws CDocValidationException, GeneralSecurityException {
+
+        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
+            recipient.secrets)
+        );
+        if (null != recipient.password) {
+            FormattedOptionParts password
+                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password);
+            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
+        }
     }
 
 }
