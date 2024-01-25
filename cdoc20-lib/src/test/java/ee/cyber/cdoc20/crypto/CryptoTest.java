@@ -85,14 +85,16 @@ class CryptoTest {
         byte[] fmk = Crypto.generateFileMasterKey();
 
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
-        @SuppressWarnings("checkstyle:OperatorWrap")
+        @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
         String pem =
-                "-----BEGIN EC PRIVATE KEY-----\n" +
-                "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
-                "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j\n" +
-                "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
-                "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
-                "-----END EC PRIVATE KEY-----\n";
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+                4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+                C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+                yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+                -----END EC PRIVATE KEY-----
+                """;
         KeyPair aliceKeyPair = PemTools.loadKeyPair(pem);
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
 
@@ -147,7 +149,7 @@ class CryptoTest {
     @Test
     void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
         SecretKey kekSecretKey = Crypto.extractKeyMaterialFromPassword(
-            "myplaintextpassword".toCharArray(),
+            "myPlainTextPassword".toCharArray(),
             getSalt()
         );
 
@@ -158,7 +160,7 @@ class CryptoTest {
         assertNotNull(kek);
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals(
-            "629194b6c2ebeead89669f80e3a36c174db7c8857debfd63e9a1134f4fb4aab2",
+            "d4f767095d5c36fb2894822e3807f9e90fd8273c6da9284f89f05fd3cb0850a0",
             HexFormat.of().formatHex(kek)
         );
     }

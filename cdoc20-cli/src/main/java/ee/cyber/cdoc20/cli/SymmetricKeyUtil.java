@@ -26,6 +26,7 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 
 /**
@@ -186,9 +187,8 @@ public final class SymmetricKeyUtil {
         } else {
             passwordAndLabel
                 = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
+            PasswordValidationUtil.validatePassword(passwordAndLabel.optionChars());
         }
-
-        // ToDo add password validation somewhere here #55910
 
         return passwordAndLabel;
     }
