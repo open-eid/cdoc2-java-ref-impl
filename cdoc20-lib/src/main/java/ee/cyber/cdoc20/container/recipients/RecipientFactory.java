@@ -338,15 +338,13 @@ public final class RecipientFactory {
         SecretKey kek = Crypto.deriveKeyEncryptionKey(
             keyLabel, preSharedKey, encryptionSalt, fmkEncMethod
         );
-
         byte[] encryptedFmk = Crypto.xor(fileMasterKey, kek.getEncoded());
+
         return new PBKDF2Recipient(
             encryptionSalt,
             encryptedFmk,
             keyLabel,
-            passwordSalt,
-            PBKDF2_ALGORITHM,
-            PBKDF2_ITERATIONS
+            passwordSalt
         );
     }
 

@@ -97,23 +97,19 @@ public final class RecipientDeserializer {
             throw new CDocParseException("error parsing PBKDF2Capsule");
         }
 
-        ByteBuffer encSaltBuf = pbkdf2Capsule.encryptionSaltAsByteBuffer();
+        ByteBuffer encSaltBuf = pbkdf2Capsule.saltAsByteBuffer();
         byte[] encSalt
             = Arrays.copyOfRange(encSaltBuf.array(), encSaltBuf.position(), encSaltBuf.limit());
 
         ByteBuffer pwSaltBuf = pbkdf2Capsule.passwordSaltAsByteBuffer();
         byte[] pwSalt =
             Arrays.copyOfRange(pwSaltBuf.array(), pwSaltBuf.position(), pwSaltBuf.limit());
-        String kdfAlgorithm = pbkdf2Capsule.kdfAlgorithmIdentifier();
-        int iterations = pbkdf2Capsule.kdfIterations();
 
         return new PBKDF2Recipient(
             encSalt,
             encryptedFmkBytes,
             keyLabel,
-            pwSalt,
-            kdfAlgorithm,
-            iterations
+            pwSalt
         );
     }
 

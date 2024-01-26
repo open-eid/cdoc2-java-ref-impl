@@ -8,6 +8,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 
 
@@ -17,24 +18,22 @@ import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
  */
 public class PBKDF2Recipient extends Recipient {
 
+    public static final int PBKDF2_ITERATIONS = 600_000; // recommended by NIST for HMAC-SHA-256
+
     private final byte[] encryptionSalt;
     private final byte[] passwordSalt;
-    private final String kdfAlgorithmIdentifier;
-    private final int kdfIterations;
+    private final byte kdfAlgorithmIdentifier = KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256;
+    private final int kdfIterations = PBKDF2_ITERATIONS;
 
     public PBKDF2Recipient(
         byte[] encSalt,
         byte[] encFmk,
         String recipientLabel,
-        byte[] passwordSalt,
-        String kdfAlgorithmIdentifier,
-        int kdfIterations
+        byte[] passwordSalt
     ) {
         super(encFmk, recipientLabel);
         this.encryptionSalt = encSalt.clone();
         this.passwordSalt = passwordSalt;
-        this.kdfAlgorithmIdentifier = kdfAlgorithmIdentifier;
-        this.kdfIterations = kdfIterations;
     }
 
     @Override
@@ -56,7 +55,7 @@ public class PBKDF2Recipient extends Recipient {
         return passwordSalt;
     }
 
-    public String getKdfAlgorithm() {
+    public byte getKdfAlgorithm() {
         return kdfAlgorithmIdentifier;
     }
 
@@ -77,7 +76,7 @@ public class PBKDF2Recipient extends Recipient {
         PBKDF2Recipient that = (PBKDF2Recipient) o;
         return Arrays.equals(encryptionSalt, that.encryptionSalt)
             && Arrays.equals(passwordSalt, that.passwordSalt)
-            && kdfAlgorithmIdentifier.equals(that.kdfAlgorithmIdentifier)
+            && kdfAlgorithmIdentifier == that.kdfAlgorithmIdentifier
             && kdfIterations == that.kdfIterations;
     }
 

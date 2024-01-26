@@ -162,12 +162,11 @@ public final class RecipientSerializer {
     ) {
         int encSaltOffset = builder.createByteVector(passwordRecipient.getEncryptionSalt());
         int pwSaltOffset = builder.createByteVector(passwordRecipient.getPasswordSalt());
-        int kdfAlgorithmIdentifierOffset = builder.createString(passwordRecipient.getKdfAlgorithm());
         int passwordCapsuleOffset = PBKDF2Capsule.createPBKDF2Capsule(
             builder,
             encSaltOffset,
             pwSaltOffset,
-            kdfAlgorithmIdentifierOffset,
+            passwordRecipient.getKdfAlgorithm(),
             passwordRecipient.getKdfIterations()
         );
         int encFmkOffset =

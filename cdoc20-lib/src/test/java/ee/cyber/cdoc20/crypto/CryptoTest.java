@@ -1,11 +1,12 @@
 package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
-import static ee.cyber.cdoc20.crypto.Crypto.PBKDF2_ALGORITHM;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -153,7 +154,10 @@ class CryptoTest {
             getSalt()
         );
 
-        assertEquals(PBKDF2_ALGORITHM, kekSecretKey.getAlgorithm());
+        assertEquals(
+            KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256),
+            kekSecretKey.getAlgorithm()
+        );
         assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using PBKDF2
 
         byte[] kek = kekSecretKey.getEncoded();

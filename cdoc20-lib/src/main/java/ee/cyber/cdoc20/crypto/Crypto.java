@@ -3,6 +3,8 @@ package ee.cyber.cdoc20.crypto;
 import at.favre.lib.crypto.HKDF;
 
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.DrbgParameters;
@@ -23,6 +25,8 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc20.container.recipients.PBKDF2Recipient.PBKDF2_ITERATIONS;
 import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 public final class Crypto {
@@ -57,8 +61,6 @@ public final class Crypto {
 
     public static final int MIN_SALT_LENGTH = 256 / 8;
 
-    public static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256";
-    public static final int PBKDF2_ITERATIONS = 600_000; // recommended by NIST for HMAC-SHA-256
     public static final int PBKDF2_KEY_LENGTH_BITS = 256;
 
     public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
@@ -171,7 +173,9 @@ public final class Crypto {
     public static SecretKey extractKeyMaterialFromPassword(
         final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
-        SecretKeyFactory skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM);
+        SecretKeyFactory skf = SecretKeyFactory.getInstance(
+            KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256)
+        );
         PBEKeySpec spec = new PBEKeySpec(
             passwordChars,
             salt,

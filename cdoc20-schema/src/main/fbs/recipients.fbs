@@ -12,6 +12,12 @@ enum EllipticCurve:byte {
     secp384r1
 }
 
+// KDF algorithm identifier enum
+enum KDFAlgorithmIdentifier:byte {
+    UNKNOWN,
+    PBKDF2WithHmacSHA256
+}
+
 table RsaKeyDetails {
     //RSA pub key in DER - RFC8017 RSA Public Key Syntax (A.1.1) https://www.rfc-editor.org/rfc/rfc8017#page-54
     recipient_public_key:   [ubyte] (required);
@@ -53,8 +59,9 @@ table SymmetricKeyCapsule {
 
 // password derived key
 table PBKDF2Capsule {
-    encryption_salt:          [ubyte] (required);
+    // HKDF salt to derive KEK
+    salt:                     [ubyte] (required);
     password_salt:            [ubyte] (required);
-    kdf_algorithm_identifier: string  (required);
+    kdf_algorithm_identifier: KDFAlgorithmIdentifier = UNKNOWN;
     kdf_iterations:           int32;
 }
