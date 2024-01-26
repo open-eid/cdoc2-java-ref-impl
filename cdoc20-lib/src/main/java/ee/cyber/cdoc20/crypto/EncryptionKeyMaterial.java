@@ -94,7 +94,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
         char[] password, String keyLabel
     ) throws GeneralSecurityException {
         byte[] passwordSalt = Crypto.generateSaltForKey();
-        SecretKey preSharedKey = Crypto.extractKeyMaterialFromPassword(password, passwordSalt);
+        SecretKey preSharedKey = Crypto.extractSymmetricKeyFromPassword(password, passwordSalt);
 
         return new PasswordDerivedEncryptionKeyMaterial(
             preSharedKey,

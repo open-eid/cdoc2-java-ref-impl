@@ -170,7 +170,7 @@ public final class Crypto {
      * @return SecretKey with symmetric key
      * @throws GeneralSecurityException if key creation has failed
      */
-    public static SecretKey extractKeyMaterialFromPassword(
+    public static SecretKey extractSymmetricKeyFromPassword(
         final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
         SecretKeyFactory skf = SecretKeyFactory.getInstance(

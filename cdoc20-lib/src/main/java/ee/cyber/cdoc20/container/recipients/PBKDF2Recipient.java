@@ -1,5 +1,6 @@
 package ee.cyber.cdoc20.container.recipients;
 
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -8,6 +9,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.PasswordDerivedDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 
@@ -64,8 +66,11 @@ public class PBKDF2Recipient extends Recipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory) {
-        return KekTools.deriveKekForSymmetricKey(this, keyMaterial);
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+        throws GeneralSecurityException {
+
+        return KekTools.deriveKekForPasswordDerivedKey(this,
+            (PasswordDerivedDecryptionKeyMaterial) keyMaterial);
     }
 
     @Override

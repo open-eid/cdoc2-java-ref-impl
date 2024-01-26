@@ -51,14 +51,17 @@ public final class KekTools {
         return kek.getEncoded();
     }
 
-    public static byte[] deriveKekForSymmetricKey(
+    public static byte[] deriveKekForPasswordDerivedKey(
         PBKDF2Recipient recipient,
-        DecryptionKeyMaterial keyMaterial
-    ) {
-        SecretKey secretKey = keyMaterial.getSecretKey().orElseThrow(
-            () -> new IllegalArgumentException("Expected SecretKey for PBKDF2Recipient"));
+        PasswordDerivedDecryptionKeyMaterial keyMaterial
+    ) throws GeneralSecurityException {
+        SecretKey pwDerivedSymmetricKey = Crypto.extractSymmetricKeyFromPassword(
+            keyMaterial.getPassword(),
+            recipient.getPasswordSalt()
+        );
+
         SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
-            secretKey,
+            pwDerivedSymmetricKey,
             recipient.getEncryptionSalt(),
             FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
         return kek.getEncoded();

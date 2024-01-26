@@ -10,6 +10,7 @@ import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.PasswordDerivedDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
@@ -59,9 +60,9 @@ public final class EnvelopeTestUtils {
 
     /**
      * Replace payload inside cdoc2 container. Limitation is that container must be created with SecretKey and Label
-     * @param origCdocBytes cdoc2 container
-     * @param preSharedKey
-     * @param keyLabel
+     * @param origCdocBytes  cdoc2 container
+     * @param preSharedKey   pre-shared key
+     * @param keyLabel       key label
      * @param newCdocPayload payload from origCdocBytes will be replaced with encrypted newCdocPayload
      * @return new cdoc2 container where original payload was replaced with newCdocPayload
      * @throws IOException
@@ -100,8 +101,6 @@ public final class EnvelopeTestUtils {
 
         SecretKey cek = Crypto.deriveContentEncryptionKey(fmk);
 
-
-
         byte[] encryptedTarWithExtraData = encryptPayload(cek,
                 Envelope.getAdditionalData(headerBytes, hmacBytes),
                 newCdocPayload);
@@ -136,7 +135,6 @@ public final class EnvelopeTestUtils {
         System.arraycopy(extraData.getBytes(StandardCharsets.UTF_8), 0, tarBytes, 1024,
                 extraData.getBytes(StandardCharsets.UTF_8).length);
 
-
         // generate random bytes so that compression ratio would not be over 10.0
         // copy tar to begging of it
         byte[] randomBytes  = new byte[64 * 1024];
@@ -144,7 +142,6 @@ public final class EnvelopeTestUtils {
 
         System.arraycopy(tarBytes, 0, randomBytes, 0,
                 tarBytes.length);
-
 
         ByteArrayOutputStream destTarZlib = new ByteArrayOutputStream();
 
@@ -186,16 +183,12 @@ public final class EnvelopeTestUtils {
             tarOs.putArchiveEntry(tarEntry2);
             tarOs.closeArchiveEntry();
 
-
             TarArchiveEntry tarEntry3 = new TarArchiveEntry(validFileName + ".2");
             tarEntry3.setSize(data.length);
             tarOs.putArchiveEntry(tarEntry3);
             new Random().nextBytes(data);
             tarOs.write(data);
             tarOs.closeArchiveEntry();
-
-
-
         }
 
         return dest.toByteArray();
@@ -254,12 +247,10 @@ public final class EnvelopeTestUtils {
         Files.createDirectories(outDir);
 
         EncryptionKeyMaterial encKeyMaterial = (keyMaterial.getKeyPair().isPresent())
-                ? EncryptionKeyMaterial.fromPublicKey(
-                    keyMaterial.getKeyPair().get().getPublic(), keyLabel
-        )
-                : EncryptionKeyMaterial.fromSecret(
-                    keyMaterial.getSecretKey().orElseThrow(), keyLabel
-        );
+            ? EncryptionKeyMaterial.fromPublicKey(
+                keyMaterial.getKeyPair().get().getPublic(), keyLabel
+            )
+            : createEncryptionKeyMaterialForSymmetricKey(keyMaterial, keyLabel);
 
         byte[] cdocContainerBytes = createContainer(payloadFile,
                 payloadData.getBytes(StandardCharsets.UTF_8), encKeyMaterial, null,
@@ -269,6 +260,18 @@ public final class EnvelopeTestUtils {
 
         checkContainerDecrypt(cdocContainerBytes, outDir, keyMaterial,
                 List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
+    }
+
+    private static EncryptionKeyMaterial createEncryptionKeyMaterialForSymmetricKey(
+        DecryptionKeyMaterial keyMaterial, String keyLabel
+    ) throws GeneralSecurityException {
+        if (keyMaterial instanceof PasswordDerivedDecryptionKeyMaterial passwordKeyMaterial) {
+            return EncryptionKeyMaterial.fromPassword(passwordKeyMaterial.getPassword(), keyLabel);
+        } else {
+            return EncryptionKeyMaterial.fromSecret(
+                keyMaterial.getSecretKey().orElseThrow(), keyLabel
+            );
+        }
     }
 
     public static void checkContainerDecrypt(byte[] cdocBytes, Path outDir, DecryptionKeyMaterial keyMaterial,

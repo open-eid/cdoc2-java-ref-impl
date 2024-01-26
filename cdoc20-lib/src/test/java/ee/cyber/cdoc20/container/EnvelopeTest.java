@@ -449,11 +449,10 @@ class EnvelopeTest {
     void testPasswordKeyScenario(@TempDir Path tempDir) throws Exception {
         String password = "myPlainTextPassword";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
-        byte[] salt = Crypto.generateSaltForKey();
 
         testContainer(
             tempDir,
-            DecryptionKeyMaterial.fromPassword(password.toCharArray(), keyLabel, salt),
+            DecryptionKeyMaterial.fromPassword(password.toCharArray(), keyLabel),
             keyLabel,
             null
         );

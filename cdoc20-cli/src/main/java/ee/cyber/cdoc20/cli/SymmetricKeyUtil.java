@@ -100,18 +100,15 @@ public final class SymmetricKeyUtil {
     /**
      * Extract symmetric key material from password.
      * @param passwordAndLabel split password chars and label
-     * @param passwordSalt     salt used for extracting symmetric key from the password
      * @return DecryptionKeyMaterial created from password
-     * @throws GeneralSecurityException if key extraction from password has failed
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel, byte[] passwordSalt
-    ) throws GeneralSecurityException {
+        FormattedOptionParts passwordAndLabel
+    ) {
 
         return DecryptionKeyMaterial.fromPassword(
             passwordAndLabel.optionChars(),
-            passwordAndLabel.label(),
-            passwordSalt
+            passwordAndLabel.label()
         );
     }
 
@@ -220,19 +217,19 @@ public final class SymmetricKeyUtil {
 
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
         for (Recipient recipient : recipients) {
-            if (recipient instanceof PBKDF2Recipient pbkdf2Recipient && formattedPassword != null) {
+            if (recipient instanceof PBKDF2Recipient && formattedPassword != null) {
                 FormattedOptionParts splitPassword
                     = SymmetricKeyUtil.getSplitPasswordAndLabel(formattedPassword);
-                byte[] salt = pbkdf2Recipient.getPasswordSalt();
 
                 return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
-                    splitPassword, salt
+                    splitPassword
                 );
             } else if (recipient instanceof SymmetricKeyRecipient && formattedSecret != null) {
                 FormattedOptionParts splitSecret = SymmetricKeyUtil.splitFormattedOption(
                     formattedSecret, EncryptionKeyOrigin.FROM_SECRET
                 );
                 if (recipient.getRecipientKeyLabel().equals(splitSecret.label())) {
+
                     return SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
                 }
             }
