@@ -12,7 +12,6 @@ import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.PasswordDerivedEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.RsaUtils;
 import ee.cyber.cdoc20.fbs.header.Header;
@@ -356,9 +355,7 @@ class EnvelopeTest {
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         Envelope envelope = Envelope.prepare(
-            List.of(PasswordDerivedEncryptionKeyMaterial.fromPassword(
-                password.toCharArray(), keyLabel)
-            ),
+            List.of(EncryptionKeyMaterial.fromPassword(password.toCharArray(), keyLabel)),
             null
         );
 
@@ -864,7 +861,7 @@ class EnvelopeTest {
 
         // since generated file is random, zlib can't compress it effectively and
         // created cdoc might be bigger than original file
-        long sixteenGB = (16 + 1) * 1024 * 1024 * 1024;
+        long sixteenGB = (16L + 1L) * 1024L * 1024L * 1024L;
         if (tempDir.toFile().getUsableSpace() < sixteenGB) {
             log.error("Need {} B of free space, but only {} B available", sixteenGB, tempDir.toFile().getUsableSpace());
             fail("Not enough free disk space at " + tempDir);
@@ -875,7 +872,7 @@ class EnvelopeTest {
         String payloadData = "payload-" + uuid;
         File payloadFile = tempDir.resolve(payloadFileName).toFile();
 
-        Files.write(payloadFile.toPath(), payloadData.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(payloadFile.toPath(), payloadData);
 
         String bigFileName = "bigFile";
 
