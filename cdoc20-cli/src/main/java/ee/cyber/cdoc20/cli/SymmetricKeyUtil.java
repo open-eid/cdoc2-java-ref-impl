@@ -86,30 +86,50 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from secret.
-     * @param secretAndLabel split secret chars and label
-     * @return DecryptionKeyMaterial created from formattedSecret
+     * Extract decryption key material from password.
+     * @param formattedPassword formatted password
+     * @param recipients        the list of recipients
+     * @return DecryptionKeyMaterial created from password
      */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSecret(
-        FormattedOptionParts secretAndLabel
-    ) {
-        var entry = extractKeyMaterialFromSecret(secretAndLabel);
-        return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
+    private static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
+        String formattedPassword,
+        List<Recipient> recipients
+    ) throws CDocValidationException {
+        for (Recipient recipient : recipients) {
+            if (recipient instanceof PBKDF2Recipient && formattedPassword != null) {
+                FormattedOptionParts splitPassword = getSplitPasswordAndLabel(formattedPassword);
+                return DecryptionKeyMaterial.fromPassword(
+                    splitPassword.optionChars(),
+                    splitPassword.label()
+                );
+            }
+        }
+        return null;
     }
 
     /**
-     * Extract symmetric key material from password.
-     * @param passwordAndLabel split password chars and label
-     * @return DecryptionKeyMaterial created from password
+     * Extract decryption key material from secret.
+     * @param formattedSecret formatted secret
+     * @param recipients      the list of recipients
+     * @return DecryptionKeyMaterial created from secret
      */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel
-    ) {
-
-        return DecryptionKeyMaterial.fromPassword(
-            passwordAndLabel.optionChars(),
-            passwordAndLabel.label()
-        );
+    private static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSecret(
+        String formattedSecret,
+        List<Recipient> recipients
+    ) throws CDocValidationException {
+        if (formattedSecret != null) {
+            FormattedOptionParts splitSecret = splitFormattedOption(
+                formattedSecret, EncryptionKeyOrigin.FROM_SECRET
+            );
+            for (Recipient recipient : recipients) {
+                if (recipient instanceof SymmetricKeyRecipient
+                    && recipient.getRecipientKeyLabel().equals(splitSecret.label())) {
+                        var entry = extractKeyMaterialFromSecret(splitSecret);
+                        return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -190,7 +210,7 @@ public final class SymmetricKeyUtil {
     }
 
     /**
-     * Extract symmetric key material from formatted secret or password "label:topsecret123!"
+     * Extract decryption key material from formatted secret or password "label:topsecret123!"
      * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
      * @param cDocFilePath      path to CDOC file
      * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
@@ -216,25 +236,14 @@ public final class SymmetricKeyUtil {
         CDocParseException {
 
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
-        for (Recipient recipient : recipients) {
-            if (recipient instanceof PBKDF2Recipient && formattedPassword != null) {
-                FormattedOptionParts splitPassword
-                    = SymmetricKeyUtil.getSplitPasswordAndLabel(formattedPassword);
+        DecryptionKeyMaterial decryptionKeyMaterial =
+            extractDecryptionKeyMaterialFromPassword(formattedPassword, recipients);
 
-                return SymmetricKeyUtil.extractDecryptionKeyMaterialFromPassword(
-                    splitPassword
-                );
-            } else if (recipient instanceof SymmetricKeyRecipient && formattedSecret != null) {
-                FormattedOptionParts splitSecret = SymmetricKeyUtil.splitFormattedOption(
-                    formattedSecret, EncryptionKeyOrigin.FROM_SECRET
-                );
-                if (recipient.getRecipientKeyLabel().equals(splitSecret.label())) {
-
-                    return SymmetricKeyUtil.extractDecryptionKeyMaterialFromSecret(splitSecret);
-                }
-            }
+        if (null == decryptionKeyMaterial) {
+            decryptionKeyMaterial =
+                extractDecryptionKeyMaterialFromSecret(formattedSecret, recipients);
         }
-        return null;
+        return decryptionKeyMaterial;
     }
 
 }
