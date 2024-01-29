@@ -1,4 +1,4 @@
-package ee.cyber.cdoc20.cli;
+package ee.cyber.cdoc20;
 
 import java.util.Arrays;
 import java.util.Objects;

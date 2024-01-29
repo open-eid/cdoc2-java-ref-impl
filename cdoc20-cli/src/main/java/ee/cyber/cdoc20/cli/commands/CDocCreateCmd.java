@@ -3,7 +3,7 @@ package ee.cyber.cdoc20.cli.commands;
 
 import ee.cyber.cdoc20.CDocBuilder;
 import ee.cyber.cdoc20.CDocValidationException;
-import ee.cyber.cdoc20.cli.FormattedOptionParts;
+import ee.cyber.cdoc20.FormattedOptionParts;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;

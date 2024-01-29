@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc20.CDocUserException;
+import ee.cyber.cdoc20.FormattedOptionParts;
 import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.util.PasswordValidationUtil;
