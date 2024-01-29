@@ -94,8 +94,7 @@
 
     <!-- Configuration for Maven Release plugin -->
     <scm>
-      <connection>scm:git:https://gitlab.cyber.ee/cdoc-2.0/cdoc20_java.git</connection>
-        <url>https://gitlab.cyber.ee/cdoc-2.0/cdoc20_java</url>
+      <connection>scm:git:ssh://git@gitlab.ext.cyber.ee/cdoc2/cdoc20_java.git</connection>
       <tag>v1.0.0</tag>
     </scm>
 
