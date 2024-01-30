@@ -2,7 +2,7 @@ package ee.cyber.cdoc20.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.KekTools;

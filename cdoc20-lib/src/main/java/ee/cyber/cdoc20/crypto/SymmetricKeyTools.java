@@ -11,6 +11,8 @@ import ee.cyber.cdoc20.FormattedOptionParts;
 import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.Recipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 
 /**
  * Utility for deriving Symmetric key from secret or password

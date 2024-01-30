@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -9,6 +9,8 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 
 import ee.cyber.cdoc20.container.EnvelopeTestUtils;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

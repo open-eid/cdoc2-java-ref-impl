@@ -1,4 +1,5 @@
-package ee.cyber.cdoc20.crypto;
+package ee.cyber.cdoc20.crypto.keymaterial;
+
 
 /**
  * Represents key material required for decryption with password.

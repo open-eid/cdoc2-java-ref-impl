@@ -3,7 +3,7 @@ package ee.cyber.cdoc20.container.recipients;
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
 import ee.cyber.cdoc20.fbs.recipients.RsaKeyDetails;
 import java.security.GeneralSecurityException;

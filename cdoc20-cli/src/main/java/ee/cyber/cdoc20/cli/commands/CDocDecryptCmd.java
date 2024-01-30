@@ -5,7 +5,7 @@ import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.crypto.Pkcs11Tools;
 import ee.cyber.cdoc20.util.Resources;

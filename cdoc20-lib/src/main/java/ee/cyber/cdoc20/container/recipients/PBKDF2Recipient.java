@@ -7,9 +7,9 @@ import java.util.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
-import ee.cyber.cdoc20.crypto.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 

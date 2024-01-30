@@ -1,4 +1,4 @@
-package ee.cyber.cdoc20.crypto;
+package ee.cyber.cdoc20.crypto.keymaterial;
 
 import java.security.KeyPair;
 import java.util.Optional;

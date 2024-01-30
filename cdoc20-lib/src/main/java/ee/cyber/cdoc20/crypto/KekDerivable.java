@@ -2,6 +2,8 @@ package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+
 import java.security.GeneralSecurityException;
 
 /**

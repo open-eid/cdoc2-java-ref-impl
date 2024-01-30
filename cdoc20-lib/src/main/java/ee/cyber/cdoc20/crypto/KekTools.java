@@ -16,6 +16,8 @@ import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;

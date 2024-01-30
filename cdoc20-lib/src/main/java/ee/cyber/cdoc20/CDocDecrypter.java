@@ -3,7 +3,7 @@ package ee.cyber.cdoc20;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.io.*;

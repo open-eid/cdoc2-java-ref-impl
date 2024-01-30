@@ -1,4 +1,4 @@
-package ee.cyber.cdoc20.crypto;
+package ee.cyber.cdoc20.crypto.keymaterial;
 
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -6,6 +6,8 @@ import java.security.PublicKey;
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
+
+import ee.cyber.cdoc20.crypto.Crypto;
 
 /**
  * Represents key material required for encryption.
