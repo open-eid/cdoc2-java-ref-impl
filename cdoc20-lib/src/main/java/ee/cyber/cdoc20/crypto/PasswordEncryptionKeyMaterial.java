@@ -8,13 +8,13 @@ import javax.crypto.SecretKey;
 /**
  * Represents key material required for encryption with password.
  */
-public class PasswordDerivedEncryptionKeyMaterial implements EncryptionKeyMaterial {
+public class PasswordEncryptionKeyMaterial implements EncryptionKeyMaterial {
 
     private final Key preSharedKey;
     private final String keyLabel;
     private final byte[] passwordSalt;
 
-    public PasswordDerivedEncryptionKeyMaterial(
+    public PasswordEncryptionKeyMaterial(
         SecretKey preSharedKey,
         String keyLabel,
         byte[] passwordSalt

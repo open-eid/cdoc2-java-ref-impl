@@ -10,7 +10,7 @@ import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.PasswordDerivedDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
@@ -265,7 +265,7 @@ public final class EnvelopeTestUtils {
     private static EncryptionKeyMaterial createEncryptionKeyMaterialForSymmetricKey(
         DecryptionKeyMaterial keyMaterial, String keyLabel
     ) throws GeneralSecurityException {
-        if (keyMaterial instanceof PasswordDerivedDecryptionKeyMaterial passwordKeyMaterial) {
+        if (keyMaterial instanceof PasswordDecryptionKeyMaterial passwordKeyMaterial) {
             return EncryptionKeyMaterial.fromPassword(passwordKeyMaterial.getPassword(), keyLabel);
         } else {
             return EncryptionKeyMaterial.fromSecret(

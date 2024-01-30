@@ -60,7 +60,7 @@ public interface DecryptionKeyMaterial extends Destroyable {
     }
 
     static DecryptionKeyMaterial fromPassword(char[] password, String label) {
-        return new PasswordDerivedDecryptionKeyMaterial(password, label);
+        return new PasswordDecryptionKeyMaterial(password, label);
     }
 
     static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair) {

@@ -3,12 +3,12 @@ package ee.cyber.cdoc20.crypto;
 /**
  * Represents key material required for decryption with password.
  */
-public class PasswordDerivedDecryptionKeyMaterial implements DecryptionKeyMaterial {
+public class PasswordDecryptionKeyMaterial implements DecryptionKeyMaterial {
 
     private final String keyLabel;
     private final char[] password;
 
-    public PasswordDerivedDecryptionKeyMaterial(char[] password, String keyLabel) {
+    public PasswordDecryptionKeyMaterial(char[] password, String keyLabel) {
         this.keyLabel = keyLabel;
         this.password = password;
     }

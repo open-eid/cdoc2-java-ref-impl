@@ -90,13 +90,13 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * @param keyLabel unique identifier for preSharedKey
      * @return PasswordDerivedEncryptionKeyMaterial object
      */
-    static PasswordDerivedEncryptionKeyMaterial fromPassword(
+    static PasswordEncryptionKeyMaterial fromPassword(
         char[] password, String keyLabel
     ) throws GeneralSecurityException {
         byte[] passwordSalt = Crypto.generateSaltForKey();
         SecretKey preSharedKey = Crypto.extractSymmetricKeyFromPassword(password, passwordSalt);
 
-        return new PasswordDerivedEncryptionKeyMaterial(
+        return new PasswordEncryptionKeyMaterial(
             preSharedKey,
             keyLabel,
             passwordSalt

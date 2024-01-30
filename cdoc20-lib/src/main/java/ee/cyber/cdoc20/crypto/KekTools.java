@@ -53,7 +53,7 @@ public final class KekTools {
 
     public static byte[] deriveKekForPasswordDerivedKey(
         PBKDF2Recipient recipient,
-        PasswordDerivedDecryptionKeyMaterial keyMaterial
+        PasswordDecryptionKeyMaterial keyMaterial
     ) throws GeneralSecurityException {
         SecretKey pwDerivedSymmetricKey = Crypto.extractSymmetricKeyFromPassword(
             keyMaterial.getPassword(),

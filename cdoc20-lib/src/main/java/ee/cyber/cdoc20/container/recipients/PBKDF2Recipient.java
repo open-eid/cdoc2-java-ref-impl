@@ -9,7 +9,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
-import ee.cyber.cdoc20.crypto.PasswordDerivedDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 
@@ -70,7 +70,7 @@ public class PBKDF2Recipient extends Recipient {
         throws GeneralSecurityException {
 
         return KekTools.deriveKekForPasswordDerivedKey(this,
-            (PasswordDerivedDecryptionKeyMaterial) keyMaterial);
+            (PasswordDecryptionKeyMaterial) keyMaterial);
     }
 
     @Override
