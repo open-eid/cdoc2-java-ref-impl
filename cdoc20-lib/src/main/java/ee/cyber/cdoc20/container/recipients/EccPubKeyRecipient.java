@@ -6,6 +6,7 @@ import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.ECCPublicKeyCapsule;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
@@ -52,9 +53,12 @@ public class EccPubKeyRecipient extends EccRecipient {
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException {
+        throws GeneralSecurityException {
 
-        return KekTools.deriveKekForEcc(this, keyMaterial);
+        return KekTools.deriveKekForEcc(
+            this,
+            (KeyPairDecryptionKeyMaterial) keyMaterial
+        );
     }
 
     @Override

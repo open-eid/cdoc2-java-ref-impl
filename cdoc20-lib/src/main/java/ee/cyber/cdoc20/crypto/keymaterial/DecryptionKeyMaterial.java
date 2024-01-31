@@ -1,15 +1,15 @@
 package ee.cyber.cdoc20.crypto.keymaterial;
 
 import java.security.KeyPair;
-import java.util.Optional;
 import javax.crypto.SecretKey;
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
+
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 /**
  * Represents key material required for decryption.
  */
-public interface DecryptionKeyMaterial extends Destroyable {
+public interface DecryptionKeyMaterial {
+
     /**
      * Uniquely identifies the recipient. This data is used to find recipients key material from parsed CDOC header
      * * For EC, this is EC pub key.
@@ -20,43 +20,14 @@ public interface DecryptionKeyMaterial extends Destroyable {
     Object getRecipientId();
 
     /**
-     * KeyPair used by EC and RSA scenario
-     * @return KeyPair if exists
+     * Identifies the origin of key derivation. This data is used to find the correct
+     * decryption algorithm.
+     * @return EncryptionKeyOrigin encryption key origin
      */
-    default Optional<KeyPair> getKeyPair() {
-        return Optional.empty();
-    }
-
-    /**
-     * Symmetric Key used by Symmetric Key scenario
-     * @return SecretKey if exists
-     */
-    default Optional<SecretKey> getSecretKey() {
-        return Optional.empty();
-    }
+    EncryptionKeyOrigin getKeyOrigin();
 
     static DecryptionKeyMaterial fromSecretKey(String label, SecretKey secretKey) {
-        return new DecryptionKeyMaterial() {
-            @Override
-            public Object getRecipientId() {
-                return label;
-            }
-
-            @Override
-            public Optional<SecretKey> getSecretKey() {
-                return Optional.of(secretKey);
-            }
-
-            @Override
-            public void destroy() throws DestroyFailedException {
-                secretKey.destroy();
-            }
-
-            @Override
-            public boolean isDestroyed() {
-                return secretKey.isDestroyed();
-            }
-        };
+        return new SecretDecryptionKeyMaterial(label, secretKey);
     }
 
     static DecryptionKeyMaterial fromPassword(char[] password, String label) {
@@ -64,26 +35,7 @@ public interface DecryptionKeyMaterial extends Destroyable {
     }
 
     static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair) {
-        return new DecryptionKeyMaterial() {
-            @Override
-            public Object getRecipientId() {
-                return recipientKeyPair.getPublic();
-            }
-
-            @Override
-            public Optional<KeyPair> getKeyPair() {
-                return Optional.of(recipientKeyPair);
-            }
-
-            @Override
-            public void destroy() throws DestroyFailedException {
-                recipientKeyPair.getPrivate().destroy();
-            }
-
-            @Override
-            public boolean isDestroyed() {
-                return recipientKeyPair.getPrivate().isDestroyed();
-            }
-        };
+        return new KeyPairDecryptionKeyMaterial(recipientKeyPair);
     }
+
 }

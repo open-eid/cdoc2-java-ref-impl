@@ -4,6 +4,8 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretDecryptionKeyMaterial;
+
 import java.util.Arrays;
 
 public class SymmetricKeyRecipient extends Recipient {
@@ -26,7 +28,10 @@ public class SymmetricKeyRecipient extends Recipient {
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory) {
-        return KekTools.deriveKekForSymmetricKey(this, keyMaterial);
+        return KekTools.deriveKekForSymmetricKey(
+            this,
+            (SecretDecryptionKeyMaterial) keyMaterial
+        );
     }
 
     @Override

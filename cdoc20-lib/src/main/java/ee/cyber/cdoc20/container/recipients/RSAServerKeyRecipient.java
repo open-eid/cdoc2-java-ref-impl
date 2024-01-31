@@ -5,6 +5,7 @@ import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.RsaKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
@@ -52,8 +53,13 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException, CDocException {
-        return KekTools.deriveKekForRsaServer(this, keyMaterial, factory);
+        throws GeneralSecurityException, CDocException {
+
+        return KekTools.deriveKekForRsaServer(
+            this,
+            (KeyPairDecryptionKeyMaterial) keyMaterial,
+            factory
+        );
     }
 
     @Override

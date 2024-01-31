@@ -1,8 +1,10 @@
 package ee.cyber.cdoc20.crypto.keymaterial;
 
 
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+
 /**
- * Represents key material required for decryption with password.
+ * Represents key material required for decryption with symmetric key derived from password.
  */
 public class PasswordDecryptionKeyMaterial implements DecryptionKeyMaterial {
 
@@ -17,6 +19,11 @@ public class PasswordDecryptionKeyMaterial implements DecryptionKeyMaterial {
     @Override
     public Object getRecipientId() {
         return keyLabel;
+    }
+
+    @Override
+    public EncryptionKeyOrigin getKeyOrigin() {
+        return EncryptionKeyOrigin.FROM_PASSWORD;
     }
 
     /**

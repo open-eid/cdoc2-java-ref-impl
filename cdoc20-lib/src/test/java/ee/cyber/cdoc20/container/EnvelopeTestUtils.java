@@ -10,7 +10,9 @@ import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
@@ -246,9 +248,10 @@ public final class EnvelopeTestUtils {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        EncryptionKeyMaterial encKeyMaterial = (keyMaterial.getKeyPair().isPresent())
+        EncryptionKeyMaterial encKeyMaterial =
+            (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial)
             ? EncryptionKeyMaterial.fromPublicKey(
-                keyMaterial.getKeyPair().get().getPublic(), keyLabel
+                keyPairKeyMaterial.getKeyPair().getPublic(), keyLabel
             )
             : createEncryptionKeyMaterialForSymmetricKey(keyMaterial, keyLabel);
 
@@ -267,10 +270,12 @@ public final class EnvelopeTestUtils {
     ) throws GeneralSecurityException {
         if (keyMaterial instanceof PasswordDecryptionKeyMaterial passwordKeyMaterial) {
             return EncryptionKeyMaterial.fromPassword(passwordKeyMaterial.getPassword(), keyLabel);
-        } else {
+        } else if (keyMaterial instanceof SecretDecryptionKeyMaterial secretKeyMaterial) {
             return EncryptionKeyMaterial.fromSecret(
-                keyMaterial.getSecretKey().orElseThrow(), keyLabel
+                secretKeyMaterial.getSecretKey(), keyLabel
             );
+        } else {
+            throw new RuntimeException();
         }
     }
 
