@@ -74,7 +74,7 @@ public final class SymmetricKeyUtil {
 
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
-    ) throws GeneralSecurityException {
+    ) {
         return EncryptionKeyMaterial.fromPassword(
             passwordAndLabel.optionChars(), passwordAndLabel.label()
         );
