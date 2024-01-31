@@ -166,7 +166,7 @@ public final class KekTools {
 
         KeyPair recipientKeyPair = keyMaterial.getKeyPair();
 
-        if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
+        if (!KeyAlgorithm.isRsaKeysAlgorithm(recipientKeyPair.getPrivate().getAlgorithm())) {
             throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
@@ -208,7 +208,7 @@ public final class KekTools {
 
         KeyPair recipientKeyPair = keyMaterial.getKeyPair();
 
-        if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
+        if (!KeyAlgorithm.isRsaKeysAlgorithm(recipientKeyPair.getPrivate().getAlgorithm())) {
             throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 

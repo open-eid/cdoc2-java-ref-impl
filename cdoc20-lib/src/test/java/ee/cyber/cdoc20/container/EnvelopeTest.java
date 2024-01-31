@@ -65,6 +65,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc20.KeyUtil.getKeyPairRsaInstance;
 import static ee.cyber.cdoc20.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc20.fbs.header.Capsule.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -154,7 +155,7 @@ class EnvelopeTest {
             payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
 
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator generator = getKeyPairRsaInstance();
         generator.initialize(2048, SecureRandom.getInstanceStrong());
 
         KeyPair keyPair = generator.generateKeyPair();
@@ -244,7 +245,7 @@ class EnvelopeTest {
 
     @Test
     void testRsaServerSerialization(@TempDir Path tempDir) throws Exception {
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator generator = getKeyPairRsaInstance();
         generator.initialize(2048, SecureRandom.getInstanceStrong());
 
         KeyPair keyPair = generator.generateKeyPair();
@@ -428,7 +429,7 @@ class EnvelopeTest {
     @Test
     void testContainerUsingRSAKey(@TempDir Path tempDir) throws Exception {
 
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator generator = getKeyPairRsaInstance();
         generator.initialize(2048, SecureRandom.getInstanceStrong());
         KeyPair rsaKeyPair = generator.generateKeyPair();
 
@@ -461,7 +462,7 @@ class EnvelopeTest {
     @Test
     void testRsaServerScenario(@TempDir Path tempDir) throws Exception {
 
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator generator = getKeyPairRsaInstance();
         generator.initialize(2048, SecureRandom.getInstanceStrong());
         KeyPair rsaKeyPair = generator.generateKeyPair();
 
@@ -930,4 +931,5 @@ class EnvelopeTest {
         }
         log.debug("Done.");
     }
+
 }

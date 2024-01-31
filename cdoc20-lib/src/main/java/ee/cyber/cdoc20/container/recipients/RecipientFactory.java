@@ -12,6 +12,7 @@ import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.RsaUtils;
+import ee.cyber.cdoc20.crypto.KeyAlgorithm;
 import ee.cyber.cdoc20.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
@@ -138,7 +139,7 @@ public final class RecipientFactory {
     ) throws GeneralSecurityException, ExtApiException {
 
         PublicKey publicKey = publicKeyMaterial.getPublicKey();
-        if (publicKey.getAlgorithm().equals("RSA")) {
+        if (KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
             addRsaRecipient(
                 recipients,
                 serverClient,
@@ -146,7 +147,7 @@ public final class RecipientFactory {
                 (RSAPublicKey) publicKey,
                 publicKeyMaterial.getLabel()
             );
-        } else if (publicKey.getAlgorithm().equals("EC")) {
+        } else if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
             addEccRecipient(
                 recipients,
                 serverClient,

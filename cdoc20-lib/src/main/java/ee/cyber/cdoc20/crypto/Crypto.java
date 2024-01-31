@@ -228,7 +228,8 @@ public final class Crypto {
         // token.
 
         // algorithm is EC, but doesn't implement java.security.interfaces.ECKey
-        return ("EC".equals(key.getAlgorithm()) && !(key instanceof java.security.interfaces.ECKey));
+        return (KeyAlgorithm.isEcKeysAlgorithm(key.getAlgorithm())
+            && !(key instanceof java.security.interfaces.ECKey));
     }
 
     public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)

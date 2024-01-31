@@ -132,7 +132,7 @@ public final class RsaUtils {
         ASN1Integer exp = ASN1Integer.getInstance(asn1Sequence.getObjectAt(1));
 
         RSAPublicKeySpec spec = new RSAPublicKeySpec(mod.getPositiveValue(), exp.getPositiveValue());
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        KeyFactory keyFactory = KeyFactory.getInstance(KeyAlgorithm.Algorithm.RSA.name());
         return (RSAPublicKey) keyFactory.generatePublic(spec);
     }
 

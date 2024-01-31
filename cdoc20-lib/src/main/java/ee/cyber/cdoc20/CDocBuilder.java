@@ -11,6 +11,7 @@ import java.io.OutputStream;
 
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.KeyAlgorithm;
 import ee.cyber.cdoc20.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.SecretEncryptionKeyMaterial;
 
@@ -149,9 +150,9 @@ public class CDocBuilder {
         throws CDocValidationException {
 
         PublicKey publicKey = publicKeyMaterial.getPublicKey();
-        if ("EC".equals(publicKey.getAlgorithm())) {
+        if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
             validateEcPublicKey((ECPublicKey) publicKey);
-        } else if ("RSA".equals(publicKey.getAlgorithm())) {
+        } else if (KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
             validateRsaPublicKey((RSAPublicKey) publicKey);
         } else {
             String errorMsg = ("Unsupported public key algorithm "

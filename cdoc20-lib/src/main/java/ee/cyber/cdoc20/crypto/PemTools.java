@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 /**
  * Utility class to deal with EC and RSA keys and certificates in PEM format.
  */
+@SuppressWarnings("squid:S6706")
 public final class PemTools {
     private static final Logger log = LoggerFactory.getLogger(PemTools.class);
 
@@ -123,7 +124,8 @@ public final class PemTools {
         // Derive public key from EC private if public key was not in PEM
         // see ECKeysTest::testLoadKeyPairFromPemShort
         if (publicKey == null) {
-            if ((privateKey != null) && ("EC".equals(privateKey.getAlgorithm()))) {
+            if ((privateKey != null)
+                && (KeyAlgorithm.isEcKeysAlgorithm(privateKey.getAlgorithm()))) {
                 keyPair = ECKeys.deriveECPubKeyFromPrivKey((ECPrivateKey) privateKey);
             } else {
                 throw new IllegalArgumentException("No public key found");
@@ -131,11 +133,11 @@ public final class PemTools {
         }
 
         publicKey = keyPair.getPublic();
-        if ("EC".equals(publicKey.getAlgorithm())) {
+        if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
             if (!ECKeys.isECSecp384r1(keyPair)) {
                 throw new InvalidKeyException("Not an EC keypair with secp384r1 curve");
             }
-        } else if ("RSA".equals(publicKey.getAlgorithm())) {
+        } else if (KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
             // all RSA keys are considered good. Shorter will fail during encryption as OAEP takes some space
             RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
             // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
