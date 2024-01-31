@@ -8,14 +8,12 @@ import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 /**
  * Represents key material required for decryption with key pair.
+ *
+ * @param recipientKeyPair recipient key pair
  */
-public class KeyPairDecryptionKeyMaterial implements DecryptionKeyMaterial, Destroyable {
-
-    private final KeyPair recipientKeyPair;
-
-    public KeyPairDecryptionKeyMaterial(KeyPair recipientKeyPair) {
-        this.recipientKeyPair = recipientKeyPair;
-    }
+public record KeyPairDecryptionKeyMaterial(
+    KeyPair recipientKeyPair
+) implements DecryptionKeyMaterial, Destroyable {
 
     @Override
     public Object getRecipientId() {

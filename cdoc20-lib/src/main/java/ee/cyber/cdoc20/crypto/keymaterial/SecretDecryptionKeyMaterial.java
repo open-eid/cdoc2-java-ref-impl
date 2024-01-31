@@ -9,16 +9,14 @@ import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 /**
  * Represents key material required for decryption with symmetric key derived from secret.
+ *
+ * @param keyLabel  key label
+ * @param secretKey symmetric key
  */
-public class SecretDecryptionKeyMaterial implements DecryptionKeyMaterial, Destroyable {
-
-    private final String keyLabel;
-    private final SecretKey secretKey;
-
-    public SecretDecryptionKeyMaterial(String keyLabel, SecretKey secretKey) {
-        this.keyLabel = keyLabel;
-        this.secretKey = secretKey;
-    }
+public record SecretDecryptionKeyMaterial(
+    String keyLabel,
+    SecretKey secretKey
+) implements DecryptionKeyMaterial, Destroyable {
 
     @Override
     public Object getRecipientId() {

@@ -1,19 +1,46 @@
 package ee.cyber.cdoc20.crypto.keymaterial;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+
 
 /**
  * Represents key material required for decryption with symmetric key derived from password.
+ *
+ * @param password password chars
+ * @param keyLabel key label
  */
-public class PasswordDecryptionKeyMaterial implements DecryptionKeyMaterial {
+public record PasswordDecryptionKeyMaterial(
+    char[] password,
+    String keyLabel
+) implements DecryptionKeyMaterial {
 
-    private final String keyLabel;
-    private final char[] password;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-    public PasswordDecryptionKeyMaterial(char[] password, String keyLabel) {
-        this.keyLabel = keyLabel;
-        this.password = password;
+        PasswordDecryptionKeyMaterial that = (PasswordDecryptionKeyMaterial) o;
+        return Arrays.equals(password, that.password)
+            && Objects.equals(keyLabel, that.keyLabel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            Arrays.hashCode(password),
+            keyLabel
+        );
+    }
+
+    @Override
+    public String toString() {
+        return "PasswordDecryptionKeyMaterial{"
+            + "password=" + Arrays.toString(password)
+            + ", keyLabel='" + keyLabel + '}';
     }
 
     @Override
