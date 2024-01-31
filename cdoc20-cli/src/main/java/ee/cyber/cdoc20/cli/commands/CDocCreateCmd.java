@@ -18,7 +18,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
-import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -137,7 +136,7 @@ public class CDocCreateCmd implements Callable<Void> {
     }
 
     private void addSymmetricKeysWithLabels(List<EncryptionKeyMaterial> recipients)
-        throws CDocValidationException, GeneralSecurityException {
+        throws CDocValidationException {
 
         recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
             recipient.secrets)
