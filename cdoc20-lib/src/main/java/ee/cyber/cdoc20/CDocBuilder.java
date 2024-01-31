@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -115,8 +116,13 @@ public class CDocBuilder {
 
         for (EncryptionKeyMaterial keyMaterial: recipients) {
 
-            if (keyMaterial.getKey() instanceof PublicKey) {
-                PublicKey publicKey = (PublicKey) keyMaterial.getKey();
+            if (keyMaterial.getKey().isEmpty()) {
+                // no need to validate password here
+                return;
+            }
+
+            Key key = keyMaterial.getKey().get();
+            if (key instanceof PublicKey publicKey) {
 
                 if ("EC".equals(publicKey.getAlgorithm())) {
                     ECPublicKey recipientPubKey = (ECPublicKey) publicKey;
@@ -154,9 +160,9 @@ public class CDocBuilder {
                             + "for key " + keyMaterial.getLabel());
                 }
 
-            } else if (keyMaterial.getKey() instanceof SecretKey) {
-                if ((keyMaterial.getKey().getEncoded() == null)
-                        || (keyMaterial.getKey().getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
+            } else if (key instanceof SecretKey secretKey) {
+                if ((secretKey.getEncoded() == null)
+                        || (secretKey.getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
                     throw new CDocValidationException("Too short key for label: " + keyMaterial.getLabel());
                 }
             } else {

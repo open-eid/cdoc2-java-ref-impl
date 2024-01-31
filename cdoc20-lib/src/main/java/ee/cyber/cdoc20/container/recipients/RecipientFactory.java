@@ -9,6 +9,7 @@ import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.RsaUtils;
@@ -32,8 +33,8 @@ import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
-import static ee.cyber.cdoc20.crypto.Crypto.*;
 
 /**
  * Factory to create Recipients from different cryptographic keys
@@ -84,7 +85,13 @@ public final class RecipientFactory {
         byte[] fileMasterKey,
         EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException, ExtApiException {
-        Key key = encKeyMaterial.getKey();
+        Optional<Key> keyOpt = encKeyMaterial.getKey();
+        if (keyOpt.isEmpty()) {
+            addPasswordDerivedKeyRecipient(recipients, serverClient, fileMasterKey, encKeyMaterial);
+            return;
+        }
+
+        Key key = keyOpt.get();
         if (key instanceof RSAPublicKey rsaPublicKey) {
             addRsaRecipient(
                 recipients,
@@ -101,8 +108,13 @@ public final class RecipientFactory {
                 ecPublicKey,
                 encKeyMaterial.getLabel()
             );
-        } else if (key instanceof SecretKey) {
-            addSymmetricKeyRecipient(recipients, serverClient, fileMasterKey, encKeyMaterial);
+        } else if (EncryptionKeyOrigin.FROM_SECRET.equals(encKeyMaterial.getKeyOrigin())) {
+            recipients.add(buildSymmetricKeyRecipient(
+                fileMasterKey,
+                (SecretKey) key,
+                encKeyMaterial.getLabel(),
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)
+            ));
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
         }
@@ -140,7 +152,7 @@ public final class RecipientFactory {
         }
     }
 
-    private static void addSymmetricKeyRecipient(
+    private static void addPasswordDerivedKeyRecipient(
         List<Recipient> recipients,
         KeyCapsuleClient serverClient,
         byte[] fileMasterKey,
@@ -153,18 +165,10 @@ public final class RecipientFactory {
         if (encKeyMaterial instanceof PasswordEncryptionKeyMaterial pbkdfKeyMaterial) {
             recipients.add(buildPBKDF2Recipient(
                 fileMasterKey,
-                (SecretKey) encKeyMaterial.getKey(),
                 encKeyMaterial.getLabel(),
                 FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE),
-                pbkdfKeyMaterial.getPasswordSalt())
+                pbkdfKeyMaterial.getPassword())
             );
-        } else {
-            recipients.add(buildSymmetricKeyRecipient(
-                fileMasterKey,
-                (SecretKey) encKeyMaterial.getKey(),
-                encKeyMaterial.getLabel(),
-                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)
-                ));
         }
     }
 
@@ -306,7 +310,7 @@ public final class RecipientFactory {
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
-        byte[] salt = generateSaltForKey();
+        byte[] salt = Crypto.generateSaltForKey();
 
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
 
@@ -317,24 +321,24 @@ public final class RecipientFactory {
     /**
      * Derive KEK from preSharedKey and keyLabel and encrypt fileMasterKey with derived KEK
      * @param fileMasterKey fileMasterKey to be encrypted
-     * @param preSharedKey  pre-shared key, composed of the password
      * @param keyLabel      key label
      * @param fmkEncMethod  FMKEncryptionMethod
-     * @param passwordSalt  salt used for extracting symmetric key from the password
+     * @param password      password chars to derive the key from
      * @return PBKDF2Recipient that can be serialized into FBS {@link PBKDF2Capsule}
      */
     static PBKDF2Recipient buildPBKDF2Recipient(
         byte[] fileMasterKey,
-        SecretKey preSharedKey,
         String keyLabel,
         String fmkEncMethod,
-        byte[] passwordSalt
-    ) throws NoSuchAlgorithmException {
+        char[] password
+    ) throws GeneralSecurityException {
         Objects.requireNonNull(fileMasterKey);
-        Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
-        byte[] encryptionSalt = generateSaltForKey();
+        byte[] passwordSalt = Crypto.generateSaltForKey();
+        SecretKey preSharedKey = Crypto.extractSymmetricKeyFromPassword(password, passwordSalt);
+
+        byte[] encryptionSalt = Crypto.generateSaltForKey();
         SecretKey kek = Crypto.deriveKeyEncryptionKey(
             keyLabel, preSharedKey, encryptionSalt, fmkEncMethod
         );

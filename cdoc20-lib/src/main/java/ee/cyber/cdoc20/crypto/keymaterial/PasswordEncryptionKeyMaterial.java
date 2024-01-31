@@ -2,31 +2,52 @@ package ee.cyber.cdoc20.crypto.keymaterial;
 
 
 import java.security.Key;
-import javax.crypto.SecretKey;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 
 /**
  * Represents key material required for encryption with password.
+ *
+ * @param password password chars
+ * @param keyLabel key label
  */
-public class PasswordEncryptionKeyMaterial implements EncryptionKeyMaterial {
+public record PasswordEncryptionKeyMaterial(
+    char[] password,
+    String keyLabel
+) implements EncryptionKeyMaterial {
 
-    private final Key preSharedKey;
-    private final String keyLabel;
-    private final byte[] passwordSalt;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-    public PasswordEncryptionKeyMaterial(
-        SecretKey preSharedKey,
-        String keyLabel,
-        byte[] passwordSalt
-    ) {
-        this.preSharedKey = preSharedKey;
-        this.keyLabel = keyLabel;
-        this.passwordSalt = passwordSalt;
+        PasswordEncryptionKeyMaterial that = (PasswordEncryptionKeyMaterial) o;
+        return Arrays.equals(password, that.password)
+            && Objects.equals(keyLabel, that.keyLabel);
     }
 
     @Override
-    public Key getKey() {
-        return preSharedKey;
+    public int hashCode() {
+        return Objects.hash(
+            Arrays.hashCode(password),
+            keyLabel
+        );
+    }
+
+    @Override
+    public String toString() {
+        return "PasswordEncryptionKeyMaterial{"
+            + "password=" + Arrays.toString(password)
+            + ", keyLabel='" + keyLabel + '}';
+    }
+
+    @Override
+    public Optional<Key> getKey() {
+        return Optional.empty();
     }
 
     @Override
@@ -34,11 +55,16 @@ public class PasswordEncryptionKeyMaterial implements EncryptionKeyMaterial {
         return keyLabel;
     }
 
+    @Override
+    public EncryptionKeyOrigin getKeyOrigin() {
+        return EncryptionKeyOrigin.FROM_PASSWORD;
+    }
+
     /**
-     * @return salt used to derive the key from the password
+     * @return password chars to derive the key from
      */
-    public byte[] getPasswordSalt() {
-        return this.passwordSalt;
+    public char[] getPassword() {
+        return this.password;
     }
 
 }
