@@ -9,7 +9,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretEncryptionKeyMaterial;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -31,13 +34,13 @@ import java.util.Properties;
 
 
 /**
- * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys.
+ * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys or symmetric key.
  */
 public class CDocBuilder {
     private static final Logger log = LoggerFactory.getLogger(CDocBuilder.class);
 
     private List<File> payloadFiles;
-    private List<EncryptionKeyMaterial> recipients = new LinkedList<>();
+    private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
     private Properties serverProperties;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
@@ -116,14 +119,13 @@ public class CDocBuilder {
 
         for (EncryptionKeyMaterial keyMaterial: recipients) {
 
-            if (keyMaterial.getKey().isEmpty()) {
+            if (EncryptionKeyOrigin.FROM_PASSWORD.equals(keyMaterial.getKeyOrigin())) {
                 // no need to validate password here
                 return;
             }
 
-            Key key = keyMaterial.getKey().get();
-            if (key instanceof PublicKey publicKey) {
-
+            if (keyMaterial instanceof PublicKeyEncryptionKeyMaterial publicKeyMaterial) {
+                PublicKey publicKey = publicKeyMaterial.getPublicKey();
                 if ("EC".equals(publicKey.getAlgorithm())) {
                     ECPublicKey recipientPubKey = (ECPublicKey) publicKey;
                     String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
@@ -154,22 +156,23 @@ public class CDocBuilder {
                         throw new CDocValidationException("RSA key does not meet length requirements");
                     }
                 } else {
-                    log.error("Unsupported public key alg {} for key {}",
-                            publicKey.getAlgorithm(), keyMaterial.getLabel());
-                    throw new CDocValidationException("Unsupported public key alg " + publicKey.getAlgorithm()
-                            + "for key " + keyMaterial.getLabel());
+                    String errorMsg = ("Unsupported public key algorithm "
+                        + publicKey.getAlgorithm() + "for key " + publicKeyMaterial.getLabel());
+                    log.error(errorMsg);
+                    throw new CDocValidationException(errorMsg);
                 }
 
-            } else if (key instanceof SecretKey secretKey) {
+            } else if (keyMaterial instanceof SecretEncryptionKeyMaterial secretKeyMaterial) {
+                SecretKey secretKey = secretKeyMaterial.getSecretKey();
                 if ((secretKey.getEncoded() == null)
                         || (secretKey.getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
-                    throw new CDocValidationException("Too short key for label: " + keyMaterial.getLabel());
+                    throw new CDocValidationException("Too short key for label: " + secretKeyMaterial.getLabel());
                 }
             } else {
-                log.error("Unsupported key {} type: {}", keyMaterial.getLabel(), keyMaterial.getKey().getClass());
-                throw new CDocValidationException("Unsupported key " + keyMaterial.getLabel());
+                String errorMsg = "Unsupported key " + keyMaterial.getLabel();
+                log.error(errorMsg);
+                throw new CDocValidationException(errorMsg);
             }
-
         }
     }
 

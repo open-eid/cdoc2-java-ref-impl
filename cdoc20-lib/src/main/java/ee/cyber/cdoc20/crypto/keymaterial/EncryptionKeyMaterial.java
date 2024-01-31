@@ -1,11 +1,7 @@
 package ee.cyber.cdoc20.crypto.keymaterial;
 
-import java.security.Key;
 import java.security.PublicKey;
-import java.util.Optional;
 import javax.crypto.SecretKey;
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
 
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
@@ -13,12 +9,7 @@ import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 /**
  * Represents key material required for encryption.
  */
-public interface EncryptionKeyMaterial extends Destroyable {
-
-    /**
-     * @return the key to derive the encryption key if exists
-     */
-    Optional<Key> getKey();
+public interface EncryptionKeyMaterial {
 
     /**
      * @return identifier for the encryption key
@@ -40,28 +31,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial fromPublicKey(PublicKey publicKey, String keyLabel) {
-        return new EncryptionKeyMaterial() {
-
-            @Override
-            public Optional<Key> getKey() {
-                return Optional.of(publicKey);
-            }
-
-            @Override
-            public String getLabel() {
-                return keyLabel;
-            }
-
-            @Override
-            public EncryptionKeyOrigin getKeyOrigin() {
-                return EncryptionKeyOrigin.FROM_PUBLIC_KEY;
-            }
-
-            @Override
-            public void destroy() {
-                // no secret key material that needs to be destroyed
-            }
-        };
+        return new PublicKeyEncryptionKeyMaterial(publicKey, keyLabel);
     }
 
     /**
@@ -73,33 +43,7 @@ public interface EncryptionKeyMaterial extends Destroyable {
      * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial fromSecret(SecretKey preSharedKey, String keyLabel) {
-        return new EncryptionKeyMaterial() {
-
-            @Override
-            public Optional<Key> getKey() {
-                return Optional.of(preSharedKey);
-            }
-
-            @Override
-            public String getLabel() {
-                return keyLabel;
-            }
-
-            @Override
-            public EncryptionKeyOrigin getKeyOrigin() {
-                return EncryptionKeyOrigin.FROM_SECRET;
-            }
-
-            @Override
-            public void destroy() throws DestroyFailedException {
-                preSharedKey.destroy();
-            }
-
-            @Override
-            public boolean isDestroyed() {
-                return preSharedKey.isDestroyed();
-            }
-        };
+        return new SecretEncryptionKeyMaterial(preSharedKey, keyLabel);
     }
 
     /**

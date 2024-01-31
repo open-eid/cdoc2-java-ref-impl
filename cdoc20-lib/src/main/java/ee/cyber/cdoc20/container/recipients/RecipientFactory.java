@@ -9,10 +9,11 @@ import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
-import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.keymaterial.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.RsaUtils;
+import ee.cyber.cdoc20.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc20.fbs.recipients.SymmetricKeyCapsule;
@@ -23,17 +24,16 @@ import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 
 /**
@@ -85,38 +85,16 @@ public final class RecipientFactory {
         byte[] fileMasterKey,
         EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException, ExtApiException {
-        Optional<Key> keyOpt = encKeyMaterial.getKey();
-        if (keyOpt.isEmpty()) {
-            addPasswordDerivedKeyRecipient(recipients, serverClient, fileMasterKey, encKeyMaterial);
-            return;
-        }
 
-        Key key = keyOpt.get();
-        if (key instanceof RSAPublicKey rsaPublicKey) {
-            addRsaRecipient(
-                recipients,
-                serverClient,
-                fileMasterKey,
-                rsaPublicKey,
-                encKeyMaterial.getLabel()
-            );
-        } else if (key instanceof ECPublicKey ecPublicKey) {
-            addEccRecipient(
-                recipients,
-                serverClient,
-                fileMasterKey,
-                ecPublicKey,
-                encKeyMaterial.getLabel()
-            );
-        } else if (EncryptionKeyOrigin.FROM_SECRET.equals(encKeyMaterial.getKeyOrigin())) {
-            recipients.add(buildSymmetricKeyRecipient(
-                fileMasterKey,
-                (SecretKey) key,
-                encKeyMaterial.getLabel(),
-                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)
-            ));
+        if (encKeyMaterial instanceof PublicKeyEncryptionKeyMaterial publicKeyMaterial) {
+            addPublicKeyRecipient(recipients, serverClient, fileMasterKey, publicKeyMaterial);
         } else {
-            throw new InvalidKeyException("Unsupported key algorithm " + key.getAlgorithm());
+            addSymmetricKeyRecipient(
+                recipients,
+                serverClient,
+                fileMasterKey,
+                encKeyMaterial
+            );
         }
     }
 
@@ -152,7 +130,34 @@ public final class RecipientFactory {
         }
     }
 
-    private static void addPasswordDerivedKeyRecipient(
+    private static void addPublicKeyRecipient(
+        List<Recipient> recipients,
+        KeyCapsuleClient serverClient,
+        byte[] fileMasterKey,
+        PublicKeyEncryptionKeyMaterial publicKeyMaterial
+    ) throws GeneralSecurityException, ExtApiException {
+
+        PublicKey publicKey = publicKeyMaterial.getPublicKey();
+        if (publicKey.getAlgorithm().equals("RSA")) {
+            addRsaRecipient(
+                recipients,
+                serverClient,
+                fileMasterKey,
+                (RSAPublicKey) publicKey,
+                publicKeyMaterial.getLabel()
+            );
+        } else if (publicKey.getAlgorithm().equals("EC")) {
+            addEccRecipient(
+                recipients,
+                serverClient,
+                fileMasterKey,
+                (ECPublicKey) publicKey,
+                publicKeyMaterial.getLabel()
+            );
+        }
+    }
+
+    private static void addSymmetricKeyRecipient(
         List<Recipient> recipients,
         KeyCapsuleClient serverClient,
         byte[] fileMasterKey,
@@ -165,10 +170,19 @@ public final class RecipientFactory {
         if (encKeyMaterial instanceof PasswordEncryptionKeyMaterial pbkdfKeyMaterial) {
             recipients.add(buildPBKDF2Recipient(
                 fileMasterKey,
-                encKeyMaterial.getLabel(),
+                pbkdfKeyMaterial.getLabel(),
                 FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE),
                 pbkdfKeyMaterial.getPassword())
             );
+        } else if (encKeyMaterial instanceof SecretEncryptionKeyMaterial secretKeyMaterial) {
+            recipients.add(buildSymmetricKeyRecipient(
+                fileMasterKey,
+                secretKeyMaterial.getSecretKey(),
+                secretKeyMaterial.getLabel(),
+                FMKEncryptionMethod.name(Envelope.FMK_ENC_METHOD_BYTE)
+            ));
+        } else {
+            throw new InvalidKeyException("Unsupported key material");
         }
     }
 

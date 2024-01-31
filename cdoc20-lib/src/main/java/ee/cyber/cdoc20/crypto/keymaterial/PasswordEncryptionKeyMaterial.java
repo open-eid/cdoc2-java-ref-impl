@@ -1,16 +1,14 @@
 package ee.cyber.cdoc20.crypto.keymaterial;
 
 
-import java.security.Key;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
 
 /**
- * Represents key material required for encryption with password.
+ * Represents key material required for encryption with symmetric key derived from the password.
  *
  * @param password password chars
  * @param keyLabel key label
@@ -43,11 +41,6 @@ public record PasswordEncryptionKeyMaterial(
         return "PasswordEncryptionKeyMaterial{"
             + "password=" + Arrays.toString(password)
             + ", keyLabel='" + keyLabel + '}';
-    }
-
-    @Override
-    public Optional<Key> getKey() {
-        return Optional.empty();
     }
 
     @Override
