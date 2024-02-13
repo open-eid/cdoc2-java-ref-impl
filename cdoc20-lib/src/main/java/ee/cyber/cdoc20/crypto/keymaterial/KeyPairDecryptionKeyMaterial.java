@@ -22,7 +22,7 @@ public record KeyPairDecryptionKeyMaterial(
 
     @Override
     public EncryptionKeyOrigin getKeyOrigin() {
-        return EncryptionKeyOrigin.FROM_PUBLIC_KEY;
+        return EncryptionKeyOrigin.PUBLIC_KEY;
     }
 
     @Override

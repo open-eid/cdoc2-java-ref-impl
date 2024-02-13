@@ -24,7 +24,7 @@ public record SecretEncryptionKeyMaterial(
 
     @Override
     public EncryptionKeyOrigin getKeyOrigin() {
-        return EncryptionKeyOrigin.FROM_SECRET;
+        return EncryptionKeyOrigin.SECRET;
     }
 
     @Override

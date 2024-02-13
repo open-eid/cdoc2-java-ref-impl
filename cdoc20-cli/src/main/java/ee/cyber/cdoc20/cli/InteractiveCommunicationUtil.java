@@ -49,7 +49,7 @@ public final class InteractiveCommunicationUtil {
 
         String label = readLabelInteractively(console);
 
-        return new FormattedOptionParts(password, label, EncryptionKeyOrigin.FROM_PASSWORD);
+        return new FormattedOptionParts(password, label, EncryptionKeyOrigin.PASSWORD);
     }
 
     private static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {

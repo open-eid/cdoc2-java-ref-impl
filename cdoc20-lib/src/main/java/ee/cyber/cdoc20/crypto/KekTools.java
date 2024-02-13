@@ -47,7 +47,7 @@ public final class KekTools {
         SecretDecryptionKeyMaterial keyMaterial
     ) {
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_SECRET,
+            EncryptionKeyOrigin.SECRET,
             keyMaterial.getKeyOrigin(),
             "Expected SecretKey for SymmetricKeyRecipient"
         );
@@ -66,7 +66,7 @@ public final class KekTools {
     ) throws GeneralSecurityException {
 
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_PASSWORD,
+            EncryptionKeyOrigin.PASSWORD,
             keyMaterial.getKeyOrigin(),
             "Expected SecretKey for PBKDF2Recipient"
         );
@@ -91,7 +91,7 @@ public final class KekTools {
         ECPublicKey senderPubKey = eccPubKeyRecipient.getSenderPubKey();
 
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_PUBLIC_KEY,
+            EncryptionKeyOrigin.PUBLIC_KEY,
             keyMaterial.getKeyOrigin(),
             "EC key pair required for KEK derive"
         );
@@ -108,7 +108,7 @@ public final class KekTools {
     ) throws GeneralSecurityException, CDocException {
 
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_PUBLIC_KEY,
+            EncryptionKeyOrigin.PUBLIC_KEY,
             keyMaterial.getKeyOrigin(),
             "Must contain EC key pair for ECC Server scenario"
         );
@@ -159,7 +159,7 @@ public final class KekTools {
         String serverId = recipient.getKeyServerId();
 
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_PUBLIC_KEY,
+            EncryptionKeyOrigin.PUBLIC_KEY,
             keyMaterial.getKeyOrigin(),
             "Must contain RSA key pair for RSA Server scenario"
         );
@@ -201,7 +201,7 @@ public final class KekTools {
     ) throws GeneralSecurityException {
 
         validateKeyOrigin(
-            EncryptionKeyOrigin.FROM_PUBLIC_KEY,
+            EncryptionKeyOrigin.PUBLIC_KEY,
             keyMaterial.getKeyOrigin(),
             MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO
         );

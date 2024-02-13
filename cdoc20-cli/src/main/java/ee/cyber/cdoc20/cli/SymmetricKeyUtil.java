@@ -63,7 +63,7 @@ public final class SymmetricKeyUtil {
 
         for (String secret: secrets) {
             FormattedOptionParts splitSecret
-                = splitFormattedOption(secret, EncryptionKeyOrigin.FROM_SECRET);
+                = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
 
             EncryptionKeyMaterial km
                 = SymmetricKeyTools.getEncryptionKeyMaterialFromSecret(splitSecret);
@@ -96,10 +96,10 @@ public final class SymmetricKeyUtil {
         EncryptionKeyOrigin keyOrigin
     ) throws CDocValidationException {
         var parts = formattedOption.split(":");
-        String optionName = keyOrigin.getKeyName();
+        String optionName = keyOrigin.name();
         if (parts.length != 2) {
             throw new CDocValidationException(
-                String.format("%s must have format label:%s", optionName, optionName)
+                String.format("Option %s must have format label:value", optionName)
             );
         }
 
@@ -136,7 +136,7 @@ public final class SymmetricKeyUtil {
             passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively();
         } else {
             passwordAndLabel
-                = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.FROM_PASSWORD);
+                = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.PASSWORD);
             PasswordValidationUtil.validatePassword(passwordAndLabel.optionChars());
         }
 
@@ -179,7 +179,7 @@ public final class SymmetricKeyUtil {
         }
         if (null != formattedSecret && null == decryptionKm) {
             FormattedOptionParts splitSecret = splitFormattedOption(
-                formattedSecret, EncryptionKeyOrigin.FROM_SECRET
+                formattedSecret, EncryptionKeyOrigin.SECRET
             );
             decryptionKm =
                 SymmetricKeyTools.extractDecryptionKeyMaterialFromSecret(splitSecret, recipients);

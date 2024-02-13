@@ -126,7 +126,7 @@ public class CDocBuilder {
     private void validateEncryptionKey(EncryptionKeyMaterial keyMaterial)
         throws CDocValidationException {
 
-        if (EncryptionKeyOrigin.FROM_PASSWORD.equals(keyMaterial.getKeyOrigin())) {
+        if (EncryptionKeyOrigin.PASSWORD.equals(keyMaterial.getKeyOrigin())) {
             // no need to validate password here
             return;
         }

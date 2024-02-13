@@ -50,7 +50,7 @@ public record PasswordEncryptionKeyMaterial(
 
     @Override
     public EncryptionKeyOrigin getKeyOrigin() {
-        return EncryptionKeyOrigin.FROM_PASSWORD;
+        return EncryptionKeyOrigin.PASSWORD;
     }
 
     /**
