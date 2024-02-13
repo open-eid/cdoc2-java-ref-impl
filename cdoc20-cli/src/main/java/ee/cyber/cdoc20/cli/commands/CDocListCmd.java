@@ -30,38 +30,38 @@ import picocli.CommandLine.Option;
 public class CDocListCmd implements Callable<Void> {
     @Option(names = {"-f", "--file" }, required = true,
             paramLabel = "CDOC", description = "the CDOC2.0 file")
-    File cdocFile;
+    private File cdocFile;
 
     @Option(names = {"-k", "--key"},
             paramLabel = "PEM", description = "EC private key PEM used to decrypt")
-    File privKeyFile;
+    private File privKeyFile;
 
     @Option(names = {"-p12"},
             paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-    String p12;
+    private String p12;
 
     @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
             description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-    String secret;
+    private String secret;
 
     @Option(names = {"-pass", "--password"}, arity = "0..1",
         paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-    String password;
+    private String password;
 
     @Option (names = {"--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
-    Integer slot = 0;
+    private Integer slot = 0;
 
     @Option(names = {"-a", "--alias"},
             description = "Alias of the keystore entry to use for decrypting")
-    String keyAlias;
+    private String keyAlias;
 
     @Option(names = {"--server"}, paramLabel = "FILE.properties")
     private String keyServerPropertiesFile;
 
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
-    void setProperty(Map<String, String> props) {
+    private void setProperty(Map<String, String> props) {
         props.forEach(System::setProperty);
     }
 

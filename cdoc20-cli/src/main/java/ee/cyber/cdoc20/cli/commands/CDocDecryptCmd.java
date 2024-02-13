@@ -31,35 +31,35 @@ public class CDocDecryptCmd implements Callable<Void> {
 
     @Option(names = {"-f", "--file" }, required = true,
             paramLabel = "CDOC", description = "the CDOC2.0 file")
-    File cdocFile;
+    private File cdocFile;
 
     @Option(names = {"-k", "--key"},
             paramLabel = "PEM", description = "Private key PEM to use for decrypting")
-    File privKeyFile;
+    private File privKeyFile;
 
     @Option(names = {"-p12"},
             paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-    String p12;
+    private String p12;
 
     @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
             description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-    String secret;
+    private String secret;
 
-    @Option(names = {"-pass", "--password"}, arity = "0..1",
+    @Option(names = {"-pw", "--password"}, arity = "0..1",
         paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-    String password;
+    private String password;
 
     @Option (names = {"--slot"},
             description = "Smart card key slot to use for decrypting. Default: 0")
-    Integer slot = 0;
+    private Integer slot = 0;
 
     @Option(names = {"-a", "--alias"},
             description = "Alias of the keystore entry to use for decrypting")
-    String keyAlias;
+    private String keyAlias;
 
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
-    private final File outputPath = new File(".");
+    private File outputPath = new File(".");
 
     @Option(names = {"--server"}, paramLabel = "FILE.properties"
             // commented out until public key server is in live
@@ -69,14 +69,14 @@ public class CDocDecryptCmd implements Callable<Void> {
     private String keyServerPropertiesFile;
 
     @CommandLine.Parameters(description = "one or more files to decrypt", paramLabel = "fileToExtract")
-    String[] filesToExtract = new String[0];
+    private String[] filesToExtract = new String[0];
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
-    void setProperty(Map<String, String> props) {
+    private void setProperty(Map<String, String> props) {
         props.forEach(System::setProperty);
     }
 

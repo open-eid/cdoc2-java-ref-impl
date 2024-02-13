@@ -19,11 +19,11 @@ import java.util.concurrent.Callable;
 public class CDocInfoCmd implements Callable<Void> {
     @CommandLine.Option(names = {"-f", "--file" }, required = true,
             paramLabel = "CDOC", description = "the CDOC2.0 file")
-    File cdocFile;
+    private File cdocFile;
 
     // allow -Dkey for setting System properties
     @CommandLine.Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
-    void setProperty(Map<String, String> props) {
+    private void setProperty(Map<String, String> props) {
         props.forEach(System::setProperty);
     }
 

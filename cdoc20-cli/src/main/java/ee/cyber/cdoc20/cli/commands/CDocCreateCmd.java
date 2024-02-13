@@ -38,37 +38,37 @@ public class CDocCreateCmd implements Callable<Void> {
     //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost.properties";
 
     @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2.0 file")
-    File cdocFile;
+    private File cdocFile;
 
     // one of cert or pubkey must be specified
     @CommandLine.ArgGroup(exclusive = false, multiplicity = "1..*")
-    Dependent recipient;
+    private Dependent recipient;
 
     static class Dependent {
         @Option(names = {"-p", "--pubkey"},
                 paramLabel = "PEM", description = "recipient public key in PEM format")
-        File[] pubKeys;
+        private File[] pubKeys;
 
         @Option(names = {"-c", "--cert"},
                 paramLabel = "CER", description = "recipient x509 certificate in DER or PEM format")
-        File[] certs;
+        private File[] certs;
 
         @Option(names = {"-r", "--recipient", "--receiver"},
                 paramLabel = "isikukood", description = "recipient id code (isikukood)")
-        String[] identificationCodes;
+        private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
                 description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-        String[] secrets;
+        private String[] secrets;
 
-        @Option(names = {"-pass", "--password"}, arity = "0..1",
+        @Option(names = {"-pw", "--password"}, arity = "0..1",
             paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-        String password;
+        private String password;
     }
 
     // allow -Dkey for setting System properties
     @Option(names = "-D", mapFallbackValue = "", description = "Set Java System property")
-    void setProperty(Map<String, String> props) {
+    private void setProperty(Map<String, String> props) {
         props.forEach(System::setProperty);
     }
 
@@ -79,10 +79,10 @@ public class CDocCreateCmd implements Callable<Void> {
             //, arity = "0..1"
             //, fallbackValue = DEFAULT_SERVER_PROPERTIES
     )
-    String keyServerPropertiesFile;
+    private String keyServerPropertiesFile;
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
-    File[] inputFiles;
+    private File[] inputFiles;
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
