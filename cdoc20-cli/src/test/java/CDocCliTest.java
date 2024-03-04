@@ -105,14 +105,11 @@ class CDocCliTest {
 
     @Test
     void shouldFailToEncryptDocWithPasswordIfItsValidationHasFailed(@TempDir Path tempPath) {
-        String password = "passwordlabel:myplaintextpassword";
+        String password = "passwordlabel:short";
         String passwordForEncrypt = "--password=" + password;
 
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretForDecrypt = "--secret=" + secret;
-
         assertThrowsException(() ->
-            checkCreateDecryptDoc(tempPath, passwordForEncrypt, secretForDecrypt, FAILURE_EXIT_CODE)
+            checkCreateDecryptDoc(tempPath, passwordForEncrypt, passwordForEncrypt, FAILURE_EXIT_CODE)
         );
     }
 
