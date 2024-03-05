@@ -54,10 +54,12 @@ public class EccPubKeyRecipient extends EccRecipient {
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
         throws GeneralSecurityException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForEcc(this, keyPairKeyMaterial);
+        }
 
-        return KekTools.deriveKekForEcc(
-            this,
-            (KeyPairDecryptionKeyMaterial) keyMaterial
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
         );
     }
 

@@ -48,10 +48,12 @@ public class RSAPubKeyRecipient extends RSARecipient {
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
         throws GeneralSecurityException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForRsa(this, keyPairKeyMaterial);
+        }
 
-        return KekTools.deriveKekForRsa(
-            this,
-            (KeyPairDecryptionKeyMaterial) keyMaterial
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
         );
     }
 

@@ -68,9 +68,13 @@ public class PBKDF2Recipient extends Recipient {
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
         throws GeneralSecurityException {
+        if (keyMaterial instanceof PasswordDecryptionKeyMaterial pwKeyMaterial) {
+            return KekTools.deriveKekForPasswordDerivedKey(this, pwKeyMaterial);
+        }
 
-        return KekTools.deriveKekForPasswordDerivedKey(this,
-            (PasswordDecryptionKeyMaterial) keyMaterial);
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
+        );
     }
 
     @Override

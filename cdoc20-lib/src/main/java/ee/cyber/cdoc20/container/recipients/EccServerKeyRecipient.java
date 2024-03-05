@@ -56,11 +56,16 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
         throws GeneralSecurityException, CDocException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForEccServer(
+                this,
+                keyPairKeyMaterial,
+                factory
+            );
+        }
 
-        return KekTools.deriveKekForEccServer(
-            this,
-            (KeyPairDecryptionKeyMaterial) keyMaterial,
-            factory
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
         );
     }
 

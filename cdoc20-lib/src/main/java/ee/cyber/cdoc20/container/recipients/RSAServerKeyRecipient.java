@@ -54,11 +54,16 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
         throws GeneralSecurityException, CDocException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForRsaServer(
+                this,
+                keyPairKeyMaterial,
+                factory
+            );
+        }
 
-        return KekTools.deriveKekForRsaServer(
-            this,
-            (KeyPairDecryptionKeyMaterial) keyMaterial,
-            factory
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
         );
     }
 
