@@ -248,8 +248,7 @@ public class TarDeflate implements AutoCloseable {
             }
         }
 
-        log.debug("Uncompressed {}B from {}B (compressed)",
-                zLibIs.getUncompressedCount(), zLibIs.getCompressedCount());
+        logUncompressedResult(zLibIs);
 
         // TarArchive processing is finished after first zero block is encountered. Adding additional data after that
         // block makes possible to "hide" additional data after tar archive. This may be attempt to disable
@@ -260,6 +259,11 @@ public class TarDeflate implements AutoCloseable {
         }
 
         return extractedArchiveEntries;
+    }
+
+    private static void logUncompressedResult(InputStreamStatistics gZipStatistics) {
+        log.debug("Uncompressed {}B from {}B (compressed)",
+            gZipStatistics.getUncompressedCount(), gZipStatistics.getCompressedCount());
     }
 
     /**
