@@ -36,7 +36,7 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
-import org.apache.commons.compress.utils.CountingInputStream;
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,13 +279,13 @@ public final class Envelope {
 
                 checkHmac(hmac, fbsHeaderBytes, hmacKey);
 
-                log.debug("Processed {} header bytes", countingIs.getBytesRead());
+                log.debug("Processed {} header bytes", countingIs.getByteCount());
                 log.debug("payload available (at least) {}", countingIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
                     byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
 
-                    long headerSize = countingIs.getBytesRead();
+                    long headerSize = countingIs.getByteCount();
                     List<ArchiveEntry> result = List.of();
 
                     // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
@@ -299,30 +299,30 @@ public final class Envelope {
                             // read remaining bytes to force Poly1305 MAC check
                             // only report caught exception after ChaCha stream is drained and MAC checked
 
-                            long processedBytes = countingIs.getBytesRead();
+                            long processedBytes = countingIs.getByteCount();
                             drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
                             // since exception was thrown from TarDeflate, then created files are deleted by
                             // TarDeflate::close() when exiting try with resources block
-                            if (countingIs.getBytesRead() - processedBytes > 0) {
+                            if (countingIs.getByteCount() - processedBytes > 0) {
                                 log.debug("Decrypted {} unprocessed bytes after \"{}\"",
-                                        countingIs.getBytesRead() - processedBytes, tarException.toString());
+                                        countingIs.getByteCount() - processedBytes, tarException.toString());
                             }
                             throw tarException; //no exception from drainStream, re-throw original exception
                         } finally {
                             // deflate/tar stream processing is finished, drain any remaining bytes to force
                             // ChaCha Poly1305 MAC check
-                            long processedBytes = countingIs.getBytesRead();
+                            long processedBytes = countingIs.getByteCount();
                             drainStream(cis, tar::deleteCreatedFiles); //may throw IOException
 
-                            if (countingIs.getBytesRead() - processedBytes > 0) {
+                            if (countingIs.getByteCount() - processedBytes > 0) {
                                 log.debug("Decrypted {} unprocessed bytes ",
-                                        countingIs.getBytesRead() - processedBytes);
+                                        countingIs.getByteCount() - processedBytes);
                             }
                         }
 
                     } finally  {
                         log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
-                                countingIs.getBytesRead() - headerSize, countingIs.getBytesRead());
+                                countingIs.getByteCount() - headerSize, countingIs.getByteCount());
                     }
                     return result;
                 } else {
@@ -346,7 +346,7 @@ public final class Envelope {
     private static void drainStream(CipherInputStream cis, @Nullable Runnable cleanUpFunc)
             throws IOException {
 
-        byte ignored[] = new byte[1024];
+        byte[] ignored = new byte[1024];
         try {
             while (cis.read(ignored) > 0) { }
         } catch (IOException drainingException) { // MAC check error is thrown as IOException
