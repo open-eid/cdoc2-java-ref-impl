@@ -3,7 +3,7 @@ package ee.cyber.cdoc20;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
-import ee.cyber.cdoc20.util.PasswordUtil;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -12,42 +12,42 @@ class PasswordValidationTest {
 
     @Test
     void testStrongPassword() {
-        PasswordUtil.validatePassword("StrongPassword".toCharArray());
+        PasswordValidationUtil.validatePassword("StrongPassword".toCharArray());
     }
 
     @Test
     void shouldAllowSpecialCharacter() {
-        PasswordUtil.validatePassword("Password_with_special_characters!".toCharArray());
+        PasswordValidationUtil.validatePassword("Password_with_special_characters!".toCharArray());
     }
 
     @Test
     void shouldAllowNumber() {
-        PasswordUtil.validatePassword("PasswordWithNumbers123".toCharArray());
+        PasswordValidationUtil.validatePassword("PasswordWithNumbers123".toCharArray());
     }
 
     @Test
     void shouldAllowWhitespace() {
-        PasswordUtil.validatePassword("Password With whitespaces".toCharArray());
+        PasswordValidationUtil.validatePassword("Password With whitespaces".toCharArray());
     }
 
     @Test
     void shouldFailPwValidationWithoutUpperCaseCharacter() {
         assertThrowsIllegalArgumentException(() ->
-                PasswordUtil.validatePassword("password_without_upper_case".toCharArray())
+                PasswordValidationUtil.validatePassword("password_without_upper_case".toCharArray())
             );
     }
 
     @Test
     void shouldFailPwValidationWithoutLowerCaseCharacter() {
         assertThrowsIllegalArgumentException(() ->
-            PasswordUtil.validatePassword("PASSWORD_WITHOUT_LOWER_CASE".toCharArray())
+            PasswordValidationUtil.validatePassword("PASSWORD_WITHOUT_LOWER_CASE".toCharArray())
         );
     }
 
     @Test
     void shouldFailTooShortPwValidation() {
         assertThrowsIllegalArgumentException(() ->
-            PasswordUtil.validatePassword("short".toCharArray())
+            PasswordValidationUtil.validatePassword("short".toCharArray())
         );
     }
 
@@ -56,7 +56,7 @@ class PasswordValidationTest {
         String password = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!VeryLongPasswordIsNotAllowed"
             + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
         assertThrowsIllegalArgumentException(() ->
-            PasswordUtil.validatePassword(password.toCharArray())
+            PasswordValidationUtil.validatePassword(password.toCharArray())
         );
     }
 

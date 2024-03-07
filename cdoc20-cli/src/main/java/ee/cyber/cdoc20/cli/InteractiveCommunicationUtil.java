@@ -11,7 +11,7 @@ import ee.cyber.cdoc20.CDocUserException;
 import ee.cyber.cdoc20.FormattedOptionParts;
 import ee.cyber.cdoc20.UserErrorCode;
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
-import ee.cyber.cdoc20.util.PasswordUtil;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
 
 import static ee.cyber.cdoc20.cli.SymmetricKeyUtil.LABEL_LOG_MSG;
 
@@ -38,7 +38,7 @@ public final class InteractiveCommunicationUtil {
     public static FormattedOptionParts readPasswordAndLabelInteractively() {
         Console console = System.console();
         char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
-        PasswordUtil.validatePassword(password);
+        PasswordValidationUtil.validatePassword(password);
 
         char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
 

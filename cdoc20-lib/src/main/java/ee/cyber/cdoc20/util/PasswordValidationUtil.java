@@ -1,7 +1,5 @@
 package ee.cyber.cdoc20.util;
 
-import javax.swing.*;
-
 import org.passay.CharacterRule;
 import org.passay.EnglishCharacterData;
 import org.passay.LengthRule;
@@ -13,9 +11,9 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Utility class for password validation or formatting.
+ * Utility class for password validation.
  */
-public final class PasswordUtil {
+public final class PasswordValidationUtil {
 
     private static final int PW_MAX_LENGTH = 64;
     private static final int PW_MIN_LENGTH = 8;
@@ -24,9 +22,9 @@ public final class PasswordUtil {
         + PW_MIN_LENGTH + " and " + PW_MAX_LENGTH
         + ", should contain at least one upper case or one lower case character";
 
-    private PasswordUtil() { }
+    private PasswordValidationUtil() { }
 
-    private static final Logger log = LoggerFactory.getLogger(PasswordUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(PasswordValidationUtil.class);
 
     /**
      * Validates password strength for min requirements to have at least one lower case and one
@@ -39,16 +37,6 @@ public final class PasswordUtil {
             log.error(PW_REQUIREMENTS);
             throw new IllegalArgumentException(PW_REQUIREMENTS);
         }
-    }
-
-    /**
-     * Hides password into {@code *} characters.
-     * @param password password chars
-     */
-    public static char[] hidePassword(char[] password) {
-        JPasswordField formattedPw = new JPasswordField(String.valueOf(password));
-        formattedPw.setEchoChar('*');
-        return formattedPw.getPassword();
     }
 
     private static boolean passwordIsValid(String password) {

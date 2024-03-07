@@ -6,8 +6,6 @@ import java.util.Objects;
 
 import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
 
-import static ee.cyber.cdoc20.util.PasswordUtil.hidePassword;
-
 
 /**
  * Represents key material required for decryption with symmetric key derived from password.
@@ -41,7 +39,7 @@ public record PasswordDecryptionKeyMaterial(
     @Override
     public String toString() {
         return "PasswordDecryptionKeyMaterial{"
-            + "password=" + Arrays.toString(hidePassword(password))
+            + "password=[hidden]"
             + ", keyLabel='" + keyLabel + '}';
     }
 
