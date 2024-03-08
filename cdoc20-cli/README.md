@@ -78,7 +78,7 @@ java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIc
 
 Or secret read from file (so that secret is not exposed through process list)
 ```
-java -jar target/cdoc20-cli-0.0.13-SNAPSHOT.jar create @keys/b64secret.option -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create @keys/b64secret.option -f /tmp/symmetric.cdoc README.md
 ```
 
 ```
@@ -126,7 +126,7 @@ To decrypt CDOC document that has its keys distributed through key server, cdoc-
 
 Configuration for id-card (certificate for mutual TLS and private key is read from smart-card)
 ```
-java -jar target/cdoc20-cli*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
+java -jar target/cdoc20-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
 ```
 
 It is also possible to decrypt documents created with "soft" keys, but configuration for mutual TLS (properties file) and
@@ -212,13 +212,17 @@ or
 To create:
 - Output file `/tmp/mydoc.cdoc`
 - with generated private key
-- to recipient with certificate `keys/37101010021.cer` (DER or PEM formats are supported)
+- to recipient with certificate `keys/cdoc20client-certificate.pem` (DER or PEM formats are supported)
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc20-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/37101010021.cer README.md
+java -jar target/cdoc20-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/cdoc20client-certificate.pem README.md
 ```
 
+Decrypt created container with private key:
+```
+java -jar target/cdoc20-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc20client.pem --output /tmp
+```
 
 ### Troubleshooting ID-card
 
