@@ -253,9 +253,9 @@ public class TarDeflate implements AutoCloseable {
         // TarArchive processing is finished after first zero block is encountered. Adding additional data after that
         // block makes possible to "hide" additional data after tar archive. This may be attempt to disable
         // MAC checking as not all data won't be processed. Suspicious.
-        if (zLibIs.available() > 0) {
-            log.warn("Unexpected data after tar {}B.", zLibIs.available());
-            throw new IOException("Unexpected data after tar");
+        if (zLibIs.available() > 0 && (zLibIs.read() != -1)) {
+                log.warn("Unexpected data after tar {}B.", zLibIs.available());
+                throw new IOException("Unexpected data after tar");
         }
 
         return extractedArchiveEntries;
