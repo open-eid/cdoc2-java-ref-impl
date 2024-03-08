@@ -8,7 +8,8 @@ union Capsule {
     recipients.ECCPublicKeyCapsule,
     recipients.RSAPublicKeyCapsule,
     recipients.KeyServerCapsule,
-    recipients.SymmetricKeyCapsule
+    recipients.SymmetricKeyCapsule,
+    recipients.PBKDF2Capsule
 }
 
 // FMK encryption method enum.

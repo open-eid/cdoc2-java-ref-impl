@@ -2,6 +2,8 @@ package ee.cyber.cdoc20.server.datagen;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.RsaUtils;
+import ee.cyber.cdoc20.crypto.KeyAlgorithm;
+
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -92,7 +94,8 @@ public final class CertUtil {
     public static KeyPair generateEcKeyPair() {
         ECParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(ECKeys.SECP_384_R_1);
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", BC);
+            KeyPairGenerator keyPairGenerator
+                = KeyPairGenerator.getInstance(KeyAlgorithm.Algorithm.EC.name(), BC);
             keyPairGenerator.initialize(ecSpec, SecureRandom.getInstanceStrong());
             return keyPairGenerator.generateKeyPair();
         } catch (Exception e) {
@@ -104,7 +107,8 @@ public final class CertUtil {
     @SneakyThrows
     public static KeyPair generateRsaKeyPair() {
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            KeyPairGenerator keyPairGenerator
+                = KeyPairGenerator.getInstance(KeyAlgorithm.Algorithm.RSA.name());
             keyPairGenerator.initialize(RSA_KEY_SIZE, SecureRandom.getInstanceStrong());
             return keyPairGenerator.generateKeyPair();
         } catch (Exception e) {
@@ -128,4 +132,5 @@ public final class CertUtil {
     public static String encodePublicKey(RSAPublicKey pubKey) {
         return Base64.getEncoder().encodeToString(RsaUtils.encodeRsaPubKey(pubKey));
     }
+
 }

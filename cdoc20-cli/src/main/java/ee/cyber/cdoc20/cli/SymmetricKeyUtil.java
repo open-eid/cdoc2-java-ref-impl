@@ -1,19 +1,28 @@
 package ee.cyber.cdoc20.cli;
 
-import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc20.CDocValidationException;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.FormattedOptionParts;
+import ee.cyber.cdoc20.container.CDocParseException;
+import ee.cyber.cdoc20.container.Envelope;
+import ee.cyber.cdoc20.container.recipients.Recipient;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.crypto.SymmetricKeyTools;
+import ee.cyber.cdoc20.util.PasswordValidationUtil;
+
 
 /**
  * Symmetric key usage in CDOC is supported by CDOC format, but its use cases are not finalized.
@@ -24,17 +33,28 @@ public final class SymmetricKeyUtil {
 
     public static final String BASE_64_PREFIX = "base64,";
 
+    public static final String LABEL_LOG_MSG = "Label for symmetric key: {}";
+
+    private static final String SYMMETRIC_KEY_DESCRIPTION = "symmetric key with label. "
+        + "Must have format";
+    private static final String SYMMETRIC_KEY_FORMAT_DETAILS = "can be plain text or base64 "
+        + "encoded binary. In case of base64, it must be prefixed with `base64,`";
+
     // --secret format description, used in cdoc <cmd> classes
-    public static final String SECRET_DESCRIPTION = "symmetric key with label. Must have format <label>:<secret>. "
-            + "<secret> can be plain text or base64 encoded binary, in case of base64, "
-            + "it must be prefixed with `base64,`";
+    public static final String SECRET_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
+        + " <label>:<secret>. <secret> " + SYMMETRIC_KEY_FORMAT_DETAILS;
+
+    // --password format description, used in cdoc <cmd> classes
+    public static final String PASSWORD_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
+        + " <label>:<password>. <password> " + SYMMETRIC_KEY_FORMAT_DETAILS;
 
     private SymmetricKeyUtil() { }
 
     private static final Logger log = LoggerFactory.getLogger(SymmetricKeyUtil.class);
 
-    public static List<EncryptionKeyMaterial> extractEncryptionKeyMaterial(String[] secrets)
-            throws CDocValidationException {
+    public static List<EncryptionKeyMaterial> extractEncryptionKeyMaterialFromSecrets(
+        String[] secrets
+    ) throws CDocValidationException {
         if (secrets == null || secrets.length == 0) {
             return List.of();
         }
@@ -42,62 +62,130 @@ public final class SymmetricKeyUtil {
         List<EncryptionKeyMaterial> result = new LinkedList<>();
 
         for (String secret: secrets) {
-            var entry = extractEncryptionKeyMaterial(secret);
-            EncryptionKeyMaterial km = EncryptionKeyMaterial.from(entry.getKey(), entry.getValue());
+            FormattedOptionParts splitSecret
+                = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
+
+            EncryptionKeyMaterial km
+                = SymmetricKeyTools.getEncryptionKeyMaterialFromSecret(splitSecret);
             result.add(km);
         }
         return result;
     }
 
-    /**
-     * Extract symmetric key material from formatted secret  "label:topsecret123!"
-     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
-     * @param formattedSecret formatted as label:secret where secret can be base64 encoded bytes or regular utf-8 string
-     *                        Base64 encoded string must be prefixed with 'base64,', followed by base64 string
-     * @return DecryptionKeyMaterial created from formattedSecret
-     * @throws CDocValidationException if formattedSecret is not in format specified
-     * @throws IllegalArgumentException if base64 secret cannot be decoded
-     */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterial(String formattedSecret)
-            throws CDocValidationException {
-
-        var entry = extractEncryptionKeyMaterial(formattedSecret);
-        return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
+    public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
+        FormattedOptionParts passwordAndLabel
+    ) {
+        return EncryptionKeyMaterial.fromPassword(
+            passwordAndLabel.optionChars(), passwordAndLabel.label()
+        );
     }
 
     /**
-     * Extract symmetric key material from formatted secret "label:topsecret123!"
+     * Extract symmetric key material from formatted secret or password "label:topsecret123!"
      * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
-     * @param formattedSecret formatted as label:secret where secret can be base64 encoded bytes or regular utf-8 string
-     *                        Base64 encoded string must be prefixed with 'base64,', followed by base64 string
+     * @param formattedOption formatted as label:secret or label:password where 2nd param can be
+     *                        base64 encoded bytes or regular utf-8 string. Base64 encoded string
+     *                        must be prefixed with 'base64,', followed by base64 string
+     * @param keyOrigin       encryption key origin
      * @return AbstractMap.SimpleEntry<SecretKey, String> with extracted SecretKey and label
-     * @throws CDocValidationException if formattedSecret is not in format specified
-     * @throws IllegalArgumentException if base64 secret cannot be decoded
+     * @throws CDocValidationException if formattedOption is not in format specified
+     * @throws IllegalArgumentException if base64 secret or password cannot be decoded
      */
-    private static AbstractMap.SimpleEntry<SecretKey, String> extractEncryptionKeyMaterial(String formattedSecret)
-            throws CDocValidationException {
-
-        var parts = formattedSecret.split(":");
-
+    public static FormattedOptionParts splitFormattedOption(
+        String formattedOption,
+        EncryptionKeyOrigin keyOrigin
+    ) throws CDocValidationException {
+        var parts = formattedOption.split(":");
+        String optionName = keyOrigin.name();
         if (parts.length != 2) {
-            throw new CDocValidationException("Secret must have format label:secret");
+            throw new CDocValidationException(
+                String.format("Option %s must have format label:value", optionName)
+            );
         }
 
         String label = parts[0];
-        String secret = parts[1];
+        String option = parts[1];
 
-        byte[] secretBytes;
+        char[] optionChars;
 
-        if (secret.startsWith(BASE_64_PREFIX)) {
-            secretBytes = Base64.getDecoder().decode(secret.substring(BASE_64_PREFIX.length()));
-            log.debug("Decoded {} bytes from secret (base64)", secretBytes.length);
+        if (option.startsWith(BASE_64_PREFIX)) {
+            byte[] optionBytes = Base64.getDecoder().decode(option.substring(BASE_64_PREFIX.length()));
+            optionChars = Arrays.toString(optionBytes).toCharArray();
+            log.debug("Decoded {} bytes from {} (base64)", optionChars.length, optionName);
         } else {
-            secretBytes = secret.getBytes(StandardCharsets.UTF_8);
-            log.debug("Decoded {} bytes from secret", secretBytes.length);
+            optionChars = option.toCharArray();
+            log.debug("Decoded {} bytes from {}", optionChars.length, optionName);
+        }
+        log.info(LABEL_LOG_MSG, label);
+
+        return new FormattedOptionParts(optionChars, label, keyOrigin);
+    }
+
+    /**
+     * Split formatted password "label:topsecret123!" or "label123:base64,
+     * aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @return FormattedOptionParts with extracted password and label
+     */
+    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
+        throws CDocValidationException {
+        FormattedOptionParts passwordAndLabel;
+        if (formattedPassword.isEmpty()) {
+            passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively();
+        } else {
+            passwordAndLabel
+                = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.PASSWORD);
+            PasswordValidationUtil.validatePassword(passwordAndLabel.optionChars());
         }
 
-        log.info("Label for symmetric key: {}", label);
-        SecretKey key = new SecretKeySpec(secretBytes, "");
-        return new AbstractMap.SimpleEntry<>(key, label);
+        return passwordAndLabel;
     }
+
+    /**
+     * Extract decryption key material from formatted secret or password "label:topsecret123!"
+     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param cDocFilePath      path to CDOC file
+     * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @param formattedSecret   formatted as label:secret where 2nd param can be base64 encoded
+     *                          bytes or regular utf-8 string. Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string
+     * @return DecryptionKeyMaterial decryption key material
+     * @throws CDocValidationException if formatted option is not in format specified
+     * @throws GeneralSecurityException if decryption key material extraction from password has
+     *                                  failed
+     * @throws IOException if header parsing has failed
+     * @throws CDocParseException if recipients deserializing has failed
+     */
+    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSymmetricKey(
+        Path cDocFilePath,
+        String formattedPassword,
+        String formattedSecret
+    ) throws CDocValidationException,
+        GeneralSecurityException,
+        IOException,
+        CDocParseException {
+
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
+
+        DecryptionKeyMaterial decryptionKm = null;
+        if (null != formattedPassword) {
+            FormattedOptionParts splitPassword = getSplitPasswordAndLabel(formattedPassword);
+            decryptionKm =
+                SymmetricKeyTools.extractDecryptionKeyMaterialFromPassword(splitPassword, recipients);
+        }
+        if (null != formattedSecret && null == decryptionKm) {
+            FormattedOptionParts splitSecret = splitFormattedOption(
+                formattedSecret, EncryptionKeyOrigin.SECRET
+            );
+            decryptionKm =
+                SymmetricKeyTools.extractDecryptionKeyMaterialFromSecret(splitSecret, recipients);
+        }
+
+        return decryptionKm;
+    }
+
 }

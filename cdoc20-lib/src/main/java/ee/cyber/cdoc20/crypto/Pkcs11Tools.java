@@ -56,8 +56,10 @@ public final class Pkcs11Tools {
      * Not thread-safe.
      *
      * @param pkcs11LibPath pkcs11 provider library location, defaults described above if null
-     * @param slot the slot number with the keys
-     * @param keyAlias key alias (optional) to use in case the are more than one entry in the keystore
+     * @param slot          the slot number with the keys
+     * @param keyAlias      key alias (optional) to use in case the are more than one entry in the
+     *                      keystore
+     * @return KeyPair
      *
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
@@ -86,10 +88,10 @@ public final class Pkcs11Tools {
      * configures SunPkcs11 Provider and loads and configures PKCS11 KeyStore from SunPkcs11 Provider.
      *
      * @param openScLibPath OpenSC library location, defaults described above if null
-     * @param slot Slot, default 0
-     * @param ksProtection {@link KeyStore.ProtectionParameter KeyStore.ProtectionParameter},
-     *                     example for password: <code>new KeyStore.PasswordProtection("1234".toCharArray())</code> or
-     *                     interactive {@link #getKeyStoreProtectionHandler(String)}
+     * @param slot          Slot, default 0
+     * @param ksProtection  {@link KeyStore.ProtectionParameter KeyStore.ProtectionParameter},
+     *                      example for password: <code>new KeyStore.PasswordProtection("1234".toCharArray())</code>
+     *                      or interactive {@link #getKeyStoreProtectionHandler(String)}
      * @return Configured PKCS11 KeyStore
      * @throws IOException when SunPKCS configuration file creation fails
      * @throws KeyStoreException when KeyStore initialization fails
@@ -127,29 +129,40 @@ public final class Pkcs11Tools {
     public static KeyStore.CallbackHandlerProtection getKeyStoreProtectionHandler(String prompt) {
         return new KeyStore.CallbackHandlerProtection(callbacks -> {
             for (Callback cp: callbacks) {
-                if (cp instanceof PasswordCallback) {
+                if (cp instanceof PasswordCallback pc) {
                     // prompt the user for sensitive information
-                    PasswordCallback pc = (PasswordCallback) cp;
-
-                    Console console = System.console();
-                    if (console != null) {
-                        char[] pin = console.readPassword(prompt);
-                        pc.setPassword(pin);
-                    } else { //running from IDE, console is null
-                        JPasswordField pf = new JPasswordField();
-                        int result = JOptionPane.showConfirmDialog(null, pf, prompt,
-                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                        if (result == JOptionPane.OK_OPTION) {
-                            String password = new String(pf.getPassword());
-                            pc.setPassword(password.toCharArray());
-                        } else if (result == JOptionPane.OK_CANCEL_OPTION) {
-                            throw new CDocUserException(UserErrorCode.USER_CANCEL, "PIN entry cancelled by user");
-                        }
-                    }
+                    setPassword(prompt, pc);
                 }
             }
         });
+    }
+
+    private static void setPassword(String prompt, PasswordCallback pc) {
+        Console console = System.console();
+        if (console != null) {
+            char[] pin = console.readPassword(prompt);
+            pc.setPassword(pin);
+        } else { //running from IDE, console is null
+            JPasswordField pf = new JPasswordField();
+            int result = JOptionPane.showConfirmDialog(
+                null, pf, prompt,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+            );
+            setPasswordWhenRunningWithoutConsole(result, pc, pf);
+        }
+    }
+
+    private static void setPasswordWhenRunningWithoutConsole(
+        int confirmationDialogResult,
+        PasswordCallback pc,
+        JPasswordField pf
+    ) {
+        if (confirmationDialogResult == JOptionPane.OK_OPTION) {
+            String password = new String(pf.getPassword());
+            pc.setPassword(password.toCharArray());
+        } else if (confirmationDialogResult == JOptionPane.OK_CANCEL_OPTION) {
+            throw new CDocUserException(UserErrorCode.USER_CANCEL, "PIN entry cancelled by user");
+        }
     }
 
     static AbstractMap.SimpleEntry<PrivateKey, X509Certificate> loadFromPKCS11(
@@ -219,9 +232,10 @@ public final class Pkcs11Tools {
      *         }
      *     }
      * </pre>
-     * @param name any string, default OpenSC
+     * @param name          any string, default OpenSC
      * @param openScLibrary OpenSC library location, defaults described above
-     * @param slot Slot, default 0
+     * @param slot          Slot, default 0
+     * @return Path
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
@@ -315,10 +329,6 @@ public final class Pkcs11Tools {
 
         log.debug("Provider info {}", sunPkcs11Provider.getInfo());
         log.debug("Adding provider {}", sunPkcs11Provider);
-
-        // print algorithms available
-        //log.debug("Provider properties: {}", sunPkcs11Provider.stringPropertyNames());
-        //sunPkcs11Provider.getServices().forEach(s -> log.debug("{} {}",s.getAlgorithm(), s.getType()));
 
         Security.addProvider(sunPkcs11Provider);
         log.info("SunPKCS11 provider available under name: {} {}", sunPkcs11Provider.getName(),

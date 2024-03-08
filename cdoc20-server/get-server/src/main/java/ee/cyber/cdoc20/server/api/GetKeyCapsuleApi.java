@@ -2,6 +2,7 @@ package ee.cyber.cdoc20.server.api;
 
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.RsaUtils;
+import ee.cyber.cdoc20.crypto.KeyAlgorithm;
 import ee.cyber.cdoc20.server.model.Capsule;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleDb;
 import ee.cyber.cdoc20.server.model.db.KeyCapsuleRepository;
@@ -20,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.NativeWebRequest;
+
 
 /**
  * Implements API for getting CDOC2.0 key capsules {@link KeyCapsulesApi}
@@ -73,7 +75,7 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate {
     private static boolean isRecipient(PublicKey publicKey, KeyCapsuleDb capsule) {
         try {
             if (capsule.getCapsuleType() == KeyCapsuleDb.CapsuleType.SECP384R1
-                    && "EC".equals(publicKey.getAlgorithm())
+                    && KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())
                     && ECKeys.isEcSecp384r1Curve((ECPublicKey) publicKey)) {
                 return Arrays.equals(
                     capsule.getRecipient(),
@@ -81,7 +83,7 @@ public class GetKeyCapsuleApi implements KeyCapsulesApiDelegate {
                 );
             }
             if (capsule.getCapsuleType() == KeyCapsuleDb.CapsuleType.RSA
-                    && "RSA".equals(publicKey.getAlgorithm())) {
+                    && KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
                 return Arrays.equals(capsule.getRecipient(), RsaUtils.encodeRsaPubKey((RSAPublicKey) publicKey));
             }
         } catch (GeneralSecurityException exc) {

@@ -2,8 +2,9 @@ package ee.cyber.cdoc20.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.RSAPublicKeyCapsule;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
@@ -46,9 +47,14 @@ public class RSAPubKeyRecipient extends RSARecipient {
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException {
+        throws GeneralSecurityException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForRsa(this, keyPairKeyMaterial);
+        }
 
-        return KekTools.deriveKekForRsa(this, keyMaterial);
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
+        );
     }
 
     @Override

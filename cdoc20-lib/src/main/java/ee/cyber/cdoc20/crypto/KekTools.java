@@ -12,9 +12,13 @@ import ee.cyber.cdoc20.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc20.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc20.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc20.container.recipients.SymmetricKeyRecipient;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -38,36 +42,78 @@ public final class KekTools {
     private KekTools() { }
 
 
-    public static byte[] deriveKekForSymmetricKey(SymmetricKeyRecipient recipient,
-                                                  DecryptionKeyMaterial keyMaterial) {
+    public static byte[] deriveKekForSymmetricKey(
+        SymmetricKeyRecipient recipient,
+        SecretDecryptionKeyMaterial keyMaterial
+    ) {
+        validateKeyOrigin(
+            EncryptionKeyOrigin.SECRET,
+            keyMaterial.getKeyOrigin(),
+            "Expected SecretKey for SymmetricKeyRecipient"
+        );
 
-        SecretKey secretKey = keyMaterial.getSecretKey().orElseThrow(
-                () -> new IllegalArgumentException("Expected SecretKey for SymmetricKeyRecipient"));
+        SecretKey secretKey = keyMaterial.getSecretKey();
         SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
-                secretKey,
-                recipient.getSalt(),
-                FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
+            secretKey,
+            recipient.getSalt(),
+            FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
         return kek.getEncoded();
     }
 
-    public static byte[] deriveKekForEcc(EccPubKeyRecipient eccPubKeyRecipient,
-                                         DecryptionKeyMaterial keyMaterial)
-            throws GeneralSecurityException {
+    public static byte[] deriveKekForPasswordDerivedKey(
+        PBKDF2Recipient recipient,
+        PasswordDecryptionKeyMaterial keyMaterial
+    ) throws GeneralSecurityException {
+
+        validateKeyOrigin(
+            EncryptionKeyOrigin.PASSWORD,
+            keyMaterial.getKeyOrigin(),
+            "Expected SecretKey for PBKDF2Recipient"
+        );
+
+        SecretKey pwDerivedSymmetricKey = Crypto.extractSymmetricKeyFromPassword(
+            keyMaterial.getPassword(),
+            recipient.getPasswordSalt()
+        );
+
+        SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
+            pwDerivedSymmetricKey,
+            recipient.getEncryptionSalt(),
+            FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
+        return kek.getEncoded();
+    }
+
+    public static byte[] deriveKekForEcc(
+        EccPubKeyRecipient eccPubKeyRecipient,
+        KeyPairDecryptionKeyMaterial keyMaterial
+    ) throws GeneralSecurityException {
+
         ECPublicKey senderPubKey = eccPubKeyRecipient.getSenderPubKey();
 
-        KeyPair recipientKeyPair = keyMaterial.getKeyPair()
-                .orElseThrow(() -> new IllegalArgumentException("EC key pair required for KEK derive"));
+        validateKeyOrigin(
+            EncryptionKeyOrigin.PUBLIC_KEY,
+            keyMaterial.getKeyOrigin(),
+            "EC key pair required for KEK derive"
+        );
+
+        KeyPair recipientKeyPair = keyMaterial.getKeyPair();
 
         return Crypto.deriveKeyDecryptionKey(recipientKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
     }
 
-    public static byte[] deriveKekForEccServer(EccServerKeyRecipient keyRecipient,
-                                               DecryptionKeyMaterial keyMaterial,
-                                               KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, CDocException {
+    public static byte[] deriveKekForEccServer(
+        EccServerKeyRecipient keyRecipient,
+        KeyPairDecryptionKeyMaterial keyMaterial,
+        KeyCapsuleClientFactory capsulesClientFac
+    ) throws GeneralSecurityException, CDocException {
 
-        KeyPair recipientKeyPair = keyMaterial.getKeyPair().orElseThrow(
-                () -> new IllegalArgumentException("must contain EC key pair for ECC Server scenario"));
+        validateKeyOrigin(
+            EncryptionKeyOrigin.PUBLIC_KEY,
+            keyMaterial.getKeyOrigin(),
+            "Must contain EC key pair for ECC Server scenario"
+        );
+
+        KeyPair recipientKeyPair = keyMaterial.getKeyPair();
 
         String transactionId = keyRecipient.getTransactionId();
         if (transactionId == null) {
@@ -98,23 +144,29 @@ public final class KekTools {
             log.error("Key not found for id {} from {}", transactionId, serverId);
             throw new ExtApiException("Sender key not found for " + transactionId);
         } catch (ExtApiException apiException) {
-            log.error("Error querying {} for {} ({})", serverId, transactionId, apiException);
+            log.error("Error querying {} for {} ({})", serverId, transactionId, apiException.getMessage());
             throw apiException;
         }
     }
 
-    public static byte[] deriveKekForRsaServer(RSAServerKeyRecipient recipient,
-                                               DecryptionKeyMaterial keyMaterial,
-                                               KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, CDocException {
+    public static byte[] deriveKekForRsaServer(
+        RSAServerKeyRecipient recipient,
+        KeyPairDecryptionKeyMaterial keyMaterial,
+        KeyCapsuleClientFactory capsulesClientFac
+    ) throws GeneralSecurityException, CDocException {
 
         String transactionId = recipient.getTransactionId();
         String serverId = recipient.getKeyServerId();
 
-        KeyPair recipientKeyPair = keyMaterial.getKeyPair().orElseThrow(
-                () -> new IllegalArgumentException("must contain RSA key pair for RSA Server scenario"));
+        validateKeyOrigin(
+            EncryptionKeyOrigin.PUBLIC_KEY,
+            keyMaterial.getKeyOrigin(),
+            "Must contain RSA key pair for RSA Server scenario"
+        );
 
-        if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
+        KeyPair recipientKeyPair = keyMaterial.getKeyPair();
+
+        if (!KeyAlgorithm.isRsaKeysAlgorithm(recipientKeyPair.getPrivate().getAlgorithm())) {
             throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
@@ -143,17 +195,35 @@ public final class KekTools {
         return RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
     }
 
-    public static byte[] deriveKekForRsa(RSAPubKeyRecipient rsaPubKeyRecipient, DecryptionKeyMaterial keyMaterial)
-            throws GeneralSecurityException {
+    public static byte[] deriveKekForRsa(
+        RSAPubKeyRecipient rsaPubKeyRecipient,
+        KeyPairDecryptionKeyMaterial keyMaterial
+    ) throws GeneralSecurityException {
 
-        KeyPair recipientKeyPair = keyMaterial.getKeyPair().orElseThrow(
-                () -> new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO));
+        validateKeyOrigin(
+            EncryptionKeyOrigin.PUBLIC_KEY,
+            keyMaterial.getKeyOrigin(),
+            MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO
+        );
 
-        if (!"RSA".equals(recipientKeyPair.getPrivate().getAlgorithm())) {
+        KeyPair recipientKeyPair = keyMaterial.getKeyPair();
+
+        if (!KeyAlgorithm.isRsaKeysAlgorithm(recipientKeyPair.getPrivate().getAlgorithm())) {
             throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
         RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
         return RsaUtils.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), rsaPrivateKey);
     }
+
+    private static void validateKeyOrigin(
+        EncryptionKeyOrigin expectedKeyOrigin,
+        EncryptionKeyOrigin keyOrigin,
+        String errorMsg
+    ) {
+        if (!expectedKeyOrigin.equals(keyOrigin)) {
+            throw new IllegalArgumentException(errorMsg);
+        }
+    }
+
 }

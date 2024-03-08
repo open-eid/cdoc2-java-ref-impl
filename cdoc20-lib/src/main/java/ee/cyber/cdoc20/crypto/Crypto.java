@@ -1,7 +1,10 @@
 package ee.cyber.cdoc20.crypto;
 
 import at.favre.lib.crypto.HKDF;
+
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.DrbgParameters;
@@ -10,15 +13,20 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc20.container.recipients.PBKDF2Recipient.PBKDF2_ITERATIONS;
 import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
 
 public final class Crypto {
@@ -33,7 +41,6 @@ public final class Crypto {
      * File Master Key length in octets
      */
     public static final int FMK_LEN_BYTES = 256 / 8;
-
 
     /**
      * Kek is used to encrypt FMK. For XOR length must match FMK
@@ -52,17 +59,18 @@ public final class Crypto {
 
     public static final String HMAC_SHA_256 = "HmacSHA256";
 
+    public static final int MIN_SALT_LENGTH = 256 / 8;
+
+    public static final int PBKDF2_KEY_LENGTH_BITS = 256;
+
     public static final int SYMMETRIC_KEY_MIN_LEN_BYTES = 256 / 8;
-
-
 
     private Crypto() {
     }
 
-
     /**
      * Get SecureRandom instance
-     * @return SecureRandom
+     * @return SecureRandom secure random
      * @throws NoSuchAlgorithmException if SecureRandom initialization failed
      */
     public static synchronized SecureRandom getSecureRandom() throws NoSuchAlgorithmException {
@@ -74,6 +82,7 @@ public final class Crypto {
 
     /**
      * Create SecureRandom
+     * @return SecureRandom secure random
      * @throws NoSuchAlgorithmException if SecureRandom initialization failed
      */
     private static SecureRandom createSecureRandom() throws NoSuchAlgorithmException {
@@ -110,18 +119,20 @@ public final class Crypto {
 
     /**
      * Derive KEK from salt and secret. Used in symmetric key scenario only.
-     * @param label Label identifying pre shared secret
-     * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to derive KEK.
-     *                           Min len of 32 bytes
-     * @param salt salt minimum length of 32 bytes
-     * @param fmkEncMethod fmk encryption method from {@link FMKEncryptionMethod#names}.
-     *                     Currently, only "XOR" is valid value
-     * @return
+     * @param label              Label identifying pre shared secret
+     * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to
+     *                           derive KEK. Min len of 32 bytes
+     * @param salt               salt minimum length of 32 bytes
+     * @param fmkEncMethod       fmk encryption method from {@link FMKEncryptionMethod#names}.
+     *                           Currently, only "XOR" is valid value
+     * @return SecretKey with derived KEK
      */
-    public static SecretKey deriveKeyEncryptionKey(String label, SecretKey preSharedSecretKey, byte[] salt,
-                                                   String fmkEncMethod) {
-
-        final int minSaltLen = 256 / 8;
+    public static SecretKey deriveKeyEncryptionKey(
+        String label,
+        SecretKey preSharedSecretKey,
+        byte[] salt,
+        String fmkEncMethod
+    ) {
         Objects.requireNonNull(label);
         Objects.requireNonNull(preSharedSecretKey);
         Objects.requireNonNull(preSharedSecretKey.getEncoded());
@@ -133,8 +144,8 @@ public final class Crypto {
                     + SYMMETRIC_KEY_MIN_LEN_BYTES + " bytes");
         }
 
-        if (salt.length < minSaltLen) {
-            throw new IllegalArgumentException("Salt must be at least " + minSaltLen + " bytes");
+        if (salt.length < MIN_SALT_LENGTH) {
+            throw new IllegalArgumentException("Salt must be at least " + MIN_SALT_LENGTH + " bytes");
         }
 
         // Currently, only XOR is supported
@@ -151,6 +162,28 @@ public final class Crypto {
         return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
     }
 
+    /**
+     * Create Symmetric Key from password and salt.
+     * @param passwordChars password chars between parties (sender and recipient) used to create
+     *                      a symmetric key. Min len of 32 bytes
+     * @param salt          generated salt
+     * @return SecretKey with symmetric key
+     * @throws GeneralSecurityException if key creation has failed
+     */
+    public static SecretKey extractSymmetricKeyFromPassword(
+        final char[] passwordChars, byte[] salt
+    ) throws GeneralSecurityException {
+        SecretKeyFactory skf = SecretKeyFactory.getInstance(
+            KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256)
+        );
+        PBEKeySpec spec = new PBEKeySpec(
+            passwordChars,
+            salt,
+            PBKDF2_ITERATIONS,
+            PBKDF2_KEY_LENGTH_BITS
+        );
+        return skf.generateSecret(spec);
+    }
 
     public static byte[] calcEcDhSharedSecret(PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
             throws GeneralSecurityException {
@@ -160,8 +193,9 @@ public final class Crypto {
         // KeyAgreement instances (software and pkcs11) don't work with other provider private keys
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
-        if (isECPKCS11Key(ecPrivateKey) && (Pkcs11Tools.getConfiguredPKCS11Provider() != null)) {
-            keyAgreement = KeyAgreement.getInstance("ECDH", Pkcs11Tools.getConfiguredPKCS11Provider());
+        Provider configuredPKCS11Provider = Pkcs11Tools.getConfiguredPKCS11Provider();
+        if (isECPKCS11Key(ecPrivateKey) && (configuredPKCS11Provider != null)) {
+            keyAgreement = KeyAgreement.getInstance("ECDH", configuredPKCS11Provider);
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");
         }
@@ -194,7 +228,8 @@ public final class Crypto {
         // token.
 
         // algorithm is EC, but doesn't implement java.security.interfaces.ECKey
-        return ("EC".equals(key.getAlgorithm()) && !(key instanceof java.security.interfaces.ECKey));
+        return (KeyAlgorithm.isEcKeysAlgorithm(key.getAlgorithm())
+            && !(key instanceof java.security.interfaces.ECKey));
     }
 
     public static byte[] calcEcDhSharedSecret(KeyAgreement ka, PrivateKey ecPrivateKey, ECPublicKey otherPublicKey)
@@ -220,12 +255,12 @@ public final class Crypto {
 
     /**
      * Derive KEK for EC scenarios
-     * @param ecKeyPair
-     * @param otherPublicKey
-     * @param keyLen
-     * @param isEncryptionMode
-     * @return
-     * @throws GeneralSecurityException
+     * @param ecKeyPair        key pair
+     * @param otherPublicKey   public key
+     * @param keyLen           key length
+     * @param isEncryptionMode if encryption mode enabled or not
+     * @return bytes of derived KEK
+     * @throws GeneralSecurityException if key creation has failed
      */
     private static byte[] deriveKek(KeyPair ecKeyPair, ECPublicKey otherPublicKey, int keyLen, boolean isEncryptionMode)
             throws GeneralSecurityException {
@@ -251,11 +286,11 @@ public final class Crypto {
 
     /**
      * Calculate HMAC
-     * @param hhk HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
+     * @param hhk  HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
      * @param data input – data in bytes. For CDOC2 this is header FlatBuffers bytes
-     * @return the MAC result.
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
+     * @return the MAC result
+     * @throws NoSuchAlgorithmException if no Provider supports a MacSpi implementation for the specified algorithm
+     * @throws InvalidKeyException if Mac initialization has failed
      */
     public static byte[] calcHmacSha256(SecretKey hhk, byte[] data)
             throws NoSuchAlgorithmException, InvalidKeyException {
@@ -285,5 +320,15 @@ public final class Crypto {
             out[i] = (byte)(x1[i] ^ x2[i]);
         }
         return out;
+    }
+
+    /**
+     * Generate salt for the symmetric key.
+     * @return bytes of generated salt
+     */
+    public static byte[] generateSaltForKey() throws NoSuchAlgorithmException {
+        byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
+        getSecureRandom().nextBytes(salt);
+        return salt;
     }
 }

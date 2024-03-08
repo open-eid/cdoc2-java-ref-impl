@@ -2,8 +2,11 @@ package ee.cyber.cdoc20.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretDecryptionKeyMaterial;
+
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
 public class SymmetricKeyRecipient extends Recipient {
@@ -25,8 +28,15 @@ public class SymmetricKeyRecipient extends Recipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory) {
-        return KekTools.deriveKekForSymmetricKey(this, keyMaterial);
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+        throws GeneralSecurityException {
+        if (keyMaterial instanceof SecretDecryptionKeyMaterial secretKeyMaterial) {
+            return KekTools.deriveKekForSymmetricKey(this, secretKeyMaterial);
+        }
+
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
+        );
     }
 
     @Override
