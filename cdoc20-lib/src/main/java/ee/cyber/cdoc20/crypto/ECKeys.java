@@ -43,8 +43,8 @@ import org.slf4j.LoggerFactory;
 /**
  * EC keys loading, decoding and encoding. Currently, supports only secp384r1 EC keys.
  */
+@SuppressWarnings("squid:S6706")
 public final class ECKeys {
-    public static final String EC_ALGORITHM_NAME = "EC";
 
     //https://docs.oracle.com/en/java/javase/17/security/oracle-providers.html#GUID-091BF58C-82AB-4C9C-850F-1660824D5254
     public static final String SECP_384_R_1 = "secp384r1";
@@ -65,7 +65,8 @@ public final class ECKeys {
 
     public static KeyPair generateEcKeyPair(String ecCurveName)
             throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(EC_ALGORITHM_NAME);
+        KeyPairGenerator keyPairGenerator
+            = KeyPairGenerator.getInstance(KeyAlgorithm.Algorithm.EC.name());
         keyPairGenerator.initialize(new ECGenParameterSpec(ecCurveName));
         return keyPairGenerator.generateKeyPair();
     }
@@ -145,12 +146,13 @@ public final class ECKeys {
         BigInteger y = new BigInteger(1, Arrays.copyOfRange(encoded, expectedLength + 1, encoded.length));
 
         ECPoint pubPoint = new ECPoint(x, y);
-        AlgorithmParameters params = AlgorithmParameters.getInstance(EC_ALGORITHM_NAME);
+        AlgorithmParameters params = AlgorithmParameters.getInstance(KeyAlgorithm.Algorithm.EC.name());
         params.init(new ECGenParameterSpec(SECP_384_R_1));
 
         ECParameterSpec ecParameters = params.getParameterSpec(ECParameterSpec.class);
         ECPublicKeySpec pubECSpec = new ECPublicKeySpec(pubPoint, ecParameters);
-        ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory.getInstance(EC_ALGORITHM_NAME).generatePublic(pubECSpec);
+        ECPublicKey ecPublicKey = (ECPublicKey) KeyFactory
+            .getInstance(KeyAlgorithm.Algorithm.EC.name()).generatePublic(pubECSpec);
         if (!isValidSecP384R1(ecPublicKey)) {
             throw new InvalidKeyException("Not valid secp384r1 EC public key " + encodedHex);
         }
@@ -203,7 +205,8 @@ public final class ECKeys {
     public static String getCurveOid(ECKey key)
             throws NoSuchAlgorithmException, InvalidParameterSpecException, NoSuchProviderException {
 
-        AlgorithmParameters params = AlgorithmParameters.getInstance("EC", "SunEC");
+        AlgorithmParameters params
+            = AlgorithmParameters.getInstance(KeyAlgorithm.Algorithm.EC.name(), "SunEC");
         params.init(key.getParams());
 
         // JavaDoc NamedParameterSpec::getName() : Returns the standard name that determines the algorithm parameters.
@@ -222,22 +225,18 @@ public final class ECKeys {
     }
 
     public static boolean isECSecp384r1(KeyPair keyPair) throws GeneralSecurityException {
-        if (!EC_ALGORITHM_NAME.equals(keyPair.getPrivate().getAlgorithm())) {
-            log.debug("Not EC key pair. Algorithm is {} (expected EC)", keyPair.getPrivate().getAlgorithm());
-            return false;
-        }
 
-        if (!EC_ALGORITHM_NAME.equals(keyPair.getPublic().getAlgorithm())) {
-            log.debug("Not EC key pair. Algorithm is {} (expected EC)", keyPair.getPublic().getAlgorithm());
+        if (!isEcKeyAlgorithm(keyPair.getPrivate().getAlgorithm(),
+            keyPair.getPublic().getAlgorithm())) {
             return false;
         }
 
         ECPublicKey ecPublicKey = (ECPublicKey)keyPair.getPublic();
-        if (keyPair.getPrivate() instanceof ECKey) {
-            return  isValidSecP384R1(ecPublicKey) && isEcSecp384r1Curve((ECKey) keyPair.getPrivate());
+        if (keyPair.getPrivate() instanceof ECKey ecKey) {
+            return isValidSecP384R1(ecPublicKey) && isEcSecp384r1Curve(ecKey);
         } else {
             return isValidSecP384R1(ecPublicKey)
-                    && Crypto.isECPKCS11Key(keyPair.getPrivate()); //can't get curve for PKCS11 keys
+                && Crypto.isECPKCS11Key(keyPair.getPrivate()); //can't get curve for PKCS11 keys
         }
     }
 
@@ -278,7 +277,8 @@ public final class ECKeys {
      * @throws GeneralSecurityException
      */
     public static KeyPair deriveECPubKeyFromPrivKey(ECPrivateKey ecPrivateKey) throws GeneralSecurityException {
-        KeyFactory keyFactory = KeyFactory.getInstance("EC", new BouncyCastleProvider());
+        KeyFactory keyFactory
+            = KeyFactory.getInstance(KeyAlgorithm.Algorithm.EC.name(), new BouncyCastleProvider());
 
         ECNamedCurveParameterSpec spec = ECNamedCurveTable.getParameterSpec(getCurveOid(ecPrivateKey));
         org.bouncycastle.math.ec.ECPoint q = spec.getG().multiply(ecPrivateKey.getS());
@@ -309,4 +309,17 @@ public final class ECKeys {
         }
         return list;
     }
+
+    private static boolean isEcKeyAlgorithm(String privateKeyAlgorithm, String publicKeyAlgorithm) {
+        if (!KeyAlgorithm.isEcKeysAlgorithm(privateKeyAlgorithm)) {
+            log.debug("Not EC key pair. Algorithm is {} (expected EC)", privateKeyAlgorithm);
+            return false;
+        }
+        if (!KeyAlgorithm.isEcKeysAlgorithm(publicKeyAlgorithm)) {
+            log.debug("Not EC key pair. Algorithm is {} (expected EC)", publicKeyAlgorithm);
+            return false;
+        }
+        return true;
+    }
+
 }

@@ -9,7 +9,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.KeyAlgorithm;
+import ee.cyber.cdoc20.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.SecretEncryptionKeyMaterial;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +35,13 @@ import java.util.Properties;
 
 
 /**
- * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys.
+ * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys or symmetric key.
  */
 public class CDocBuilder {
     private static final Logger log = LoggerFactory.getLogger(CDocBuilder.class);
 
     private List<File> payloadFiles;
-    private List<EncryptionKeyMaterial> recipients = new LinkedList<>();
+    private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
     private Properties serverProperties;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
@@ -109,61 +114,92 @@ public class CDocBuilder {
     }
 
     void validateRecipients() throws CDocValidationException {
-        if (this.recipients == null || this.recipients.isEmpty()) {
+        if (this.recipients.isEmpty()) {
             throw new CDocValidationException("Must provide at least one recipient");
         }
 
-        for (EncryptionKeyMaterial keyMaterial: recipients) {
+        for (EncryptionKeyMaterial keyMaterial : this.recipients) {
+            validateEncryptionKey(keyMaterial);
+        }
+    }
 
-            if (keyMaterial.getKey() instanceof PublicKey) {
-                PublicKey publicKey = (PublicKey) keyMaterial.getKey();
+    private void validateEncryptionKey(EncryptionKeyMaterial keyMaterial)
+        throws CDocValidationException {
 
-                if ("EC".equals(publicKey.getAlgorithm())) {
-                    ECPublicKey recipientPubKey = (ECPublicKey) publicKey;
-                    String encoded = Base64.getEncoder().encodeToString(recipientPubKey.getEncoded());
-                    try {
-                        String oid = ECKeys.getCurveOid(recipientPubKey);
-                        EllipticCurve curve;
-                        try {
-                            curve = EllipticCurve.forOid(oid);
-                        } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
-                            log.error("EC pub key curve ({}) is not supported. EC public key={}",
-                                    oid, encoded);
-                            throw new CDocValidationException("Invalid recipient key with key " + oid);
-                        }
+        if (EncryptionKeyOrigin.PASSWORD.equals(keyMaterial.getKeyOrigin())) {
+            // no need to validate password here
+            return;
+        }
 
-                        if (!curve.isValidKey(recipientPubKey)) {
-                            log.error("EC pub key is not valid for curve {}. EC public key={}",
-                                    curve.getName(), encoded);
-                            throw new CDocValidationException("Recipient key not valid");
-                        }
-                    } catch (GeneralSecurityException gse) {
-                        throw new CDocValidationException("Invalid recipient " + encoded, gse);
-                    }
-                } else if ("RSA".equals(publicKey.getAlgorithm())) {
-                    // all RSA keys are considered good. Shorter will fail during encryption as OAEP takes some space
-                    RSAPublicKey rsaPublicKey = (RSAPublicKey) publicKey;
-                    // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
-                    if (rsaPublicKey.getModulus().bitLength() <= 512) {
-                        throw new CDocValidationException("RSA key does not meet length requirements");
-                    }
-                } else {
-                    log.error("Unsupported public key alg {} for key {}",
-                            publicKey.getAlgorithm(), keyMaterial.getLabel());
-                    throw new CDocValidationException("Unsupported public key alg " + publicKey.getAlgorithm()
-                            + "for key " + keyMaterial.getLabel());
-                }
-
-            } else if (keyMaterial.getKey() instanceof SecretKey) {
-                if ((keyMaterial.getKey().getEncoded() == null)
-                        || (keyMaterial.getKey().getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
-                    throw new CDocValidationException("Too short key for label: " + keyMaterial.getLabel());
-                }
-            } else {
-                log.error("Unsupported key {} type: {}", keyMaterial.getLabel(), keyMaterial.getKey().getClass());
-                throw new CDocValidationException("Unsupported key " + keyMaterial.getLabel());
+        if (keyMaterial instanceof PublicKeyEncryptionKeyMaterial publicKeyMaterial) {
+            validatePublicKeyMaterial(publicKeyMaterial);
+        } else if (keyMaterial instanceof SecretEncryptionKeyMaterial secretKeyMaterial) {
+            SecretKey secretKey = secretKeyMaterial.getSecretKey();
+            if ((secretKey.getEncoded() == null)
+                || (secretKey.getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
+                throw new CDocValidationException("Too short key for label: " + secretKeyMaterial.getLabel());
             }
+        } else {
+            String errorMsg = "Unsupported key " + keyMaterial.getLabel();
+            log.error(errorMsg);
+            throw new CDocValidationException(errorMsg);
+        }
+    }
 
+    private void validatePublicKeyMaterial(PublicKeyEncryptionKeyMaterial publicKeyMaterial)
+        throws CDocValidationException {
+
+        PublicKey publicKey = publicKeyMaterial.getPublicKey();
+        if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
+            validateEcPublicKey((ECPublicKey) publicKey);
+        } else if (KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
+            validateRsaPublicKey((RSAPublicKey) publicKey);
+        } else {
+            String errorMsg = ("Unsupported public key algorithm "
+                + publicKey.getAlgorithm() + "for key " + publicKeyMaterial.getLabel());
+            log.error(errorMsg);
+            throw new CDocValidationException(errorMsg);
+        }
+    }
+
+    /**
+     * All RSA keys are considered good. Shorter will fail during encryption as OAEP takes some
+     * space.
+     */
+    private void validateRsaPublicKey(RSAPublicKey rsaPublicKey) throws CDocValidationException {
+        // no good way to check RSA key length as BigInteger can start with 00 and that changes bit-length
+        if (rsaPublicKey.getModulus().bitLength() <= 512) {
+            throw new CDocValidationException("RSA key does not meet length requirements");
+        }
+    }
+
+    private void validateEcPublicKey(ECPublicKey ecPubKey) throws CDocValidationException {
+        String encoded = Base64.getEncoder().encodeToString(ecPubKey.getEncoded());
+        try {
+            EllipticCurve curve = retrieveEllipticCurve(ecPubKey, encoded);
+
+            if (!curve.isValidKey(ecPubKey)) {
+                log.error("EC pub key is not valid for curve {}. EC public key={}",
+                    curve.getName(), encoded);
+                throw new CDocValidationException("Recipient key not valid");
+            }
+        } catch (GeneralSecurityException gse) {
+            throw new CDocValidationException("Invalid recipient " + encoded, gse);
+        }
+    }
+
+    private EllipticCurve retrieveEllipticCurve(
+        ECPublicKey recipientPubKey,
+        String encodedPublicKey
+    ) throws GeneralSecurityException, CDocValidationException {
+        String curveOid = ECKeys.getCurveOid(recipientPubKey);
+
+        try {
+            return EllipticCurve.forOid(curveOid);
+        } catch (NoSuchAlgorithmException noSuchAlgorithmException) {
+            log.error("EC pub key curve ({}) is not supported. EC public key={}",
+                curveOid, encodedPublicKey);
+            throw new CDocValidationException("Invalid recipient key with key " + curveOid);
         }
     }
 

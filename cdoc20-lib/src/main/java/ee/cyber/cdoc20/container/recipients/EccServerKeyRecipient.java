@@ -3,9 +3,10 @@ package ee.cyber.cdoc20.container.recipients;
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.KekTools;
+import ee.cyber.cdoc20.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.recipients.EccKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
@@ -54,8 +55,18 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
 
     @Override
     public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-            throws GeneralSecurityException, CDocException {
-        return KekTools.deriveKekForEccServer(this, keyMaterial, factory);
+        throws GeneralSecurityException, CDocException {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+            return KekTools.deriveKekForEccServer(
+                this,
+                keyPairKeyMaterial,
+                factory
+            );
+        }
+
+        throw new GeneralSecurityException(
+            "Unsupported key material type for recipient " + keyMaterial.getRecipientId()
+        );
     }
 
 

@@ -1,8 +1,12 @@
 package ee.cyber.cdoc20.crypto;
 
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc20.fbs.recipients.KDFAlgorithmIdentifier;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static ee.cyber.cdoc20.crypto.Crypto.MIN_SALT_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -39,7 +43,7 @@ class CryptoTest {
         assertEquals(Crypto.FMK_LEN_BYTES, fmk.length);
 
         SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
-        String format = cekKey.getFormat();
+
         byte[] cekBytes = cekKey.getEncoded();
         assertEquals(Crypto.CEK_LEN_BYTES, cekBytes.length);
 
@@ -47,7 +51,6 @@ class CryptoTest {
         byte[] hhkBytes = hhkKey.getEncoded();
         assertEquals(Crypto.HHK_LEN_BYTES, hhkBytes.length);
     }
-
 
     @Test
     void testGenSharedSecret() throws GeneralSecurityException {
@@ -83,14 +86,16 @@ class CryptoTest {
         byte[] fmk = Crypto.generateFileMasterKey();
 
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
-        @SuppressWarnings("checkstyle:OperatorWrap")
+        @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
         String pem =
-                "-----BEGIN EC PRIVATE KEY-----\n" +
-                "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
-                "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j\n" +
-                "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
-                "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
-                "-----END EC PRIVATE KEY-----\n";
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+                4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+                C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+                yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+                -----END EC PRIVATE KEY-----
+                """;
         KeyPair aliceKeyPair = PemTools.loadKeyPair(pem);
         KeyPair bobKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
 
@@ -99,8 +104,6 @@ class CryptoTest {
 
         byte[] bobKek = Crypto.deriveKeyDecryptionKey(bobKeyPair, (ECPublicKey) aliceKeyPair.getPublic(), fmk.length);
         byte[] decryptedFmk = Crypto.xor(encryptedFmk, bobKek);
-
-
 
         log.debug("FMK:       {}", HexFormat.of().formatHex(fmk));
         log.debug("alice KEK: {}", HexFormat.of().formatHex(aliceKek));
@@ -122,23 +125,17 @@ class CryptoTest {
         assertEquals(Crypto.HHK_LEN_BYTES, hmac.length);
     }
 
-
     @Test
     void deriveKeyEncryptionKeyFromSharedSecret() {
         byte[] sharedSecret = new byte[32];
         // sharedSecret should be initialized from SecureRandom, for test repeatability sharedSecret in this test is
         // initialized to 0 bytes
 
-        byte[] salt = new byte[32];
-        salt[0] = 's';
-        salt[1] = 'a';
-        salt[2] = 'l';
-        salt[3] = 't';
-
         SecretKey kekSecretKey = Crypto.deriveKeyEncryptionKey("deriveKeyEncryptionKeyFromSharedSecret",
                 new SecretKeySpec(sharedSecret, ""),
-                salt,
-                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
+                getSalt(),
+                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR)
+        );
 
         assertEquals("XOR", kekSecretKey.getAlgorithm());
         assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using SecretKeySpec
@@ -148,5 +145,37 @@ class CryptoTest {
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
                 HexFormat.of().formatHex(kek));
+    }
+
+    @Test
+    void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
+        SecretKey kekSecretKey = Crypto.extractSymmetricKeyFromPassword(
+            "myPlainTextPassword".toCharArray(),
+            getSalt()
+        );
+
+        assertEquals(
+            KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256),
+            kekSecretKey.getAlgorithm()
+        );
+        assertEquals("RAW", kekSecretKey.getFormat()); // SecretKey created using PBKDF2
+
+        byte[] kek = kekSecretKey.getEncoded();
+        assertNotNull(kek);
+        assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
+        assertEquals(
+            "d4f767095d5c36fb2894822e3807f9e90fd8273c6da9284f89f05fd3cb0850a0",
+            HexFormat.of().formatHex(kek)
+        );
+    }
+
+    private byte[] getSalt() {
+        byte[] salt = new byte[MIN_SALT_LENGTH];
+        salt[0] = 's';
+        salt[1] = 'a';
+        salt[2] = 'l';
+        salt[3] = 't';
+
+        return salt;
     }
 }

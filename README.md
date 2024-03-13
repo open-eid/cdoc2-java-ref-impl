@@ -96,12 +96,31 @@ sender public key).
     capsule that contains encrypted KEK
 11. *Follow steps from RSA-OAEP scenario steps 12-15*
 
-## CDoc 2.0 with symmetric key
+## CDoc 2.0 with symmetric key from password
+
+Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
+
+1. Sender and recipient have a pre shared password identified by key_label
+2. Symmetric key is created from password and salt (generated using secure random) using PBKDF2 algorithm
+3. Sender derives key encryption key (KEK) from symmetric key and previously generated salt using HKDF algorithm
+4. *Follow steps from ECDH scenario 4-6*
+5. Sender adds encrypted FMK with key_label to CDoc header
+6. *Follow steps from ECDH scenario 8-10*
+7. Recipient searches CDoc header for key_label and finds salt and encrypted FMK
+8. Recipient derives encryption key (KEK) from salt, key_label and pre-shared symmetric key (password)
+9. Recipient decrypts FMK using KEK.
+10. *Follow steps from ECDH scenario 13-15*
+
+cdoc20_java does not provide solution for securely storing the password, but most password managers
+can do that.
+
+## CDoc 2.0 with symmetric key from secret
 
 Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
 
 1. Sender and recipient have a pre shared secret identified by key_label 
-2. Sender derives key encryption key (KEK) from secret, key_label and salt (generated using secure random) using HKDF algorithm
+2. Sender derives key encryption key (KEK) from symmetric key, key_label and salt (generated 
+   using secure random) using HKDF algorithm
 3. *Follow steps from ECDH scenario 4-6*
 4. Sender adds encrypted FMK with key_label to CDoc header
 5. *Follow steps from ECDH scenario 8-10*

@@ -82,13 +82,27 @@ java -jar target/cdoc20-cli-*.jar create @keys/b64secret.option -f /tmp/symmetri
 ```
 
 ```
-cat keys/b64secret.option
---secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+```
+
+Or encrypt with password clear text:
+```
+java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
 ```
 
 Decryption is done with the same label and key used for encryption
 ```
 java -jar target/cdoc20-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
+```
+
+Or with the same label and password used for encryption:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc --output /tmp
+```
+
+Or with the same label and secret used for encryption:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Key and label can be safely stored in a password manager.
@@ -129,10 +143,20 @@ java -jar target/cdoc20-cli-*.jar decrypt --server=config/localhost/localhost_pk
 java -jar target/cdoc20-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
 ```
 
-or
+or with server scenario:
 
 ```
 java -jar target/cdoc20-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc20client.pem
+```
+
+or with password:
+```
+java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --password "passwordlabel:myPlainTextPassword"
+```
+
+or with secret:
+```
+java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow"
 ```
 
 ### List recipients

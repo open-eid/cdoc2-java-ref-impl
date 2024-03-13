@@ -10,8 +10,8 @@ import ee.cyber.cdoc20.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc20.container.recipients.RecipientFactory;
 import ee.cyber.cdoc20.crypto.ChaChaCipher;
 import ee.cyber.cdoc20.crypto.Crypto;
-import ee.cyber.cdoc20.crypto.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.EncryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
@@ -249,13 +249,14 @@ public final class Envelope {
      * @throws CDocParseException if cdocInputStream is in invalid format and can not be parsed
      * @throws ExtApiException if error happened when communicating with key server
      */
-    private static List<ArchiveEntry> decrypt(InputStream cdocInputStream,
-                                              DecryptionKeyMaterial keyMaterial,
-                                              boolean extract,
-                                              @Nullable Path outputDir,
-                                              @Nullable List<String> filesToExtract,
-                                              @Nullable KeyCapsuleClientFactory capsulesClientFac)
-            throws GeneralSecurityException, IOException, CDocException {
+    private static List<ArchiveEntry> decrypt(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial keyMaterial,
+        boolean extract,
+        @Nullable Path outputDir,
+        @Nullable List<String> filesToExtract,
+        @Nullable KeyCapsuleClientFactory capsulesClientFac
+    ) throws GeneralSecurityException, IOException, CDocException {
 
         CountingInputStream countingIs = new CountingInputStream(cdocInputStream);
         byte[] fbsHeaderBytes = readFBSHeader(countingIs);
@@ -283,21 +284,43 @@ public final class Envelope {
                 log.debug("payload available (at least) {}", countingIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
-                    byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
+                    return extractDecryptedFiles(
+                        fbsHeaderBytes, hmac, cekKey, extract, outputDir, filesToExtract, countingIs
+                    );
+                } else {
+                    throw new CDocParseException("Unknown payload encryption method "
+                        + header.payloadEncryptionMethod());
+                }
+            }
+        }
 
-                    long headerSize = countingIs.getByteCount();
-                    List<ArchiveEntry> result = List.of();
+        log.error("Recipient {} not present in CDOC. Cannot decrypt CDOC.", keyMaterial.getRecipientId());
+        throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, cannot decrypt");
+    }
 
-                    // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
-                    // automatically verified, when all bytes were read from CipherInputStream
-                    try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
-                         TarDeflate tar = new TarDeflate(cis)) {
+    private static List<ArchiveEntry> extractDecryptedFiles(
+        byte[] fbsHeaderBytes,
+        byte[] hmac,
+        SecretKey cekKey,
+        boolean extract,
+        @Nullable Path outputDir,
+        @Nullable List<String> filesToExtract,
+        CountingInputStream countingIs
+    ) throws GeneralSecurityException, IOException {
+        byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
+        long headerSize = countingIs.getByteCount();
+        List<ArchiveEntry> result;
 
-                        try {
-                            result = tar.process(outputDir, filesToExtract, extract);
-                        } catch (Exception tarException) {
-                            // read remaining bytes to force Poly1305 MAC check
-                            // only report caught exception after ChaCha stream is drained and MAC checked
+        // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
+        // automatically verified, when all bytes were read from CipherInputStream
+        try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
+             TarDeflate tar = new TarDeflate(cis)) {
+
+            try {
+                result = tar.process(outputDir, filesToExtract, extract);
+            } catch (Exception tarException) {
+                // read remaining bytes to force Poly1305 MAC check
+                // only report caught exception after ChaCha stream is drained and MAC checked
 
                             long processedBytes = countingIs.getByteCount();
                             drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
@@ -320,20 +343,11 @@ public final class Envelope {
                             }
                         }
 
-                    } finally  {
-                        log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
-                                countingIs.getByteCount() - headerSize, countingIs.getByteCount());
-                    }
-                    return result;
-                } else {
-                    throw new CDocParseException("Unknown payload encryption method "
-                            + header.payloadEncryptionMethod());
-                }
-            }
+        } finally  {
+            log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
+                countingIs.getByteCount() - headerSize, countingIs.getByteCount());
         }
-
-        log.error("Recipient {} not present in CDOC. Cannot decrypt CDOC.", keyMaterial.getRecipientId());
-        throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, cannot decrypt");
+        return result;
     }
 
     /**
