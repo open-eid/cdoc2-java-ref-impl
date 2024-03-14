@@ -548,7 +548,7 @@ class EnvelopeTest {
 
     @Test
     void testThatIncompleteCDocFilesAreRemoved(@TempDir Path tempDir)
-            throws IOException, GeneralSecurityException {
+        throws IOException, GeneralSecurityException {
         KeyPair bobKeyPair = PemTools.loadKeyPair(bobKeyPem);
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "-payload:" + uuid + ".txt"; //invalid

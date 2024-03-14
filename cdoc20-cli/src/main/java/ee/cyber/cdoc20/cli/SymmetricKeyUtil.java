@@ -113,7 +113,7 @@ public final class SymmetricKeyUtil {
             optionChars = Arrays.toString(optionBytes).toCharArray();
             log.debug("Decoded {} bytes from {} (base64)", optionChars.length, optionName);
         } else {
-            excludeSecretKeyInPlaixText(keyOrigin);
+            excludeSecretKeyInPlainText(keyOrigin);
             optionChars = option.toCharArray();
             log.debug("Decoded {} bytes from {}", optionChars.length, optionName);
         }
@@ -189,7 +189,7 @@ public final class SymmetricKeyUtil {
         return decryptionKm;
     }
 
-    private static void excludeSecretKeyInPlaixText(EncryptionKeyOrigin keyOrigin) {
+    private static void excludeSecretKeyInPlainText(EncryptionKeyOrigin keyOrigin) {
         if (keyOrigin == EncryptionKeyOrigin.SECRET) {
             String errorMsg = EncryptionKeyOrigin.SECRET.name() + " cannot be used in plain text";
             log.error(errorMsg);
