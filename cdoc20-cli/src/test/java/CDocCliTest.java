@@ -77,6 +77,14 @@ class CDocCliTest {
     }
 
     @Test
+    void failToEncryptDocWhenSecretInPlainText(@TempDir Path tempPath) {
+        String secret = "--secret=secretLabel:secretCannotBeInPlainText";
+        assertThrowsException(() ->
+            checkCreateDecryptDoc(tempPath, secret, secret, FAILURE_EXIT_CODE)
+        );
+    }
+
+    @Test
     void shouldFailToEncryptDocWithSecretButDecryptWithPassword(@TempDir Path tempPath) {
         assertThrowsException(() ->
             checkCreateDecryptDoc(tempPath, SECRET_OPTION, PASSWORD_OPTION, FAILURE_EXIT_CODE)
@@ -92,8 +100,7 @@ class CDocCliTest {
 
     @Test
     void shouldFailToEncryptDocWithPasswordIfItsValidationHasFailed(@TempDir Path tempPath) {
-        String password = "passwordlabel:short";
-        String passwordForEncrypt = "--password=" + password;
+        String passwordForEncrypt = "--password=passwordlabel:short";
 
         assertThrowsException(() ->
             checkCreateDecryptDoc(tempPath, passwordForEncrypt, passwordForEncrypt, FAILURE_EXIT_CODE)
