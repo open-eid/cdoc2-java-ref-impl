@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class CDocCliTest {
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
 
+    private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
+    private static final String SECRET_OPTION
+        = "--secret=label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=";
     private static final int SUCCESSFUL_EXIT_CODE = 0;
     private static final int FAILURE_EXIT_CODE = 1;
 
@@ -65,41 +68,25 @@ class CDocCliTest {
 
     @Test
     void testSuccessfulCreateDecryptDocWithPassword(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordArg = "--password=" + password;
-        checkCreateDecryptDoc(tempPath, passwordArg, passwordArg, SUCCESSFUL_EXIT_CODE);
+        checkCreateDecryptDoc(tempPath, PASSWORD_OPTION, PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
     }
 
     @Test
     void testSuccessfulCreateDecryptDocWithSecret(@TempDir Path tempPath) throws IOException {
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretArg = "--secret=" + secret;
-        checkCreateDecryptDoc(tempPath, secretArg, secretArg, SUCCESSFUL_EXIT_CODE);
+        checkCreateDecryptDoc(tempPath, SECRET_OPTION, SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
     }
 
     @Test
     void shouldFailToEncryptDocWithSecretButDecryptWithPassword(@TempDir Path tempPath) {
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretForEncrypt = "--secret=" + secret;
-
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordForDecrypt = "--password=" + password;
-
         assertThrowsException(() ->
-            checkCreateDecryptDoc(tempPath, secretForEncrypt, passwordForDecrypt, FAILURE_EXIT_CODE)
+            checkCreateDecryptDoc(tempPath, SECRET_OPTION, PASSWORD_OPTION, FAILURE_EXIT_CODE)
         );
     }
 
     @Test
     void shouldFailToEncryptDocWithPasswordButDecryptWithSecret(@TempDir Path tempPath) {
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordForEncrypt = "--password=" + password;
-
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretForDecrypt = "--secret=" + secret;
-
         assertThrowsException(() ->
-            checkCreateDecryptDoc(tempPath, passwordForEncrypt, secretForDecrypt, FAILURE_EXIT_CODE)
+            checkCreateDecryptDoc(tempPath, PASSWORD_OPTION, SECRET_OPTION, FAILURE_EXIT_CODE)
         );
     }
 
@@ -115,57 +102,33 @@ class CDocCliTest {
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithPassword(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordForEncrypt = "--password=" + password;
-
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretForEncrypt = "--secret=" + secret;
-
-        String passwordForDecrypt = "--password=" + password;
-
         createDocWithFewKeysButDecryptWithOneOfThem(
             tempPath,
-            passwordForEncrypt,
-            secretForEncrypt,
-            passwordForDecrypt,
+            PASSWORD_OPTION,
+            SECRET_OPTION,
+            PASSWORD_OPTION,
             SUCCESSFUL_EXIT_CODE
         );
     }
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithSecret(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordForEncrypt = "--password=" + password;
-
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-        String secretForEncrypt = "--secret=" + secret;
-
-        String secretForDecrypt = "--secret=" + secret;
-
         createDocWithFewKeysButDecryptWithOneOfThem(
             tempPath,
-            passwordForEncrypt,
-            secretForEncrypt,
-            secretForDecrypt,
+            PASSWORD_OPTION,
+            SECRET_OPTION,
+            SECRET_OPTION,
             SUCCESSFUL_EXIT_CODE
         );
     }
 
     @Test
     void shouldSucceedToEncryptDocWithOneKeyButTryToDecryptWithTwo(@TempDir Path tempPath) throws IOException {
-        String password = "passwordlabel:myPlainTextPassword";
-        String passwordForEncrypt = "--password=" + password;
-
-        String secret = "mylonglabel:longstringthatIcanremember,butothersdon'tknow";
-
-        String secretForDecrypt = "--secret=" + secret;
-        String passwordForDecrypt = "--password=" + password;
-
         createDocWithOneKeyAndTryToDecryptWithFewKeys(
             tempPath,
-            passwordForEncrypt,
-            secretForDecrypt,
-            passwordForDecrypt,
+            PASSWORD_OPTION,
+            SECRET_OPTION,
+            PASSWORD_OPTION,
             SUCCESSFUL_EXIT_CODE
         );
     }
