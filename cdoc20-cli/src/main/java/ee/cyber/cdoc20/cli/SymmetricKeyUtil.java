@@ -191,7 +191,7 @@ public final class SymmetricKeyUtil {
 
     private static void excludeSecretKeyInPlainText(EncryptionKeyOrigin keyOrigin) {
         if (keyOrigin == EncryptionKeyOrigin.SECRET) {
-            String errorMsg = EncryptionKeyOrigin.SECRET.name() + " cannot be used in plain text";
+            String errorMsg = "Secret must be as a base64 encoded value";
             log.error(errorMsg);
             throw new IllegalArgumentException(errorMsg);
         }
