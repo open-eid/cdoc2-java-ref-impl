@@ -37,16 +37,16 @@ public final class SymmetricKeyUtil {
 
     private static final String SYMMETRIC_KEY_DESCRIPTION = "symmetric key with label. "
         + "Must have format";
-    private static final String SYMMETRIC_KEY_FORMAT_DETAILS = "can be plain text or base64 "
-        + "encoded binary. In case of base64, it must be prefixed with `base64,`";
 
     // --secret format description, used in cdoc <cmd> classes
     public static final String SECRET_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
-        + " <label>:<secret>. <secret> " + SYMMETRIC_KEY_FORMAT_DETAILS;
+        + " <label>:<secret>. <secret> is a base64 encoded binary. "
+        + "It must be prefixed with `base64,`";
 
     // --password format description, used in cdoc <cmd> classes
     public static final String PASSWORD_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
-        + " <label>:<password>. <password> " + SYMMETRIC_KEY_FORMAT_DETAILS;
+        + " <label>:<password>. <password> can be plain text or base64 "
+        + "encoded binary. In case of base64, it must be prefixed with `base64,`";
 
     private SymmetricKeyUtil() { }
 

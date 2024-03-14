@@ -66,14 +66,9 @@ openssl rand -base64 32
 
 Base64 encoded keys must be prefixed with 'base64,', so that key becomes "base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
 
-Encrypt with generated key and label 'mylabel':
+Encrypt with generated key and label 'label_b64secret':
 ```
-java -jar target/cdoc20-cli-*.jar create --secret "mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=" -f /tmp/symmetric.cdoc README.md
-```
-
-Or clear text:
-```
-java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc20-cli-*.jar create --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc README.md
 ```
 
 Or secret read from file (so that secret is not exposed through process list)
@@ -85,7 +80,7 @@ java -jar target/cdoc20-cli-*.jar create @keys/b64secret.option -f /tmp/symmetri
 cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
 ```
 
-Or encrypt with password clear text:
+Or encrypt with password clear text (note, that password also can be encoded to base64 format, as secret):
 ```
 java -jar target/cdoc20-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
 ```
@@ -102,7 +97,7 @@ java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:myPlainTextP
 
 Or with the same label and secret used for encryption:
 ```
-java -jar target/cdoc20-cli-*.jar decrypt --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc20-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc --output /tmp
 ```
 
 Key and label can be safely stored in a password manager.
@@ -156,7 +151,7 @@ java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --password "pa
 
 or with secret:
 ```
-java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow"
+java -jar target/cdoc20-cli-*.jar list --file /tmp/symmetric.cdoc --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
 ```
 
 ### List recipients
