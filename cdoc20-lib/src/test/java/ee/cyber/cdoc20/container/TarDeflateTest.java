@@ -63,7 +63,7 @@ class TarDeflateTest {
                 new BufferedInputStream(new FileInputStream(tarGZipFile))))) {
 
             TarArchiveEntry entry;
-            while ((entry = tar.getNextTarEntry()) != null) {
+            while ((entry = tar.getNextEntry()) != null) {
                 entries.add(entry.getName());
             }
         }
