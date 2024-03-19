@@ -51,8 +51,8 @@ import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.compress.utils.CountingInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.io.input.CountingInputStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -631,7 +631,7 @@ class EnvelopeTest {
 
         assertEquals("Unexpected data after tar", ioex.getMessage());
 
-        assertEquals(newCdocBytes.length, countingInputStream.getBytesRead());
+        assertEquals(newCdocBytes.length, countingInputStream.getByteCount());
 
         // Although IOException is thrown, it should not be reported if MAC is wrong
         // MAC check exception is thrown instead of "Unexpected data after tar"
@@ -649,7 +649,7 @@ class EnvelopeTest {
         assertInstanceOf(AEADBadTagException.class, ex.getCause());
         assertEquals("mac check in ChaCha20Poly1305 failed", ex.getCause().getMessage());
 
-        assertEquals(newCdocBytes.length, wrongMacIs.getBytesRead());
+        assertEquals(newCdocBytes.length, wrongMacIs.getByteCount());
     }
 
     @Test
@@ -705,7 +705,7 @@ class EnvelopeTest {
         assertEquals("Tar entry with illegal type found", ioex.getMessage());
 
         // all cdoc bytes were processed and Poly1305 MAC checked
-        assertEquals(newCdocBytes.length, countingInputStream.getBytesRead());
+        assertEquals(newCdocBytes.length, countingInputStream.getByteCount());
 
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
@@ -727,7 +727,7 @@ class EnvelopeTest {
         assertInstanceOf(AEADBadTagException.class, ex.getCause());
         assertEquals("mac check in ChaCha20Poly1305 failed", ex.getCause().getMessage());
 
-        assertEquals(newCdocBytes.length, wrongMacIs.getBytesRead());
+        assertEquals(newCdocBytes.length, wrongMacIs.getByteCount());
 
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
