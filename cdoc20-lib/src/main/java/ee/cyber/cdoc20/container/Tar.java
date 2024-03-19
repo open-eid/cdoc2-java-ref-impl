@@ -143,7 +143,7 @@ public final class Tar {
         try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(new DeflateCompressorInputStream(
                 new BufferedInputStream(tarGZipInputStream)))) {
             TarArchiveEntry tarArchiveEntry;
-            while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
+            while ((tarArchiveEntry = tarInputStream.getNextEntry()) != null) {
                 if (tarArchiveEntry.isFile() && tarEntryName.equals(tarArchiveEntry.getName())) {
                     log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
                     long written = tarInputStream.transferTo(outputStream);

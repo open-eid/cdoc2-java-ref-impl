@@ -223,7 +223,7 @@ public class TarDeflate implements AutoCloseable {
 
         int tarEntriesThreshold = Tar.getTarEntriesThresholdThreshold();
         TarArchiveEntry tarArchiveEntry;
-        while ((tarArchiveEntry = tarIs.getNextTarEntry()) != null) {
+        while ((tarArchiveEntry = tarIs.getNextEntry()) != null) {
 
             if (tarArchiveEntry.isFile()) {
                 log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
@@ -248,18 +248,24 @@ public class TarDeflate implements AutoCloseable {
             }
         }
 
-        log.debug("Uncompressed {}B from {}B (compressed)",
-                zLibIs.getUncompressedCount(), zLibIs.getCompressedCount());
+        logUncompressedResult(zLibIs);
 
         // TarArchive processing is finished after first zero block is encountered. Adding additional data after that
         // block makes possible to "hide" additional data after tar archive. This may be attempt to disable
         // MAC checking as not all data won't be processed. Suspicious.
-        if (zLibIs.available() > 0) {
-            log.warn("Unexpected data after tar {}B.", zLibIs.available());
-            throw new IOException("Unexpected data after tar");
+        // Additional check read() is arranged cos available() result can be not accurate on
+        // different computers due to differences in the underlying operating system and file system.
+        if (zLibIs.available() > 0 && (zLibIs.read() != -1)) {
+                log.warn("Unexpected data after tar {}B.", zLibIs.available());
+                throw new IOException("Unexpected data after tar");
         }
 
         return extractedArchiveEntries;
+    }
+
+    private static void logUncompressedResult(InputStreamStatistics gZipStatistics) {
+        log.debug("Uncompressed {}B from {}B (compressed)",
+            gZipStatistics.getUncompressedCount(), gZipStatistics.getCompressedCount());
     }
 
     /**
