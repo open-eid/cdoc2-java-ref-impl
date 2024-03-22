@@ -12,12 +12,12 @@ Run from cdoc20-cli directory
 
 ### Encrypt for id-card
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/ria-dev/ria-dev.properties -f /tmp/ria.cdoc -r 37903130370 README.md
+java -jar target/cdoc20-cli-*.jar create --server=config/ria-dev/ria-dev.properties -f /tmp/ria.cdoc -r 37903130370 README.md
 ```
 
 ### Decrypting with id-card
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/ria-dev/ria-dev.properties -f /tmp/ria.cdoc
+java -jar target/cdoc20-cli-*.jar decrypt --server=config/ria-dev/ria-dev.properties -f /tmp/ria.cdoc
 ```
 
 ## General EC secp384 key pair
@@ -26,11 +26,11 @@ Client certificate must be trusted by server
 
 ### Encrypt
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar create --server=config/ria-dev/ria-dev_pkcs12.properties -f /tmp/ria2.cdoc -p keys/cdoc20client_pub.pem README.md
+java -jar target/cdoc20-cli-*.jar create --server=config/ria-dev/ria-dev_pkcs12.properties -f /tmp/ria2.cdoc -p keys/cdoc20client_pub.pem README.md
 ```
 
 ### Decrypt
 
 ```
-java -jar target/cdoc20-cli-0.0.10-SNAPSHOT.jar decrypt --server=config/ria-dev/ria-dev_pkcs12.properties -f /tmp/ria2.cdoc -k keys/cdoc20client.pem
+java -jar target/cdoc20-cli-*.jar decrypt --server=config/ria-dev/ria-dev_pkcs12.properties -f /tmp/ria2.cdoc -k keys/cdoc20client.pem
 ```

@@ -24,9 +24,9 @@ CDOC_VER=$(cd $CDOC_DIR && mvn help:evaluate -Dexpression=project.version -q -Df
 #CDOC_VER="0.3.0-SNAPSHOT"
 
 CLI_DIR=${CDOC_DIR}/cdoc20-cli
-CLI_KEYS_DIR=${CDOC_DIR}/cdoc20-cli/keys
-CLI_JAR=${CDOC_DIR}/cdoc20-cli/target/cdoc20-cli-${CDOC_VER}.jar
-CLI_CONF=${CDOC_DIR}/cdoc20-cli/config
+CLI_KEYS_DIR=${CLI_DIR}/keys
+CLI_JAR=${CLI_DIR}/target/cdoc20-cli-${CDOC_VER}.jar
+CLI_CONF=$CLI_DIR/config
 
 SERVER_KEYS_DIR=${CDOC_DIR}/cdoc20-server/keys
 
