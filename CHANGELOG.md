@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0] Version update (2024-03-XX)
+
+### Features
+
+* Added possibility to encrypt and decrypt CDOC2 container with password.
+* Removed an option for Symmetric Key creation from plain text, left only Base64 encoded format.
+* Added CDOC2 container re-encryption functionality for long-term cryptography.
+* Added Bats tests automatic installation.
+
+### Bug Fixes
+
+* Fixed CDOC2 container decryption failure with few files inside.
+
+
 ## [1.0.0] Version update (2024-01-23)
 No changes, only version update in all components.
 
