@@ -16,6 +16,7 @@ import ee.cyber.cdoc20.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.Header;
 import ee.cyber.cdoc20.fbs.header.PayloadEncryptionMethod;
 import ee.cyber.cdoc20.fbs.header.RecipientRecord;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -37,12 +38,14 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 public final class Envelope {
+
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
     protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
@@ -68,11 +71,11 @@ public final class Envelope {
 
     /**Minimal valid envelope size in bytes*/
     public static final int MIN_ENVELOPE_SIZE = PRELUDE.length
-            + Byte.BYTES //version 0x02
-            + Integer.BYTES //header length field
-            + MIN_HEADER_LEN
-            + Crypto.HHK_LEN_BYTES
-            + MIN_PAYLOAD_LEN;
+        + Byte.BYTES //version 0x02
+        + Integer.BYTES //header length field
+        + MIN_HEADER_LEN
+        + Crypto.HHK_LEN_BYTES
+        + MIN_PAYLOAD_LEN;
 
     // payload encryption method
     private static final byte PAYLOAD_ENC_BYTE = PayloadEncryptionMethod.CHACHA20POLY1305;
@@ -94,18 +97,20 @@ public final class Envelope {
      * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For each recipient FMK is
      * encrypted with generated key that single recipient can decrypt with their private key.
      * @param recipients encryption key material either with public key or symmetric key and key label. After
-     *          {@link #prepare(List, KeyCapsuleClient)} has returned, it is safe to call
-     *          {@link EncryptionKeyMaterial#destroy()} to clean up secret key material (it will not be referenced
+     *          {@link #prepare(List, KeyCapsuleClient)} has returned, it is safe
+     *           to clean up secret key material (it will not be referenced
      *          anymore).
      *
      * @param capsuleClient if capsuleClient is provided then store generated ephemeral key material in the server
      * @return Envelope that has key material prepared and can be used for
      *          {@link #encrypt(List, OutputStream) encryption}
-     * @throws GeneralSecurityException
+     * @throws GeneralSecurityException if fmk generation has failed
      * @throws ExtApiException if communication with capsuleClient to store ephemeral key material fails
      */
-    public static Envelope prepare(List<EncryptionKeyMaterial> recipients, @Nullable KeyCapsuleClient capsuleClient)
-             throws GeneralSecurityException, ExtApiException {
+    public static Envelope prepare(
+        List<EncryptionKeyMaterial> recipients,
+        @Nullable KeyCapsuleClient capsuleClient
+    ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
 
@@ -139,7 +144,7 @@ public final class Envelope {
         int headerLen = headerLenBuf.getInt();
 
         if ((envelopeIs.available() < headerLen + Crypto.HHK_LEN_BYTES)
-                || (headerLen < MIN_HEADER_LEN) || (headerLen > MAX_HEADER_LEN))  {
+            || (headerLen < MIN_HEADER_LEN) || (headerLen > MAX_HEADER_LEN))  {
             throw new CDocParseException("invalid CDOC header length: " + headerLen);
         }
 
@@ -155,14 +160,15 @@ public final class Envelope {
      * @throws GeneralSecurityException if decoding cryptographic keys from FlatBuffers RecipientRecord has failed
      */
     public static List<Recipient> parseHeader(InputStream envelopeIs)
-            throws IOException, CDocParseException, GeneralSecurityException {
+        throws IOException, CDocParseException, GeneralSecurityException {
 
         byte[] fbsHeaderBytes = readFBSHeader(envelopeIs);
         Header header = deserializeFBSHeader(fbsHeaderBytes);
         return getRecipients(header);
     }
 
-    private static List<Recipient> getRecipients(Header header) throws CDocParseException, GeneralSecurityException {
+    private static List<Recipient> getRecipients(Header header)
+        throws CDocParseException, GeneralSecurityException {
 
         List<Recipient> recipientList = new LinkedList<>();
         for (int i = 0; i < header.recipientsLength(); i++) {
@@ -203,12 +209,80 @@ public final class Envelope {
     /**
      * Encrypt payloadFiles. Create CDOC2 container and write it to OutputStream.
      * @param payloadFiles files to be encrypted and added to the container
-     * @param os OutputStream to write CDOC2 container
-     * @throws IOException
-     * @throws GeneralSecurityException
+     * @param os           OutputStream to write CDOC2 container
+     * @throws IOException if an I/O error has occurred
+     * @throws GeneralSecurityException if HMAC calculation or CipherOutputStream initialization
+     *                                  has failed
      */
-    public void encrypt(List<File> payloadFiles, OutputStream os) throws IOException, GeneralSecurityException {
+    public void encrypt(List<File> payloadFiles, OutputStream os)
+        throws IOException, GeneralSecurityException {
+
         log.trace("encrypt");
+        try (CipherOutputStream cipherOutputStream = prepareContainerForPayload(os)) {
+            Tar.archiveFiles(cipherOutputStream, payloadFiles);
+        }
+    }
+
+    /**
+     * Re-encrypt CDOC. Decrypts input CDOC with decryptionKeyMaterial and copies files from it to
+     * new CDOC that is encrypted with encryptionKeyMaterial. Temporary files are not created on
+     * filesystem. For re-encryption only password and symmetric key are supported.
+     * @param cdocInputStream contains CDOC2 container
+     * @param decryptionKeyMaterial decryption key material
+     * @param destReEncryptedCdoc [out] reEncrypted CDOC will be written into destReEncryptedCdoc
+     * @param reEncryptionKeyMaterial reEncrypted CDOC will be encrypted with reEncryptionKeyMaterial.
+     *                               Only password and symmetric key are supported for re-encryption
+     * @param capsulesClientFac configured key servers clients factory used download decryption
+     *                          key material. Not needed (null) when decryptionKeyMaterial is not in
+     *                          key server.
+     * @param destDir directory where re-encrypted CDOC will be written. Must exist and be writeable.
+     *                Used to check available disk space. Null when destReEncryptedCdoc is not file
+     *                based.
+     * @throws GeneralSecurityException if security/crypto error has occurred
+     * @throws IOException if an I/O error occurs
+     * @throws CDocException if encryption/decryption error has occurred
+     */
+    public static void reEncrypt(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial decryptionKeyMaterial,
+        OutputStream destReEncryptedCdoc,
+        EncryptionKeyMaterial reEncryptionKeyMaterial,
+        @Nullable Path destDir,
+        @Nullable KeyCapsuleClientFactory capsulesClientFac
+    ) throws GeneralSecurityException, IOException, CDocException {
+
+        log.trace("reEncrypt");
+
+        switch (reEncryptionKeyMaterial.getKeyOrigin()) {
+            case SECRET, PASSWORD:
+                break;
+            default:
+                // no technical reason not to support other key types (only password supported by long-term UC )
+                throw new CDocException("Only password and symmetric key are supported for re-encryption.");
+        }
+
+        Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null);
+
+        try (CipherOutputStream cipherOs = newContainer.prepareContainerForPayload(destReEncryptedCdoc);
+            TarArchiveOutputStream transferToOs = Tar.createPosixTarZArchiveOutputStream(cipherOs)) {
+
+            processContainer(cdocInputStream,
+                decryptionKeyMaterial,
+                new TranferToDelegate(transferToOs, destDir),
+                capsulesClientFac);
+        }
+    }
+
+    /**
+     * Write CDOC header, HMAC to os and initialize cipher output stream for encryption.
+     * Will use cekKey  created {@link Envelope#prepare(List, KeyCapsuleClient)}
+     * @param os OutputStream to write CDOC2 container
+     * @return CipherOutputStream constructed from CEK and os.
+     *         Ready to write (encrypt) data. {@link CipherOutputStream#close()} must be called by caller.
+     */
+    private CipherOutputStream prepareContainerForPayload(OutputStream os)
+        throws IOException, GeneralSecurityException {
+
         os.write(PRELUDE);
         os.write(new byte[]{VERSION});
 
@@ -225,23 +299,16 @@ public final class Envelope {
         byte[] hmac = Crypto.calcHmacSha256(hmacKey, headerBytes);
         os.write(hmac);
         byte[] additionalData = getAdditionalData(headerBytes, hmac);
-        try (CipherOutputStream cipherOutputStream =
-                     ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData)) {
 
-            Tar.archiveFiles(cipherOutputStream, payloadFiles);
-        }
+        return ChaChaCipher.initChaChaOutputStream(os, cekKey, additionalData);
     }
 
     /**
-     * Decrypt CDOC2 container, read from cdocInputStream.
+     * Process (decrypt) CDOC2 container. Output depends on tarProcessingDelegate type.
      * @param cdocInputStream contains CDOC2 container
      * @param keyMaterial decryption key material
-     * @param extract if true, extract files to outputDir. Otherwise, decrypt and list valid CDOC2 contents
-     *                that can be decrypted
-     * @param outputDir output directory where decrypted files are extracted when extract=true
-     * @param filesToExtract if not null, extract specified files otherwise all files.
-     *                       No effect for list (extract=false)
-     * @param capsulesClientFac configured key servers clients factory.
+     * @param tarProcessingDelegate how to process tar (output could be extranct, transferto or list)
+     * @param capsulesClientFac configured key servers clients factory for decryption
      * @return list of files decrypted and written into outputDir, when extract = true
      *          or list of extractable files found from CDOC2 container when extract = false
      * @throws GeneralSecurityException if security/crypto error has occurred
@@ -249,43 +316,35 @@ public final class Envelope {
      * @throws CDocParseException if cdocInputStream is in invalid format and can not be parsed
      * @throws ExtApiException if error happened when communicating with key server
      */
-    private static List<ArchiveEntry> decrypt(
+    private static List<ArchiveEntry> processContainer(
         InputStream cdocInputStream,
         DecryptionKeyMaterial keyMaterial,
-        boolean extract,
-        @Nullable Path outputDir,
-        @Nullable List<String> filesToExtract,
+        TarEntryProcessingDelegate tarProcessingDelegate,
         @Nullable KeyCapsuleClientFactory capsulesClientFac
     ) throws GeneralSecurityException, IOException, CDocException {
 
-        CountingInputStream countingIs = new CountingInputStream(cdocInputStream);
-        byte[] fbsHeaderBytes = readFBSHeader(countingIs);
-        byte[] hmac = readHmac(countingIs);
+        CountingInputStream containerIs = new CountingInputStream(cdocInputStream);
+        byte[] fbsHeaderBytes = readFBSHeader(containerIs);
+        byte[] hmac = readHmac(containerIs);
         Header header = deserializeFBSHeader(fbsHeaderBytes);
         List<Recipient> recipients = getRecipients(header);
 
         for (Recipient recipient : recipients) {
             if (recipient.getRecipientId().equals(keyMaterial.getRecipientId())) {
                 byte[] kek = recipient.deriveKek(keyMaterial, capsulesClientFac);
-                byte[] fmk;
-                if (recipient.getFmkEncryptionMethod() == FMK_ENC_METHOD_BYTE) {
-                    fmk = Crypto.xor(kek, recipient.getEncryptedFileMasterKey());
-                } else {
-                    throw new CDocParseException("Unknown FMK encryption method: "
-                            + recipient.getFmkEncryptionMethod());
-                }
+                byte[] fmk = decryptRecipientFmk(recipient, kek);
 
                 SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
                 SecretKey cekKey = Crypto.deriveContentEncryptionKey(fmk);
 
                 checkHmac(hmac, fbsHeaderBytes, hmacKey);
 
-                log.debug("Processed {} header bytes", countingIs.getByteCount());
-                log.debug("payload available (at least) {}", countingIs.available());
+                log.debug("Processed {} header bytes", containerIs.getByteCount());
+                log.debug("payload available (at least) {}", containerIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
-                    return extractDecryptedFiles(
-                        fbsHeaderBytes, hmac, cekKey, extract, outputDir, filesToExtract, countingIs
+                    return processPayload(
+                        containerIs, cekKey, getAdditionalData(fbsHeaderBytes, hmac), tarProcessingDelegate
                     );
                 } else {
                     throw new CDocParseException("Unknown payload encryption method "
@@ -298,56 +357,94 @@ public final class Envelope {
         throw new CDocParseException("Recipient " + keyMaterial.getRecipientId() + " not found, cannot decrypt");
     }
 
-    private static List<ArchiveEntry> extractDecryptedFiles(
-        byte[] fbsHeaderBytes,
-        byte[] hmac,
+    private static byte[] decryptRecipientFmk(Recipient recipient, byte[] keyEncryptionKey)
+        throws CDocParseException {
+
+        if (recipient.getFmkEncryptionMethod() == FMK_ENC_METHOD_BYTE) {
+            return Crypto.xor(keyEncryptionKey, recipient.getEncryptedFileMasterKey());
+        } else {
+            throw new CDocParseException("Unknown FMK encryption method: "
+                + recipient.getFmkEncryptionMethod());
+        }
+    }
+
+    /**
+     * Process payload (content).
+     * @param containerIs InputStream containing CDOC2. InputStream position is just before payload.
+     * @param cekKey content encryption key decrypted from header
+     * @param additionalData used to initialize ChaChaCipher AAD
+     * @param tarProcessingDelegate tar processing operation
+     * @return archive entries processed
+     * @throws GeneralSecurityException if security/crypto error has occurred
+     * @throws IOException if an I/O error occurs
+     */
+    private static List<ArchiveEntry> processPayload(
+        CountingInputStream containerIs,
         SecretKey cekKey,
-        boolean extract,
-        @Nullable Path outputDir,
-        @Nullable List<String> filesToExtract,
-        CountingInputStream countingIs
+        byte[] additionalData,
+        TarEntryProcessingDelegate tarProcessingDelegate
     ) throws GeneralSecurityException, IOException {
-        byte[] additionalData = getAdditionalData(fbsHeaderBytes, hmac);
-        long headerSize = countingIs.getByteCount();
+
+        long headerSize = containerIs.getByteCount();
         List<ArchiveEntry> result;
 
         // lib must not report any exceptions before ChaCha Poly1305 mac is verified. Poly1305 MAC is
         // automatically verified, when all bytes were read from CipherInputStream
-        try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(countingIs, cekKey, additionalData);
-             TarDeflate tar = new TarDeflate(cis)) {
+        try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(containerIs, cekKey, additionalData);
+             TarDeflate tarDeflate = new TarDeflate(cis)) {
 
             try {
-                result = tar.process(outputDir, filesToExtract, extract);
-            } catch (Exception tarException) {
+                result = tarDeflate.process(tarProcessingDelegate);
+            } catch (Exception tarException) { // any exception from tar processing must not be
+                                              // reported before Poly1305 MAC check has been performed
                 // read remaining bytes to force Poly1305 MAC check
                 // only report caught exception after ChaCha stream is drained and MAC checked
+                long processedBytes = containerIs.getByteCount();
+                drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
 
-                            long processedBytes = countingIs.getByteCount();
-                            drainStream(cis, null); //may throw IOException, tarException won't be re-thrown
-                            // since exception was thrown from TarDeflate, then created files are deleted by
-                            // TarDeflate::close() when exiting try with resources block
-                            if (countingIs.getByteCount() - processedBytes > 0) {
-                                log.debug("Decrypted {} unprocessed bytes after \"{}\"",
-                                        countingIs.getByteCount() - processedBytes, tarException.toString());
-                            }
-                            throw tarException; //no exception from drainStream, re-throw original exception
-                        } finally {
-                            // deflate/tar stream processing is finished, drain any remaining bytes to force
-                            // ChaCha Poly1305 MAC check
-                            long processedBytes = countingIs.getByteCount();
-                            drainStream(cis, tar::deleteCreatedFiles); //may throw IOException
+                // since exception was thrown from TarDeflate, then created files are deleted by
+                // TarDeflate::close() when exiting try with resources block
+                if (containerIs.getByteCount() - processedBytes > 0) {
+                    log.debug("Decrypted {} unprocessed bytes after \"{}\"",
+                        containerIs.getByteCount() - processedBytes, tarException.toString());
+                }
 
-                            if (countingIs.getByteCount() - processedBytes > 0) {
-                                log.debug("Decrypted {} unprocessed bytes ",
-                                        countingIs.getByteCount() - processedBytes);
-                            }
-                        }
+                throw tarException; //no exception from drainStream, re-throw original exception
+            } finally {
+
+                // read all bytes (if any) from ChaCha stream and check Poly1305 MAC
+                // delete all created files when MAC check fails
+                forcePoly1305MacCheck(containerIs, cis, tarDeflate::deleteCreatedFiles);
+            }
 
         } finally  {
             log.debug("Processed {} bytes from payload (total CDOC2 {}B )",
-                countingIs.getByteCount() - headerSize, countingIs.getByteCount());
+                containerIs.getByteCount() - headerSize, containerIs.getByteCount());
         }
         return result;
+    }
+
+    /**
+     * Read any remaining bytes from cipher input stream to force MAC check at the end of stream.
+     * @param countingIs input stream
+     * @param cis cipher input stream to drain
+     * @param cleanUpFunc clean up function to run, when IOException happened during MAC check
+     * @throws IOException if an I/O error occurs
+     */
+    private static void forcePoly1305MacCheck(
+        CountingInputStream countingIs,
+        CipherInputStream cis,
+        @Nullable Runnable cleanUpFunc
+    ) throws IOException {
+        // deflate/tar stream processing is finished, drain any remaining bytes to force
+        // ChaCha Poly1305 MAC check
+        long processedBytes = countingIs.getByteCount();
+        drainStream(cis, cleanUpFunc); //may throw IOException Poly1305 MAC check
+
+        if (countingIs.getByteCount() - processedBytes > 0) {
+            log.debug("Decrypted {} unprocessed bytes ",
+                countingIs.getByteCount() - processedBytes);
+        }
     }
 
     /**
@@ -358,7 +455,7 @@ public final class Envelope {
      */
     @SuppressWarnings("checkstyle:EmptyBlock")
     private static void drainStream(CipherInputStream cis, @Nullable Runnable cleanUpFunc)
-            throws IOException {
+        throws IOException {
 
         byte[] ignored = new byte[1024];
         try {
@@ -380,7 +477,7 @@ public final class Envelope {
      * @throws CDocParseException if calculated HMAC does not match with HMAC in header
      */
     private static void checkHmac(byte[] hmac, byte[] headerBytes, SecretKey hmacKey)
-            throws GeneralSecurityException, CDocParseException {
+        throws GeneralSecurityException, CDocParseException {
 
         Objects.requireNonNull(hmac);
         Objects.requireNonNull(headerBytes);
@@ -416,13 +513,22 @@ public final class Envelope {
      * @throws CDocParseException if cdocInputStream is invalid format
      * @throws ExtApiException if error happened when communicating with key server
      */
-    public static List<String> decrypt(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
-                                       Path outputDir, @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocException {
-        return decrypt(cdocInputStream, recipientKeyMaterial, true, outputDir, null,
-                keyServerClientFac).stream()
-                    .map(ArchiveEntry::getName)
-                    .toList();
+    public static List<String> decrypt(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial recipientKeyMaterial,
+        Path outputDir,
+        @Nullable KeyCapsuleClientFactory keyServerClientFac
+    ) throws GeneralSecurityException, IOException, CDocException {
+
+        log.trace("decrypt");
+        return processContainer(
+            cdocInputStream,
+            recipientKeyMaterial,
+            new ExtractDelegate(outputDir, null),
+            keyServerClientFac
+        ).stream()
+            .map(ArchiveEntry::getName)
+            .toList();
     }
 
     /**
@@ -431,34 +537,68 @@ public final class Envelope {
      * @param recipientKeyMaterial decryption key material
      * @param outputDir output directory where decrypted files are decrypted
      * @param filesToExtract if not null, extract specified files otherwise all files.
-     * @param keyServerClientFac configured key servers clients factory.
+     * @param keyServerClientFac configured key servers client factory.
      * @return list of files decrypted and written into outputDir
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error has occurred
      * @throws CDocParseException if cdocInputStream is invalid format
      * @throws ExtApiException if error happened when communicating with key server
      */
-    public static List<String> decrypt(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
-                                       Path outputDir, @Nullable List<String> filesToExtract,
-                                       @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocException {
+    public static List<String> decrypt(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial recipientKeyMaterial,
+        Path outputDir,
+        @Nullable List<String> filesToExtract,
+        @Nullable KeyCapsuleClientFactory keyServerClientFac
+    ) throws GeneralSecurityException, IOException, CDocException {
 
-        return decrypt(cdocInputStream, recipientKeyMaterial, true, outputDir, filesToExtract, keyServerClientFac)
-                .stream()
-                .map(ArchiveEntry::getName)
-                .toList();
+        log.trace("decrypt");
+        return processContainer(
+            cdocInputStream,
+            recipientKeyMaterial,
+            new ExtractDelegate(outputDir, filesToExtract),
+            keyServerClientFac
+        ).stream()
+            .map(ArchiveEntry::getName)
+            .toList();
     }
 
+    /**
+     * List ArchiveEntries in CDOC
+     * @param cdocInputStream contains CDOC2 container
+     * @param recipientKeyMaterial decryption key material
+     * @param keyServerClientFac configured key servers client factory.
+     * @return List of ArchiveEntry decrypted from CDOC
+     * @throws GeneralSecurityException if security/crypto error has occurred
+     * @throws IOException if an I/O error occurs
+     * @throws CDocException if encryption/decryption error has occurred
+     */
     public static List<ArchiveEntry> list(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
                                           @Nullable KeyCapsuleClientFactory keyServerClientFac)
-            throws GeneralSecurityException, IOException, CDocException {
-        return decrypt(cdocInputStream, recipientKeyMaterial, false, null, null, keyServerClientFac);
+        throws GeneralSecurityException, IOException, CDocException {
+
+        log.trace("list");
+        return processContainer(
+            cdocInputStream,
+            recipientKeyMaterial,
+            new ListDelegate(),
+            keyServerClientFac
+        );
     }
 
+    /**
+     * Serialize flatbuffer part (recipients data) of the header
+     * @return serialized flatbuffer header
+     */
     byte[] serializeHeader() {
         return serializeHeader(this.recipients);
     }
 
+    /**
+     * Serialize flatbuffer part (recipients data) of the header
+     * @param recipients recipients to be serialized
+     * @return serialized flatbuffer header
+     */
     static byte[] serializeHeader(Recipient[] recipients) {
         Objects.requireNonNull(recipients);
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -482,7 +622,7 @@ public final class Envelope {
         if (bufLen > MAX_HEADER_LEN) {
             log.error("Header serialization failed. Header len {} exceeds MAX_HEADER_LEN {}", bufLen, MAX_HEADER_LEN);
             throw new IllegalStateException("Header serialization failed. Header length " + bufLen
-                    + " exceeds max header length " + MAX_HEADER_LEN);
+                + " exceeds max header length " + MAX_HEADER_LEN);
         }
         os.write(buf.array(), buf.position(), bufLen);
         return os.toByteArray();
@@ -494,8 +634,8 @@ public final class Envelope {
         if (o == null || getClass() != o.getClass()) return false;
         Envelope envelope = (Envelope) o;
         return Arrays.equals(recipients, envelope.recipients)
-                && Objects.equals(hmacKey, envelope.hmacKey)
-                && Objects.equals(cekKey, envelope.cekKey);
+            && Objects.equals(hmacKey, envelope.hmacKey)
+            && Objects.equals(cekKey, envelope.cekKey);
     }
 
     @Override
@@ -504,6 +644,5 @@ public final class Envelope {
         result = 31 * result + Arrays.hashCode(recipients);
         return result;
     }
-
 
 }

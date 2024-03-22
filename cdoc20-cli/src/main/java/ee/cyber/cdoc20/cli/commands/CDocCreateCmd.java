@@ -9,7 +9,6 @@ import ee.cyber.cdoc20.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
 import ee.cyber.cdoc20.crypto.PemTools;
 import ee.cyber.cdoc20.util.SkLdapUtil;
-import ee.cyber.cdoc20.util.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -26,6 +25,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+
+import static ee.cyber.cdoc20.cli.CDocCommonHelper.getServerProperties;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -46,19 +47,19 @@ public class CDocCreateCmd implements Callable<Void> {
 
     static class Dependent {
         @Option(names = {"-p", "--pubkey"},
-                paramLabel = "PEM", description = "recipient public key in PEM format")
+            paramLabel = "PEM", description = "recipient public key in PEM format")
         private File[] pubKeys;
 
         @Option(names = {"-c", "--cert"},
-                paramLabel = "CER", description = "recipient x509 certificate in DER or PEM format")
+            paramLabel = "CER", description = "recipient x509 certificate in DER or PEM format")
         private File[] certs;
 
         @Option(names = {"-r", "--recipient", "--receiver"},
-                paramLabel = "isikukood", description = "recipient id code (isikukood)")
+            paramLabel = "isikukood", description = "recipient id code (isikukood)")
         private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-                description = SymmetricKeyUtil.SECRET_DESCRIPTION)
+            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
         private String[] secrets;
 
         @Option(names = {"-pw", "--password"}, arity = "0..1",
@@ -73,11 +74,11 @@ public class CDocCreateCmd implements Callable<Void> {
     }
 
     @Option(names = {"-S", "--server"},
-            paramLabel = "FILE.properties",
-            description = "Key server connection properties file"
-            // default server configuration disabled, until public key server is up and running
-            //, arity = "0..1"
-            //, fallbackValue = DEFAULT_SERVER_PROPERTIES
+        paramLabel = "FILE.properties",
+        description = "Key server connection properties file"
+        // default server configuration disabled, until public key server is up and running
+        //, arity = "0..1"
+        //, fallbackValue = DEFAULT_SERVER_PROPERTIES
     )
     private String keyServerPropertiesFile;
 
@@ -106,15 +107,15 @@ public class CDocCreateCmd implements Callable<Void> {
 
         // fetch authentication certificates' public keys for natural person identity codes
         Map<PublicKey, String> ldapKeysWithLabels =
-                SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
-                    .stream()
-                    .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
+                .stream()
+                .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         recipientsMap.putAll(ldapKeysWithLabels);
 
         List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
-                .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toList());
+            .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
+            .collect(Collectors.toList());
 
         addSymmetricKeysWithLabels(recipients);
 
@@ -123,8 +124,7 @@ public class CDocCreateCmd implements Callable<Void> {
             .withPayloadFiles(Arrays.asList(inputFiles));
 
         if (keyServerPropertiesFile != null) {
-            Properties p = new Properties();
-            p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
+            Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
         }
 

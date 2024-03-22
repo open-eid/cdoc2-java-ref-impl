@@ -1,25 +1,23 @@
 package ee.cyber.cdoc20.cli.commands;
 
-import ee.cyber.cdoc20.CDocConfiguration;
-import ee.cyber.cdoc20.CDocDecrypter;
-import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
-import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
-import ee.cyber.cdoc20.crypto.PemTools;
-import ee.cyber.cdoc20.crypto.Pkcs11Tools;
-import ee.cyber.cdoc20.util.Resources;
-import java.io.File;
-import java.nio.file.InvalidPathException;
-import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import java.io.File;
+import java.nio.file.InvalidPathException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import ee.cyber.cdoc20.CDocDecrypter;
+import ee.cyber.cdoc20.cli.SymmetricKeyUtil;
+import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+
+import static ee.cyber.cdoc20.cli.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
+import static ee.cyber.cdoc20.cli.CDocDecryptionHelper.getDecryptionKeyMaterial;
+import static ee.cyber.cdoc20.cli.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -86,43 +84,30 @@ public class CDocDecryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
-        Properties p;
-
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
-
-        if (keyServerPropertiesFile != null) {
-            p = new Properties();
-            p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
-            keyCapsulesClientFactory = KeyCapsuleClientImpl.createFactory(p);
+        if (this.keyServerPropertiesFile != null) {
+            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
 
-        DecryptionKeyMaterial decryptionKm =
-            SymmetricKeyUtil.extractDecryptionKeyMaterialFromSymmetricKey(
-                this.cdocFile.toPath(), this.password, this.secret
-            );
+        DecryptionKeyMaterial decryptionKeyMaterial = getDecryptionKeyMaterial(
+            this.cdocFile,
+            this.password,
+            this.secret,
+            this.p12,
+            this.privKeyFile,
+            this.slot,
+            this.keyAlias
+        );
 
-        if (decryptionKm == null)  {
-            KeyPair keyPair;
-            if (p12 != null) {
-                keyPair = PemTools.loadKeyPairFromP12File(p12);
-            } else {
-                keyPair = privKeyFile != null
-                        ? PemTools.loadKeyPair(privKeyFile)
-                        : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
-            }
+        CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
+            this.cdocFile,
+            this.filesToExtract,
+            this.outputPath,
+            decryptionKeyMaterial,
+            keyCapsulesClientFactory
+        );
 
-            decryptionKm = DecryptionKeyMaterial.fromKeyPair(keyPair);
-        }
-
-        CDocDecrypter cDocDecrypter = new CDocDecrypter()
-                .withCDoc(cdocFile)
-                .withRecipient(decryptionKm)
-                .withFilesToExtract(Arrays.asList(filesToExtract))
-                .withKeyServers(keyCapsulesClientFactory)
-                .withDestinationDirectory(outputPath);
-
-        System.out.println("Decrypting " + cdocFile + " to " + outputPath.getAbsolutePath());
+        System.out.println("Decrypting " + this.cdocFile + " to " + this.outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();
         extractedFileNames.forEach(System.out::println);
         return null;

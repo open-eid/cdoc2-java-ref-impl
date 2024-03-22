@@ -1,6 +1,10 @@
 package ee.cyber.cdoc20.container;
 
+import java.io.File;
 import java.nio.file.InvalidPathException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -14,7 +18,7 @@ public final class FileNameValidator {
     );
     private static final Pattern WIN_RESERVED_SYMBOLS = Pattern.compile("[<>:\"/\\\\|?*]");
 
-    private static final Pattern MASQUERADING_CHARACTERS = Pattern.compile("[\u202E]");
+    private static final Pattern MASQUERADING_CHARACTERS = Pattern.compile("\u202E");
 
     private FileNameValidator() {
         // utility class
@@ -62,4 +66,33 @@ public final class FileNameValidator {
         }
         return baseName;
     }
+
+    /**
+     * Validates there are no file duplicates in container before saving them into Tar archive
+     *
+     * @param files the list of files
+     * @throws IllegalArgumentException if there are files duplicates
+     */
+    public static void ensureNoFileDuplicates(Iterable<File> files) {
+        List<String> baseNameList = new LinkedList<>();
+        files.forEach(f -> baseNameList.add(validate(f.getName())));
+        List<String> distinctList = baseNameList.stream().distinct().toList();
+        if (baseNameList.size() != distinctList.size()) {
+            List<String> duplicates = baseNameList.stream()
+                .filter(str -> Collections.frequency(baseNameList, str) > 1)
+                .toList();
+
+            List<File> duplicateFiles = new LinkedList<>();
+            files.forEach(f -> {
+                if (duplicates.contains(f.getName())) {
+                    duplicateFiles.add(f);
+                }
+            });
+
+            throw new IllegalArgumentException(
+                "Files with same basename not supported: " + duplicateFiles
+            );
+        }
+    }
+
 }

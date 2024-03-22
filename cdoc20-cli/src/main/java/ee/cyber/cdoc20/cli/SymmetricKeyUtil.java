@@ -72,6 +72,19 @@ public final class SymmetricKeyUtil {
         return result;
     }
 
+    public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromSecret(
+        String secret
+    ) throws CDocValidationException {
+        if (secret == null) {
+            return null;
+        }
+
+        FormattedOptionParts splitSecret
+            = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
+
+        return SymmetricKeyTools.getEncryptionKeyMaterialFromSecret(splitSecret);
+    }
+
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
         FormattedOptionParts passwordAndLabel
     ) {
