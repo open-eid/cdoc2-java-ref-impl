@@ -1,6 +1,7 @@
 package ee.cyber.cdoc20.container;
 
 import ee.cyber.cdoc20.CDocBuilder;
+import ee.cyber.cdoc20.CDocDecrypter;
 import ee.cyber.cdoc20.CDocException;
 import ee.cyber.cdoc20.CDocValidationException;
 import ee.cyber.cdoc20.client.ExtApiException;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -67,21 +69,24 @@ public final class EnvelopeTestUtils {
      * @param keyLabel       key label
      * @param newCdocPayload payload from origCdocBytes will be replaced with encrypted newCdocPayload
      * @return new cdoc2 container where original payload was replaced with newCdocPayload
-     * @throws IOException
+     * @throws IOException if an I/O error has occurred
      * @throws CDocParseException
      */
-    static byte[] replacePayload(byte[] origCdocBytes, SecretKey preSharedKey, String keyLabel, byte[] newCdocPayload)
-            throws IOException, CDocParseException, GeneralSecurityException {
+    static byte[] replacePayload(
+        byte[] origCdocBytes,
+        SecretKey preSharedKey,
+        String keyLabel,
+        byte[] newCdocPayload
+    ) throws IOException, CDocParseException, GeneralSecurityException {
         byte[] headerBytes = Envelope.readFBSHeader(new ByteArrayInputStream(origCdocBytes));
         Header header = Envelope.deserializeFBSHeader(headerBytes);
 
         int hmacStart = Envelope.PRELUDE.length
-                + Byte.BYTES //version 0x02
-                + Integer.BYTES //header length field
-                + headerBytes.length;
+            + Byte.BYTES //version 0x02
+            + Integer.BYTES //header length field
+            + headerBytes.length;
         byte[] hmacBytes = Arrays.copyOfRange(origCdocBytes, hmacStart, hmacStart + Crypto.HHK_LEN_BYTES);
         assertEquals(Crypto.HHK_LEN_BYTES, hmacBytes.length);
-
 
         RecipientRecord recipient = header.recipients(0);
         ByteBuffer encFmkBuf = recipient.encryptedFmkAsByteBuffer();
@@ -96,30 +101,29 @@ public final class EnvelopeTestUtils {
         byte[] salt = Arrays.copyOfRange(saltBuf.array(), saltBuf.position(), saltBuf.limit());
 
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel,
-                preSharedKey,
-                salt,
-                FMKEncryptionMethod.name(recipient.fmkEncryptionMethod()));
+            preSharedKey,
+            salt,
+            FMKEncryptionMethod.name(recipient.fmkEncryptionMethod()));
         byte[] fmk = Crypto.xor(kek.getEncoded(), encFmk);
 
         SecretKey cek = Crypto.deriveContentEncryptionKey(fmk);
 
         byte[] encryptedTarWithExtraData = encryptPayload(cek,
-                Envelope.getAdditionalData(headerBytes, hmacBytes),
-                newCdocPayload);
-
+            Envelope.getAdditionalData(headerBytes, hmacBytes),
+            newCdocPayload);
 
         //replace original cdoc payload part with new custom tar
         byte[] newCdocBytes = new byte[hmacStart + Crypto.HHK_LEN_BYTES + encryptedTarWithExtraData.length];
 
         System.arraycopy(origCdocBytes, 0, newCdocBytes, 0,
-                hmacStart + Crypto.HHK_LEN_BYTES);
+            hmacStart + Crypto.HHK_LEN_BYTES);
         System.arraycopy(encryptedTarWithExtraData, 0,
-                newCdocBytes, hmacStart + Crypto.HHK_LEN_BYTES, encryptedTarWithExtraData.length);
+            newCdocBytes, hmacStart + Crypto.HHK_LEN_BYTES, encryptedTarWithExtraData.length);
         return newCdocBytes;
     }
 
     static byte[] encryptPayload(SecretKey cek, byte[] aad, byte[] payloadBytes)
-            throws IOException, GeneralSecurityException {
+        throws IOException, GeneralSecurityException {
 
         ByteArrayOutputStream destChaChaStream = new ByteArrayOutputStream();
         try (CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(destChaChaStream, cek, aad)) {
@@ -135,7 +139,7 @@ public final class EnvelopeTestUtils {
         // + 512 bytes for extra data, that will not be processed by tar
         String extraData = "testTarWithExtraData";
         System.arraycopy(extraData.getBytes(StandardCharsets.UTF_8), 0, tarBytes, 1024,
-                extraData.getBytes(StandardCharsets.UTF_8).length);
+            extraData.getBytes(StandardCharsets.UTF_8).length);
 
         // generate random bytes so that compression ratio would not be over 10.0
         // copy tar to begging of it
@@ -143,7 +147,7 @@ public final class EnvelopeTestUtils {
         new Random().nextBytes(randomBytes);
 
         System.arraycopy(tarBytes, 0, randomBytes, 0,
-                tarBytes.length);
+            tarBytes.length);
 
         ByteArrayOutputStream destTarZlib = new ByteArrayOutputStream();
 
@@ -152,7 +156,7 @@ public final class EnvelopeTestUtils {
         deflateParameters.setCompressionLevel(9);
 
         try (DeflateCompressorOutputStream zOs =
-                     new DeflateCompressorOutputStream(new BufferedOutputStream(destTarZlib), deflateParameters)) {
+                 new DeflateCompressorOutputStream(new BufferedOutputStream(destTarZlib), deflateParameters)) {
             long copied = tarInputStream.transferTo(zOs);
             log.debug("Copied {}B from tar to deflate", copied);
         }
@@ -202,15 +206,18 @@ public final class EnvelopeTestUtils {
      * @param payloadData data to be written to payloadFile
      * @param encKeyMaterial encryption key material (either public key or symmetric key)
      * @param additionalFiles optional additional file to add
-     * @param capsuleClient
+     * @param capsuleClient capsule client
      * @return created container as byte[]
      * @throws IOException if IOException happens
      * @throws GeneralSecurityException if GeneralSecurityException happens
      */
-    public static byte[] createContainer(File payloadFile, byte[] payloadData,
-                                         EncryptionKeyMaterial encKeyMaterial, @Nullable List<File> additionalFiles,
-                                         @Nullable KeyCapsuleClient capsuleClient)
-            throws IOException, GeneralSecurityException, ExtApiException {
+    public static byte[] createContainer(
+        File payloadFile,
+        byte[] payloadData,
+        EncryptionKeyMaterial encKeyMaterial,
+        @Nullable List<File> additionalFiles,
+        @Nullable KeyCapsuleClient capsuleClient
+    ) throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payloadData);
@@ -234,11 +241,15 @@ public final class EnvelopeTestUtils {
     }
 
     /**
-     * Creates CDOC2 container in tempDir and encrypts/decrypts it with keyPair. If capsulesClient is provided, then
-     * test server scenarios
+     * Creates CDOC2 container in tempDir and encrypts/decrypts it with keyPair. If
+     * capsulesClient is provided, then test server scenarios
      */
-    public static void testContainer(Path tempDir, DecryptionKeyMaterial keyMaterial, String keyLabel,
-                                     @Nullable KeyCapsuleClient capsulesClient) throws Exception {
+    public static void testContainer(
+        Path tempDir,
+        DecryptionKeyMaterial keyMaterial,
+        String keyLabel,
+        @Nullable KeyCapsuleClient capsulesClient
+    ) throws Exception {
 
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
@@ -250,24 +261,24 @@ public final class EnvelopeTestUtils {
 
         EncryptionKeyMaterial encKeyMaterial =
             (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial)
-            ? EncryptionKeyMaterial.fromPublicKey(
+                ? EncryptionKeyMaterial.fromPublicKey(
                 keyPairKeyMaterial.getKeyPair().getPublic(), keyLabel
             )
-            : createEncryptionKeyMaterialForSymmetricKey(keyMaterial, keyLabel);
+                : createEncryptionKeyMaterialForSymmetricKey(keyMaterial, keyLabel);
 
         byte[] cdocContainerBytes = createContainer(payloadFile,
-                payloadData.getBytes(StandardCharsets.UTF_8), encKeyMaterial, null,
-                capsulesClient);
+            payloadData.getBytes(StandardCharsets.UTF_8), encKeyMaterial, null,
+            capsulesClient);
 
         assertTrue(cdocContainerBytes.length > 0);
 
         checkContainerDecrypt(cdocContainerBytes, outDir, keyMaterial,
-                List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
+            List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
     }
 
     private static EncryptionKeyMaterial createEncryptionKeyMaterialForSymmetricKey(
         DecryptionKeyMaterial keyMaterial, String keyLabel
-    ) throws GeneralSecurityException {
+    ) {
         if (keyMaterial instanceof PasswordDecryptionKeyMaterial passwordKeyMaterial) {
             return EncryptionKeyMaterial.fromPassword(passwordKeyMaterial.getPassword(), keyLabel);
         } else if (keyMaterial instanceof SecretDecryptionKeyMaterial secretKeyMaterial) {
@@ -279,26 +290,17 @@ public final class EnvelopeTestUtils {
         }
     }
 
-    public static void checkContainerDecrypt(byte[] cdocBytes, Path outDir, DecryptionKeyMaterial keyMaterial,
-                                             List<String> expectedFilesExtracted, String payloadFileName,
-                                             String expectedPayloadData,
-                                             KeyCapsuleClient capsulesClient)  throws Exception {
-
+    public static void checkContainerDecrypt(
+        byte[] cdocBytes,
+        Path outDir,
+        DecryptionKeyMaterial keyMaterial,
+        List<String> expectedFilesExtracted,
+        String payloadFileName,
+        String expectedPayloadData,
+        KeyCapsuleClient capsulesClient
+    )  throws Exception {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
-
-            KeyCapsuleClientFactory clientFactory = (capsulesClient == null) ? null : new KeyCapsuleClientFactory() {
-                @Override
-                public KeyCapsuleClient getForId(String serverId) {
-                    Objects.requireNonNull(serverId);
-                    if ((capsulesClient != null)
-                            && (serverId.equals(capsulesClient.getServerIdentifier()))) {
-                        return capsulesClient;
-                    }
-
-                    log.warn("No KeyCapsulesClient for {}", serverId);
-                    return null;
-                }
-            };
+            KeyCapsuleClientFactory clientFactory = getCapsulesClientFactory(capsulesClient);
 
             List<String> filesExtracted = Envelope.decrypt(bis, keyMaterial, outDir, clientFactory);
 
@@ -309,12 +311,42 @@ public final class EnvelopeTestUtils {
         }
     }
 
-    public static void createContainerUsingCDocBuilder(File cdocFileToCreate,
-                                                       File payloadFile, byte[] payloadData,
-                                                       EncryptionKeyMaterial encKeyMaterial,
-                                                       @Nullable List<File> additionalFiles,
-                                                       @Nullable Properties serverProperties)
-            throws IOException, CDocException, CDocValidationException {
+    public static void decryptReEncryptedContainer(
+        File cdocFile,
+        File outDir,
+        DecryptionKeyMaterial keyMaterial,
+        List<String> expectedFilesExtracted
+    )  throws Exception {
+        CDocDecrypter cDocDecrypter = new CDocDecrypter()
+            .withCDoc(cdocFile)
+            .withRecipient(keyMaterial)
+            .withFilesToExtract(expectedFilesExtracted)
+            .withDestinationDirectory(outDir);
+        cDocDecrypter.decrypt();
+    }
+
+    public static void reEncryptContainer(
+        InputStream cdocIs,
+        DecryptionKeyMaterial decryptionKeyMaterial,
+        OutputStream destCdoc,
+        EncryptionKeyMaterial encryptionKeyMaterial,
+        @Nullable Path destDir,
+        @Nullable KeyCapsuleClient capsuleClient
+    ) throws Exception {
+
+        KeyCapsuleClientFactory clientFactory = getCapsulesClientFactory(capsuleClient);
+        Envelope.reEncrypt(cdocIs, decryptionKeyMaterial, destCdoc, encryptionKeyMaterial,
+            destDir, clientFactory);
+    }
+
+    public static void createContainerUsingCDocBuilder(
+        File cdocFileToCreate,
+        File payloadFile,
+        byte[] payloadData,
+        EncryptionKeyMaterial encKeyMaterial,
+        @Nullable List<File> additionalFiles,
+        @Nullable Properties serverProperties
+    ) throws IOException, CDocException, CDocValidationException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payloadData);
@@ -327,11 +359,23 @@ public final class EnvelopeTestUtils {
         }
 
         CDocBuilder builder = new CDocBuilder()
-                .withPayloadFiles(files)
-                .withRecipients(List.of(encKeyMaterial))
-                .withServerProperties(serverProperties);
+            .withPayloadFiles(files)
+            .withRecipients(List.of(encKeyMaterial))
+            .withServerProperties(serverProperties);
 
         builder.buildToFile(cdocFileToCreate);
-
     }
+
+    private static KeyCapsuleClientFactory getCapsulesClientFactory(KeyCapsuleClient capsulesClient) {
+        return (capsulesClient == null) ? null : serverId -> {
+            Objects.requireNonNull(serverId);
+            if (serverId.equals(capsulesClient.getServerIdentifier())) {
+                return capsulesClient;
+            }
+
+            log.warn("No KeyCapsulesClient for {}", serverId);
+            return null;
+        };
+    }
+
 }

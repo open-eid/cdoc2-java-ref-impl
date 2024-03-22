@@ -132,6 +132,28 @@ java -jar target/cdoc20-cli-*.jar decrypt --server=config/localhost/localhost_pk
 ```
 
 
+### Re-encryption with password for long time storage
+
+First encrypt the document:
+```
+java -jar target/cdoc20-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
+```
+
+Create different directory for re-encrypted container:
+```
+mkdir -p /tmp/cdoc2
+```
+
+Then re-encrypt it with password for long-term storage:
+```
+java -jar target/cdoc20-cli-*.jar re-encrypt --encpassword "passwordlabel:myPlainTextPassword" --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp/cdoc2
+```
+
+For testing decryption ensure the correct re-encrypted container location:
+```
+java -jar target/cdoc20-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/cdoc2/symmetric.cdoc --output /tmp/cdoc2
+```
+
 ### List
 
 ```

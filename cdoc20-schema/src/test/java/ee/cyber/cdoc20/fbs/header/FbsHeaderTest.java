@@ -50,8 +50,8 @@ class FbsHeaderTest {
         int recipientPubKeyOffset = builder.createByteVector(recipientPubKeyBuf);
 
         int serverEccDetailsOffset = EccKeyDetails.createEccKeyDetails(builder,
-                EllipticCurve.secp384r1,
-                recipientPubKeyOffset
+            EllipticCurve.secp384r1,
+            recipientPubKeyOffset
         );
 
         int keyServerOffset = builder.createString("keyserver");
@@ -59,10 +59,10 @@ class FbsHeaderTest {
 
 
         int detailsOffset  = KeyServerCapsule.createKeyServerCapsule(builder,
-                KeyDetailsUnion.EccKeyDetails,
-                serverEccDetailsOffset,
-                keyServerOffset,
-                transactionIdOffset
+            KeyDetailsUnion.EccKeyDetails,
+            serverEccDetailsOffset,
+            keyServerOffset,
+            transactionIdOffset
         );
 
 
@@ -111,7 +111,6 @@ class FbsHeaderTest {
         Assertions.assertEquals(1, header.recipientsLength());
         RecipientRecord recipient = header.recipients(0);
 
-
         Assertions.assertEquals(recipients_KeyServerCapsule, recipient.capsuleType());
 
         KeyServerCapsule keyServerDetails = (KeyServerCapsule) recipient.capsule(new KeyServerCapsule());
@@ -119,7 +118,7 @@ class FbsHeaderTest {
         Assertions.assertEquals(KeyDetailsUnion.EccKeyDetails, keyServerDetails.recipientKeyDetailsType());
 
         EccKeyDetails serverEccDetails =
-                (EccKeyDetails) keyServerDetails.recipientKeyDetails(new EccKeyDetails());
+            (EccKeyDetails) keyServerDetails.recipientKeyDetails(new EccKeyDetails());
         Assertions.assertNotNull(serverEccDetails);
         Assertions.assertEquals(EllipticCurve.secp384r1, serverEccDetails.curve());
         Assertions.assertEquals(recipientPubKeyBuf.length, serverEccDetails.recipientPublicKeyLength());
@@ -128,11 +127,10 @@ class FbsHeaderTest {
 
         byte[] recipientPubKeyBytesOut = new byte[recipientPubKeyBuf.length];
         serverEccDetails.recipientPublicKeyAsByteBuffer().get(
-                serverEccDetails.recipientPublicKeyAsByteBuffer().position(),
-                recipientPubKeyBytesOut);
+            serverEccDetails.recipientPublicKeyAsByteBuffer().position(),
+            recipientPubKeyBytesOut);
 
         Assertions.assertArrayEquals(recipientPubKeyBuf, recipientPubKeyBytesOut );
-
 
         Assertions.assertNotNull(recipient.encryptedFmkAsByteBuffer());
         Assertions.assertEquals(fmkBuf.length, recipient.encryptedFmkLength());

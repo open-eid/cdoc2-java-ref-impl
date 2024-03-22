@@ -4,6 +4,7 @@ import ee.cyber.cdoc20.container.CDocParseException;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc20.crypto.keymaterial.DecryptionKeyMaterial;
+
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.io.*;
@@ -11,16 +12,17 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.List;
 
+
+/**
+ * CDOC2 container decryption data builder.
+ */
 public class CDocDecrypter {
 
     private DecryptionKeyMaterial recipientKeyMaterial;
     private InputStream cDocInputStream;
     private File destinationDirectory;
-
     private File cDocFile;
-
     private List<String> filesToExtract;
-
     private KeyCapsuleClientFactory keyServerClientFactory;
 
     @SuppressWarnings("checkstyle:HiddenField")
@@ -70,8 +72,7 @@ public class CDocDecrypter {
                         filesToExtract, keyServerClientFactory);
             }
         } catch (GeneralSecurityException | CDocParseException ex) {
-            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
-            throw new CDocException("Error decrypting " + fileName, ex);
+            throw logDecryptionErrorAndThrow(ex);
         }
     }
 
@@ -84,8 +85,7 @@ public class CDocDecrypter {
         try {
             return Envelope.list(cDocInputStream, recipientKeyMaterial, keyServerClientFactory);
         } catch (GeneralSecurityException | CDocParseException ex) {
-            String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
-            throw new CDocException("Error decrypting " + fileName, ex);
+            throw logDecryptionErrorAndThrow(ex);
         }
     }
 
@@ -109,5 +109,9 @@ public class CDocDecrypter {
         }
     }
 
+    private CDocException logDecryptionErrorAndThrow(Exception ex) {
+        String fileName = (cDocFile != null) ? cDocFile.getAbsolutePath() : "";
+        return new CDocException("Error decrypting " + fileName, ex);
+    }
 
 }

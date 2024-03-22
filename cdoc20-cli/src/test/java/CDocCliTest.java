@@ -2,8 +2,10 @@ import ee.cyber.cdoc20.cli.CDocCli;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,10 +16,12 @@ import org.opentest4j.AssertionFailedError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CDocCliTest {
+
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
 
     private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
@@ -137,6 +141,49 @@ class CDocCliTest {
             SECRET_OPTION,
             PASSWORD_OPTION,
             SUCCESSFUL_EXIT_CODE
+        );
+    }
+
+    @Test
+    void testSuccessfulReEncryption(@TempDir Path tempPath) throws IOException {
+
+        String secret = "mysecret:base64," + Base64.getEncoder()
+            .encodeToString("topSecret!".getBytes(StandardCharsets.UTF_8));
+        String secretForEncrypt = "--secret=" + secret;
+        String secretForDecrypt = "--secret=" + secret;
+
+        String password = "passwordlabel:myPlainTextPassword";
+        String passwordForEncrypt = "--encpassword=" + password;
+        String passwordForDecrypt = "--password=" + password;
+
+        reEncryptCDocAndTestToDecrypt(
+            secretForEncrypt,
+            secretForDecrypt,
+            passwordForEncrypt,
+            passwordForDecrypt,
+            tempPath,
+            SUCCESSFUL_EXIT_CODE
+        );
+    }
+
+    @Test
+    void shouldFailWithTheSameOutputDirectoryWhenReEncrypt(@TempDir Path tempPath) {
+
+        String secret = "mysecret:base64," + Base64.getEncoder()
+            .encodeToString("topSecret!".getBytes(StandardCharsets.UTF_8));
+
+        String secretCmd = "--secret=" + secret;
+
+        String password = "passwordlabel:myPlainTextPassword";
+        String passwordForReEncrypt = "--encpassword=" + password;
+
+        assertThrowsException(() ->
+            failToReEncryptCDocWithTheSameOutputDir(
+                secretCmd,
+                secretCmd,
+                passwordForReEncrypt,
+                tempPath
+            )
         );
     }
 
@@ -330,6 +377,131 @@ class CDocCliTest {
         String outReadme = Files.readString(outPath.resolve("README.md"));
 
         assertEquals(inReadme, outReadme);
+    }
+
+    void reEncryptCDocAndTestToDecrypt(
+        String secretForEncrypt,
+        String secretForDecryption,
+        String passwordForEncryption,
+        String passwordForDecryption,
+        Path tempPath,
+        int expectedExitCode
+    ) throws IOException {
+
+        CDocCli app = new CDocCli();
+        CommandLine cmd = new CommandLine(app);
+
+        log.debug("Current dir {}", Path.of(".").toAbsolutePath());
+
+        Path cdocCliPath = Path.of(".").toAbsolutePath().normalize();
+
+        log.debug("Temp dir {}", tempPath.toAbsolutePath());
+        Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
+
+        // prepare encrypted CDOC container for further re-encryption
+        cmd.execute("create",
+            secretForEncrypt,
+            "--file=" + cdocFile,
+            cdocCliPath.resolve("README.md").toString()
+        );
+
+        // create output folder
+        Path outPath = tempPath.resolve("out");
+        if (outPath.toFile().mkdir()) {
+            log.info("Created output folder {} for re-encryption", outPath);
+        } else {
+            throw new IOException("Failed to create output folder " + outPath.toFile());
+        }
+
+        // test re-encryption flow
+        int exitCode = cmd.execute("re-encrypt",
+            secretForDecryption,
+            passwordForEncryption,
+            "--file=" + cdocFile,
+            "--output=" + outPath
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(expectedExitCode, exitCode);
+
+        var resultFile = cdocFile.toFile();
+        assertTrue(resultFile.exists());
+        assertTrue(resultFile.length() > 0);
+
+        out.reset();
+        err.reset();
+
+        Path decryptionFilePath = outPath.resolve(resultFile.getName());
+        // test to decrypt re-encrypted container
+        int decryptExitCode = cmd.execute("decrypt",
+            "--file=" + decryptionFilePath,
+            passwordForDecryption,
+            "--output=" + outPath
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(expectedExitCode, decryptExitCode);
+
+        log.debug("Expected: {}", "Decrypting " + decryptionFilePath.toFile() + " " + outPath);
+
+        assertTrue(out.toString().startsWith(
+            "Decrypting " + decryptionFilePath.toFile() + " to " + outPath)
+        );
+        assertTrue(out.toString().contains("README.md"));
+
+        String inReadme = Files.readString(cdocCliPath.resolve("README.md"));
+        String outReadme = Files.readString(outPath.resolve("README.md"));
+
+        assertEquals(inReadme, outReadme);
+    }
+
+    void failToReEncryptCDocWithTheSameOutputDir(
+        String secretForEncrypt,
+        String secretForDecryption,
+        String passwordForEncryption,
+        Path tempPath
+    ) {
+
+        CDocCli app = new CDocCli();
+        CommandLine cmd = new CommandLine(app);
+
+        log.debug("Current dir {}", Path.of(".").toAbsolutePath());
+
+        Path cdocCliPath = Path.of(".").toAbsolutePath().normalize();
+
+        log.debug("Temp dir {}", tempPath.toAbsolutePath());
+        Path cdocFile = tempPath.resolve("cdoc_cli_test.cdoc");
+
+        // prepare encrypted CDOC container for further re-encryption
+        cmd.execute("create",
+            secretForEncrypt,
+            "--file=" + cdocFile,
+            cdocCliPath.resolve("README.md").toString()
+        );
+
+        // test re-encryption flow
+        int exitCode = cmd.execute("re-encrypt",
+            secretForDecryption,
+            passwordForEncryption,
+            "--file=" + cdocFile,
+            "--output=" + tempPath.toFile()
+        );
+
+        log.debug("Output was: {}", out);
+        log.debug("Err was: {}", err);
+
+        assertEquals(0, exitCode);
+
+        var resultFile = cdocFile.toFile();
+        assertTrue(resultFile.exists());
+        assertTrue(resultFile.length() > 0);
+
+        out.reset();
+        err.reset();
     }
 
     private void assertThrowsException(Executable validation) {

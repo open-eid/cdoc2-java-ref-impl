@@ -1,10 +1,12 @@
 package ee.cyber.cdoc20;
 
+import ee.cyber.cdoc20.client.ExtApiException;
 import ee.cyber.cdoc20.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc20.container.Envelope;
 import ee.cyber.cdoc20.crypto.Crypto;
 import ee.cyber.cdoc20.crypto.ECKeys;
 import ee.cyber.cdoc20.crypto.EllipticCurve;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,11 +51,15 @@ public class CDocBuilder {
         return this;
     }
 
+    public CDocBuilder withRecipient(EncryptionKeyMaterial recipientEncKM) {
+        this.recipients.add(recipientEncKM);
+        return this;
+    }
+
     public CDocBuilder withRecipients(List<EncryptionKeyMaterial> recipientsEncKM) {
         this.recipients.addAll(recipientsEncKM);
         return this;
     }
-
 
     public CDocBuilder withServerProperties(Properties p) {
         this.serverProperties = p;
@@ -65,46 +71,63 @@ public class CDocBuilder {
             throw new CDocValidationException("Must provide CDOC output filename ");
         }
 
-        OpenOption openOption = (CDocConfiguration.isOverWriteAllowed())
-                ? StandardOpenOption.CREATE
-                : StandardOpenOption.CREATE_NEW;
-        if (!CDocConfiguration.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
-            log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
-            throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
-        }
+        ensureFileCanBeCreatedInOutputDir(outputCDocFile);
+        OpenOption openOption = getOpenOption();
 
         try (OutputStream outputStream = Files.newOutputStream(outputCDocFile.toPath(), openOption)) {
-            buildToOutputStream(outputStream);
+            buildToOutputStreamFromFiles(outputStream);
         } catch (Exception ex) {
-            log.info("Failed to create {}. Exception: {}", outputCDocFile, ex.getMessage());
-            try {
-                boolean deleted = Files.deleteIfExists(outputCDocFile.toPath());
-                if (deleted) {
-                    log.info("Deleted {}", outputCDocFile);
-                }
-
-            } catch (IOException ioException) {
-                log.error("Error when deleting {} {}", outputCDocFile, ioException);
-            }
+            handleFileEncryptionError(ex, outputCDocFile);
             throw ex;
         }
     }
 
-    public void buildToOutputStream(OutputStream outputStream)
-            throws CDocException, CDocValidationException, IOException {
+    private void buildToOutputStreamFromFiles(OutputStream outputStream)
+        throws CDocException, CDocValidationException, IOException {
         validate();
 
         try {
-            Envelope envelope;
-            if (serverProperties == null) {
-                envelope = Envelope.prepare(recipients, null);
-            } else {
-                // for encryption, do not init mTLS client as this might require smart-card
-                envelope = Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
-            }
+            Envelope envelope = prepareEnvelope();
             envelope.encrypt(this.payloadFiles, outputStream);
         } catch (GeneralSecurityException ex) {
             throw new CDocException(ex);
+        }
+    }
+
+    private void ensureFileCanBeCreatedInOutputDir(File outputCDocFile) throws FileAlreadyExistsException {
+        if (!CDocConfiguration.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
+            log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
+            throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
+        }
+    }
+
+    private OpenOption getOpenOption() {
+        return (CDocConfiguration.isOverWriteAllowed())
+            ? StandardOpenOption.CREATE
+            : StandardOpenOption.CREATE_NEW;
+    }
+
+    private Envelope prepareEnvelope()
+        throws ExtApiException, GeneralSecurityException, IOException {
+        if (serverProperties == null) {
+            return Envelope.prepare(recipients, null);
+        } else {
+            // for encryption, do not init mTLS client as this might require smart-card
+            return Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
+        }
+    }
+
+    private void handleFileEncryptionError(Exception ex, File outputCDocFile) {
+        log.info("Failed to create {}. Exception: {}", outputCDocFile, ex.getMessage());
+
+        try {
+            boolean deleted = Files.deleteIfExists(outputCDocFile.toPath());
+            if (deleted) {
+                log.info("Deleted {}", outputCDocFile);
+            }
+
+        } catch (IOException ioException) {
+            log.error("Error when deleting {} {}", outputCDocFile, ioException);
         }
     }
 
@@ -127,7 +150,7 @@ public class CDocBuilder {
         throws CDocValidationException {
 
         if (EncryptionKeyOrigin.PASSWORD.equals(keyMaterial.getKeyOrigin())) {
-            // no need to validate password here
+            // no encryption key at this step
             return;
         }
 

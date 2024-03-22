@@ -167,6 +167,7 @@ class TarDeflateTest {
 
         log.debug("Extracting {} to {}", bombPath, outDir);
         Exception exception = assertThrows(IllegalStateException.class, () -> {
+
             try (TarDeflate tar = new TarDeflate(Files.newInputStream(bombPath))) {
                 tar.extractToDir(outDir);
             }
@@ -230,7 +231,7 @@ class TarDeflateTest {
 
             assertThrows(
                 InvalidPathException.class,
-                () -> TarDeflate.process(new FileInputStream(file), tempDir, List.of(fileName), true),
+                () -> new TarDeflate(new FileInputStream(file)).extractFilesToDir(List.of(fileName), tempDir),
                 "File with name '" + fileName + "' should not be extracted from tar"
             );
 
@@ -240,7 +241,8 @@ class TarDeflateTest {
         int i = 0;
         for (String fileName: VALID_FILE_NAMES) {
             File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
-            var result = TarDeflate.process(new FileInputStream(file), tempDir, List.of(fileName), true);
+            var result = new TarDeflate(new FileInputStream(file))
+                .extractFilesToDir(List.of(fileName), tempDir);
             assertTrue(result.size() == 1);
         }
     }
@@ -322,7 +324,10 @@ class TarDeflateTest {
             }
         };
 
-        TarDeflate.process(deflateTarStream, null, null, false);
+        try (TarDeflate t = new TarDeflate(deflateTarStream)) {
+            t.process(new ListDelegate());
+        }
+
         assertTrue(closeWasCalled[0]);
     }
 

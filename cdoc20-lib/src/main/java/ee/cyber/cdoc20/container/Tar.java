@@ -12,14 +12,12 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Function;
 
 import static ee.cyber.cdoc20.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
 import static ee.cyber.cdoc20.CDocConfiguration.GZIP_COMPRESSION_THRESHOLD_PROPERTY;
 import static ee.cyber.cdoc20.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
+
 
 /**
  * Utility class for dealing with tar zlib (deflate) stream/files. Only supports regular files
@@ -42,13 +40,11 @@ public final class Tar {
     private Tar() {
     }
 
-
-
     static void addFileToTar(TarArchiveOutputStream outputStream, Path file, String entryName) throws IOException {
 
         log.debug("Adding file {} as {}", file.toAbsolutePath(), entryName);
         if (Files.isRegularFile(file)) {
-            TarArchiveEntry tarArchiveEntry = (TarArchiveEntry) outputStream.createArchiveEntry(file.toFile(),
+            TarArchiveEntry tarArchiveEntry = outputStream.createArchiveEntry(file.toFile(),
                     entryName);
 
             outputStream.putArchiveEntry(tarArchiveEntry);
@@ -62,31 +58,15 @@ public final class Tar {
         outputStream.closeArchiveEntry();
     }
 
+
     /**
      * Create tar archive of files and compress that with zlib.
-     * @param dest Compressed tar is written to dest
+     * @param dest  Compressed tar is written to dest
      * @param files to archive
-     * @throws IOException
+     * @throws IOException if an I/O error has occurred
      */
     public static void archiveFiles(OutputStream dest, Iterable<File> files) throws IOException {
-
-        List<String> baseNameList = new LinkedList<>();
-        files.forEach(f -> baseNameList.add(FileNameValidator.validate(f.getName())));
-        List<String> distinctList = baseNameList.stream().distinct().toList();
-        if (baseNameList.size() != distinctList.size()) {
-            List<String> duplicates = baseNameList.stream()
-                .filter(str -> Collections.frequency(baseNameList, str) > 1)
-                .toList();
-
-            List<File> duplicateFiles = new LinkedList<>();
-            files.forEach(f -> {
-                if (duplicates.contains(f.getName())) {
-                    duplicateFiles.add(f);
-                }
-            });
-
-            throw new IllegalArgumentException("Files with same basename not supported: " + duplicateFiles);
-        }
+        FileNameValidator.ensureNoFileDuplicates(files);
 
         try (TarArchiveOutputStream tos = createPosixTarZArchiveOutputStream(dest)) {
             for (File file : files) {
@@ -94,6 +74,7 @@ public final class Tar {
             }
         }
     }
+
 
     /**
      * Create a compressed (zlib) archive with single entry.
@@ -106,12 +87,10 @@ public final class Tar {
         try (TarArchiveOutputStream tarOs = createPosixTarZArchiveOutputStream(dest)) {
 
             TarArchiveEntry tarEntry = new TarArchiveEntry(tarEntryName);
-            //log.debug("adding {}B", inputStream.available());
             tarEntry.setSize(inputStream.available());
             tarOs.putArchiveEntry(tarEntry);
 
-            long written = inputStream.transferTo(tarOs);
-            //log.debug("Wrote {}B", written);
+            inputStream.transferTo(tarOs);
             tarOs.closeArchiveEntry();
         }
     }
@@ -120,7 +99,7 @@ public final class Tar {
      * Create zlib/deflate compressed POSIX compliant TarArchiveOutputStream with UTF-8 filenames and POSIX long
      * filename and POSIX big file sizes (over 8GB) extensions enabled.
      */
-    static TarArchiveOutputStream createPosixTarZArchiveOutputStream(OutputStream dest) throws IOException {
+    public static TarArchiveOutputStream createPosixTarZArchiveOutputStream(OutputStream dest) {
         TarArchiveOutputStream tarZOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(dest)), StandardCharsets.UTF_8.name());
         tarZOs.setAddPaxHeadersForNonAsciiNames(true);
@@ -169,6 +148,11 @@ public final class Tar {
     public static double getCompressionRatioThreshold() {
         return getNumberPropertyValue(GZIP_COMPRESSION_THRESHOLD_PROPERTY,
                 DEFAULT_COMPRESSION_RATIO_THRESHOLD, Double::valueOf);
+    }
+
+    public static IOException logTarEntryIllegalTypeAndThrow(String tarArchiveEntryName) {
+        log.error("tar contained non-regular file {}", tarArchiveEntryName);
+        return new IOException("Tar entry with illegal type found");
     }
 
     private static <N extends Number> N getNumberPropertyValue(String propertyName, N defaultValue,
