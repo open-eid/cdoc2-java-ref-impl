@@ -108,7 +108,4 @@
 		</plugins>
 	</build>
 
-  <scm>
-    <tag>v1.0.0</tag>
-  </scm>
 </project>

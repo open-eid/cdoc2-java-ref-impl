@@ -207,8 +207,7 @@ Will update version numbers in pom.xml files and create tag with version v{x.y.z
 # Non-Interactive mode without pushing changes (for release simulation)
 ```
 mvn release:clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdryRun=true -DpushChanges=false -Darguments="-DdeveloperConnectionUrl=scm:git:ssh://git@gitlab.ext.cyber.ee/cdoc2/cdoc20_java.git"
-mvn release:update-versions -DautoVersionSubmodules=true
+mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdryRun=true -DpushChanges=false
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 
@@ -216,7 +215,6 @@ mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 mvn release:clean
 mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdeveloperConnectionUrl=scm:git:${git.repo.url}"
-mvn release:update-versions -DautoVersionSubmodules=true
 mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
 ```
 
