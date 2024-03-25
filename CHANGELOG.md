@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0] Version update (2024-03-XX)
+## [1.1.0] Version update (2024-03-26)
 
 ### Features
 
