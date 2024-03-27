@@ -1,0 +1,23 @@
+@startuml components.svg
+'https://plantuml.com/component-diagram
+
+interface "mTLS with eID certificate\nGET /ecc-details/{id}" as mtls #black
+interface "TLS\n POST /ecc-details" as tls
+
+frame "RIA" {
+[cdoc20-server] as server
+[TLS / LoadBalancer] as broker
+broker --> server: POST /ecc-details
+broker --> server: GET /ecc-details/{id}\n+eID certificate
+
+interface "heartbeat\n(monitoring)" as hr #grey
+hr -right- server
+mtls -- broker
+tls -- broker
+
+server -down-> db
+
+database "PostgreSQL" as db {
+}
+}
+@enduml

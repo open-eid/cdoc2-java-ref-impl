@@ -1,8 +1,0 @@
-<!-- {% increment kn %} -->
-|  |  |  |  |  |
-|---|---|---|---|---|
-| kategooria | nr | nõude sõnastus | nõude selgitus | märkused ||
-|  |  |  |  |  |{% capture noudeloendur %}{% increment nl %}{% endcapture %}{% for kategooria in site.data.Nouded %}{% capture abikn %}{% increment kn %}{% endcapture %}{% assign nn = 0 %}{% for noue in kategooria.nouded %}{% capture noudeloendur %}{% increment nl %}{% endcapture %}
-|{{ kategooria.nimetus }}|{{ abikn }}.{{ noue.nr }}|{{ noue.son }}|{{ noue.sel }}|{{ noue.lah }}|{% endfor %}{% endfor %}
-
-{{ noudeloendur }} nõuet.
