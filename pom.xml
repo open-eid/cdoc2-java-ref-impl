@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <version>1.2.0-SNAPSHOT</version>
-    <groupId>ee.cyber.cdoc20</groupId>
-    <artifactId>cdoc20</artifactId>
-    <description>CDOC 2.0 reference implementation </description>
+    <groupId>ee.cyber.cdoc2</groupId>
+    <artifactId>cdoc2</artifactId>
+    <description>CDOC2 reference implementation </description>
 
     <packaging>pom</packaging>
 
@@ -34,9 +34,9 @@
         <gatling-maven-plugin.version>4.1.6</gatling-maven-plugin.version>
 
         <sonar.coverage.jacoco.xmlReportPaths>
-            ${project.basedir}/cdoc20-lib/target/site/jacoco-aggregate/jacoco.xml,
-            ${project.basedir}/cdoc20-schema/target/site/jacoco-aggregate/jacoco.xml,
-            ${project.basedir}/cdoc20-cli/target/site/jacoco-aggregate/jacoco.xml
+            ${project.basedir}/cdoc2-lib/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc2-schema/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/cdoc2-cli/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
@@ -99,12 +99,12 @@
   </scm>
 
     <modules>
-        <module>cdoc20-schema</module>
-        <module>cdoc20-lib</module>
-        <module>cdoc20-cli</module>
-        <module>cdoc20-openapi</module>
-        <module>cdoc20-server</module>
-        <module>cdoc20-client</module>
+        <module>cdoc2-schema</module>
+        <module>cdoc2-lib</module>
+        <module>cdoc2-cli</module>
+        <module>cdoc2-openapi</module>
+        <module>cdoc2-server</module>
+        <module>cdoc2-client</module>
         <module>gatling-tests</module>
     </modules>
 

@@ -19,7 +19,7 @@ FILE_FOR_ENCRYPTION2=$CDOC2_DIR/pom.xml
 DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
 CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc"
 CDOC2_CONTAINER=$TEST_RESULTS_DIR/$CDOC2_CONTAINER_NAME
-CLI_KEYS_DIR=$CDOC2_DIR/cdoc20-cli/keys
+CLI_KEYS_DIR=$CDOC2_DIR/cdoc2-cli/keys
 PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
 SECRET_WITH_LABEL="mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
 
@@ -70,19 +70,19 @@ run_alias() {
 
 @test "preparing: cdoc-cli is available" {
   run $CDOC2_CMD
-  assert_output --partial 'cdoc20-cli is a command line interface for cdoc20 library'
+  assert_output --partial 'cdoc2-cli is a command line interface for cdoc2 library'
 }
 
 @test "test1: successfully encrypt CDOC2 container with EC" {
   local cdoc_file="ec_simple.cdoc"
   run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
-          -c $CLI_KEYS_DIR/cdoc20client-certificate.pem $FILE_FOR_ENCRYPTION
+          -c $CLI_KEYS_DIR/cdoc2client-certificate.pem $FILE_FOR_ENCRYPTION
 
   assertSuccessfulExitCode
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $$TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc20client.pem -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f $$TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
   assertSuccessfulDecryption
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file

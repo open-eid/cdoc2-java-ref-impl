@@ -1,23 +1,23 @@
-# Gatling tests for CDOC2.0 server
+# Gatling tests for CDOC2 server
 
 ## Preconditions for executing tests
 
-* The latest cdoc20 java libraries are installed locally. From cdoc20_java directory run:
+* The latest cdoc2 java libraries are installed locally. From cdoc20_java directory run:
 
 ```
 mvn clean install
 ```
 
-* CDOC2.0 key servers are is running
-  * Can be started inside cdoc20-server catalog with commands:
+* CDOC key servers are is running
+  * Can be started inside cdoc2-server catalog with commands:
 ```
 cd get-server
-java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-get-server-VER.jar
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc2-get-server-VER.jar
 ```
 
 ```
 cd put-server
-java -Dspring.config.location=config/application-local.properties -jar target/cdoc20-put-server-VER.jar
+java -Dspring.config.location=config/application-local.properties -jar target/cdoc2-put-server-VER.jar
 ```
 
 ## Configuration
@@ -43,7 +43,7 @@ Create a configuration file using the sample file:
 cp src/test/resources/application.conf.sample src/test/resources/application.conf
 ```
 
-## Generate TLS certificates for connecting to cdoc2.0 server
+## Generate TLS certificates for connecting to cdoc2 server
 
 From gatling-tests directory run:
 ```
@@ -54,7 +54,7 @@ Or using a compiled jar:
 
 ```
 export JAVA_OPTS="-Doutput-dir=/tmp -Dkeystore-password=secret -Dkey-alias=client-key -Droot-keystore=/tmp/gatling-ca.p12 -Droot-keystore-password=secret -Droot-key-alias=gatling-ca -Damount=3"
-java $JAVA_OPTS -cp target/gatling-tests-VER.jar ee.cyber.cdoc20.server.datagen.KeyStoreGenerator
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar ee.cyber.cdoc2.server.datagen.KeyStoreGenerator
 ```
 
 
@@ -71,25 +71,25 @@ The following functional tests exist for testing {SERVER_NAME} server functional
 * Get capsule with incorrect transactionId (createAndGetRecipientTransactionMismatch)
 * Get capsule with invalid transactionId (getWithInvalidTransactionIds)
 
-A CDOC2.0 server must be running on the host:port as configured in the configuration file specified above.
+A CDOC server must be running on the host:port as configured in the configuration file specified above.
 
 From gatling-tests directory run:
 ```
-mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleFunctionalTests
+mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc2.server.KeyCapsuleFunctionalTests
 ```
 
 Or using a compiled jar:
 
 ```
 export JAVA_OPTS="-Dconfig.file=src/test/resources/application.conf -Dlogback.configurationFile=src/test/resources/logback-test.xml"
-java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc20.server.KeyCapsuleFunctionalTests
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc2.server.KeyCapsuleFunctionalTests
 ```
 
 ## Running load tests
 
 For running load tests first execution profile should be designed and configured. Load test execution models and configuring options are described in more detail here https://gatling.io/docs/gatling/reference/current/core/injection/#incrementuserspersec
 
-Open Model is implemented for CDOC 2.0 server load tests, meaning that continuously growing load is applied to the server.
+Open Model is implemented for CDOC2 server load tests, meaning that continuously growing load is applied to the server.
 
 * Sample configuration for continuously growing load example:
   - start-users-per-second = 10
@@ -115,14 +115,14 @@ Initial load - 100 concurrent users will be applied and each next test cycle has
 For executing load tests run from gatling-tests directory:
 
 ```
-mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc20.server.KeyCapsuleLoadTests
+mvn gatling:test -Dgatling.simulationClass=ee.cyber.cdoc2.server.KeyCapsuleLoadTests
 ```
 
 Or using a compiled jar:
 
 ```
 export JAVA_OPTS="-Dconfig.file=src/test/resources/application.conf -Dlogback.configurationFile=src/test/resources/logback-test.xml"
-java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc20.server.KeyCapsuleLoadTests
+java $JAVA_OPTS -cp target/gatling-tests-VER.jar io.gatling.app.Gatling -s ee.cyber.cdoc2.server.KeyCapsuleLoadTests
 ```
 
 

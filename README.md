@@ -1,16 +1,16 @@
 # cdoc20_java
 
-[CDOC 2.0](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
+[CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
-CDOC 2.0 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC 2.0](https://www.ria.ee/media/2340/download).
+CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC2](https://www.ria.ee/media/2340/download).
 
 
-Current CDoc 2.0 supports five scenarios
+Current CDOC2 supports five scenarios
 
-## CDoc 2.0 ECDH scenario
+## CDOC2 ECDH scenario
 
 **Warning**: This description is simplification to give general idea, details and **final truth is in 
-[CDOC 2.0 specification](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf)**.
+[CDOC2 specification](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf)**.
 
 1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
    EC public key.
@@ -30,13 +30,13 @@ Current CDoc 2.0 supports five scenarios
 14. Recipient calculates hmac and checks it against hmac in CDoc 
 15. Recipient decrypts content using CEK
 
-[^1]: Current specification defines only SecP384R1 Elliptic Curve for key agreement, but in future other EC curves or algorithms can be added, see flatbuffers schemas in cdoc20-schema
+[^1]: Current specification defines only SecP384R1 Elliptic Curve for key agreement, but in future other EC curves or algorithms can be added, see flatbuffers schemas in cdoc2-schema
 
-[^2]: Header structure is defined in flatbuffers schema, see cdoc20-schema
+[^2]: Header structure is defined in flatbuffers schema, see cdoc2-schema
 
 [^3]: Content is zlib compressed tar archive
 
-## CDoc 2.0 ECDH server scenario
+## CDOC2 ECDH server scenario
 
 1. *Follow steps from previous scenario 1-6*
 2. Sender chooses key transaction server (preconfigured list)
@@ -53,11 +53,11 @@ Current CDoc 2.0 supports five scenarios
 
 Key transfer server benefits:
 * After the key has been deleted from the key transfer server, the document cannot be decrypted even when keys on recipient's id-kaart have been compromised.
-* Other scenarios can be implemented like expiring CDoc2.0 documents by deleting expired keys from key transfer server. 
+* Other scenarios can be implemented like expiring CDoc2 documents by deleting expired keys from key transfer server. 
 
-[^4]: key transfer server protocol is defined in cdoc20-openapi module
+[^4]: key transfer server protocol is defined in cdoc2-openapi module
 
-## CDoc 2.0 RSA-OAEP
+## CDOC2 RSA-OAEP
 
 RSA-OAEP is similar to ECDH scenario, with difference that KEK is generated from secure random (not ECDH) and
 KEK is encrypted with recipient RSA public key and included into CDOC header (instead of
@@ -81,7 +81,7 @@ sender public key).
 15. Recipient calculates hmac and checks it against hmac in CDoc.
 16. Recipient decrypts content using CEK.
 
-## CDoc 2.0 RSA-OAEP with server scenario
+## CDOC2 RSA-OAEP with server scenario
 
 1. *Follow steps from RSA-OAEP scenario 1-6*
 2. Sender chooses key capsule server (by providing server configuration)
@@ -96,7 +96,7 @@ sender public key).
     capsule that contains encrypted KEK
 11. *Follow steps from RSA-OAEP scenario steps 12-15*
 
-## CDoc 2.0 with symmetric key from password
+## CDOC2 with symmetric key from password
 
 Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
 
@@ -114,7 +114,7 @@ Similar to Symmetric Key scenario, but symmetric key is derived from password an
 cdoc20_java does not provide solution for securely storing the password, but most password managers
 can do that.
 
-## CDoc 2.0 with symmetric key from secret
+## CDOC2 with symmetric key from secret
 
 Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
 
@@ -134,15 +134,16 @@ cdoc20_java does not provide solution for securely storing the secret, but most 
 
 
 ## Structure
+[![CDOC2 Dependencies](./cdoc2-docs/arch/images/cdoc2-deps.png)](https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1&title=CDOC2%20deps#R3VjbcpswEP0aPybDpWDnMb4knY7bycQzbZ03BTagVCAiCxvn6yuZxYjBdpOpEzx%2Bsvbs6sI5q11wzx0lxa0gWfydh8B6jhUWPXfccxzb8x31o5F1iQz8fglEgoYYVAMz%2BgoIWojmNIRFI1ByziTNmmDA0xQC2cCIEHzVDHvirLlrRiLc0aqBWUAYtMJ%2B0VDGiNqWEf4VaBTj1gMPHQmpghFYxCTkKwNyJz13JDiX5SgpRsA0eRUv5bybPd7twQSk8i0TnucvM7h6%2BnMzvh4%2B59l1dHPPLmwfDyfX1RNDqAhAkwsZ84inhE1qdCh4noagl7WUVcdMOc8UaCvwGaRco5okl1xBsUwYeqGg8rcxnuulLj20xgWuvDHWaKTcOMJmZnlyfdy9jCC04LkIMOoh96h1%2B230egdT9%2BVe%2Fnj8mV9gkkoiIpAH4rytbirhgScgxVrNE8CIpMvmOQhmXrSNq8VRA9TnPVoNutTKuvSvDLnsg2IpAcS6nNX3KntuOut5G2u%2FynrdOxBUcQgCoz5W%2BZ3k%2B5%2Bk%2FKFDLgnLcSdGH1vJoApMpocJD%2FON9oTRKFUAgyf1aMNFRgKaRtONNXYsIyJQvGl2h0sQkqrqd40OqbNkuIqphJmarpdfqULfTJG97OvVoDCgNoGVt4%2FPiG3CxaK5MmpuVXJjo9xW1fbolLstynuOzzSNIV2qYaSHPIOUZLTyqI0M51nrsyW%2BM4G8lkCLIIaEnBXtbofXYncP%2BtJFDzpW79%2F5SO4be7%2FTZe9vl6OA0VNL9VZe7xBkf6pb%2F8r0q09N9P5pJLrxJuW8603qiDfEe%2BMNcbu8ITv6AQiVkWd1SZzmJbH9rvuBv6su6Yc5K9b7p0a77XZRnYxa5P%2FvV532H%2Bez7lBennbJsr2OVWyIaL9bxA5azAe9hCmz%2FiNu4zP%2BznQnfwE%3D)
 
-- cdoc20-schema  - flatbuffers schemas and code generation
-- cdoc20-lib     - CDOC 2.0 creation and processing library
-- cdoc20-cli     - Command line utility to create/process CDOC 2.0 files
-- cdoc20-openapi - OpenAPI definitions for server and client generation
-- cdoc20-server  - Optional server backend for securely exchanging key capsules
-- cdoc20-client  - Optional client for server backend
-- gatling-tests  - Functional and load tests for cdoc20-server
-- test           - Sample CDOC 2.0 containers (with script to create and decrypt them)
+- cdoc2-schema  - flatbuffers schemas and code generation
+- cdoc2-lib     - CDOC2 creation and processing library
+- cdoc2-cli     - Command line utility to create/process CDOC2 files
+- cdoc2-openapi - OpenAPI definitions for server and client generation
+- cdoc2-server  - Optional server backend for securely exchanging key capsules
+- cdoc2-client  - Optional client for server backend
+- gatling-tests  - Functional and load tests for cdoc2-server
+- test           - Sample CDOC2 containers (with script to create and decrypt them)
 
 ## Preconditions for building
 * Java 17
@@ -150,7 +151,7 @@ cdoc20_java does not provide solution for securely storing the secret, but most 
 * Docker available and running (required for running tests)
 
 ## Building
-CDOC 2.0 has been tested with JDK 17 and Maven 3.8.4
+CDOC2 has been tested with JDK 17 and Maven 3.8.4
 
 ```
 mvn clean install
@@ -196,7 +197,7 @@ service haveged start
 
 ## Running
 
-See `cdoc20-cli/README.md`
+See `cdoc2-cli/README.md`
 
 ## Releasing
 

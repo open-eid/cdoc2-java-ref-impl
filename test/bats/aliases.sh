@@ -17,8 +17,8 @@ then
   cd $TESTING_DIR
 fi
 
-alias cdoc-cli='java -jar $CDOC2_DIR/cdoc20-cli/target/cdoc20-cli-$CDOC2_VER.jar'
-export CDOC2_CMD="java -jar $CDOC2_DIR/cdoc20-cli/target/cdoc20-cli-$CDOC2_VER.jar"
+alias cdoc-cli='java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_VER.jar'
+export CDOC2_CMD="java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_VER.jar"
 
 
 cd $TESTING_DIR

@@ -18,15 +18,15 @@ services:
       cdoc2-postgres:
         condition: service_started
     volumes:
-      - ../cdoc20-server/server-db/src/main/resources/db/changelog/changes/:/liquibase/changelog/db/changelog/changes/
-      - ../cdoc20-server/server-db/src/main/resources/db/changelog/db.changelog-master.yaml:/liquibase/db.changelog-master.yaml
-      - ../cdoc20-server/server-db/src/main/resources/db/liquibase.properties.docker:/liquibase/changelog/liquibase.properties
+      - ../cdoc2-server/server-db/src/main/resources/db/changelog/changes/:/liquibase/changelog/db/changelog/changes/
+      - ../cdoc2-server/server-db/src/main/resources/db/changelog/db.changelog-master.yaml:/liquibase/db.changelog-master.yaml
+      - ../cdoc2-server/server-db/src/main/resources/db/liquibase.properties.docker:/liquibase/changelog/liquibase.properties
     command: liquibase --url="jdbc:postgresql://cdoc2-postgres:5432/postgres?user=postgres&password=postgres" --defaults-file=/liquibase/changelog/liquibase.properties update
 
   cdoc2-put-server:
     container_name: cdoc2-put-server
     build:
-      context: ../cdoc20-server/
+      context: ../cdoc2-server/
       dockerfile: put-server/docker/Dockerfile
       args:
         NAME: cdoc2-put-server
@@ -42,7 +42,7 @@ services:
   cdoc2-get-server:
     container_name: cdoc2-get-server
     build:
-      context: ../cdoc20-server/
+      context: ../cdoc2-server/
       dockerfile: get-server/docker/Dockerfile
       args:
         NAME: cdoc2-get-server
