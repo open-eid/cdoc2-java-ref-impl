@@ -23,18 +23,18 @@ TMP_DIR=/tmp
 CDOC_VER=$(cd $CDOC_DIR && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 #CDOC_VER="0.3.0-SNAPSHOT"
 
-CLI_DIR=${CDOC_DIR}/cdoc20-cli
+CLI_DIR=${CDOC_DIR}/cdoc2-cli
 CLI_KEYS_DIR=${CLI_DIR}/keys
-CLI_JAR=${CLI_DIR}/target/cdoc20-cli-${CDOC_VER}.jar
+CLI_JAR=${CLI_DIR}/target/cdoc2-cli-${CDOC_VER}.jar
 CLI_CONF=$CLI_DIR/config
 
-SERVER_KEYS_DIR=${CDOC_DIR}/cdoc20-server/keys
+SERVER_KEYS_DIR=${CDOC_DIR}/cdoc2-server/keys
 
 #by default overwrite of files is not allowed
 OVERWRITE_FILES=true
 
-CDOC_CREATE_CMD="java -Dee.cyber.cdoc20.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} create"
-CDOC_DECRYPT_CMD="java -Dee.cyber.cdoc20.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} decrypt"
+CDOC_CREATE_CMD="java -Dee.cyber.cdoc2.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} create"
+CDOC_DECRYPT_CMD="java -Dee.cyber.cdoc2.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} decrypt"
 CDOC_LIST_CMD="java -jar ${CLI_JAR} list"
 
 create_simple_ec() {
@@ -44,14 +44,14 @@ create_simple_ec() {
   then
     echo "Creating ${cdoc_file}"
     $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
-        -c ${CLI_KEYS_DIR}/cdoc20client-certificate.pem ${CDOC_DIR}/README.md
+        -c ${CLI_KEYS_DIR}/cdoc2client-certificate.pem ${CDOC_DIR}/README.md
     echo
   fi
 
   if $RUN_DECRYPT
   then
     echo "Decrypting ${cdoc_file}"
-    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc20client.pem -o ${TMP_DIR}
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
   fi
 }
 
@@ -61,10 +61,10 @@ create_ec_server_ria_dev_pkcs12() {
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
-    #config file has values relative to cdoc20-cli dir, need to cd to $CLI_DIR
+    #config file has values relative to cdoc2-cli dir, need to cd to $CLI_DIR
     cd $CLI_DIR && $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
         --server=${CLI_CONF}/ria-dev/ria-dev_pkcs12.properties \
-        -c ${CLI_KEYS_DIR}/cdoc20client-certificate.pem ${CDOC_DIR}/README.md
+        -c ${CLI_KEYS_DIR}/cdoc2client-certificate.pem ${CDOC_DIR}/README.md
     echo
   fi
 
@@ -74,7 +74,7 @@ create_ec_server_ria_dev_pkcs12() {
     echo "Decrypting ${cdoc_file}"
       cd $CLI_DIR && $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
           --server=${CLI_CONF}/ria-dev/ria-dev_pkcs12.properties \
-          -k ${CLI_KEYS_DIR}/cdoc20client.pem -o ${TMP_DIR}
+          -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
   fi
 }
 
@@ -91,7 +91,7 @@ create_ec_server_ria_dev_id_card() {
     # for decrypting use id-code of est-eid you physically have and know PIN codes
     local isikukood='35803262731'
 
-    #config file has values relative to cdoc20-cli dir, need to cd to $CLI_DIR
+    #config file has values relative to cdoc2-cli dir, need to cd to $CLI_DIR
     cd $CLI_DIR && $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
         --server=${CLI_CONF}/ria-dev/ria-dev.properties \
         -r ${isikukood} ${CDOC_DIR}/README.md
@@ -133,7 +133,7 @@ create_rsa_server_ria_dev_pkcs12() {
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
-    #config file has values relative to cdoc20-cli dir, need to cd to $CLI_DIR
+    #config file has values relative to cdoc2-cli dir, need to cd to $CLI_DIR
     cd $CLI_DIR && $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
         --server=${CLI_CONF}/ria-dev/ria-dev_pkcs12_rsa.properties \
         -c ${SERVER_KEYS_DIR}/sk-signed-test-certs/cdoc2-rsa-test-sk-cert.pem ${CDOC_DIR}/README.md

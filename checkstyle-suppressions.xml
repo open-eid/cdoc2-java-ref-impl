@@ -12,5 +12,5 @@
     <suppress checks=".+" files="[\\/]src[\\/]main[\\/]resources[\\/]"/>
     <suppress checks=".+" files="[\\/]src[\\/]test[\\/]resources[\\/]"/>
     <suppress checks=".+" files="[\\/]generated[\\/]"/>
-    <suppress checks=".+" files="[\\/]ee.cyber.cdoc20.fbs[\\/]"/>
+    <suppress checks=".+" files="[\\/]ee.cyber.cdoc2.fbs[\\/]"/>
 </suppressions>

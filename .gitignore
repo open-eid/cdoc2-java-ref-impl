@@ -29,9 +29,9 @@ hs_err_pid*
 
 
 /doc/
-/cdoc20-server/src/main/resources/keystore/cdoc20server.p12
-/cdoc20-server/src/main/resources/keystore/servertruststore.jks
-/cdoc20-client/src/test/resources/test.properties
+/cdoc2-server/src/main/resources/keystore/cdoc2server.p12
+/cdoc2-server/src/main/resources/keystore/servertruststore.jks
+/cdoc2-client/src/test/resources/test.properties
 
-/cdoc20-server/src/test/resources/test.properties
+/cdoc2-server/src/test/resources/test.properties
 /test/testvectors/zipbomb.cdoc
