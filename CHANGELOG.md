@@ -22,7 +22,7 @@ No changes, only version update in all components.
 
 ### Features
 
-* Added Jenkins pipeline for uploading cdoc2.0 jar artifacts to RIA Nexus repository
+* Added Jenkins pipeline for uploading CDOC2 jar artifacts to RIA Nexus repository
 * Update and run key server instances also on cdoc2-keyserver-02.dev.riaint.ee host
 
 
@@ -31,7 +31,7 @@ No changes, only version update in all components.
 ### Features
 
 * Rewrite tar processing/ChaCha decryption so that Poly1305 MAC is always checked (even when zlib/tar processing errors happen)
-* Added sample CDOC 2.0 containers with keys and configuration files
+* Added sample CDOC2 containers with keys and configuration files
 * Added Unicode Right-To-Left Override (U+202E) to forbidden characters
 
 ### Bug Fixes
@@ -45,7 +45,7 @@ No changes, only version update in all components.
 ### Features
 
 * client authenticate certificate revocation checks (OCSP) for get-server
-* enable monitoring endpoints, see cdoc20-server/admin-guide.md
+* enable monitoring endpoints, see cdoc2-server/admin-guide.md
 * only tls v1.3 is supported by servers
 * remove deprecated ecc-details API
 * gatling-tests updates
@@ -98,15 +98,15 @@ Switch to semantic versioning
 
 ### Features
 * Added support for RSA keys in key server
-* Added support for 2 key server instances when using cdoc20-cli
+* Added support for 2 key server instances when using cdoc2-cli
 * Added key server administration manual
 
 ## [0.0.9] RSA-OAEP support (2022-11-02)
 
 ### Features
 * Support for creating and decrypting CDOC2 documents with RSA keys
-* Improved Recipient.KeyLabel field support in cdoc20-lib (PublicKey used for encryption is paired with keyLabel)
-* Removed cdoc20-cli -ZZ hidden feature (disable compression for payload)
+* Improved Recipient.KeyLabel field support in cdoc2-lib (PublicKey used for encryption is paired with keyLabel)
+* Removed cdoc2-cli -ZZ hidden feature (disable compression for payload)
 * Added additional EC infinity point (X: null, Y: null) checks and tests
 
 
@@ -158,4 +158,4 @@ Switch to semantic versioning
 
 ### Features
 
-* Create/decrypt Cdoc2.0 files with software generated EC keys
+* Create/decrypt Cdoc2 files with software generated EC keys

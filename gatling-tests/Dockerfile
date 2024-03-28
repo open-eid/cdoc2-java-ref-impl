@@ -1,4 +1,4 @@
-# this file is used to build a docker image with cdoc2.0 Gatling tests
+# this file is used to build a docker image with cdoc Gatling tests
 
 # for RIA infra
 FROM nexus.riaint.ee:8500/library/openjdk:17-alpine

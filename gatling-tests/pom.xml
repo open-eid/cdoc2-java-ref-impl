@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>cdoc20</artifactId>
-        <groupId>ee.cyber.cdoc20</groupId>
+        <artifactId>cdoc2</artifactId>
+        <groupId>ee.cyber.cdoc2</groupId>
         <version>1.2.0-SNAPSHOT</version>
     </parent>
 
@@ -13,8 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>ee.cyber.cdoc20</groupId>
-            <artifactId>cdoc20-lib</artifactId>
+            <groupId>ee.cyber.cdoc2</groupId>
+            <artifactId>cdoc2-lib</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -57,7 +57,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>${exec-maven-plugin.version}</version>
                 <configuration>
-                    <mainClass>ee.cyber.cdoc20.server.datagen.KeyStoreGenerator</mainClass>
+                    <mainClass>ee.cyber.cdoc2.server.datagen.KeyStoreGenerator</mainClass>
                     <systemProperties>
                         <systemProperty>
                             <!-- the folder where the generated files will be written -->

@@ -1,4 +1,4 @@
-# CDOC2.0 Gatling tests configuration
+# CDOC2 Gatling tests configuration
 
 # create capsule server configuration
 put-server {
