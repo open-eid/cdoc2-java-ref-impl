@@ -82,7 +82,7 @@ cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACf
 
 Or encrypt with password clear text (note, that password also can be encoded to base64 format, as secret):
 ```
-java -jar target/cdoc0-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
 ```
 
 Decryption is done with the same label and key used for encryption

@@ -142,8 +142,8 @@ cdoc20_java does not provide solution for securely storing the secret, but most 
 - cdoc2-openapi - OpenAPI definitions for server and client generation
 - cdoc2-server  - Optional server backend for securely exchanging key capsules
 - cdoc2-client  - Optional client for server backend
-- gatling-tests  - Functional and load tests for cdoc2-server
-- test           - Sample CDOC2 containers (with script to create and decrypt them)
+- gatling-tests - Functional and load tests for cdoc2-server
+- test          - Sample CDOC2 containers (with script to create and decrypt them)
 
 ## Preconditions for building
 * Java 17
