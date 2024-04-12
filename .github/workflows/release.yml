@@ -32,8 +32,8 @@ jobs:
 
       - name: run Maven release
         uses: qcastel/github-actions-maven-release@v1.12.41
-#        env:
-#          JAVA_HOME: /usr/lib/jvm/java-17-openjdk/
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk/
         with:
           maven-release-version-number: ${env.VERSION}
           version-minor: true
