@@ -3,8 +3,8 @@ name: Make release using comment "/release X.Y.Z"
 on:
   issue_comment:
     types: [created, edited, deleted]
-  env:
-    ACTIONS_STEP_DEBUG: true
+env:
+  ACTIONS_STEP_DEBUG: true
 
 
 jobs:
