@@ -1,0 +1,18 @@
+name: Make release and push to Maven repository
+
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+
+jobs:
+  release:
+    if: ${{ github.event.issue.pull_request }}
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start release
+        if: contains(github.event.comment.body, '/release')
+        # parse version from comment and write to environment
+        run: |
+          echo "VERSION=${{ github.event.comment.body | cut -d ' ' -f 2 }}" >> $GITHUB_ENV
+          
