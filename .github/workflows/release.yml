@@ -35,7 +35,7 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk/
         with:
-          release-branch-name: $GITHUB_HEAD_REF
+          release-branch-name: RM-3118_github_ci
           maven-release-version-number: ${env.VERSION}
           version-minor: true
           maven-args: "-DskipTests -Dmaven.deploy.skip=true"
