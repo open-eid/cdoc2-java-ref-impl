@@ -28,13 +28,14 @@ jobs:
 
       - name: debug
         run: |
-          echo "Hello from PR ${{github.event.issue.number}}, version: $VERSION"
+          echo "Hello from PR ${{github.event.issue.number}}, branch: $GITHUB_HEAD_REF, version: $VERSION"
 
       - name: run Maven release
         uses: qcastel/github-actions-maven-release@v1.12.41
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk/
         with:
+          release-branch-name: $GITHUB_HEAD_REF
           maven-release-version-number: ${env.VERSION}
           version-minor: true
           maven-args: "-DskipTests -Dmaven.deploy.skip=true"
