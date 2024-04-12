@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "VERSION=$(echo "${{ github.event.comment.body }}" | cut -d ' ' -f 2)" >> $GITHUB_ENV
           echo $(cat $GITHUB_ENV)
-          echo "VERSION=${env.VERSION}"
+
 
       - name: debug
         run: |
