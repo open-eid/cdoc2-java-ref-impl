@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    if: ${{ github.event.issue.pull_request }}
+    #if: ${{ github.event.issue.pull_request }}
     name: Release
     runs-on: ubuntu-latest
     steps:
@@ -14,5 +14,6 @@ jobs:
         if: contains(github.event.comment.body, '/release')
         # parse version from comment and write to environment
         run: |
-          echo "VERSION=${{ github.event.comment.body | cut -d ' ' -f 2 }}" >> $GITHUB_ENV
+          echo "VERSION=$(echo "${{ github.event.comment.body }}" | cut -d ' ' -f 2)" >> $GITHUB_ENV
+
           
