@@ -1,4 +1,4 @@
-name: Make release and push to Maven repository
+name: Make release
 
 on:
   issue_comment:
@@ -15,5 +15,7 @@ jobs:
         # parse version from comment and write to environment
         run: |
           echo "VERSION=$(echo "${{ github.event.comment.body }}" | cut -d ' ' -f 2)" >> $GITHUB_ENV
+          echo $VERSION
+          echo GITHUB_ENV=$GITHUB_ENV
 
           
