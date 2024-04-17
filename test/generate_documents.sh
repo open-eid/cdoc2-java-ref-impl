@@ -16,7 +16,7 @@ RUN_DECRYPT=false
 
 
 
-CDOC_DIR=$(cd .. && pwd) #root of cdoc20_java
+CDOC_DIR=$(cd .. && pwd) #root of cdoc2-java-ref-impl
 TESTVECTORS_DIR=${CDOC_DIR}/test/testvectors
 TMP_DIR=/tmp
 
@@ -28,7 +28,7 @@ CLI_KEYS_DIR=${CLI_DIR}/keys
 CLI_JAR=${CLI_DIR}/target/cdoc2-cli-${CDOC_VER}.jar
 CLI_CONF=$CLI_DIR/config
 
-SERVER_KEYS_DIR=${CDOC_DIR}/cdoc2-server/keys
+SERVER_KEYS_DIR=${CDOC_DIR}/test/keys
 
 #by default overwrite of files is not allowed
 OVERWRITE_FILES=true

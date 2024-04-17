@@ -1,7 +1,9 @@
 # Building & Running
 
+To run without building, download latest version of cdoc2-cli.jar from https://github.com/jann0k?tab=packages TODO: update repo
+
 ## Building
-Run from cdoc20_java parent directory
+Run from cdoc2-java-ref-impl parent directory
 ```
 mvn clean package
 ```
@@ -18,9 +20,9 @@ java -jar target/cdoc2-cli-<version>.jar
 
 where `<version>` must be replaced with the latest version built. Example `0.0.12-SNAPSHOT`
 
-Sample generated CDOC2 documents are located at `cdoc20_java/test/testvectors`
+Sample generated CDOC2 documents are located at `cdoc2-java-ref-impl/test/testvectors`
 
-Commands for creating and decrypting sample files using cdoc-cli are in `cdoc20_java/test/generate_documents.sh`
+Commands for creating and decrypting sample files using cdoc2-cli are in `cdoc2-java-ref-impl/test/generate_documents.sh`
 
 
 ### Encryption
