@@ -94,18 +94,52 @@
 
     <!-- Configuration for Maven Release plugin -->
     <scm>
-      <connection>scm:git:ssh://git@gitlab.ext.cyber.ee/cdoc2/cdoc20_java.git</connection>
+      <connection>scm:git:${project.scm.url}</connection>
+        <developerConnection>scm:git:${project.scm.url}</developerConnection>
+        <url>git@github.com:jann0k/cdoc2-java-ref-impl-private.git</url>
       <tag>HEAD</tag>
   </scm>
+
+    <repositories>
+        <!-- public Maven repository Note: currently different from git repo, which is private -->
+        <!-- TODO: move to open-eid/cdoc2-java-ref-impl -->
+        <!--repository>
+
+            <id>github</id>
+            <name>GitHub jann0k/cdoc2-java-ref-impl Maven Packages</name>
+            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository-->
+
+        <!-- download maven package -->
+        <!-- https://docs.gitlab.com/ee/user/packages/maven_repository/#edit-the-configuration-file-for-publishing -->
+        <!-- TODO: remove, when packages available from GitHub open-eid/cdoc2-java-ref-impl -->
+        <repository>
+
+            <id>gitlab.ext.cyber.ee</id>
+            <url>https://gitlab.ext.cyber.ee/api/v4/groups/103/-/packages/maven</url>
+        </repository>
+    </repositories>
+    <!-- upload maven packages, used by maven deploy-->
+    <distributionManagement>
+
+        <repository>
+            <id>gitlab.ext.cyber.ee</id>
+            <url>https://gitlab.ext.cyber.ee/api/v4/projects/26/packages/maven</url>
+        </repository>
+        <snapshotRepository>
+            <id>gitlab.ext.cyber.ee</id>
+            <url>https://gitlab.ext.cyber.ee/api/v4/projects/26/packages/maven</url>
+        </snapshotRepository>
+
+    </distributionManagement>
 
     <modules>
         <module>cdoc2-schema</module>
         <module>cdoc2-lib</module>
         <module>cdoc2-cli</module>
-        <module>cdoc2-openapi</module>
-        <module>cdoc2-server</module>
-        <module>cdoc2-client</module>
-        <module>gatling-tests</module>
     </modules>
 
     <dependencyManagement>
@@ -221,7 +255,7 @@
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
                 <configuration>
-                    <skip>true</skip>
+                    <skip>false</skip>
                 </configuration>
             </plugin>
 

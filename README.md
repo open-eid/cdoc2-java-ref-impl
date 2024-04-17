@@ -1,4 +1,4 @@
-# cdoc20_java
+# CDOC2 reference implementation
 
 [CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
@@ -111,7 +111,7 @@ Similar to Symmetric Key scenario, but symmetric key is derived from password an
 9. Recipient decrypts FMK using KEK.
 10. *Follow steps from ECDH scenario 13-15*
 
-cdoc20_java does not provide solution for securely storing the password, but most password managers
+cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
 can do that.
 
 ## CDOC2 with symmetric key from secret
@@ -129,7 +129,7 @@ Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identif
 8. Recipient decrypts FMK using KEK.
 9. *Follow steps from ECDH scenario 13-15*
 
-cdoc20_java does not provide solution for securely storing the secret, but most password managers
+cdoc2-java-ref-impl does not provide solution for securely storing the secret, but most password managers
  can do that.
 
 
@@ -139,16 +139,19 @@ cdoc20_java does not provide solution for securely storing the secret, but most 
 - cdoc2-schema  - flatbuffers schemas and code generation
 - cdoc2-lib     - CDOC2 creation and processing library
 - cdoc2-cli     - Command line utility to create/process CDOC2 files
-- cdoc2-openapi - OpenAPI definitions for server and client generation
-- cdoc2-server  - Optional server backend for securely exchanging key capsules
-- cdoc2-client  - Optional client for server backend
-- gatling-tests - Functional and load tests for cdoc2-server
-- test          - Sample CDOC2 containers (with script to create and decrypt them)
+- test          - Sample CDOC2 containers (with script to create and decrypt them) 
+                  and automated tests for CLI
+
+Server related components are in separate cdoc2-servers repo TODO: link to public repo
 
 ## Preconditions for building
 * Java 17
 * Maven 3.8.x
 * Docker available and running (required for running tests)
+
+## Maven dependencies
+
+See README.md in cdoc2-servers repo TODO: update link
 
 ## Building
 CDOC2 has been tested with JDK 17 and Maven 3.8.4

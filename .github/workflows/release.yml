@@ -1,0 +1,52 @@
+name: Make release using comment "/release X.Y.Z"
+
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+env:
+  ACTIONS_STEP_DEBUG: true
+
+
+jobs:
+  release:
+    #if: ${{ github.event.issue.pull_request }}
+    if: contains(github.event.comment.body, '/release')
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          #ref: ${{github.event.issue.pull_request.head.ref}}
+          ref: RM-3118_github_ci
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Parse version from comment
+        # parse version from comment and write to environment
+        run: |
+          echo "VERSION=$(echo "${{ github.event.comment.body }}" | cut -d ' ' -f 2)" >> $GITHUB_ENV
+          echo $(cat $GITHUB_ENV)
+
+
+      - name: debug
+        run: |
+          echo "Hello from PR ${{github.event.issue.number}}, branch: $GITHUB_HEAD_REF, version: $VERSION"
+
+      - name: run Maven release
+        uses: qcastel/github-actions-maven-release@v1.12.41
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk/
+        with:
+          maven-release-version-number: ${env.VERSION}
+          release-branch-name: "RM-3118_github_ci"
+          version-minor: true
+          maven-args: "-DskipTests -Dmaven.deploy.skip=true"
+
+
+
+
+          

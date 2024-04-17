@@ -8,6 +8,7 @@
     </parent>
 
     <artifactId>cdoc2-cli</artifactId>
+    <description>Command line utility to create/process CDOC2 files</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -100,33 +101,6 @@
                         </executions>
                     </plugin-->
 
-
-
-
-            <!--plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.10</version>
-                <configuration>
-                    <programs>
-                        <program>
-                            <mainClass>ee.cyber.cdoc2.cli.CDocCli</mainClass>
-                            <id>cdoc</id>
-                        </program>
-                    </programs>
-                </configuration>
-
-                <executions>
-                    <execution>
-                        <id>jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assemble</goal>
-                        </goals>
-                    </execution>
-                </executions>
-
-            </plugin-->
         </plugins>
     </build>
 
