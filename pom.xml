@@ -101,40 +101,23 @@
   </scm>
 
     <repositories>
-        <!-- public Maven repository Note: currently different from git repo, which is private -->
-        <!-- TODO: move to open-eid/cdoc2-java-ref-impl -->
-        <!--repository>
-
-            <id>github</id>
-            <name>GitHub jann0k/cdoc2-java-ref-impl Maven Packages</name>
-            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository-->
-
-        <!-- download maven package -->
-        <!-- https://docs.gitlab.com/ee/user/packages/maven_repository/#edit-the-configuration-file-for-publishing -->
-        <!-- TODO: remove, when packages available from GitHub open-eid/cdoc2-java-ref-impl -->
         <repository>
+			<id>gitlab.ext.cyber.ee</id>
+			<url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
+		</repository>
+	</repositories>
 
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/groups/103/-/packages/maven</url>
-        </repository>
-    </repositories>
-    <!-- upload maven packages, used by maven deploy-->
-    <distributionManagement>
-
+	<distributionManagement>
         <repository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/26/packages/maven</url>
-        </repository>
+			<id>gitlab.ext.cyber.ee</id>
+			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
+		</repository>
+
         <snapshotRepository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/26/packages/maven</url>
-        </snapshotRepository>
-
-    </distributionManagement>
+			<id>gitlab.ext.cyber.ee</id>
+			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
+		</snapshotRepository>
+	</distributionManagement>
 
     <modules>
         <module>cdoc2-schema</module>
