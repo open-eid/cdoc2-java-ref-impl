@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * KeyCapsuleClient initialization from properties file.
  */
@@ -41,8 +42,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     public static KeyCapsuleClient create(String serverIdentifier,
-                                           Cdoc2KeyCapsuleApiClient postClient,
-                                           Cdoc2KeyCapsuleApiClient getClient) {
+                                          Cdoc2KeyCapsuleApiClient postClient,
+                                          Cdoc2KeyCapsuleApiClient getClient) {
         return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
     }
 
@@ -64,38 +65,36 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @throws IOException
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
-            throws GeneralSecurityException, IOException {
+        throws GeneralSecurityException, IOException {
 
         String serverId = p.getProperty("cdoc2.client.server.id");
 
-        Cdoc2KeyCapsuleApiClient.Builder builder = Cdoc2KeyCapsuleApiClient.builder()
-                .withTrustKeyStore(loadTrustKeyStore(p));
+        var builder = Cdoc2KeyCapsuleApiClient.builder();
+        builder.withTrustKeyStore(loadTrustKeyStore(p));
 
         getInteger(p, "cdoc2.client.server.connect-timeout")
-                .ifPresent(builder::withConnectTimeoutMs);
+            .ifPresent(builder::withConnectTimeoutMs);
         getInteger(p, "cdoc2.client.server.read-timeout")
-                .ifPresent(builder::withReadTimeoutMs);
+            .ifPresent(builder::withReadTimeoutMs);
         getBoolean(p, "cdoc2.client.server.debug")
-                .ifPresent(builder::withDebuggingEnabled);
+            .ifPresent(builder::withDebuggingEnabled);
 
         String postBaseUrl = p.getProperty("cdoc2.client.server.base-url.post");
         String getBaseUrl = p.getProperty("cdoc2.client.server.base-url.get");
 
         // postClient can be configured with client key store,
-        Cdoc2KeyCapsuleApiClient postClient = builder
-                .withBaseUrl(postBaseUrl)
-                .build();
+        builder.withBaseUrl(postBaseUrl);
+        Cdoc2KeyCapsuleApiClient postClient = builder.build();
 
         // client key store configuration required
         Cdoc2KeyCapsuleApiClient getClient = null;
         KeyStore clientKeyStore = null;
         if (initMutualTlsClient) {
             clientKeyStore = loadClientKeyStore(p);
-            getClient = builder
-                    .withClientKeyStore(clientKeyStore)
-                    .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p))
-                    .withBaseUrl(getBaseUrl)
-                    .build();
+            builder.withClientKeyStore(clientKeyStore);
+            builder.withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p));
+            builder.withBaseUrl(getBaseUrl);
+            getClient = builder.build();
         }
 
         return new KeyCapsuleClientImpl(serverId, postClient, getClient, clientKeyStore);
@@ -137,7 +136,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      */
     @Nullable
     private static KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
-            CertificateException, NoSuchAlgorithmException {
+        CertificateException, NoSuchAlgorithmException {
 
         KeyStore clientKeyStore;
         String type = p.getProperty("cdoc2.client.ssl.client-store.type", null);
@@ -153,7 +152,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             String passwd = p.getProperty("cdoc2.client.ssl.client-store-password");
 
             clientKeyStore.load(Resources.getResourceAsStream(clientStoreFile),
-                    (passwd != null) ? passwd.toCharArray() : null);
+                (passwd != null) ? passwd.toCharArray() : null);
 
         } else if ("PKCS11".equalsIgnoreCase(type)) {
             String openScLibPath = loadPkcs11LibPath(p);
@@ -178,7 +177,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
         return System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY,
-                p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
+            p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
     }
 
     /**
@@ -197,7 +196,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @CertificateException – if any of the certificates in the keystore could not be loaded
      */
     private static KeyStore loadTrustKeyStore(Properties p) throws KeyStoreException, IOException,
-            CertificateException, NoSuchAlgorithmException {
+        CertificateException, NoSuchAlgorithmException {
         KeyStore trustKeyStore;
 
         String type = p.getProperty("cdoc2.client.ssl.trust-store.type", "JKS");
@@ -207,7 +206,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
         trustKeyStore = KeyStore.getInstance(type);
         trustKeyStore.load(Resources.getResourceAsStream(trustStoreFile),
-                (passwd != null) ? passwd.toCharArray() : null);
+            (passwd != null) ? passwd.toCharArray() : null);
 
         return trustKeyStore;
     }
@@ -318,9 +317,9 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         if (o == null || getClass() != o.getClass()) return false;
         KeyCapsuleClientImpl that = (KeyCapsuleClientImpl) o;
         return Objects.equals(serverId, that.serverId)
-                && Objects.equals(postClient, that.postClient)
-                && Objects.equals(getClient, that.getClient)
-                && Objects.equals(clientKeyStore, that.clientKeyStore);
+            && Objects.equals(postClient, that.postClient)
+            && Objects.equals(getClient, that.getClient)
+            && Objects.equals(clientKeyStore, that.clientKeyStore);
     }
 
     @Override
