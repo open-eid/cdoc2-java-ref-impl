@@ -1,6 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
-import at.favre.lib.crypto.HKDF;
+import at.favre.lib.hkdf.HKDF;
 
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
