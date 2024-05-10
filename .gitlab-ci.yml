@@ -1,24 +1,70 @@
 stages:
   - test
-  - deploy
+  - coverage
+  - publish
 
 test:
   stage: test
   image: maven:3.8.8-eclipse-temurin-17
   script:
     - mvn clean verify -s $MAVEN_SETTINGS -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+    - shopt -s globstar
+    - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print "Total", 100*covered/instructions, "% covered" }' /builds/**/target/site/jacoco/jacoco.csv
+  coverage: /Total \d+\.\d+ %/
   artifacts:
     when: always
     reports:
       junit:
         - "**/target/surefire-reports/*.xml"
+    paths:
+      - "**/target/site/jacoco"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: on_success
+    - when: never
   cache: 
     key: "$CI_COMMIT_REF_NAME"
     paths:
       - .m2/repository
 
-deploy:
-  stage: deploy
+coverage:
+  stage: coverage
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+    - when: never
+  script:
+    - export PATH="$PATH:/root/.dotnet/tools"
+    - dotnet tool restore
+    - dotnet tool install dotnet-reportgenerator-globaltool --global
+    - |
+      for src in $(find /builds -type f -name 'jacoco.xml' | sed -r 's|/target/site/jacoco/[^/]+$||' |  sort -u )
+      do
+        sourcedirs="$src/src/main/"
+        for i in $(find $src -type f -name '*.java' | sed -r 's|/[^/]+$||' |sort -u)
+        do
+          sourcedirs="${sourcedirs};${i}"
+        done
+        reportgenerator \
+        -reports:$src/**/jacoco.xml \
+        -targetdir:$src/target/reports \
+        -reporttypes:Cobertura \
+        -sourcedirs:$sourcedirs
+        sed -i 's|filename=\"'"$src"'/src/main/java/|filename=\"|g' $src/target/reports/Cobertura.xml
+      done
+  artifacts:
+    paths:
+      - "$CI_PROJECT_DIR/**/Cobertura.xml"
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: "$CI_PROJECT_DIR/**/Cobertura.xml"
+
+publish:
+  stage: publish
   image: maven:3.8.8-eclipse-temurin-17
   script: mvn deploy -s $MAVEN_SETTINGS
   cache: 
@@ -26,9 +72,6 @@ deploy:
     paths:
       - .m2/repository
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: on_success
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
-      when: manual
+    - when: never
