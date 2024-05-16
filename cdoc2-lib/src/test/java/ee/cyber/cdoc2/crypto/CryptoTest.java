@@ -142,8 +142,7 @@ class CryptoTest {
         byte[] kek = kekSecretKey.getEncoded();
         assertNotNull(kek);
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
-//        assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
-        assertEquals("9698151f0a83fcd0947ecad13d2cd56d7e4d9ba2980b61f7474ddf58b3bcaedd",
+        assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
                 HexFormat.of().formatHex(kek));
     }
 

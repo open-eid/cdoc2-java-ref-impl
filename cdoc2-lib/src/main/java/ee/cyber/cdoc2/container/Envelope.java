@@ -199,7 +199,7 @@ public final class Envelope {
     public static byte[] getAdditionalData(byte[] header, byte[] headerHMAC) {
         Objects.requireNonNull(header);
         Objects.requireNonNull(headerHMAC);
-        final byte[] cDoc2Payload = "CDOC2payload".getBytes(StandardCharsets.UTF_8);
+        final byte[] cDoc2Payload = "CDOC20payload".getBytes(StandardCharsets.UTF_8);
         ByteBuffer bb = ByteBuffer.allocate(cDoc2Payload.length + header.length + headerHMAC.length);
         bb.put(cDoc2Payload);
         bb.put(header);

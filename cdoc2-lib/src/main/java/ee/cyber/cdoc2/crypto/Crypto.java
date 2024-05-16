@@ -93,7 +93,7 @@ public final class Crypto {
             DrbgParameters.instantiation(
                 256, // Required security strength
                 PR_AND_RESEED, // configure algorithm to provide prediction resistance and reseeding facilities
-                "CDOC2".getBytes() // personalization string, used to derive seed
+                "CDOC20".getBytes() // personalization string, used to derive seed
             )
         );
         log.info("Initialized SecureRandom.");
@@ -103,17 +103,20 @@ public final class Crypto {
     public static byte[] generateFileMasterKey() throws NoSuchAlgorithmException {
         byte[] inputKeyingMaterial = new byte[64]; //spec says: ikm should be more than 32bytes of secure random
         getSecureRandom().nextBytes(inputKeyingMaterial);
-        return HKDF.fromHmacSha256().extract("CDOC2salt".getBytes(StandardCharsets.UTF_8), inputKeyingMaterial);
+        return HKDF.fromHmacSha256().extract("CDOC20salt".getBytes(StandardCharsets.UTF_8),
+            inputKeyingMaterial);
     }
 
     public static SecretKey deriveContentEncryptionKey(byte[] fmk) {
         byte[] cekBytes = HKDF.fromHmacSha256()
-                .expand(fmk, "CDOC2cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
+                .expand(fmk, "CDOC20cek".getBytes(StandardCharsets.UTF_8), CEK_LEN_BYTES);
         return new SecretKeySpec(cekBytes, "ChaCha20");
     }
 
     public static SecretKey deriveHeaderHmacKey(byte[] fmk) {
-        byte[] hhk = HKDF.fromHmacSha256().expand(fmk, "CDOC2hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES);
+        byte[] hhk = HKDF.fromHmacSha256().expand(
+            fmk, "CDOC20hmac".getBytes(StandardCharsets.UTF_8), HHK_LEN_BYTES
+        );
         return new SecretKeySpec(hhk, HMAC_SHA_256);
     }
 
@@ -156,7 +159,7 @@ public final class Crypto {
         final HKDF hkdf = HKDF.fromHmacSha256();
         byte[] kekPm = hkdf.extract(salt, preSharedSecretKey.getEncoded());
 
-        String info = "CDOC2kek" + fmkEncMethod + label;
+        String info = "CDOC20kek" + fmkEncMethod + label;
         byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), FMK_LEN_BYTES);
 
         return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
@@ -267,10 +270,10 @@ public final class Crypto {
 
         byte[] ecdhSharedSecret = calcEcDhSharedSecret(ecKeyPair.getPrivate(), otherPublicKey);
         byte[] kekPm = HKDF.fromHmacSha256()
-                .extract("CDOC2kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
+                .extract("CDOC20kekpremaster".getBytes(StandardCharsets.UTF_8), ecdhSharedSecret);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        baos.writeBytes("CDOC2kek".getBytes(StandardCharsets.UTF_8));
+        baos.writeBytes("CDOC20kek".getBytes(StandardCharsets.UTF_8));
         baos.writeBytes(FMKEncryptionMethod.name(FMKEncryptionMethod.XOR).getBytes(StandardCharsets.UTF_8));
 
         if (isEncryptionMode) {
@@ -331,4 +334,5 @@ public final class Crypto {
         getSecureRandom().nextBytes(salt);
         return salt;
     }
+
 }

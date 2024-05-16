@@ -63,7 +63,7 @@ run_alias() {
   assert_output --partial '/bats-core/bin/bats'
 }
 
-@test "preparing: assert TEST_VECTORS value exists" {
+@test "preparing: assert TEST_VECTORS package exists" {
   run ${TEST_VECTORS}
   assert_output --partial '/test/testvectors'
 }
@@ -82,13 +82,24 @@ run_alias() {
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $$TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f $TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
   assertSuccessfulDecryption
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
 
-@test "test2: successfully encrypt CDOC2 container with RSA" {
+@test "test2: assert EC decryption is compatible with earlier encrypted CDOC2" {
+  local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
+
+  echo "# Decrypting ${cdoc_file}">&3
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${cdoc_file} -k $CLI_KEYS_DIR/cdoc2client.pem --output $TEST_RESULTS_DIR
+
+  assertSuccessfulExitCode
+  assert_output --partial "Decrypting ${TEST_VECTORS}/${cdoc_file}"
+  assertSuccessfulDecryption
+}
+
+@test "test3: successfully encrypt CDOC2 container with RSA" {
   local cdoc_file="rsa_simple.cdoc"
   run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
           -p $CLI_KEYS_DIR/rsa_pub.pem $FILE_FOR_ENCRYPTION
@@ -104,13 +115,13 @@ run_alias() {
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
 
-@test "test3: successfully encrypt CDOC2 container with password" {
+@test "test4: successfully encrypt CDOC2 container with password" {
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
   assertSuccessfulExitCode
   assert_output --partial "Created $CDOC2_CONTAINER"
 }
 
-@test "test4: successfully decrypt CDOC2 container from test1 with password" {
+@test "test5: successfully decrypt CDOC2 container from test1 with password" {
   run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
   assertSuccessfulExitCode
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
@@ -119,20 +130,42 @@ run_alias() {
   removeEncryptedCdoc
 }
 
-@test "test5: successfully encrypt CDOC2 container with few files" {
+@test "test6: assert password decryption is compatible with earlier encrypted CDOC2" {
+  local earlier_encrypted_cdoc2_file="password_old_version_DO_NOT_DELETE.cdoc"
+
+  echo "# Decrypting ${earlier_encrypted_cdoc2_file}">&3
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${earlier_encrypted_cdoc2_file} -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+
+  assertSuccessfulExitCode
+  assert_output --partial "Decrypting ${TEST_VECTORS}/${earlier_encrypted_cdoc2_file}"
+  assertSuccessfulDecryption
+}
+
+@test "test7: assert decryption with symmetric key is compatible with earlier encrypted CDOC2" {
+  local earlier_encrypted_cdoc2_file="symmetric_old_version_DO_NOT_DELETE.cdoc"
+
+  echo "# Decrypting ${earlier_encrypted_cdoc2_file}">&3
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${earlier_encrypted_cdoc2_file} --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
+
+  assertSuccessfulExitCode
+  assert_output --partial "Decrypting ${TEST_VECTORS}/${earlier_encrypted_cdoc2_file}"
+  assertSuccessfulDecryption
+}
+
+@test "test8: successfully encrypt CDOC2 container with few files" {
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION $FILE_FOR_ENCRYPTION2
   assertSuccessfulExitCode
 
   removeEncryptedCdoc
 }
 
-@test "test6: fail to encrypt CDOC2 container with password if it's validation has failed" {
+@test "test9: fail to encrypt CDOC2 container with password if it's validation has failed" {
   password="passwordlabel:short";
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $password $FILE_FOR_ENCRYPTION
   assertFailure
 }
 
-@test "test7: fail to decrypt CDOC2 container with wrong decryption key type" {
+@test "test10: fail to decrypt CDOC2 container with wrong decryption key type" {
   # encrypt with secret key
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
   assertSuccessfulExitCode
@@ -144,7 +177,7 @@ run_alias() {
   removeEncryptedCdoc
 }
 
-@test "test8: successfully encrypt CDOC with two keys and decrypt with one of them" {
+@test "test11: successfully encrypt CDOC with two keys and decrypt with one of them" {
   # encrypt with secret key and password
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
   assertSuccessfulExitCode
@@ -158,7 +191,7 @@ run_alias() {
   removeEncryptedCdoc
 }
 
-@test "test9: successfully re-encrypt CDOC2 container" {
+@test "test12: successfully re-encrypt CDOC2 container" {
   # prepare encrypted container for further re-encryption
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
   assertSuccessfulExitCode
@@ -184,7 +217,7 @@ run_alias() {
   removeEncryptedCdoc
 }
 
-@test "test10: fail re-encryption within the same directory" {
+@test "test13: fail re-encryption within the same directory" {
   run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
   assertSuccessfulExitCode
 
