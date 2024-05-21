@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.client;
 
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
+
 
 public interface KeyCapsuleClientFactory {
     /**

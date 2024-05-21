@@ -2,7 +2,7 @@ package ee.cyber.cdoc2.client;
 
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.CDocConfiguration;
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.util.Resources;
@@ -326,4 +326,5 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     public int hashCode() {
         return Objects.hash(serverId, postClient, getClient, clientKeyStore);
     }
+
 }

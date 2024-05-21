@@ -15,9 +15,11 @@ import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.exceptions.CDocException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * CDOC2 container re-encryption data builder.

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RsaTest {
 
     // openssl genrsa -out rsa_priv.pem 2048
-    @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
+    @SuppressWarnings("secrets:S6706")
     static final String rsaKeyPem =
         """
             -----BEGIN RSA PRIVATE KEY-----
@@ -62,7 +62,6 @@ class RsaTest {
     //                INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
     //                INTEGER 65537
     // openssl rsa -in rsa_priv.pem -outform PEM -pubout -out rsa_pub.pem
-    @SuppressWarnings("checkstyle:OperatorWrap")
     static final String pubKeyPem = """
         -----BEGIN PUBLIC KEY-----
         MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs18v09QVTnzSTRrFnVhk
@@ -80,16 +79,15 @@ class RsaTest {
     //    SEQUENCE (2 elem)
     //        INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
     //        INTEGER 65537
-    @SuppressWarnings("checkstyle:OperatorWrap")
     static final String pubKeyRSAPublicKeyB64 =
-            //-----BEGIN RSA PUBLIC KEY-----
-            "MIIBCgKCAQEAs18v09QVTnzSTRrFnVhkxDWM2rSHOua2rPz60CVazfOk5Vv9Jo4N" +
-            "q6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsPGbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7" +
-            "CfYKxOicL5akXqDP2NCoytHFG8QePPE1XAHC7pHyC+hEa7Hggol6sdbEWOK7WLCm" +
-            "IjmJ+gJx2O3bg433ad0LX6swvclGNbe0z+YagmYsu4ChfwY9Be6oVRvQzFEHOKh+" +
-            "tEibyutdFJ9fioyMjjZtL6lEx5xKUJ18d4efC9apvJ810wRkMDqwR203HEJrkRnB" +
-            "g9RtkVPNzOMl8eH6eUdS/oDW5eysnKbtrwIDAQAB";
-            //-----END RSA PUBLIC KEY-----
+        //-----BEGIN RSA PUBLIC KEY-----
+        "MIIBCgKCAQEAs18v09QVTnzSTRrFnVhkxDWM2rSHOua2rPz60CVazfOk5Vv9Jo4N"
+            + "q6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsPGbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7"
+            + "CfYKxOicL5akXqDP2NCoytHFG8QePPE1XAHC7pHyC+hEa7Hggol6sdbEWOK7WLCm"
+            + "IjmJ+gJx2O3bg433ad0LX6swvclGNbe0z+YagmYsu4ChfwY9Be6oVRvQzFEHOKh+"
+            + "tEibyutdFJ9fioyMjjZtL6lEx5xKUJ18d4efC9apvJ810wRkMDqwR203HEJrkRnB"
+            + "g9RtkVPNzOMl8eH6eUdS/oDW5eysnKbtrwIDAQAB";
+    //-----END RSA PUBLIC KEY-----
 
     @Test
     void testRsaOep() throws Exception {
@@ -107,7 +105,7 @@ class RsaTest {
     }
 
     static void checkRsaEncryption(String plainSecret, RSAPublicKey publicKey, RSAPrivateKey privateKey)
-            throws Exception {
+        throws Exception {
         byte[] data = plainSecret.getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = RsaUtils.rsaEncrypt(data, publicKey);
 
@@ -158,4 +156,3 @@ class RsaTest {
     }
 
 }
-

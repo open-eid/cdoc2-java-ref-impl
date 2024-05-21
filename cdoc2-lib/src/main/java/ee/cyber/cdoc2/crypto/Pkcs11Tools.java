@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.crypto;
 
 import ee.cyber.cdoc2.CDocConfiguration;
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -32,6 +32,7 @@ import javax.swing.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static ee.cyber.cdoc2.util.OperatingSystem.getOS;
+
 
 /**
  * Utility class for PKCS11 operations.
@@ -412,4 +413,5 @@ public final class Pkcs11Tools {
                 throw new IllegalStateException("Unknown OS");
         }
     }
+
 }

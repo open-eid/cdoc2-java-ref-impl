@@ -5,7 +5,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc2.container.recipients.RecipientFactory;
-import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;

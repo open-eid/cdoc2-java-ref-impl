@@ -9,8 +9,8 @@ import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc2.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.SecretDecryptionKeyMaterial;
-import ee.cyber.cdoc2.CDocException;
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.EcCapsuleClient;
 import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
@@ -29,6 +29,7 @@ import java.util.Optional;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Functions for deriving KEK in different scenarios

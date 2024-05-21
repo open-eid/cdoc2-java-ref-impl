@@ -56,7 +56,7 @@ class CryptoTest {
         KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
         byte[] ecdhSharedSecret =
-                Crypto.calcEcDhSharedSecret(keyPair.getPrivate(), (ECPublicKey) other.getPublic());
+            Crypto.calcEcDhSharedSecret(keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
         assertEquals(ECKeys.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
     }
@@ -85,7 +85,7 @@ class CryptoTest {
         byte[] fmk = Crypto.generateFileMasterKey();
 
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
-        @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
+        @SuppressWarnings("secrets:S6706")
         String pem =
             """
                 -----BEGIN EC PRIVATE KEY-----
@@ -131,9 +131,9 @@ class CryptoTest {
         // initialized to 0 bytes
 
         SecretKey kekSecretKey = Crypto.deriveKeyEncryptionKey("deriveKeyEncryptionKeyFromSharedSecret",
-                new SecretKeySpec(sharedSecret, ""),
-                getSalt(),
-                FMKEncryptionMethod.name(FMKEncryptionMethod.XOR)
+            new SecretKeySpec(sharedSecret, ""),
+            getSalt(),
+            FMKEncryptionMethod.name(FMKEncryptionMethod.XOR)
         );
 
         assertEquals("XOR", kekSecretKey.getAlgorithm());
@@ -143,7 +143,7 @@ class CryptoTest {
         assertNotNull(kek);
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
-                HexFormat.of().formatHex(kek));
+            HexFormat.of().formatHex(kek));
     }
 
     @Test
@@ -177,4 +177,5 @@ class CryptoTest {
 
         return salt;
     }
+
 }
