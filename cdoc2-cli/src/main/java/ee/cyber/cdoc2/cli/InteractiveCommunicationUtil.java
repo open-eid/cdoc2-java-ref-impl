@@ -7,7 +7,7 @@ import javax.swing.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;

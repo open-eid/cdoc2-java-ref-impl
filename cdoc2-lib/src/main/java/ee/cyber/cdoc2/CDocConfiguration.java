@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2;
 
+
 public final class CDocConfiguration {
 
     private CDocConfiguration() {
@@ -16,13 +17,9 @@ public final class CDocConfiguration {
     // by default files overwrite is not allowed
     public static final boolean DEFAULT_OVERWRITE = false;
 
-
-
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 
-
     public static final String GZIP_COMPRESSION_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.compressionThreshold";
-
 
     public static final String DISK_USAGE_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.maxDiskUsagePercentage";
 
@@ -39,7 +36,6 @@ public final class CDocConfiguration {
         return overwrite;
 
     }
-
 
     // for running on highDP display
     //-Dsun.java2d.uiScale=2.0
