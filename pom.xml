@@ -22,22 +22,20 @@
         <!-- ldap test require connection to external esteid.ldap.sk.ee server -->
         <tests>!(pkcs11 | slow | ldap)</tests>
 
-        <junit.jupiter.version>5.8.2</junit.jupiter.version>
-        <lombok.version>1.18.24</lombok.version>
-        <logback-classic.version>1.2.11</logback-classic.version>
-        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
-        <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-        <bouncycastle.version>1.70</bouncycastle.version>
-        <spring-boot.version>2.7.5</spring-boot.version>
-        <spring.version>5.3.23</spring.version>
-        <gatling.version>3.9.0</gatling.version>
-        <gatling-maven-plugin.version>4.1.6</gatling-maven-plugin.version>
+        <!-- versions of dependencies has to correspond with spring boot version-->
+        <!-- https://docs.spring.io/spring-boot/docs/current/reference/html/dependency-versions
+        .html-->
+        <junit-jupiter.version>5.10.2</junit-jupiter.version>
+        <lombok.version>1.18.32</lombok.version>
+        <logback-classic.version>1.5.6</logback-classic.version>
+        <exec-maven-plugin.version>3.2.0</exec-maven-plugin.version>
+        <maven-shade-plugin.version>3.5.2</maven-shade-plugin.version>
+        <bouncycastle.version>1.78.1</bouncycastle.version>
+        <spring-boot.version>3.2.5</spring-boot.version>
+        <spring.version>6.1.6</spring.version>
+        <gatling.version>3.10.5</gatling.version>
+        <gatling-maven-plugin.version>4.8.2</gatling-maven-plugin.version>
 
-        <sonar.coverage.jacoco.xmlReportPaths>
-            ${project.basedir}/cdoc2-lib/target/site/jacoco-aggregate/jacoco.xml,
-            ${project.basedir}/cdoc2-schema/target/site/jacoco-aggregate/jacoco.xml,
-            ${project.basedir}/cdoc2-cli/target/site/jacoco-aggregate/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <profiles>
@@ -71,7 +69,7 @@
                         <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.8.7</version>
+                        <version>0.8.12</version>
                         <executions>
                             <execution>
                                 <id>prepare-agent</id>
@@ -122,6 +120,7 @@
     <modules>
         <module>cdoc2-schema</module>
         <module>cdoc2-lib</module>
+        <module>cdoc2-client</module>
         <module>cdoc2-cli</module>
     </modules>
 
@@ -130,7 +129,7 @@
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>${junit.jupiter.version}</version>
+                <version>${junit-jupiter.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -142,7 +141,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${junit.jupiter.version}</version>
+            <version>${junit-jupiter.version}</version>
         </dependency>
     </dependencies>
 
@@ -153,7 +152,7 @@
                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.1</version>
 
                     <configuration>
                         <configLocation>checkstyle.xml</configLocation>
@@ -164,8 +163,6 @@
                             <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
                         </sourceDirectories>
 
-
-                        <encoding>UTF-8</encoding>
                         <consoleOutput>true</consoleOutput>
 
                         <failsOnError>true</failsOnError>
@@ -189,7 +186,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.0</version>
+                    <version>3.2.5</version>
                     <configuration>
                         <trimStackTrace>false</trimStackTrace>
                         <groups>${tests}</groups>
@@ -198,13 +195,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.22.0</version>
+                    <version>3.2.5</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.0-M5</version>
+                    <version>3.0.1</version>
                     <configuration>
                         <tagNameFormat>v@{project.version}</tagNameFormat>
                     </configuration>
@@ -230,13 +227,33 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.5.2.0</version>
+                <version>4.8.4.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
+                <version>3.1.1</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>

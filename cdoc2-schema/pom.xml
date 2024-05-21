@@ -22,7 +22,6 @@
         <!-- flatbuffers-java (java) library. Must be supported by flatbuffers-compiler-->
         <!-- see https://github.com/davidmoten/flatbuffers for supported versions -->
         <flatbuffers-java.version>2.0.8</flatbuffers-java.version>
-        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../cdoc2-schema/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <!-- profiles for flatc compiler -->
@@ -92,7 +91,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.6.1</version>
                 <executions>
                     <execution>
                         <id>unpack</id>
@@ -143,7 +142,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.5.0</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -162,7 +161,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
+                <version>3.1.1</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>
