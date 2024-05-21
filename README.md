@@ -138,6 +138,7 @@ cdoc2-java-ref-impl does not provide solution for securely storing the secret, b
 
 - cdoc2-schema  - flatbuffers schemas and code generation
 - cdoc2-lib     - CDOC2 creation and processing library
+- cdoc2-client  - Optional client for server backend
 - cdoc2-cli     - Command line utility to create/process CDOC2 files
 - test          - Sample CDOC2 containers (with script to create and decrypt them) 
                   and automated tests for CLI

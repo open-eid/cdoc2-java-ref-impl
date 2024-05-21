@@ -191,6 +191,25 @@ create_symmetric_longfilename() {
   fi
 }
 
+create_password() {
+  local cdoc_file="password.cdoc"
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
+    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud" ${CDOC_DIR}/README.md
+  fi
+  echo
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
+    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud" -o ${TMP_DIR}
+  fi
+}
+
+
 create_zipbomb() {
   #over 8GB files require POSIX tar long file extension
   local cdoc_file="zipbomb.cdoc"
@@ -232,7 +251,9 @@ create_simple_rsa
 create_rsa_server_ria_dev_pkcs12
 create_symmetric
 create_symmetric_longfilename
+create_password
 create_zipbomb
+
 
 
 
