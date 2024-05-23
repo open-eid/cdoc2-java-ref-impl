@@ -10,6 +10,10 @@ test:
     - mvn clean verify -s $MAVEN_SETTINGS -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
     - shopt -s globstar
     - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print "Total", 100*covered/instructions, "% covered" }' /builds/**/target/site/jacoco/jacoco.csv
+    - cd test/bats
+    - source install_bats.sh
+    - source variables.sh 
+    - $BATS_HOME/bats-core/bin/bats cdoc2_tests.bats
   coverage: /Total \d+\.\d+ %/
   artifacts:
     when: always
