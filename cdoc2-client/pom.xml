@@ -16,6 +16,7 @@
         <spotbugs-annotations.version>4.7.3</spotbugs-annotations.version>
         <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.0.0</cdoc2-key-capsules-openapi.version>
+        <maven.repository.url>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</maven.repository.url>
     </properties>
 
     <repositories>
@@ -153,7 +154,7 @@
                             <version>${cdoc2-key-capsules-openapi.version}</version>
                             <packaging>yaml</packaging>
                             <!-- can be removed when copied to cdoc2-java-ref-impl repo -->
-                            <remoteRepositories>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</remoteRepositories>
+                            <remoteRepositories>${maven.repository.url}</remoteRepositories>
                         </configuration>
                     </execution>
 
