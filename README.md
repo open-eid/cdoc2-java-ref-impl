@@ -202,32 +202,14 @@ service haveged start
 
 See `cdoc2-cli/README.md`
 
-## Releasing
+## Releasing and version management
 
-First update CHANGELOG.md - follow semantic versioning
+See [VERSIONING.md](VERSIONING.md)
 
-Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git
 
-# Non-Interactive mode without pushing changes (for release simulation)
-```
-mvn release:clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdryRun=true -DpushChanges=false
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
-```
 
-# Non-Interactive mode
-```
-mvn release:clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdeveloperConnectionUrl=scm:git:${git.repo.url}"
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
-```
 
-Verify that git repositories are synced (master points to same commit) and the tag is pushed (using `git push <remote> v{x.y.z}`).
 
-As maven repository doesn't exist yet, then maven deploy is not performed
-
-For more info, see
-[Maven Non-interactive Release](https://maven.apache.org/maven-release/maven-release-plugin/examples/non-interactive-release.html)
 
 
 
