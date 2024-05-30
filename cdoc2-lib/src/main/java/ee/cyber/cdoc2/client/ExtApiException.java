@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.client;
 
-import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+
 
 /**
  * ExtApiException indicates that calling external API has failed. Similar to generated

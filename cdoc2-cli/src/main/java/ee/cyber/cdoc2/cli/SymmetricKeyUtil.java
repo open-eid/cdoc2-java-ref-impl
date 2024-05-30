@@ -12,7 +12,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;

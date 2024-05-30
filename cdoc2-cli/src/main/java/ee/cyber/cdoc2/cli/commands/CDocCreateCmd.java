@@ -3,7 +3,7 @@ package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc2.CDocBuilder;
-import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
+
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs

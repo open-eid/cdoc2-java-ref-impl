@@ -2,7 +2,7 @@ package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -11,6 +11,7 @@ import ee.cyber.cdoc2.fbs.recipients.RsaKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
+
 
 /**
  * RSA-OAEP recipient using RsaKeyDetails. POJO of flatbuffers
@@ -72,4 +73,5 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serialize(this, builder);
     }
+
 }

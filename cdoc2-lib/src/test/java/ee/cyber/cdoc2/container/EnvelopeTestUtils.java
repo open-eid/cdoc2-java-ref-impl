@@ -8,8 +8,8 @@ import ee.cyber.cdoc2.crypto.keymaterial.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.CDocException;
-import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
@@ -54,6 +54,7 @@ import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public final class EnvelopeTestUtils {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTestUtils.class);

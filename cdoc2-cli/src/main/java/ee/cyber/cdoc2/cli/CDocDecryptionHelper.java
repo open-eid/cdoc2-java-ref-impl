@@ -9,13 +9,14 @@ import java.util.Properties;
 
 import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+
 
 /**
  * Utility class for building {@link CDocDecrypter}.

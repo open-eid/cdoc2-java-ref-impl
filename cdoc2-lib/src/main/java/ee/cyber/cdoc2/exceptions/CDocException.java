@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2;
+package ee.cyber.cdoc2.exceptions;
 
 
 public class CDocException extends Exception {

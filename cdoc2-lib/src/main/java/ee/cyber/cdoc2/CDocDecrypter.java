@@ -4,6 +4,8 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 

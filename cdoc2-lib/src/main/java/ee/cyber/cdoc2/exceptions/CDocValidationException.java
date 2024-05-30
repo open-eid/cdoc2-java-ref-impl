@@ -1,4 +1,5 @@
-package ee.cyber.cdoc2;
+package ee.cyber.cdoc2.exceptions;
+
 
 public class CDocValidationException extends Exception {
 
@@ -9,4 +10,5 @@ public class CDocValidationException extends Exception {
     public CDocValidationException(String msg, Throwable cause) {
         super(msg, cause);
     }
+
 }

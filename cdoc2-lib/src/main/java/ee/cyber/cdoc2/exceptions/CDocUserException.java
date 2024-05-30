@@ -1,4 +1,7 @@
-package ee.cyber.cdoc2;
+package ee.cyber.cdoc2.exceptions;
+
+import ee.cyber.cdoc2.UserErrorCode;
+
 
 /**
  * CDOC2exception with error code.
@@ -28,4 +31,5 @@ public class CDocUserException extends RuntimeException {
     public String toString() {
         return String.format("errorCode: %s, errorMessage: %s", this.errorCode, this.getMessage());
     }
+
 }
