@@ -15,7 +15,7 @@
 
         <spotbugs-annotations.version>4.7.3</spotbugs-annotations.version>
         <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
-        <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
+        <cdoc2-key-capsules-openapi.version>sid2.1.0</cdoc2-key-capsules-openapi.version>
     </properties>
 
     <repositories>
