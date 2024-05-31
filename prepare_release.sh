@@ -3,20 +3,20 @@
 GIT_BRANCH=$(git branch --show-current)
 
 if [[ "master" != "$GIT_BRANCH" ]]; then
-  echo "Not on 'master' branch. You have 5 seconds to abort, before script will continue"
+  echo "Release will be made from branch $GIT_BRANCH."
   sleep 5
 fi
 
 
-#if [[ -n $(git cherry -v) ]]; then
-#  echo "Detected unpushed commits. Exit"
-#  exit 1
-#fi
-#
-#if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
-#  echo "Uncommited changes detected. Exit"
-#  exit 1
-#fi
+if [[ -n $(git cherry -v) ]]; then
+  echo "Detected unpushed commits. Exit"
+  exit 1
+fi
+
+if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
+  echo "Uncommitted changes detected. Exit"
+  exit 1
+fi
 
 while getopts "v:" opt; do
   case $opt in
