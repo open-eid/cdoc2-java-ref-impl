@@ -44,7 +44,7 @@ run_alias() {
 @test "CDOC2 version is found" {
   run echo $CDOC2_VER
   echo "# $CDOC2_VER">&3
-  assert_output --partial 'SNAPSHOT'
+  assert_output --regexp '^[0-9]+\.[0-9]+\.[0-9].*$'
 }
 
 @test "preparing: assert BATS_HOME value exists" {
