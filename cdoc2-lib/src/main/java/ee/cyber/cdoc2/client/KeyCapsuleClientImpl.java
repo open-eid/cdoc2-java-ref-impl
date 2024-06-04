@@ -5,6 +5,7 @@ import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.model.Capsule;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.Resources;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -19,6 +20,8 @@ import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getInteger;
 
 
 /**
@@ -47,7 +50,9 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
     }
 
-    public static KeyCapsuleClient create(Properties p) throws GeneralSecurityException, IOException {
+    public static KeyCapsuleClient create(Properties p)
+        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
+
         return create(p, true);
     }
 
@@ -65,16 +70,16 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @throws IOException
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
-        throws GeneralSecurityException, IOException {
+        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
 
         String serverId = p.getProperty("cdoc2.client.server.id");
 
         var builder = Cdoc2KeyCapsuleApiClient.builder();
         builder.withTrustKeyStore(loadTrustKeyStore(p));
 
-        getInteger(p, "cdoc2.client.server.connect-timeout")
+        getInteger(log, p, "cdoc2.client.server.connect-timeout")
             .ifPresent(builder::withConnectTimeoutMs);
-        getInteger(p, "cdoc2.client.server.read-timeout")
+        getInteger(log, p, "cdoc2.client.server.read-timeout")
             .ifPresent(builder::withReadTimeoutMs);
         getBoolean(p, "cdoc2.client.server.debug")
             .ifPresent(builder::withDebuggingEnabled);
@@ -92,7 +97,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         if (initMutualTlsClient) {
             clientKeyStore = loadClientKeyStore(p);
             builder.withClientKeyStore(clientKeyStore);
-            builder.withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p));
+            builder.withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParameter(p));
             builder.withBaseUrl(getBaseUrl);
             getClient = builder.build();
         }
@@ -100,11 +105,13 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return new KeyCapsuleClientImpl(serverId, postClient, getClient, clientKeyStore);
     }
 
-    public static KeyCapsuleClientFactory createFactory(Properties p) throws GeneralSecurityException, IOException {
+    public static KeyCapsuleClientFactory createFactory(Properties p)
+        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
+
         return (KeyCapsuleClientFactory) create(p);
     }
 
-    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
+    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter(Properties  p) {
         String prompt = p.getProperty("cdoc2.client.ssl.client-store-password.prompt");
         if (prompt != null) {
             log.debug("Using interactive client KS protection param");
@@ -156,7 +163,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
         } else if ("PKCS11".equalsIgnoreCase(type)) {
             String openScLibPath = loadPkcs11LibPath(p);
-            KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParamater(p);
+            KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParameter(p);
 
             // default slot 0 - Isikutuvastus
             clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
@@ -297,18 +304,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
     private static Optional<Boolean> getBoolean(Properties p, String name) {
         return Optional.ofNullable(p.getProperty(name)).map(Boolean::parseBoolean);
-    }
-
-    private static Optional<Integer> getInteger(Properties p, String name) {
-        try {
-            return Optional.ofNullable(p.getProperty(name)).map(Integer::parseInt);
-        } catch (NumberFormatException nfe) {
-            log.warn(
-                "Invalid int value {} for property {}. Ignoring.",
-                p.getProperty(name), name
-            );
-            return Optional.empty();
-        }
     }
 
     @Override

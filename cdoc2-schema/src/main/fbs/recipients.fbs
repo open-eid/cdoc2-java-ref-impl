@@ -78,9 +78,21 @@ table KeyShare {
     share_id:  string (required);
 }
 
+enum KeyShareRecipientType:byte {
+    UNKNOWN,
+    SID_MID
+}
+
+enum SharesScheme:byte {
+    UNKNOWN,
+    N_OF_N
+}
 
 // SymmetricKey that is split between keyservers using Shamir Secret Sharing scheme
 table KeySharesCapsule {
     shares:               [KeyShare] (required);
     salt:                 [ubyte] (required);
+    recipient_type:       KeyShareRecipientType = UNKNOWN;
+    shares_scheme:        SharesScheme = UNKNOWN;
+    recipient_id:         string (required);
 }

@@ -13,6 +13,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +68,9 @@ public class CDocBuilder {
         return this;
     }
 
-    public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
+    public void buildToFile(File outputCDocFile)
+        throws CDocException, IOException, CDocValidationException, ConfigurationLoadingException {
+
         if (outputCDocFile == null) {
             throw new CDocValidationException("Must provide CDOC output filename ");
         }
@@ -84,7 +87,7 @@ public class CDocBuilder {
     }
 
     private void buildToOutputStreamFromFiles(OutputStream outputStream)
-        throws CDocException, CDocValidationException, IOException {
+        throws CDocException, CDocValidationException, IOException, ConfigurationLoadingException {
         validate();
 
         try {
@@ -109,7 +112,7 @@ public class CDocBuilder {
     }
 
     private Envelope prepareEnvelope()
-        throws ExtApiException, GeneralSecurityException, IOException {
+        throws ExtApiException, GeneralSecurityException, IOException, ConfigurationLoadingException {
         if (serverProperties == null) {
             return Envelope.prepare(recipients, null);
         } else {
@@ -240,4 +243,5 @@ public class CDocBuilder {
             }
         }
     }
+
 }

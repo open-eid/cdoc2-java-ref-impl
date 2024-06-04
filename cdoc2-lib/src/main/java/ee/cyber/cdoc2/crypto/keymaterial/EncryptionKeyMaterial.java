@@ -4,6 +4,7 @@ import java.security.PublicKey;
 import javax.crypto.SecretKey;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.SemanticIdentification;
 
 
 /**
@@ -58,6 +59,17 @@ public interface EncryptionKeyMaterial {
         char[] password, String keyLabel
     ) {
         return new PasswordEncryptionKeyMaterial(password, keyLabel);
+    }
+
+    /**
+     * Create KeyShareEncryptionKeyMaterial for key share scheme.
+     * To decrypt CDOC, recipient must also have same preSharedKey and salt that are identified by
+     * the same recipient id
+     * @param semanticIdentifier unique identifiers for preSharedKey
+     * @return KeyShareEncryptionKeyMaterial object
+     */
+    static KeyShareEncryptionKeyMaterial fromAuthMeans(SemanticIdentification semanticIdentifier) {
+        return new KeyShareEncryptionKeyMaterial(semanticIdentifier);
     }
 
 }

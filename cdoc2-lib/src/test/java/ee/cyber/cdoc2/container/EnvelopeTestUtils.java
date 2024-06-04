@@ -14,6 +14,7 @@ import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.ChaChaCipher;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
@@ -57,8 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public final class EnvelopeTestUtils {
-    private static final Logger log = LoggerFactory.getLogger(EnvelopeTestUtils.class);
 
+    private static final Logger log = LoggerFactory.getLogger(EnvelopeTestUtils.class);
 
     private EnvelopeTestUtils() {
     }
@@ -347,7 +348,7 @@ public final class EnvelopeTestUtils {
         EncryptionKeyMaterial encKeyMaterial,
         @Nullable List<File> additionalFiles,
         @Nullable Properties serverProperties
-    ) throws IOException, CDocException, CDocValidationException {
+    ) throws IOException, CDocException, CDocValidationException, ConfigurationLoadingException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
             payloadFos.write(payloadData);
