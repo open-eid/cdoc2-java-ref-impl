@@ -16,6 +16,7 @@ import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 
 /**
@@ -73,7 +74,7 @@ public final class CDocDecryptionHelper {
 
     public static KeyCapsuleClientFactory getKeyCapsulesClientFactory(
         String keyServerPropertiesFile
-    ) throws GeneralSecurityException, IOException {
+    ) throws GeneralSecurityException, IOException, ConfigurationLoadingException {
         Properties p = CDocCommonHelper.getServerProperties(keyServerPropertiesFile);
 
         return KeyCapsuleClientImpl.createFactory(p);

@@ -4,6 +4,8 @@ import java.security.KeyPair;
 import javax.crypto.SecretKey;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.SemanticIdentification;
+
 
 /**
  * Represents key material required for decryption.
@@ -36,6 +38,10 @@ public interface DecryptionKeyMaterial {
 
     static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair) {
         return new KeyPairDecryptionKeyMaterial(recipientKeyPair);
+    }
+
+    static DecryptionKeyMaterial fromAuthMeans(SemanticIdentification semanticIdentifier) {
+        return new KeyShareDecryptionKeyMaterial(semanticIdentifier);
     }
 
 }

@@ -1,11 +1,14 @@
 package ee.cyber.cdoc2.crypto;
 
-import java.io.InputStream;
-import java.util.Optional;
-import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+
+import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
+import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
+
 
 /**
  * Test configuration for running PKCS11 tests using a hardware device.
@@ -35,33 +38,24 @@ public record Pkcs11DeviceConfiguration(
      * e.g -D cdoc2.pkcs11.test-configuration=pkcs11-test-idcard.properties
      *
      */
-    public static Pkcs11DeviceConfiguration load() {
+    public static Pkcs11DeviceConfiguration load() throws ConfigurationLoadingException {
         String filename = System.getProperty("cdoc2.pkcs11.conf-file", "pkcs11-test-idcard.properties");
         return loadFromPropertiesFile(filename);
     }
 
-    private static Pkcs11DeviceConfiguration loadFromPropertiesFile(String filename) {
-        log.info("Loading PKCS11 device configuration from {}", filename);
+    private static Pkcs11DeviceConfiguration loadFromPropertiesFile(String fileClasspath)
+        throws ConfigurationLoadingException {
 
-        try (InputStream is = Pkcs11Test.class.getClassLoader().getResourceAsStream(filename)) {
-            var properties = new Properties();
-            properties.load(is);
+        log.info("Loading PKCS11 device configuration from {}", fileClasspath);
+        var properties = loadProperties(fileClasspath);
 
-            return new Pkcs11DeviceConfiguration(
-                getRequiredProperty(properties, "pkcs11.library"),
-                Integer.parseInt(getRequiredProperty(properties, "pkcs11.slot")),
-                properties.getProperty("pkcs11.key-alias"),
-                getRequiredProperty(properties, "pkcs11.pin").toCharArray(),
-                getRequiredProperty(properties, "pkcs11.cert.cn")
-            );
-        } catch (Exception e) {
-            log.error("Failed to read pkcs11 device properties", e);
-            throw new RuntimeException(e);
-        }
+        return new Pkcs11DeviceConfiguration(
+            getRequiredProperty(properties, "pkcs11.library"),
+            Integer.parseInt(getRequiredProperty(properties, "pkcs11.slot")),
+            properties.getProperty("pkcs11.key-alias"),
+            getRequiredProperty(properties, "pkcs11.pin").toCharArray(),
+            getRequiredProperty(properties, "pkcs11.cert.cn")
+        );
     }
 
-    private static String getRequiredProperty(Properties properties, String property) {
-        return Optional.ofNullable(properties.getProperty(property))
-            .orElseThrow(() -> new IllegalArgumentException("Required property '" + property + "' not found"));
-    }
 }

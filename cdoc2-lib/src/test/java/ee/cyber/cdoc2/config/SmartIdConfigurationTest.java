@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2;
+package ee.cyber.cdoc2.config;
 
 import org.junit.jupiter.api.Test;
 
