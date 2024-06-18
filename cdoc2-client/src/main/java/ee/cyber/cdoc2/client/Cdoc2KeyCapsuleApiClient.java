@@ -13,6 +13,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,11 +27,13 @@ import jakarta.ws.rs.client.ClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Client for creating and getting CDOC2 key capsules from key server. Provides Builder to initialize mutual TLS
  * from PKCS11 (smart-card) or PKCS12 (software) key stores.
  */
 public final class Cdoc2KeyCapsuleApiClient {
+
     private static final Logger log = LoggerFactory.getLogger(Cdoc2KeyCapsuleApiClient.class);
 
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
@@ -76,7 +79,7 @@ public final class Cdoc2KeyCapsuleApiClient {
         /**
          * Init server base url
          * @param url server base url, example https://host:8443
-         * @return
+         * @return client builder
          */
         public Builder withBaseUrl(String url) {
             this.baseUrl = url;
@@ -86,7 +89,7 @@ public final class Cdoc2KeyCapsuleApiClient {
         /**
          * Client keystore used for mutual TLS
          * @param clientKS client key store containing client keys for mutual TLS or null, if mTLS is not used
-         * @return
+         * @return client builder
          */
         public Builder withClientKeyStore(@Nullable KeyStore clientKS) {
             this.clientKeyStore = clientKS;
@@ -111,7 +114,7 @@ public final class Cdoc2KeyCapsuleApiClient {
          *                     "passwd".toCharArray());
          *</code>
          * @param trustKS initialized trusted key store to be used by TLS
-         * @return
+         * @return client builder
          */
         public Builder withTrustKeyStore(KeyStore trustKS) {
             this.trustKeyStore = trustKS;
@@ -172,7 +175,7 @@ public final class Cdoc2KeyCapsuleApiClient {
 
             apiClient.setDebugging(debug);
             apiClient.addDefaultHeader("Accept", "application/json");
-            apiClient.selectHeaderAccept(new String[]{"application/json"});
+            apiClient.selectHeaderAccept("application/json");
 
             apiClient.setUserAgent(userAgent);
 
@@ -226,11 +229,21 @@ public final class Cdoc2KeyCapsuleApiClient {
     }
 
     /**
-     * @param capsule
+     * @param capsule key capsule
      * @return transactionId
-     * @throws ApiException
+     * @throws ApiException if capsule creation has failed
      */
     public String createCapsule(Capsule capsule) throws ApiException {
+        return createCapsule(capsule, null);
+    }
+
+    /**
+     * @param capsule key capsule
+     * @param xExpiryTime capsule expiry time (optional)
+     * @return transactionId
+     * @throws ApiException if capsule creation has failed
+     */
+    public String createCapsule(Capsule capsule, @Nullable OffsetDateTime xExpiryTime) throws ApiException {
 
         Objects.requireNonNull(capsule);
         Objects.requireNonNull(capsule.getCapsuleType());
@@ -240,7 +253,7 @@ public final class Cdoc2KeyCapsuleApiClient {
         Objects.requireNonNull(capsule.getRecipientId());
         Objects.requireNonNull(capsule.getEphemeralKeyMaterial());
 
-        ApiResponse<Void> response = capsulesApi.createCapsuleWithHttpInfo(capsule);
+        ApiResponse<Void> response = capsulesApi.createCapsuleWithHttpInfo(capsule, xExpiryTime);
         String locationHeaderValue = null;
         if (response.getStatusCode() == 201
                 && response.getHeaders() != null
@@ -267,17 +280,16 @@ public final class Cdoc2KeyCapsuleApiClient {
     }
 
     /**
-     *
-     * @param id
+     * @param transactionId transaction ID
      * @return Optional with value, if server returned 200 or empty Optional if 404
      * @throws ApiException if http response code is something else that 200 or 404
      */
-    public Optional<Capsule> getCapsule(String id) throws ApiException {
-        if (id == null) {
+    public Optional<Capsule> getCapsule(String transactionId) throws ApiException {
+        if (transactionId == null) {
             throw new IllegalArgumentException("transactionId cannot be null");
         }
 
-        ApiResponse<Capsule> response = capsulesApi.getCapsuleByTransactionIdWithHttpInfo(id);
+        ApiResponse<Capsule> response = capsulesApi.getCapsuleByTransactionIdWithHttpInfo(transactionId);
 
         switch (response.getStatusCode()) {
             case 200:

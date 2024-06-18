@@ -13,12 +13,14 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * KeyCapsuleClient initialization from properties file.
@@ -32,17 +34,23 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     @Nullable
     private KeyStore clientKeyStore; //initialised only from #create(Properties)
 
-    private KeyCapsuleClientImpl(String serverIdentifier, Cdoc2KeyCapsuleApiClient postClient,
-                                 Cdoc2KeyCapsuleApiClient getClient, @Nullable KeyStore clientKeyStore) {
+    private KeyCapsuleClientImpl(
+        String serverIdentifier,
+        Cdoc2KeyCapsuleApiClient postClient,
+        Cdoc2KeyCapsuleApiClient getClient,
+        @Nullable KeyStore clientKeyStore
+    ) {
         this.serverId = serverIdentifier;
         this.postClient = postClient;
         this.getClient = getClient;
         this.clientKeyStore = clientKeyStore;
     }
 
-    public static KeyCapsuleClient create(String serverIdentifier,
-                                           Cdoc2KeyCapsuleApiClient postClient,
-                                           Cdoc2KeyCapsuleApiClient getClient) {
+    public static KeyCapsuleClient create(
+        String serverIdentifier,
+        Cdoc2KeyCapsuleApiClient postClient,
+        Cdoc2KeyCapsuleApiClient getClient
+    ) {
         return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
     }
 
@@ -60,8 +68,9 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *            If false and {@link KeyCapsuleClient#getCapsule(String)} is called, then IllegalStateException is
      *            thrown.
      * @return KeyCapsulesClient
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @throws GeneralSecurityException if client key store loading or client initialization has
+     *                                  failed
+     * @throws IOException if trusted key store loading has failed
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
             throws GeneralSecurityException, IOException {
@@ -69,22 +78,22 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         String serverId = p.getProperty("cdoc2.client.server.id");
 
         Cdoc2KeyCapsuleApiClient.Builder builder = Cdoc2KeyCapsuleApiClient.builder()
-                .withTrustKeyStore(loadTrustKeyStore(p));
+            .withTrustKeyStore(loadTrustKeyStore(p));
 
         getInteger(p, "cdoc2.client.server.connect-timeout")
-                .ifPresent(builder::withConnectTimeoutMs);
+            .ifPresent(builder::withConnectTimeoutMs);
         getInteger(p, "cdoc2.client.server.read-timeout")
-                .ifPresent(builder::withReadTimeoutMs);
+            .ifPresent(builder::withReadTimeoutMs);
         getBoolean(p, "cdoc2.client.server.debug")
-                .ifPresent(builder::withDebuggingEnabled);
+            .ifPresent(builder::withDebuggingEnabled);
 
         String postBaseUrl = p.getProperty("cdoc2.client.server.base-url.post");
         String getBaseUrl = p.getProperty("cdoc2.client.server.base-url.get");
 
         // postClient can be configured with client key store,
         Cdoc2KeyCapsuleApiClient postClient = builder
-                .withBaseUrl(postBaseUrl)
-                .build();
+            .withBaseUrl(postBaseUrl)
+            .build();
 
         // client key store configuration required
         Cdoc2KeyCapsuleApiClient getClient = null;
@@ -92,10 +101,10 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         if (initMutualTlsClient) {
             clientKeyStore = loadClientKeyStore(p);
             getClient = builder
-                    .withClientKeyStore(clientKeyStore)
-                    .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParamater(p))
-                    .withBaseUrl(getBaseUrl)
-                    .build();
+                .withClientKeyStore(clientKeyStore)
+                .withClientKeyStoreProtectionParameter(loadClientKeyStoreProtectionParameter(p))
+                .withBaseUrl(getBaseUrl)
+                .build();
         }
 
         return new KeyCapsuleClientImpl(serverId, postClient, getClient, clientKeyStore);
@@ -105,7 +114,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return (KeyCapsuleClientFactory) create(p);
     }
 
-    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParamater(Properties  p) {
+    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter(Properties  p) {
         String prompt = p.getProperty("cdoc2.client.ssl.client-store-password.prompt");
         if (prompt != null) {
             log.debug("Using interactive client KS protection param");
@@ -124,6 +133,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     /**
      *
      * @param p properties to load the key store
+     * @return client key store or null if not defined in properties
      * @throws KeyStoreException if no Provider supports a KeyStoreSpi implementation for the specified type in
      *      properties file
      * @throws IOException – if an I/O error occurs,
@@ -131,7 +141,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
-     * @return client key store or null if not defined in properties
      * @KeyStoreException
      * @IOException
      */
@@ -153,11 +162,11 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             String passwd = p.getProperty("cdoc2.client.ssl.client-store-password");
 
             clientKeyStore.load(Resources.getResourceAsStream(clientStoreFile),
-                    (passwd != null) ? passwd.toCharArray() : null);
+                (passwd != null) ? passwd.toCharArray() : null);
 
         } else if ("PKCS11".equalsIgnoreCase(type)) {
             String openScLibPath = loadPkcs11LibPath(p);
-            KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParamater(p);
+            KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParameter(p);
 
             // default slot 0 - Isikutuvastus
             clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
@@ -178,7 +187,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
         return System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY,
-                p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
+            p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
     }
 
     /**
@@ -207,18 +216,23 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
         trustKeyStore = KeyStore.getInstance(type);
         trustKeyStore.load(Resources.getResourceAsStream(trustStoreFile),
-                (passwd != null) ? passwd.toCharArray() : null);
+            (passwd != null) ? passwd.toCharArray() : null);
 
         return trustKeyStore;
     }
 
     @Override
     public String storeCapsule(Capsule capsule) throws ExtApiException {
+        return storeCapsule(capsule, null);
+    }
+
+    @Override
+    public String storeCapsule(Capsule capsule, @Nullable OffsetDateTime xExpiryTime) throws ExtApiException {
         Objects.requireNonNull(postClient);
 
         String result = null;
         try {
-            result = postClient.createCapsule(capsule);
+            result = postClient.createCapsule(capsule, xExpiryTime);
         } catch (Exception e) {
             log.error("Failed to create capsule", e);
             handleOpenApiException(e);
@@ -318,13 +332,14 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         if (o == null || getClass() != o.getClass()) return false;
         KeyCapsuleClientImpl that = (KeyCapsuleClientImpl) o;
         return Objects.equals(serverId, that.serverId)
-                && Objects.equals(postClient, that.postClient)
-                && Objects.equals(getClient, that.getClient)
-                && Objects.equals(clientKeyStore, that.clientKeyStore);
+            && Objects.equals(postClient, that.postClient)
+            && Objects.equals(getClient, that.getClient)
+            && Objects.equals(clientKeyStore, that.clientKeyStore);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(serverId, postClient, getClient, clientKeyStore);
     }
+
 }

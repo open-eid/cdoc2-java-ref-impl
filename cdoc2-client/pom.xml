@@ -4,11 +4,11 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>1.2.0</version>
+        <version>1.3.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0-SNAPSHOT</version>
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
@@ -19,7 +19,7 @@
 
         <spotbugs-annotations.version>4.7.3</spotbugs-annotations.version>
         <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
-        <cdoc2-key-capsules-openapi.version>2.0.0</cdoc2-key-capsules-openapi.version>
+        <cdoc2-key-capsules-openapi.version>2.1.0-SNAPSHOT</cdoc2-key-capsules-openapi.version>
         <maven.repository.url>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</maven.repository.url>
     </properties>
 
@@ -178,6 +178,7 @@
                                     <outputDirectory>${project.build.directory}/openapi</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
+                            <useBaseVersion>true</useBaseVersion>
                         </configuration>
                     </execution>
                 </executions>
@@ -218,7 +219,7 @@
                         <dateLibrary>java8</dateLibrary>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                         <oas3>true</oas3>
-                        <useOptional>true</useOptional>
+                        <useOptional>false</useOptional>
                         <bigDecimalAsString>true</bigDecimalAsString>
                         <legacyDiscriminatorBehavior>false</legacyDiscriminatorBehavior>
                     </configOptions>

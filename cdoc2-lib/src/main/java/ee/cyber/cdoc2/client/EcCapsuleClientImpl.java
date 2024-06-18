@@ -47,7 +47,7 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
                 .recipientId(ECKeys.encodeEcPubKeyForTls(curve, receiverKey))
                 .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(curve, senderKey));
 
-        return keyCapsulesClient.storeCapsule(capsule);
+        return keyCapsulesClient.storeCapsule(capsule, null);
     }
 
     @Override
