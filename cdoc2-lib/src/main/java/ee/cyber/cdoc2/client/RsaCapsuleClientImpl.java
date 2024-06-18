@@ -21,7 +21,7 @@ public class RsaCapsuleClientImpl implements RsaCapsuleClient {
             .recipientId(RsaUtils.encodeRsaPubKey(recipient))
             .ephemeralKeyMaterial(encryptedKek);
 
-        return keyCapsulesClient.storeCapsule(capsule);
+        return keyCapsulesClient.storeCapsule(capsule, null);
     }
 
     @Override

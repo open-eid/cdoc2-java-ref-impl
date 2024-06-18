@@ -218,7 +218,7 @@ class EnvelopeTest {
         final String recipientKeyLabel = "testEccServerSerialization";
 
         when(capsuleClientMock.getServerIdentifier()).thenReturn("mock");
-        when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
+        when(capsuleClientMock.storeCapsule(any(), any())).thenReturn("SD1234567890");
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromPublicKey(recipientPubKey, recipientKeyLabel)),
@@ -267,7 +267,7 @@ class EnvelopeTest {
         final String recipientKeyLabel = "testRsaServerSerialization";
 
         when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_rsa");
-        when(capsuleClientMock.storeCapsule(any())).thenReturn("KC1234567890123456789012");
+        when(capsuleClientMock.storeCapsule(any(), any())).thenReturn("KC1234567890123456789012");
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromPublicKey(publicKey, recipientKeyLabel)),
@@ -408,7 +408,7 @@ class EnvelopeTest {
             capsuleData = (Capsule) invocation.getArguments()[0];
             log.debug("storing capsule {}", capsuleData);
             return transactionId;
-        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class), any());
 
         when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
             log.debug("returning capsule {}", capsuleData);
@@ -417,7 +417,7 @@ class EnvelopeTest {
 
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(keyPair), "testECContainer", capsuleClientMock);
 
-        verify(capsuleClientMock, times(1)).storeCapsule(any());
+        verify(capsuleClientMock, times(1)).storeCapsule(any(), any());
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
@@ -542,7 +542,7 @@ class EnvelopeTest {
             capsuleData = (Capsule) invocation.getArguments()[0];
             log.debug("storing capsule {}", capsuleData);
             return transactionId;
-        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class), any());
 
         when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
             log.debug("returning capsule {}", capsuleData);
@@ -552,7 +552,7 @@ class EnvelopeTest {
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(rsaKeyPair),
             "testContainerUsingRSAKey", capsuleClientMock);
 
-        verify(capsuleClientMock, times(1)).storeCapsule(any());
+        verify(capsuleClientMock, times(1)).storeCapsule(any(), any());
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
         assertEquals(Capsule.CapsuleTypeEnum.RSA, capsuleData.getCapsuleType());
 

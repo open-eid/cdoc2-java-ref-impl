@@ -8,6 +8,9 @@ then
   cd ../..
   export CDOC2_DIR=`pwd`
   export CDOC2_VER=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  cd cdoc2-cli
+  export CDOC2_CLI_VER=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  cd ..
   cd $TESTING_DIR
 fi
 
@@ -17,8 +20,8 @@ then
   cd $TESTING_DIR
 fi
 
-alias cdoc-cli='java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_VER.jar'
-export CDOC2_CMD="java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_VER.jar"
+alias cdoc-cli='java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_CLI_VER.jar'
+export CDOC2_CMD="java -jar $CDOC2_DIR/cdoc2-cli/target/cdoc2-cli-$CDOC2_CLI_VER.jar"
 
 
 cd $TESTING_DIR
