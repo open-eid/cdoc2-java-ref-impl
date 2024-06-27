@@ -116,7 +116,10 @@ public final class Envelope {
         Objects.requireNonNull(recipients);
 
         byte[] fmk = Crypto.generateFileMasterKey();
-        return new Envelope(RecipientFactory.buildRecipients(fmk, recipients, capsuleClient), fmk);
+        return new Envelope(
+            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient),
+            fmk
+        );
     }
 
     /**

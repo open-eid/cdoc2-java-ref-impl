@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2;
 
 import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
@@ -29,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,6 +45,7 @@ public class CDocBuilder {
 
     private List<File> payloadFiles;
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
+    private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
@@ -60,12 +63,19 @@ public class CDocBuilder {
         return this;
     }
 
+    public CDocBuilder withCapsuleExpiryDuration(Duration xExpiryDuration) {
+        this.keyCapsuleExpiryDuration = xExpiryDuration;
+        return this;
+    }
+
     public CDocBuilder withServerProperties(Properties p) {
         this.serverProperties = p;
         return this;
     }
 
-    public void buildToFile(File outputCDocFile) throws CDocException, IOException, CDocValidationException {
+    public void buildToFile(File outputCDocFile)
+        throws CDocException, IOException, CDocValidationException {
+
         if (outputCDocFile == null) {
             throw new CDocValidationException("Must provide CDOC output filename ");
         }
@@ -108,11 +118,19 @@ public class CDocBuilder {
 
     private Envelope prepareEnvelope()
         throws ExtApiException, GeneralSecurityException, IOException {
+
         if (serverProperties == null) {
             return Envelope.prepare(recipients, null);
         } else {
             // for encryption, do not init mTLS client as this might require smart-card
-            return Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
+           KeyCapsuleClient client = KeyCapsuleClientImpl.create(serverProperties, false);
+           if (null != keyCapsuleExpiryDuration) {
+               client.setExpiryDuration(keyCapsuleExpiryDuration);
+           }
+            return Envelope.prepare(
+                recipients,
+                client
+            );
         }
     }
 
@@ -238,4 +256,5 @@ public class CDocBuilder {
             }
         }
     }
+
 }

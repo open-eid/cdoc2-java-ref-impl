@@ -1,6 +1,5 @@
 package ee.cyber.cdoc2.cli.commands;
 
-
 import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.CDocValidationException;
@@ -18,6 +17,8 @@ import picocli.CommandLine.Command;
 
 import java.io.File;
 import java.security.PublicKey;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,12 +29,16 @@ import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
 
+
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
 @Command(name = "create", aliases = {"c", "encrypt"}, showAtFileInUsageHelp = true)
 public class CDocCreateCmd implements Callable<Void> {
+
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
+
+    private static final String DURATION_FORMAT = "P(n)DT(n)H(n)M(n)S";
 
     // default server configuration disabled, until public key server is up and running
     //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost.properties";
@@ -75,7 +80,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
     @Option(names = {"-S", "--server"},
         paramLabel = "FILE.properties",
-        description = "Key server connection properties file"
+        description = "key server connection properties file"
         // default server configuration disabled, until public key server is up and running
         //, arity = "0..1"
         //, fallbackValue = DEFAULT_SERVER_PROPERTIES
@@ -84,6 +89,12 @@ public class CDocCreateCmd implements Callable<Void> {
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     private File[] inputFiles;
+
+    @Option(names = { "-exp", "--expiry" }, paramLabel = DURATION_FORMAT,
+        description = "Key capsule expiry duration",
+        converter = DurationConverter.class
+    )
+    private Duration keyCapsuleExpiryDuration;
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
@@ -123,6 +134,10 @@ public class CDocCreateCmd implements Callable<Void> {
             .withRecipients(recipients)
             .withPayloadFiles(Arrays.asList(inputFiles));
 
+        if (keyCapsuleExpiryDuration != null) {
+            setExpiryDurationOrLogWarn(cDocBuilder);
+        }
+
         if (keyServerPropertiesFile != null) {
             Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
@@ -135,6 +150,16 @@ public class CDocCreateCmd implements Callable<Void> {
         return null;
     }
 
+    private void setExpiryDurationOrLogWarn(CDocBuilder cDocBuilder) {
+        if (null != this.recipient.secrets || null != recipient.password) {
+            String warnMsg = "Key capsule expiry duration cannot be requested for symmetric key "
+                + "encryption";
+            log.warn("WARNING: {}", warnMsg);
+        } else {
+            cDocBuilder.withCapsuleExpiryDuration(keyCapsuleExpiryDuration);
+        }
+    }
+
     private void addSymmetricKeysWithLabels(List<EncryptionKeyMaterial> recipients)
         throws CDocValidationException {
 
@@ -145,6 +170,19 @@ public class CDocCreateCmd implements Callable<Void> {
             FormattedOptionParts password
                 = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password);
             recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
+        }
+    }
+
+    public static class DurationConverter implements CommandLine.ITypeConverter<Duration> {
+        @Override
+        public Duration convert(String arg) {
+            try {
+                return Duration.parse(arg);
+            } catch (DateTimeParseException e) {
+                throw new CommandLine.TypeConversionException(
+                    "Expiry duration format should be " + DURATION_FORMAT
+                );
+            }
         }
     }
 

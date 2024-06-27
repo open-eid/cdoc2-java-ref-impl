@@ -55,9 +55,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class EnvelopeTestUtils {
-    private static final Logger log = LoggerFactory.getLogger(EnvelopeTestUtils.class);
 
+public final class EnvelopeTestUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(EnvelopeTestUtils.class);
 
     private EnvelopeTestUtils() {
     }
@@ -230,7 +231,9 @@ public final class EnvelopeTestUtils {
         }
 
         byte[] cdocContainerBytes;
-        Envelope senderEnvelope = Envelope.prepare(List.of(encKeyMaterial), capsuleClient);
+        Envelope senderEnvelope = Envelope.prepare(
+            List.of(encKeyMaterial), capsuleClient
+        );
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
             cdocContainerBytes = dst.toByteArray();
@@ -376,6 +379,7 @@ public final class EnvelopeTestUtils {
             log.warn("No KeyCapsulesClient for {}", serverId);
             return null;
         };
+
     }
 
 }
