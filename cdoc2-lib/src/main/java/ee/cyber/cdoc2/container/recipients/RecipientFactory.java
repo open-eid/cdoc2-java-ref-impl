@@ -76,7 +76,9 @@ public final class RecipientFactory {
 
         List<Recipient> result = new ArrayList<>(recipientKeys.size());
         for (EncryptionKeyMaterial encKeyMaterial : recipientKeys) {
-            addRecipientsByKeyOrigin(result, serverClient, fmk, encKeyMaterial);
+            addRecipientsByKeyOrigin(
+                result, serverClient, fmk, encKeyMaterial
+            );
         }
 
         return result.toArray(new Recipient[0]);
@@ -90,7 +92,9 @@ public final class RecipientFactory {
     ) throws GeneralSecurityException, ExtApiException {
 
         if (encKeyMaterial instanceof PublicKeyEncryptionKeyMaterial publicKeyMaterial) {
-            addPublicKeyRecipient(recipients, serverClient, fileMasterKey, publicKeyMaterial);
+            addPublicKeyRecipient(
+                recipients, serverClient, fileMasterKey, publicKeyMaterial
+            );
         } else {
             addSymmetricKeyRecipient(
                 recipients,
@@ -288,7 +292,8 @@ public final class RecipientFactory {
         EccPubKeyRecipient eccPubKeyRecipient = buildEccRecipient(fmk, recipientPubKey, keyLabel);
 
         String transactionId = serverClient.storeSenderKey(
-            eccPubKeyRecipient.getRecipientPubKey(), eccPubKeyRecipient.getSenderPubKey()
+            eccPubKeyRecipient.getRecipientPubKey(),
+            eccPubKeyRecipient.getSenderPubKey()
         );
         String serverId = serverClient.getServerIdentifier();
 

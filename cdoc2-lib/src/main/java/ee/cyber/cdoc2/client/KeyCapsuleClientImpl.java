@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.client;
 
+import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.CDocUserException;
@@ -13,6 +14,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,6 +22,8 @@ import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc2.util.DurationUtil.getExpiryTime;
 
 
 /**
@@ -33,6 +37,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     private final Cdoc2KeyCapsuleApiClient getClient; // mTLS client
     @Nullable
     private KeyStore clientKeyStore; //initialised only from #create(Properties)
+    @Nullable
+    private Duration capsuleExpiryDuration; //initialised only when #setExpiryDuration() was called
 
     private KeyCapsuleClientImpl(
         String serverIdentifier,
@@ -222,22 +228,31 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     @Override
-    public String storeCapsule(Capsule capsule) throws ExtApiException {
-        return storeCapsule(capsule, null);
+    public void setExpiryDuration(Duration duration) {
+        this.capsuleExpiryDuration = duration;
     }
 
     @Override
-    public String storeCapsule(Capsule capsule, @Nullable OffsetDateTime xExpiryTime) throws ExtApiException {
+    public String storeCapsule(Capsule capsule) throws ExtApiException {
         Objects.requireNonNull(postClient);
 
         String result = null;
         try {
-            result = postClient.createCapsule(capsule, xExpiryTime);
+            result = createCapsule(capsule);
         } catch (Exception e) {
             log.error("Failed to create capsule", e);
             handleOpenApiException(e);
         }
         return result;
+    }
+
+    private String createCapsule(Capsule capsule) throws ApiException {
+        if (null != capsuleExpiryDuration) {
+            OffsetDateTime expiryTime = getExpiryTime(capsuleExpiryDuration);
+            return postClient.createCapsule(capsule, expiryTime);
+        } else {
+            return postClient.createCapsule(capsule);
+        }
     }
 
     @Override

@@ -58,6 +58,14 @@ Certificate (`-c` option):
 java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc2client-certificate.pem README.md
 ```
 
+Key capsule expiration date can be requested when adding expiry duration:
+```
+-ex P365D
+```
+Default expiration duration will be used if it is not requested by the client. Default and max 
+expiration durations are configurable values in put-server and get-server.
+
+
 ### Encryption with symmetric key
 
 Generate key with openssl (minimum length 32 bytes):

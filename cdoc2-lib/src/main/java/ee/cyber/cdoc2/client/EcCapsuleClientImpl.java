@@ -22,7 +22,10 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
     }
 
     @Override
-    public String storeSenderKey(ECPublicKey receiverKey, ECPublicKey senderKey) throws ExtApiException {
+    public String storeSenderKey(
+        ECPublicKey receiverKey,
+        ECPublicKey senderKey
+    ) throws ExtApiException {
 
         EllipticCurve curve;
         try {
@@ -47,7 +50,7 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
                 .recipientId(ECKeys.encodeEcPubKeyForTls(curve, receiverKey))
                 .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(curve, senderKey));
 
-        return keyCapsulesClient.storeCapsule(capsule, null);
+        return keyCapsulesClient.storeCapsule(capsule);
     }
 
     @Override
@@ -79,4 +82,5 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
     public String getServerIdentifier() {
         return keyCapsulesClient.getServerIdentifier();
     }
+
 }

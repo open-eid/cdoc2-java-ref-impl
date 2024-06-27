@@ -85,6 +85,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+
 // as tests create and write files, and set/read System Properties, then it's safer to run tests isolated
 // some tests can be run parallel, but this is untested
 @Isolated
@@ -167,7 +168,8 @@ class EnvelopeTest {
 
         String keyLabel = "testRsaSerialization";
         Envelope envelope = Envelope.prepare(
-            List.of(EncryptionKeyMaterial.fromPublicKey(publicKey, keyLabel)), null
+            List.of(EncryptionKeyMaterial.fromPublicKey(publicKey, keyLabel)),
+            null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -218,7 +220,7 @@ class EnvelopeTest {
         final String recipientKeyLabel = "testEccServerSerialization";
 
         when(capsuleClientMock.getServerIdentifier()).thenReturn("mock");
-        when(capsuleClientMock.storeCapsule(any(), any())).thenReturn("SD1234567890");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromPublicKey(recipientPubKey, recipientKeyLabel)),
@@ -267,7 +269,7 @@ class EnvelopeTest {
         final String recipientKeyLabel = "testRsaServerSerialization";
 
         when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_rsa");
-        when(capsuleClientMock.storeCapsule(any(), any())).thenReturn("KC1234567890123456789012");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("KC1234567890123456789012");
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromPublicKey(publicKey, recipientKeyLabel)),
@@ -408,7 +410,7 @@ class EnvelopeTest {
             capsuleData = (Capsule) invocation.getArguments()[0];
             log.debug("storing capsule {}", capsuleData);
             return transactionId;
-        }).when(capsuleClientMock).storeCapsule(any(Capsule.class), any());
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
 
         when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
             log.debug("returning capsule {}", capsuleData);
@@ -417,7 +419,7 @@ class EnvelopeTest {
 
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(keyPair), "testECContainer", capsuleClientMock);
 
-        verify(capsuleClientMock, times(1)).storeCapsule(any(), any());
+        verify(capsuleClientMock, times(1)).storeCapsule(any());
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
@@ -542,7 +544,7 @@ class EnvelopeTest {
             capsuleData = (Capsule) invocation.getArguments()[0];
             log.debug("storing capsule {}", capsuleData);
             return transactionId;
-        }).when(capsuleClientMock).storeCapsule(any(Capsule.class), any());
+        }).when(capsuleClientMock).storeCapsule(any(Capsule.class));
 
         when(capsuleClientMock.getCapsule(transactionId)).thenAnswer((Answer<Optional<Capsule>>) invocation -> {
             log.debug("returning capsule {}", capsuleData);
@@ -552,7 +554,7 @@ class EnvelopeTest {
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(rsaKeyPair),
             "testContainerUsingRSAKey", capsuleClientMock);
 
-        verify(capsuleClientMock, times(1)).storeCapsule(any(), any());
+        verify(capsuleClientMock, times(1)).storeCapsule(any());
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
         assertEquals(Capsule.CapsuleTypeEnum.RSA, capsuleData.getCapsuleType());
 
