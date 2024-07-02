@@ -60,7 +60,7 @@ java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.prop
 
 Key capsule expiration date can be requested when adding expiry duration:
 ```
--ex P365D
+-exp P365D
 ```
 Default expiration duration will be used if it is not requested by the client. Default and max 
 expiration durations are configurable values in put-server and get-server.
