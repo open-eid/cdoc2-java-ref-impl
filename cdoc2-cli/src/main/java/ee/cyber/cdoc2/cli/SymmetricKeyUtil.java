@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 
+import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,8 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.SymmetricKeyTools;
 import ee.cyber.cdoc2.util.PasswordValidationUtil;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -38,13 +41,15 @@ public final class SymmetricKeyUtil {
     private static final String SYMMETRIC_KEY_DESCRIPTION = "symmetric key with label. "
         + "Must have format";
 
+    private static final String PW_DESCRIPTION = "password with label. Must have format";
+
     // --secret format description, used in cdoc <cmd> classes
     public static final String SECRET_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
         + " <label>:<secret>. <secret> is a base64 encoded binary. "
         + "It must be prefixed with `base64,`";
 
     // --password format description, used in cdoc <cmd> classes
-    public static final String PASSWORD_DESCRIPTION = SYMMETRIC_KEY_DESCRIPTION
+    public static final String PASSWORD_DESCRIPTION = PW_DESCRIPTION
         + " <label>:<password>. <password> can be plain text or base64 "
         + "encoded binary. In case of base64, it must be prefixed with `base64,`";
 
@@ -140,21 +145,62 @@ public final class SymmetricKeyUtil {
      * aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
      * @param formattedPassword formatted as label:password where 2nd param can be base64 encoded
      *                          bytes or regular utf-8 string. Base64 encoded string must be
-     *                          prefixed with 'base64,', followed by base64 string
+     *                          prefixed with 'base64,', followed by base64 string. If "",
+     *                          then password and label are asked interactively.
+     * @param verifyPw if password should be asked twice to verify that they match (encryption).
      * @return FormattedOptionParts with extracted password and label
      */
-    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword)
+    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword,
+                                                                boolean verifyPw)
         throws CDocValidationException {
         FormattedOptionParts passwordAndLabel;
         if (formattedPassword.isEmpty()) {
-            passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively();
+            passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively(verifyPw);
         } else {
             passwordAndLabel
                 = splitFormattedOption(formattedPassword, EncryptionKeyOrigin.PASSWORD);
-            PasswordValidationUtil.validatePassword(passwordAndLabel.optionChars());
+
+            if (verifyPw) {
+                PasswordValidationUtil.validatePassword(passwordAndLabel.optionChars());
+            }
         }
 
         return passwordAndLabel;
+    }
+
+    /**
+     * Get password for decryption. Ignore user-entered label when there is only one pbkdf  (password) recipient
+     * in CDOC2 header.
+     * @param formattedPassword formatted as label:password where
+     *                          2nd param can be base64 encoded bytes or regular utf-8 string.
+     *                          Base64 encoded string must be
+     *                          prefixed with 'base64,', followed by base64 string. If "",
+     *                          then password and label are asked interactively.
+     * @param pbkdf2Recipients if pbkdf2Recipients.size() == 1 then label is read from CDOC header
+     * @return
+     * @throws CDocValidationException
+     */
+    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword,
+                                                                List<PBKDF2Recipient> pbkdf2Recipients)
+        throws CDocValidationException {
+
+        if (pbkdf2Recipients.size() == 1) {
+            String label = pbkdf2Recipients.get(0).getRecipientKeyLabel();
+            if (formattedPassword.isEmpty()) {
+                char[] pw = InteractiveCommunicationUtil.readPasswordInteractively(System.console(),
+                    InteractiveCommunicationUtil.PROMPT_PASSWORD);
+
+                return new FormattedOptionParts(pw, label, EncryptionKeyOrigin.PASSWORD);
+            } else {
+                FormattedOptionParts parsed =
+                    splitFormattedOption(formattedPassword, EncryptionKeyOrigin.PASSWORD);
+                //overwrite label with recipient label to allow entering password without label for
+                //single pbkdfRecipient eg -pw ":pw"
+                return new FormattedOptionParts(parsed.optionChars(), label, EncryptionKeyOrigin.PASSWORD);
+            }
+        } else {
+            return getSplitPasswordAndLabel(formattedPassword, false);
+        }
     }
 
     /**
@@ -174,10 +220,10 @@ public final class SymmetricKeyUtil {
      * @throws IOException if header parsing has failed
      * @throws CDocParseException if recipients deserializing has failed
      */
-    public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromSymmetricKey(
+    public static DecryptionKeyMaterial extractDecryptionKeyMaterial(
         Path cDocFilePath,
-        String formattedPassword,
-        String formattedSecret
+        @Nullable String formattedPassword,
+        @Nullable String formattedSecret
     ) throws CDocValidationException,
         GeneralSecurityException,
         IOException,
@@ -185,9 +231,14 @@ public final class SymmetricKeyUtil {
 
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cDocFilePath));
 
+
         DecryptionKeyMaterial decryptionKm = null;
         if (null != formattedPassword) {
-            FormattedOptionParts splitPassword = getSplitPasswordAndLabel(formattedPassword);
+            List<PBKDF2Recipient> pbkdf2Recipients = recipients.stream()
+                .filter(recipient -> recipient instanceof PBKDF2Recipient)
+                .map(r -> (PBKDF2Recipient)r).toList();
+
+            FormattedOptionParts splitPassword = getSplitPasswordAndLabel(formattedPassword, pbkdf2Recipients);
             decryptionKm =
                 SymmetricKeyTools.extractDecryptionKeyMaterialFromPassword(splitPassword, recipients);
         }

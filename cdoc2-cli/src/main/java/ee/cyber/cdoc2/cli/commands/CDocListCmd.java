@@ -89,7 +89,7 @@ public class CDocListCmd implements Callable<Void> {
         }
 
         DecryptionKeyMaterial decryptionKm =
-            SymmetricKeyUtil.extractDecryptionKeyMaterialFromSymmetricKey(
+            SymmetricKeyUtil.extractDecryptionKeyMaterial(
                 this.cdocFile.toPath(), this.password, this.secret
             );
 

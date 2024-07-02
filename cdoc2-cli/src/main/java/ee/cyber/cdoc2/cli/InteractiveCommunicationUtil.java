@@ -31,20 +31,24 @@ public final class InteractiveCommunicationUtil {
 
     /**
      * Ask password and label interactively.
+     * @param verifyPw if true then password is asked twice and they must match
      * @return FormattedOptionParts with password chars and label
      * @throws CDocUserException if password wasn't entered
      * @throws IllegalArgumentException if entered passwords don't match
      */
-    public static FormattedOptionParts readPasswordAndLabelInteractively() {
+    public static FormattedOptionParts readPasswordAndLabelInteractively(boolean verifyPw) {
+
         Console console = System.console();
         char[] password = readPasswordInteractively(console, PROMPT_PASSWORD);
         PasswordValidationUtil.validatePassword(password);
 
-        char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
+        if (verifyPw) {
+            char[] reenteredPassword = readPasswordInteractively(console, PROMPT_PASSWORD_REENTER);
 
-        if (!Arrays.equals(password, reenteredPassword)) {
-            log.info("Passwords don't match");
-            throw new IllegalArgumentException("Passwords don't match");
+            if (!Arrays.equals(password, reenteredPassword)) {
+                log.info("Passwords don't match");
+                throw new IllegalArgumentException("Passwords don't match");
+            }
         }
 
         String label = readLabelInteractively(console);
@@ -52,7 +56,7 @@ public final class InteractiveCommunicationUtil {
         return new FormattedOptionParts(password, label, EncryptionKeyOrigin.PASSWORD);
     }
 
-    private static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
+    public static char[] readPasswordInteractively(Console console, String prompt) throws CDocUserException {
         if (console != null) {
             return console.readPassword(prompt);
         } else { //running from IDE, console is null

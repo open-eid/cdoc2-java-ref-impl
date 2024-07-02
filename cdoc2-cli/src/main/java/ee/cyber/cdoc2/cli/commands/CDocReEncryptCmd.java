@@ -135,7 +135,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
         if (null != this.reEncryptPassword) {
             FormattedOptionParts splitPasswordAndLabel
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(this.reEncryptPassword);
+                = SymmetricKeyUtil.getSplitPasswordAndLabel(this.reEncryptPassword, true);
             return SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(splitPasswordAndLabel);
         }
 

@@ -11,6 +11,13 @@ This command will install helper libraries into temporary folder `/target` and a
 into specified release tags. The folder won't be commited and can be deleted manually after testing 
 and recreated again running the command ones more.
 
+#### Expect
+
+For interactive tests, 'expect' tool is used. For Debian based system it can be installed with:
+```bash
+sudo apt-get install expect
+```
+If expect is not installed, then tests that require it, will be skipped.
 
 ## Tests running
 
