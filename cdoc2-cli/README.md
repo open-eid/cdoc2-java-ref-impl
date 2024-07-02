@@ -66,7 +66,7 @@ Default expiration duration will be used if it is not requested by the client. D
 expiration durations are configurable values in put-server and get-server.
 
 
-### Encryption with symmetric key
+### Encryption with symmetric key and password
 
 Generate key with openssl (minimum length 32 bytes):
 ```
@@ -92,7 +92,7 @@ cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACf
 
 Or encrypt with password clear text (note, that password also can be encoded to base64 format, as secret):
 ```
-java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc README.md
 ```
 
 Decryption is done with the same label and key used for encryption
@@ -102,8 +102,14 @@ java -jar target/cdoc2-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetri
 
 Or with the same label and password used for encryption:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
 ```
+
+If cdoc2 file contains only one password, then specifying label is not required and label can be omitted:
+```
+java -jar target/cdoc2-cli-*.jar decrypt --password ":myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
+```
+
 
 Or with the same label and secret used for encryption:
 ```

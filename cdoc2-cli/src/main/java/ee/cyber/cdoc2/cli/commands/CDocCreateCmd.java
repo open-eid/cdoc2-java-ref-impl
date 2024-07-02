@@ -168,7 +168,7 @@ public class CDocCreateCmd implements Callable<Void> {
         );
         if (null != recipient.password) {
             FormattedOptionParts password
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password);
+                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password, true);
             recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
         }
     }

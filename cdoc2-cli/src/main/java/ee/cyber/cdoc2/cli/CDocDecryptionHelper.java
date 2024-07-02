@@ -34,7 +34,7 @@ public final class CDocDecryptionHelper {
         String keyAlias
     ) throws GeneralSecurityException, IOException, CDocValidationException, CDocParseException {
         DecryptionKeyMaterial decryptionKm =
-            SymmetricKeyUtil.extractDecryptionKeyMaterialFromSymmetricKey(
+            SymmetricKeyUtil.extractDecryptionKeyMaterial(
                 cdocFile.toPath(), password, secret
             );
 

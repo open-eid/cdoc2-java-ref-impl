@@ -9,6 +9,14 @@ setup() {
   load "target/bats-file/load"
   DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
   PATH="$DIR:$PATH"
+
+  # check if expect is installed
+  if command -v expect > /dev/null 2>&1; then
+      HAS_EXPECT=true
+  else
+      HAS_EXPECT=false
+  fi
+
 }
 
 
@@ -20,7 +28,9 @@ DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
 CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc"
 CDOC2_CONTAINER=$TEST_RESULTS_DIR/$CDOC2_CONTAINER_NAME
 CLI_KEYS_DIR=$CDOC2_DIR/cdoc2-cli/keys
-PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
+PW="myPlainTextPassword"
+PW_LABEL="passwordlabel"
+PASSWORD_WITH_LABEL="$PW_LABEL:$PW"
 SECRET_WITH_LABEL="mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
 
 #bats run doesn't support alias
@@ -127,8 +137,17 @@ run_alias() {
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
 
+}
+
+@test "test5a: successfully decrypt CDOC2 container from test1 with password and without label" {
+  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw ":$PW" --output $TEST_RESULTS_DIR
+  assertSuccessfulExitCode
+  assert_output --partial "Decrypting $CDOC2_CONTAINER"
+  assertSuccessfulDecryption
+
   removeEncryptedCdoc
 }
+
 
 @test "test6: assert password decryption is compatible with earlier encrypted CDOC2" {
   local earlier_encrypted_cdoc2_file="password_old_version_DO_NOT_DELETE.cdoc"
@@ -225,6 +244,90 @@ run_alias() {
   assertFailure
 
   removeEncryptedCdoc
+}
+
+
+
+# bats test_tags=expect
+@test "test14: interactively encrypt/decrypt with password" {
+  #echo "# HAS_EXPECT $HAS_EXPECT" >&3
+  if (! $HAS_EXPECT) ; then
+    #echo "Skipping ..." >&3
+    skip "'expect' not installed"
+  fi
+
+  # bats doesn't directly support interactive scripts, run expect script
+  tmp_expect_script=$(mktemp --tmpdir=$TEST_RESULTS_DIR)
+  cat >"$tmp_expect_script" <<EOF
+#!/usr/bin/expect -d
+set timeout 3
+spawn $CDOC2_CMD encrypt -pw -f $CDOC2_CONTAINER $FILE_FOR_ENCRYPTION -Dee.cyber.cdoc2.overwrite=true
+expect {
+  "Password is missing. Please enter:" {
+    send "$PW\r"
+  } timeout {
+    exit -1
+  }
+}
+expect {
+  "Re-enter password:" {
+    send "$PW\r"
+  } timeout {
+    exit -1
+  }
+}
+expect {
+  "Please enter label:" {
+    send "$PW_LABEL\r"
+  } timeout {
+    exit -1
+  }
+}
+expect eof
+
+#interact
+
+#return exit code from cdoc-cli
+catch wait result
+exit [lindex \$result 3]
+EOF
+
+  #echo "# expect $tmp_expect_script" >&3
+  chmod +x $tmp_expect_script
+  eval "run $tmp_expect_script"
+
+  assert_success
+
+  # bats doesn't directly support interactive scripts, run expect
+  tmp_expect_decrypt_script=$(mktemp --tmpdir=$TEST_RESULTS_DIR)
+  cat >"$tmp_expect_decrypt_script" <<EOF
+#!/usr/bin/expect -d
+set timeout 3
+spawn $CDOC2_CMD decrypt -pw -f $CDOC2_CONTAINER --output $TEST_RESULTS_DIR -Dee.cyber.cdoc2.overwrite=true
+expect {
+  "Password is missing. Please enter:" {
+    send "$PW\r"
+  } timeout {
+    exit -1
+  }
+}
+expect eof
+
+#return exit code from cdoc-cli
+catch wait result
+exit [lindex \$result 3]
+EOF
+  #echo "# expect $tmp_expect_decrypt_script" >&3
+  chmod +x $tmp_expect_decrypt_script
+  run $tmp_expect_decrypt_script
+
+  assertSuccessfulExitCode
+  assertSuccessfulDecryption
+
+  removeEncryptedCdoc
+
+  rm -rf $tmp_expect_script
+  rm -rf $tmp_expect_decrypt_script
 }
 
 @test "All tests were executed." {
