@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0] '/key-capsules' OAS v2.1.0 support (2024-07-02)
+
+### Features
+
+* Support for '/key-capsules' OAS v2.1.0 in cdoc2-client and cdoc2-cli (added `-exp`  option)
+* cli: Improvements to interactive password asking (Don't ask password twice for decrypt).
+  Label is not required, when CDOC2 file contains single password recipient.
+* Add example project to demonstrate usage of cdoc2-java-ref-impl with cdoc4j (convert cdoc -> cdoc2)
+
 ## [1.2.0 ] Repository split and maintenance (2024-05-30)
 
 ### Features

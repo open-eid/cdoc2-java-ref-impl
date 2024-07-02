@@ -52,8 +52,9 @@ export RELEASE_TAG="v$CDOC2_VER"
 git checkout -b "$RELEASE_BRANCH" || exit 1
 git commit -a -m "Release cdoc2-java-ref-impl version $CDOC2_VER" || exit 1
 git push "$GIT_REMOTE" -u "$RELEASE_BRANCH" || exit 1
-git tag "$RELEASE_TAG" || exit 1
-git push --tags $GIT_REMOTE "$RELEASE_TAG" || exit 1
+# instead of creating release tag on branch, merge to master and then tag
+#git tag "$RELEASE_TAG" || exit 1
+#git push --tags $GIT_REMOTE "$RELEASE_TAG" || exit 1
 echo "Created release branch $RELEASE_BRANCH"
 
 # to delete branch, run:
@@ -76,8 +77,13 @@ fi
 # switch back to original branch
 git checkout $GIT_BRANCH
 
-echo "Created release branch $RELEASE_BRANCH"
-echo "To merge squash back to your branch. Run"
+echo "Release branch candidate $RELEASE_BRANCH"
+echo
+echo "To finish release and merge $RELEASE_BRANCH, run: "
 echo "git merge --squash $RELEASE_BRANCH"
 echo "git commit -m \"Squashed commit from $RELEASE_BRANCH\""
 echo "git push $GIT_REMOTE $GIT_BRANCH"
+echo "git tag \"$RELEASE_TAG\""
+echo "git push --tags $GIT_REMOTE \"$RELEASE_TAG\""
+echo
+echo "Or create MR on branch $RELEASE_BRANCH and squash merge it to $GIT_BRANCH"
