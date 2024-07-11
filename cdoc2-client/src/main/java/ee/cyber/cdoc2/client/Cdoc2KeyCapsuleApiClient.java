@@ -169,11 +169,19 @@ public final class Cdoc2KeyCapsuleApiClient {
                 }
             };
 
+            // BUG in openapi-generator ApiClient, {@link org.openapitools.client.ApiClient#setDebugging}
+            // overwrites already set httpclient properties, like setConnectTimeout()
+            // setDebugging must be called first, same with setClientConfig and other methods that
+            // call ApiClient#buildHttpClient()
+            apiClient.setDebugging(debug);
+
             apiClient.setBasePath(this.baseUrl);
+
+            log.debug("Setting connect timeout to {}", connectTimeoutMs);
             apiClient.setConnectTimeout(connectTimeoutMs);
+            log.debug("Setting read timeout to {}", readTimeoutMs);
             apiClient.setReadTimeout(readTimeoutMs);
 
-            apiClient.setDebugging(debug);
             apiClient.addDefaultHeader("Accept", "application/json");
             apiClient.selectHeaderAccept("application/json");
 
