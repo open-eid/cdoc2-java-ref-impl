@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1-SNAPSHOT</version>
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
