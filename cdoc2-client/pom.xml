@@ -17,7 +17,7 @@
         <jackson.version>2.15.4</jackson.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
 
-        <spotbugs-annotations.version>4.7.3</spotbugs-annotations.version>
+        <spotbugs-annotations.version>4.8.5</spotbugs-annotations.version>
         <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
         <maven.repository.url>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</maven.repository.url>
