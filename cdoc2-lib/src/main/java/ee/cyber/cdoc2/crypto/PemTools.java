@@ -15,16 +15,18 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.AbstractMap;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -33,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 
 /**
  * Utility class to deal with EC and RSA keys and certificates in PEM format.
@@ -46,7 +49,7 @@ public final class PemTools {
 
     /**
      * Load EC or RSA pub key from PEM
-     *
+     * </p>
      * EC key:
      * openssl ec -in key.pem -pubout -out public.pem
      * <code>
@@ -56,7 +59,7 @@ public final class PemTools {
      * 3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw
      * -----END PUBLIC KEY-----
      * <code/>
-     *
+     * </p>
      * ASN.1:
      * <pre>
      SEQUENCE (2 elem)
@@ -177,9 +180,10 @@ public final class PemTools {
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static AbstractMap.SimpleEntry<PrivateKey, X509Certificate> loadKeyCertFromP12(InputStream p12InputStream,
-                                                                                          @Nullable char[] passwd)
-            throws GeneralSecurityException, IOException {
+    public static AbstractMap.SimpleEntry<PrivateKey, X509Certificate> loadKeyCertFromP12(
+        InputStream p12InputStream,
+        @Nullable char[] passwd
+    ) throws GeneralSecurityException, IOException {
 
         KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
         clientKeyStore.load(p12InputStream, passwd);
@@ -219,27 +223,27 @@ public final class PemTools {
         return new AbstractMap.SimpleEntry<>(key, cert);
     }
 
-    public static Map<PublicKey, String> loadPubKeysWithKeyLabel(File[] pubPemFiles) throws IOException {
-        Map<PublicKey, String> map = new LinkedHashMap<>();
-        if (pubPemFiles != null) {
-            for (File f : pubPemFiles) {
-                map.put(loadPublicKey(Files.readString(f.toPath())), "N/A");
-            }
-        }
-        return map;
-    }
-
     /**
      * Load public key (EC or RSA) from InputStream
      * @param certIs Certificate InputStream in PEM (.cer) format
-     * @return public key paired with key label {@link SkLdapUtil#getKeyLabel(X509Certificate)}
+     * @return certificate data with few parameters
      * @throws CertificateException
      */
-    public static Map.Entry<PublicKey, String> loadCertKeyWithLabel(InputStream certIs) throws CertificateException {
+    public static SkLdapUtil.CertificateData loadCertKeyWithLabel(InputStream certIs)
+        throws CertificateException {
+
         var cert = loadCertificate(certIs);
         PublicKey publicKey = cert.getPublicKey();
-        String label = SkLdapUtil.getKeyLabel(cert);
-        return Map.entry(publicKey, label);
+        String keyLabel = SkLdapUtil.getKeyLabel(cert);
+
+        String certFingerprint = getCertFingerprint(cert);
+
+        SkLdapUtil.CertificateData certificateData = new SkLdapUtil.CertificateData();
+        certificateData.setPublicKey(publicKey);
+        certificateData.setKeyLabel(keyLabel);
+        certificateData.setFingerprint(certFingerprint);
+
+        return certificateData;
     }
 
     /**
@@ -256,25 +260,24 @@ public final class PemTools {
     /**
      * Parse public keys (EC or RSA) from certificate files
      * @param certFiles Array of certificates files in PEM (.cer) format
-     * @return public keys parsed from certFiles. Public keys are paired with key label
-     *          {@link SkLdapUtil#getKeyLabel(X509Certificate)}
+     * @return list of certificate data with few parameters parsed from certFiles
      * @throws CertificateException
      * @throws IOException
      */
-    public static Map<PublicKey, String> loadCertKeysWithLabel(File[] certFiles)
+    public static List<SkLdapUtil.CertificateData> loadCertKeysWithLabel(File[] certFiles)
             throws CertificateException, IOException {
 
-        Map<PublicKey, String> map = new LinkedHashMap<>();
-
+        List<SkLdapUtil.CertificateData> certificateData = new ArrayList<>();
         if (certFiles != null) {
             for (File f : certFiles) {
                 InputStream in = Files.newInputStream(f.toPath());
-                Map.Entry<PublicKey, String> keyLabelEntry = loadCertKeyWithLabel(in);
-                map.put(keyLabelEntry.getKey(), keyLabelEntry.getValue());
+                SkLdapUtil.CertificateData data = loadCertKeyWithLabel(in);
+                data.setFile(f);
+                certificateData.add(data);
             }
         }
 
-        return map;
+        return certificateData;
     }
 
     /**
@@ -299,4 +302,13 @@ public final class PemTools {
         PublicKey publicKey = cert.getPublicKey();
         return new KeyPair(publicKey, key);
     }
+
+    private static String getCertFingerprint(X509Certificate cert) {
+        try {
+            return DigestUtils.sha1Hex(cert.getEncoded());
+        } catch (CertificateEncodingException e) {
+            return null;
+        }
+    }
+
 }

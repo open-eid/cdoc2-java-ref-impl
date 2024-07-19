@@ -1,10 +1,14 @@
 package ee.cyber.cdoc2.crypto;
 
+
 /**
  * Specifies the source of the encryption key derivation
  */
 public enum EncryptionKeyOrigin {
-    SECRET,
+    CERTIFICATE,
+    ID_CARD,
+    KEY_SHARE,
     PASSWORD,
-    PUBLIC_KEY
+    PUBLIC_KEY,
+    SECRET
 }

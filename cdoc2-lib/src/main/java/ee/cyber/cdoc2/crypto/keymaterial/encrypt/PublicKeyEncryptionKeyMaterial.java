@@ -1,8 +1,9 @@
-package ee.cyber.cdoc2.crypto.keymaterial;
+package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 
 import java.security.PublicKey;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 
 /**

@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.LinkedList;
 import java.util.List;
 
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
@@ -57,24 +57,33 @@ public final class SymmetricKeyUtil {
 
     private static final Logger log = LoggerFactory.getLogger(SymmetricKeyUtil.class);
 
-    public static List<EncryptionKeyMaterial> extractEncryptionKeyMaterialFromSecrets(
-        String[] secrets
-    ) throws CDocValidationException {
-        if (secrets == null || secrets.length == 0) {
-            return List.of();
+    public static List<FormattedOptionParts> getSecretsAndLabels(String[] secrets)
+        throws CDocValidationException {
+
+        List<FormattedOptionParts> secretsAndLabels = new ArrayList<>();
+        if (null != secrets && secrets.length > 0) {
+            for (String secret: secrets) {
+                FormattedOptionParts splitSecret
+                    = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
+                secretsAndLabels.add(splitSecret);
+            }
         }
+        return secretsAndLabels;
+    }
 
-        List<EncryptionKeyMaterial> result = new LinkedList<>();
+    /**
+     * Extract symmetric key material from formatted
+     * or "label123:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+     * @param formattedSecrets "<label>:<secret>"
+     * @return
+     */
+    public static List<EncryptionKeyMaterial> getEncryptionKeyMaterialFromFormattedSecrets(String[] formattedSecrets)
+        throws CDocValidationException {
 
-        for (String secret: secrets) {
-            FormattedOptionParts splitSecret
-                = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
-
-            EncryptionKeyMaterial km
-                = SymmetricKeyTools.getEncryptionKeyMaterialFromSecret(splitSecret);
-            result.add(km);
-        }
-        return result;
+        return getSecretsAndLabels(formattedSecrets).stream()
+            .map(SymmetricKeyTools::extractKeyMaterialFromSecret)
+            .map(e -> EncryptionKeyMaterial.fromSecret(e.getKey(), e.getValue()))
+            .toList();
     }
 
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromSecret(
@@ -84,18 +93,17 @@ public final class SymmetricKeyUtil {
             return null;
         }
 
-        FormattedOptionParts splitSecret
-            = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
+        FormattedOptionParts splitSecret = splitFormattedOption(secret, EncryptionKeyOrigin.SECRET);
 
         return SymmetricKeyTools.getEncryptionKeyMaterialFromSecret(splitSecret);
     }
 
     public static EncryptionKeyMaterial extractEncryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel
-    ) {
-        return EncryptionKeyMaterial.fromPassword(
-            passwordAndLabel.optionChars(), passwordAndLabel.label()
-        );
+        String password
+    ) throws CDocValidationException {
+        FormattedOptionParts splitPasswordAndLabel = getSplitPasswordAndLabel(password, true);
+
+        return SymmetricKeyTools.getEncryptionKeyMaterialFromPassword(splitPasswordAndLabel);
     }
 
     /**
@@ -150,9 +158,10 @@ public final class SymmetricKeyUtil {
      * @param verifyPw if password should be asked twice to verify that they match (encryption).
      * @return FormattedOptionParts with extracted password and label
      */
-    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword,
-                                                                boolean verifyPw)
-        throws CDocValidationException {
+    public static FormattedOptionParts getSplitPasswordAndLabel(
+        String formattedPassword,
+        boolean verifyPw
+    ) throws CDocValidationException {
         FormattedOptionParts passwordAndLabel;
         if (formattedPassword.isEmpty()) {
             passwordAndLabel = InteractiveCommunicationUtil.readPasswordAndLabelInteractively(verifyPw);
@@ -180,9 +189,10 @@ public final class SymmetricKeyUtil {
      * @return
      * @throws CDocValidationException
      */
-    public static FormattedOptionParts getSplitPasswordAndLabel(String formattedPassword,
-                                                                List<PBKDF2Recipient> pbkdf2Recipients)
-        throws CDocValidationException {
+    public static FormattedOptionParts getSplitPasswordAndLabel(
+        String formattedPassword,
+        List<PBKDF2Recipient> pbkdf2Recipients
+    ) throws CDocValidationException {
 
         if (pbkdf2Recipients.size() == 1) {
             String label = pbkdf2Recipients.get(0).getRecipientKeyLabel();
@@ -259,6 +269,15 @@ public final class SymmetricKeyUtil {
             log.error(errorMsg);
             throw new IllegalArgumentException(errorMsg);
         }
+    }
+
+    public static FormattedOptionParts getPasswordAndLabel(String password)
+        throws CDocValidationException {
+
+        if (null == password) {
+            return null;
+        }
+        return getSplitPasswordAndLabel(password, true);
     }
 
 }

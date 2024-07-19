@@ -1,29 +1,30 @@
-package ee.cyber.cdoc2.crypto.keymaterial;
+package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 
 
 import java.util.Arrays;
 import java.util.Objects;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 
 /**
- * Represents key material required for decryption with symmetric key derived from password.
+ * Represents key material required for encryption with symmetric key derived from the password.
  *
  * @param password password chars
  * @param keyLabel key label
  */
-public record PasswordDecryptionKeyMaterial(
+public record PasswordEncryptionKeyMaterial(
     char[] password,
     String keyLabel
-) implements DecryptionKeyMaterial {
+) implements EncryptionKeyMaterial {
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        PasswordDecryptionKeyMaterial that = (PasswordDecryptionKeyMaterial) o;
+        PasswordEncryptionKeyMaterial that = (PasswordEncryptionKeyMaterial) o;
         return Arrays.equals(password, that.password)
             && Objects.equals(keyLabel, that.keyLabel);
     }
@@ -38,13 +39,13 @@ public record PasswordDecryptionKeyMaterial(
 
     @Override
     public String toString() {
-        return "PasswordDecryptionKeyMaterial{"
+        return "PasswordEncryptionKeyMaterial{"
             + "password=[hidden]"
             + ", keyLabel='" + keyLabel + '}';
     }
 
     @Override
-    public Object getRecipientId() {
+    public String getLabel() {
         return keyLabel;
     }
 

@@ -23,12 +23,14 @@ import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.HexFormat;
-import java.util.Map;
+
+import ee.cyber.cdoc2.util.SkLdapUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @SuppressWarnings("squid:S6706")
 class ECKeysTest {
@@ -335,9 +337,9 @@ class ECKeysTest {
 
 
         InputStream certStream = new ByteArrayInputStream(igorCertificate.getBytes(StandardCharsets.UTF_8));
-        Map.Entry<PublicKey, String> keyLabel =  PemTools.loadCertKeyWithLabel(certStream);
+        SkLdapUtil.CertificateData certificateData =  PemTools.loadCertKeyWithLabel(certStream);
 
-        String label = keyLabel.getValue();
+        String label = certificateData.getKeyLabel();
 
         assertEquals("\u017DAIKOVSKI,IGOR,37101010021", label);
     }
@@ -391,4 +393,5 @@ class ECKeysTest {
         ECPublicKey infinityPublicKey = getInfinityPublicKey();
         assertThrows(IllegalArgumentException.class, () -> ECKeys.encodeEcPubKeyForTls(infinityPublicKey));
     }
+
 }

@@ -6,7 +6,7 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KekTools;
-import ee.cyber.cdoc2.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.recipients.EccKeyDetails;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;

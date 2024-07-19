@@ -17,6 +17,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.extractKeyLabelParams;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.keyLabelParamsForDisplaying;
+
+
+
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
@@ -46,13 +51,16 @@ public class CDocInfoCmd implements Callable<Void> {
 
             String type = getHumanReadableType(recipient);
 
-            String label = recipient.getRecipientKeyLabel();
+            Map<String, String> keyLabelParams
+                = extractKeyLabelParams(recipient.getRecipientKeyLabel());
 
             String server = (recipient instanceof ServerRecipient)
-                    ? "(server: " + ((ServerRecipient) recipient).getKeyServerId() + ")"
-                    : "";
+                ? "(server: " + ((ServerRecipient) recipient).getKeyServerId() + ")"
+                : "";
 
-            System.out.println(type + ": " + label + " " + server);
+            System.out.println(
+                type + ": " + keyLabelParamsForDisplaying(keyLabelParams) + " " + server
+            );
         }
 
         return null;

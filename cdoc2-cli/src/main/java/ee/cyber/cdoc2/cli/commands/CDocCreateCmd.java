@@ -1,13 +1,9 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc2.CDocBuilder;
-import ee.cyber.cdoc2.CDocValidationException;
-import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.EllipticCurve;
-import ee.cyber.cdoc2.crypto.PemTools;
-import ee.cyber.cdoc2.util.SkLdapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -16,16 +12,13 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
-import java.security.PublicKey;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
 
@@ -103,44 +96,52 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --pubkey {} --cert {} {}",
+            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} {}",
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
+                (recipient.secrets != null) ? "****" : null,
+                (recipient.password != null) ? "****" : null,
                 Arrays.toString(inputFiles));
         }
 
-        //Map of PublicKey, keyLabel
-        Map<PublicKey, String> recipientsMap = new LinkedHashMap<>();
 
-        recipientsMap.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
-        recipientsMap.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
 
-        // fetch authentication certificates' public keys for natural person identity codes
-        Map<PublicKey, String> ldapKeysWithLabels =
-            SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
-                .stream()
-                .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        recipientsMap.putAll(ldapKeysWithLabels);
-
-        List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
-            .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
-            .collect(Collectors.toList());
-
-        addSymmetricKeysWithLabels(recipients);
 
         CDocBuilder cDocBuilder = new CDocBuilder()
-            .withRecipients(recipients)
             .withPayloadFiles(Arrays.asList(inputFiles));
-
-        if (keyCapsuleExpiryDuration != null) {
-            setExpiryDurationOrLogWarn(cDocBuilder);
-        }
 
         if (keyServerPropertiesFile != null) {
             Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
+        }
+
+
+        List<EncryptionKeyMaterial> symmetricKMs =
+            SymmetricKeyUtil.getEncryptionKeyMaterialFromFormattedSecrets(recipient.secrets);
+
+        List<EncryptionKeyMaterial> recipients = EncryptionKeyMaterial.collectionBuilder()
+            .fromPublicKey(this.recipient.pubKeys)
+            .fromX509Certificate(this.recipient.certs)
+            // fetch authentication certificates' public keys for natural person identity codes
+            .fromEId(this.recipient.identificationCodes)
+            .build();
+
+        if (recipient.password != null) {
+            FormattedOptionParts passwordAndLabel
+                = SymmetricKeyUtil.getPasswordAndLabel(recipient.password);
+
+            recipients.addAll(
+                EncryptionKeyMaterial.collectionBuilder().fromPassword(
+                    passwordAndLabel.optionChars(), passwordAndLabel.label()).build());
+        }
+
+        recipients.addAll(symmetricKMs);
+
+        cDocBuilder.withRecipients(recipients);
+
+        if (keyCapsuleExpiryDuration != null) {
+            setExpiryDurationOrLogWarn(cDocBuilder);
         }
 
         cDocBuilder.buildToFile(cdocFile);
@@ -157,19 +158,6 @@ public class CDocCreateCmd implements Callable<Void> {
             log.warn("WARNING: {}", warnMsg);
         } else {
             cDocBuilder.withCapsuleExpiryDuration(keyCapsuleExpiryDuration);
-        }
-    }
-
-    private void addSymmetricKeysWithLabels(List<EncryptionKeyMaterial> recipients)
-        throws CDocValidationException {
-
-        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
-            recipient.secrets)
-        );
-        if (null != recipient.password) {
-            FormattedOptionParts password
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password, true);
-            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
         }
     }
 

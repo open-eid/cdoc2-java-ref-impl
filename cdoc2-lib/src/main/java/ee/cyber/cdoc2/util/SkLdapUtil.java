@@ -1,10 +1,13 @@
 package ee.cyber.cdoc2.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
@@ -21,8 +24,14 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
+
+import ee.cyber.cdoc2.crypto.KeyLabelParams;
+import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
+
 
 /**
  * Utility class to downloading and parsing certificates from SK LDAP server
@@ -119,19 +128,20 @@ public final class SkLdapUtil {
      * authentication (ou=Authentication) certificate for each ESTEID identification code from sk ESTEID LDAP and
      * extract public keys
      * @param ids ESTEID identification codes (isikukood), e.g 37101010021
-     * @return Map of public keys with key labels for each identification code or empty list if none found
+     * @return list of certificate data with few parameters parsed from certFiles
      * @throws NamingException If an error occurred while querying sk LDAP server
      * @throws CertificateException If parsing found certificate fails
      * @see <a href=https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/>SK LDAP</a>
      */
-    public static Map<PublicKey, String> getPublicKeysWithLabels(String[] ids)
+    public static List<SkLdapUtil.CertificateData> getPublicKeysWithLabels(String[] ids)
             throws NamingException, CertificateException {
 
         if (ids == null) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
         DirContext ctx = initDirContext();
-        Map<PublicKey, String> keysWithLabels = new LinkedHashMap<>();
+
+        List<SkLdapUtil.CertificateData> certDatas = new ArrayList<>();
         try {
             for (String id: ids) {
                 Map<X509Certificate, String> certs = findAuthenticationEstEidCertificates(ctx, id);
@@ -139,15 +149,29 @@ public final class SkLdapUtil {
                     X509Certificate cert = certNameEntry.getKey();
                     String distinguishedName = certNameEntry.getValue();
                     String keyLabel = getKeyLabel(cert, distinguishedName);
-                    log.debug("Adding key label {}", keyLabel);
-                    keysWithLabels.put(cert.getPublicKey(), keyLabel);
+
+                    CertificateData certificateData = new CertificateData();
+                    certificateData.setPublicKey(cert.getPublicKey());
+                    certificateData.setKeyLabel(keyLabel);
+                    certificateData.setSerialNumber(cert.getSerialNumber());
+
+                    log.debug("Adding certificate data {}", certificateData);
+                    certDatas.add(certificateData);
                 }
             }
         } finally {
             ctx.close();
         }
 
-        return keysWithLabels;
+        return certDatas;
+    }
+
+    public static EncryptionKeyMaterial toEncryptionKeyMaterial(SkLdapUtil.CertificateData certData) {
+        KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
+            certData.getKeyLabel(), certData.getSerialNumber()
+        );
+
+        return EncryptionKeyMaterial.fromPublicKey(certData.getPublicKey(), keyLabelParams);
     }
 
     /**
@@ -207,4 +231,58 @@ public final class SkLdapUtil {
             return cert.getSubjectX500Principal().getName();
         }
     }
+
+    public static class CertificateData {
+        private PublicKey publicKey;
+        private String keyLabel;
+        @Nullable
+        private File file;
+        @Nullable
+        private String fingerprint;
+        @Nullable
+        private BigInteger serialNumber;
+
+        public CertificateData() { }
+
+        public PublicKey getPublicKey() {
+            return this.publicKey;
+        }
+
+        public String getKeyLabel() {
+            return this.keyLabel;
+        }
+
+        public File getFile() {
+            return this.file;
+        }
+
+        public String getFingerprint() {
+            return this.fingerprint;
+        }
+
+        public BigInteger getSerialNumber() {
+            return this.serialNumber;
+        }
+
+        public void setPublicKey(PublicKey publicKey) {
+            this.publicKey = publicKey;
+        }
+
+        public void setKeyLabel(String keyLabel) {
+            this.keyLabel = keyLabel;
+        }
+
+        public void setFile(File file) {
+            this.file = file;
+        }
+
+        public void setFingerprint(String fingerprint) {
+            this.fingerprint = fingerprint;
+        }
+
+        public void setSerialNumber(BigInteger serialNumber) {
+            this.serialNumber = serialNumber;
+        }
+    }
+
 }
