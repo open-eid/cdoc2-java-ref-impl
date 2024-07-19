@@ -6,7 +6,7 @@ CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk
 measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC2](https://www.ria.ee/media/2340/download).
 
 **Warning**: Following scenario descriptions are simplification to give general idea, details and **final truth is in
-[CDOC2 specification](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf)**.
+[CDOC2 specification](https://open-eid.github.io/CDOC2/)**.
 
 ## CDOC2 ECDH scenario
 
