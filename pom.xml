@@ -95,13 +95,33 @@
   </scm>
 
     <repositories>
-        <repository>
+        <!--repository>
 			<id>gitlab.ext.cyber.ee</id>
 			<url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
-		</repository>
+		</repository-->
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
+        </repository>
 	</repositories>
 
-	<distributionManagement>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub jann0k Maven Packages</name>
+            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
+        </repository>
+
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub jann0k Maven Packages</name>
+            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+
+    <!--distributionManagement>
         <repository>
 			<id>gitlab.ext.cyber.ee</id>
 			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
@@ -111,7 +131,7 @@
 			<id>gitlab.ext.cyber.ee</id>
 			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
 		</snapshotRepository>
-	</distributionManagement>
+	</distributionManagement-->
 
     <modules>
         <module>cdoc2-schema</module>
