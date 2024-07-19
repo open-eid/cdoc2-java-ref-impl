@@ -14,18 +14,18 @@ RUN_CREATE=true
 RUN_DECRYPT=false
 
 
-
-
 CDOC_DIR=$(cd .. && pwd) #root of cdoc2-java-ref-impl
 TESTVECTORS_DIR=${CDOC_DIR}/test/testvectors
+TESTVECTORS_v_1_2_DIR=${CDOC_DIR}/test/testvectors-v1.2
 TMP_DIR=/tmp
 
-CDOC_VER=$(cd $CDOC_DIR && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-#CDOC_VER="0.3.0-SNAPSHOT"
+CDOC_CLI_VER=$(cd .. && cd cdoc2-cli && mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+#CDOC_CLI_VER="0.3.0-SNAPSHOT"
+cd ..
 
 CLI_DIR=${CDOC_DIR}/cdoc2-cli
 CLI_KEYS_DIR=${CLI_DIR}/keys
-CLI_JAR=${CLI_DIR}/target/cdoc2-cli-${CDOC_VER}.jar
+CLI_JAR=${CLI_DIR}/target/cdoc2-cli-${CDOC_CLI_VER}.jar
 CLI_CONF=$CLI_DIR/config
 
 SERVER_KEYS_DIR=${CDOC_DIR}/test/keys
@@ -36,6 +36,9 @@ OVERWRITE_FILES=true
 CDOC_CREATE_CMD="java -Dee.cyber.cdoc2.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} create"
 CDOC_DECRYPT_CMD="java -Dee.cyber.cdoc2.overwrite=${OVERWRITE_FILES} -jar ${CLI_JAR} decrypt"
 CDOC_LIST_CMD="java -jar ${CLI_JAR} list"
+
+SECRET_WITH_LABEL="mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
+PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
 
 create_simple_ec() {
   local cdoc_file="ec_simple.cdoc"
@@ -52,6 +55,24 @@ create_simple_ec() {
   then
     echo "Decrypting ${cdoc_file}"
     $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
+  fi
+}
+
+create_simple_ec_with_formatted_key_label() {
+  local cdoc_file="ec_simple_with_formatted_key_label.cdoc"
+
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+        -c ${CLI_KEYS_DIR}/cdoc2client-certificate.pem ${CDOC_DIR}/README.md
+    echo
+  fi
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
   fi
 }
 
@@ -122,10 +143,26 @@ create_simple_rsa() {
   if $RUN_DECRYPT
   then
     echo "Decrypting ${cdoc_file}"
-    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/rsa_priv.pem -o ${TMP_DIR}
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/rsa_priv.pem -o ${TMP_DIR}
   fi
 }
 
+create_simple_rsa_with_formatted_key_label() {
+  local cdoc_file="rsa_simple_with_formatted_key_label.cdoc"
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+        -p ${CLI_KEYS_DIR}/rsa_pub.pem ${CDOC_DIR}/README.md
+    echo
+  fi
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/rsa_priv.pem -o ${TMP_DIR}
+  fi
+}
 
 create_rsa_server_ria_dev_pkcs12() {
   local cdoc_file="rsa_server_ria_dev_pkcs12.cdoc"
@@ -164,6 +201,24 @@ create_symmetric() {
     echo "Decrypting ${cdoc_file}"
     $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
     --secret "test_label:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE=" -o ${TMP_DIR}
+  fi
+}
+
+create_symmetric_with_formatted_key_label() {
+  local cdoc_file="symmetric_with_formatted_key_label.cdoc"
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+        --secret $SECRET_WITH_LABEL ${CDOC_DIR}/README.md
+  fi
+  echo
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+    --secret $SECRET_WITH_LABEL -o ${TMP_DIR}
   fi
 }
 
@@ -209,6 +264,24 @@ create_password() {
   fi
 }
 
+create_password_with_formatted_key_label() {
+  local cdoc_file="password_with_formatted_key_label.cdoc"
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+        -pw $PASSWORD_WITH_LABEL ${CDOC_DIR}/README.md
+  fi
+  echo
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} \
+    -pw $PASSWORD_WITH_LABEL -o ${TMP_DIR}
+  fi
+}
+
 
 create_zipbomb() {
   #over 8GB files require POSIX tar long file extension
@@ -245,15 +318,15 @@ create_zipbomb() {
 
 
 create_simple_ec
+create_simple_ec_with_formatted_key_label
 create_ec_server_ria_dev_pkcs12
 create_ec_server_ria_dev_id_card
 create_simple_rsa
+create_simple_rsa_with_formatted_key_label
 create_rsa_server_ria_dev_pkcs12
 create_symmetric
+create_symmetric_with_formatted_key_label
 create_symmetric_longfilename
 create_password
+create_password_with_formatted_key_label
 create_zipbomb
-
-
-
-

@@ -42,7 +42,7 @@ public record FormattedOptionParts(
     @Override
     public String toString() {
         return "FormattedOptionParts{"
-            + "optionChars=" + Arrays.toString(this.optionChars)
+            + "optionChars=HIDDEN"
             + ", label=" + this.label
             + ", keyOrigin=" + this.keyOrigin
             + '}';

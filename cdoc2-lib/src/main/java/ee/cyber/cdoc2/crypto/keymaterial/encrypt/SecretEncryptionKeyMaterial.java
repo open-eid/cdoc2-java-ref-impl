@@ -1,10 +1,11 @@
-package ee.cyber.cdoc2.crypto.keymaterial;
+package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 /**
  * Represents key material required for encryption with symmetric key derived from secret.

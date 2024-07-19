@@ -10,11 +10,11 @@ import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.PasswordEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
-import ee.cyber.cdoc2.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
@@ -350,9 +350,7 @@ public final class RecipientFactory {
         Objects.requireNonNull(keyLabel);
 
         byte[] salt = Crypto.generateSaltForKey();
-
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
-
         byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
         return new SymmetricKeyRecipient(salt, encryptedFmk, keyLabel);
     }

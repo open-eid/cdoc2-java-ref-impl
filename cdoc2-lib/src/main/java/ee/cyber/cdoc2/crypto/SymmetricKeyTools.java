@@ -14,6 +14,9 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.FormattedOptionParts;
 
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.checkKeyLabelFormatAndGet;
+
+
 /**
  * Utility for deriving Symmetric key from secret or password
  */
@@ -54,10 +57,14 @@ public final class SymmetricKeyTools {
         List<Recipient> recipients
     ) {
         for (Recipient recipient : recipients) {
+            Object decryptionKeyLabel = checkKeyLabelFormatAndGet(
+                recipient.getRecipientKeyLabel(),
+                secretAndLabel.label()
+                );
             if (recipient instanceof SymmetricKeyRecipient
-                && recipient.getRecipientKeyLabel().equals(secretAndLabel.label())) {
+                && recipient.getRecipientKeyLabel().equals(decryptionKeyLabel)) {
                 var entry = extractKeyMaterialFromSecret(secretAndLabel);
-                return DecryptionKeyMaterial.fromSecretKey(entry.getValue(), entry.getKey());
+                return DecryptionKeyMaterial.fromSecretKey(decryptionKeyLabel.toString(), entry.getKey());
             }
         }
         return null;
@@ -73,6 +80,9 @@ public final class SymmetricKeyTools {
     ) {
         byte[] secretBytes = String.valueOf(secretAndLabel.optionChars())
             .getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES) {
+            throw new IllegalArgumentException("min len is " + Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES);
+        }
         SecretKey key = new SecretKeySpec(secretBytes, "");
         return new AbstractMap.SimpleEntry<>(key, secretAndLabel.label());
     }
@@ -86,9 +96,20 @@ public final class SymmetricKeyTools {
         FormattedOptionParts secretAndLabel
     ) {
         var entry = extractKeyMaterialFromSecret(secretAndLabel);
-        return EncryptionKeyMaterial.fromSecret(
-            entry.getKey(), entry.getValue()
-        );
+        return EncryptionKeyMaterial.fromSecret(entry.getKey(), entry.getValue());
+    }
+
+//    public static EncryptionKeyMaterial getEncryptionKeyMaterial(
+//        AbstractMap.SimpleEntry<SecretKey, String> entry, String payloadFileName
+//    ) {
+//        return EncryptionKeyMaterial.builder()
+//            .fromSecret(entry.getKey(), entry.getValue(), payloadFileName);
+//    }
+
+    public static EncryptionKeyMaterial getEncryptionKeyMaterialFromPassword(
+        FormattedOptionParts splitPasswordAndLabel
+    ) {
+        return EncryptionKeyMaterial.fromPassword(splitPasswordAndLabel.optionChars(), splitPasswordAndLabel.label());
     }
 
 }

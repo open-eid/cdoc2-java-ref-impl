@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc2.CDocReEncrypter;
 import ee.cyber.cdoc2.CDocValidationException;
-import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
@@ -134,13 +133,13 @@ public class CDocReEncryptCmd implements Callable<Void> {
         throws CDocValidationException {
 
         if (null != this.reEncryptPassword) {
-            FormattedOptionParts splitPasswordAndLabel
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(this.reEncryptPassword, true);
-            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(splitPasswordAndLabel);
+            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(this.reEncryptPassword);
         }
 
         if (null != this.reEncryptSecret) {
-            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecret(this.reEncryptSecret);
+            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecret(
+                this.reEncryptSecret
+            );
         }
 
         throw new IllegalArgumentException("Cannot re-create document without password");

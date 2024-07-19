@@ -1,11 +1,12 @@
-package ee.cyber.cdoc2.crypto.keymaterial;
+package ee.cyber.cdoc2.crypto.keymaterial.decrypt;
 
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
-
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
+import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
 /**
  * Represents key material required for decryption with symmetric key derived from secret.
@@ -20,6 +21,9 @@ public record SecretDecryptionKeyMaterial(
 
     @Override
     public Object getRecipientId() {
+        if (KeyLabelTools.isFormatted(keyLabel)) {
+            return KeyLabelTools.extractKeyLabel(keyLabel);
+        }
         return keyLabel;
     }
 

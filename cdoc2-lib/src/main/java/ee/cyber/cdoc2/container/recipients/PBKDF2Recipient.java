@@ -7,9 +7,10 @@ import java.util.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.KekTools;
-import ee.cyber.cdoc2.crypto.keymaterial.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.recipients.KDFAlgorithmIdentifier;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 
@@ -40,6 +41,9 @@ public class PBKDF2Recipient extends Recipient {
 
     @Override
     public Object getRecipientId() {
+        if (KeyLabelTools.isFormatted(recipientKeyLabel)) {
+            return KeyLabelTools.extractKeyLabel(recipientKeyLabel);
+        }
         return recipientKeyLabel;
     }
 

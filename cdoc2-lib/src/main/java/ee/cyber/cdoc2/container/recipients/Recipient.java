@@ -38,6 +38,7 @@ public abstract class Recipient implements KekDerivable, SerializableFBS {
      * Uniquely identifies the recipient. This data is used to find recipients key material from parsed CDOC header
      * * For EC, this is EC pub key.
      * * For RSA, this is RSA pub key
+     * * For Password and SymmetricKey this is label given by user
      * @return Object that uniquely identifies Recipient
      */
     public abstract Object getRecipientId();

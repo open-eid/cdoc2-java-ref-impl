@@ -119,7 +119,6 @@ java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgx
 Key and label can be safely stored in a password manager.
 
 
-
 ### Decryption
 To decrypt:
 - CDOC2 file `/tmp/mydoc.cdoc`
@@ -354,3 +353,18 @@ default 10.0
 
 Decrypting will be stopped if compressed file compression ratio is over compressionThreshold
 
+#### ee.cyber.cdoc2.key-label.machine-readable-format.enabled
+default true
+
+Key label format can be defined while encrypting. Machine parsable format is enabled by default 
+and free text format is allowed if the property disabled.
+Machine-readable format is following, where `<data>` is the key label value:
+```
+data:[<mediatype>][;base64],<data>
+```
+
+#### ee.cyber.cdoc2.key-label.file-name.added
+default true
+
+Key label `<data>` field contains different parameters. File name is one of them. For security 
+purpose it can be hidden in configuration. File name is added by default.
