@@ -3,7 +3,7 @@
 [CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
 CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security 
-measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC2](https://www.ria.ee/media/2340/download).
+measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [why CDOC2](https://www.youtube.com/watch?v=otrO2A6TuGQ).
 
 **Warning**: Following scenario descriptions are simplification to give general idea, details and **final truth is in
 [CDOC2 specification](https://open-eid.github.io/CDOC2/)**.
