@@ -86,7 +86,7 @@
         </profile>
 
         <profile>
-            <!-- activate github profile when runned by github actions -->
+            <!-- activate github profile when run by github actions -->
             <id>github</id>
             <activation>
                 <property>
@@ -102,59 +102,47 @@
             </repositories>
         </profile>
 
-        <!--profile>
+        <profile>
+            <!-- set gitlab.ext profile active when run by gitlab CI -->
             <id>gitlab.ext</id>
+            <activation>
+                <property>
+                    <name>env.GITLAB_CI</name>
+                    <value>true</value>
+                </property>
+            </activation>
             <repositories>
                 <repository>
                     <id>gitlab.ext.cyber.ee</id>
                     <url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
                 </repository>
             </repositories>
-        </profile-->
+
+            <distributionManagement>
+                <!-- env variables are available, when run by gitlab CI -->
+                <repository>
+                    <id>gitlab.ext.cyber.ee</id>
+                    <url>${env.CI_SERVER_URL}/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
+                </repository>
+                <snapshotRepository>
+                    <id>gitlab.ext.cyber.ee</id>
+                    <url>${env.CI_SERVER_URL}/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
     </profiles>
 
     <repositories>
+        <!-- for local development, configure your settings.xml or activate one of profiles above-->
         <!--repository>
 			<id>gitlab.ext.cyber.ee</id>
 			<url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
 		</repository-->
         <!--repository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
-        </repository-->
-        <!--repository>
-            <id>github</id>
             <url>https://maven.pkg.github.com/open-eid/cdoc2-capsule-server</url>
         </repository-->
 	</repositories>
-
-
-    <!--distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub jann0k Maven Packages</name>
-            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>github</id>
-            <name>GitHub jann0k Maven Packages</name>
-            <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
-        </snapshotRepository>
-    </distributionManagement-->
-
-
-    <!--distributionManagement>
-        <repository>
-			<id>gitlab.ext.cyber.ee</id>
-			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-		</repository>
-
-        <snapshotRepository>
-			<id>gitlab.ext.cyber.ee</id>
-			<url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-		</snapshotRepository>
-	</distributionManagement-->
 
     <modules>
         <module>cdoc2-schema</module>
