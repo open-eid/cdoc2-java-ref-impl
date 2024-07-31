@@ -137,8 +137,6 @@
                             <artifactId>cdoc2-key-capsules-openapi</artifactId>
                             <version>${cdoc2-key-capsules-openapi.version}</version>
                             <packaging>yaml</packaging>
-                            <!-- can be removed when copied to cdoc2-java-ref-impl repo -->
-                            <!--remoteRepositories>${maven.repository.url}</remoteRepositories-->
                         </configuration>
                     </execution>
 
