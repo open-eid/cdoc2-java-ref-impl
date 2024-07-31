@@ -10,7 +10,7 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
@@ -30,18 +30,22 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+        overwrite-settings: false #don't generate settings.xml
         cache: maven
-#    - name: 'Create settings.xml'
-#      uses: whelk-io/maven-settings-xml-action@v22
-#      with:
-#        servers: >
-#          [
-#            {
-#              "id": "github",
-#              "username": "${{ secrets.GITHUB_USERNAME }}",
-#              "password": "${{ secrets.GITHUB_PASSWORD }}"
-#            }
-#          ]
+
+    - name: 'Create settings.xml with maven-settings-xml-action'
+      uses: whelk-io/maven-settings-xml-action@v22
+      with:
+        servers: >
+          [
+            {
+              "id": "github",
+              "username": "${{ env.GITHUB_ACTOR }}",
+              "password": "${{ env.GITHUB_TOKEN }}"
+            }
+          ]
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
 
 
     - name: Build with Maven
@@ -52,7 +56,7 @@ jobs:
     - name: Debug settings.xml
       run: |
         echo $(cat ~/.m2/settings.xml)
-        echo $env.GITHUB_ACTOR
+        echo "GITHUB_ACTOR=${{ env.GITHUB_ACTOR }}"
 
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
