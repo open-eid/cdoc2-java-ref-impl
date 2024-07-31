@@ -30,22 +30,22 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        overwrite-settings: false #don't generate settings.xml
+        overwrite-settings: true #generate settings.xml
         cache: maven
 
-    - name: 'Create settings.xml with maven-settings-xml-action'
-      uses: whelk-io/maven-settings-xml-action@v22
-      with:
-        servers: >
-          [
-            {
-              "id": "github",
-              "username": "${{ env.GITHUB_ACTOR }}",
-              "password": "${{ env.GITHUB_TOKEN }}"
-            }
-          ]
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+#    - name: 'Create settings.xml with maven-settings-xml-action'
+#      uses: whelk-io/maven-settings-xml-action@v22
+#      with:
+#        servers: >
+#          [
+#            {
+#              "id": "github",
+#              "username": "${{ env.GITHUB_ACTOR }}",
+#              "password": "${{ env.GITHUB_TOKEN }}"
+#            }
+#          ]
+#      env:
+#        GITHUB_TOKEN: ${{ github.token }}
 
 
     - name: Build with Maven

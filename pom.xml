@@ -84,6 +84,33 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <!-- activate github profile when runned by github actions -->
+            <id>github</id>
+            <activation>
+                <property>
+                    <name>env.GITHUB_ACTIONS</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <repositories>
+                <repository>
+                    <id>github</id>
+                    <url>https://maven.pkg.github.com/open-eid/cdoc2-capsule-server</url>
+                </repository>
+            </repositories>
+        </profile>
+
+        <!--profile>
+            <id>gitlab.ext</id>
+            <repositories>
+                <repository>
+                    <id>gitlab.ext.cyber.ee</id>
+                    <url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
+                </repository>
+            </repositories>
+        </profile-->
     </profiles>
 
     <repositories>
@@ -95,10 +122,10 @@
             <id>github</id>
             <url>https://maven.pkg.github.com/jann0k/cdoc2-java-ref-impl</url>
         </repository-->
-        <repository>
+        <!--repository>
             <id>github</id>
             <url>https://maven.pkg.github.com/open-eid/cdoc2-capsule-server</url>
-        </repository>
+        </repository-->
 	</repositories>
 
 
