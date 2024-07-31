@@ -23,23 +23,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
 
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-    - name: Debug settings.xml
-      run: |
-        echo $(cat ~/.m2/settings.xml)
-        echo $env.GITHUB_ACTOR
+#    - name: 'Create settings.xml'
+#      uses: whelk-io/maven-settings-xml-action@v22
+#      with:
+#        servers: >
+#          [
+#            {
+#              "id": "github",
+#              "username": "${{ secrets.GITHUB_USERNAME }}",
+#              "password": "${{ secrets.GITHUB_PASSWORD }}"
+#            }
+#          ]
+
 
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
+
+    - name: Debug settings.xml
+      run: |
+        echo $(cat ~/.m2/settings.xml)
+        echo $env.GITHUB_ACTOR
+
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     #- name: Update dependency graph
