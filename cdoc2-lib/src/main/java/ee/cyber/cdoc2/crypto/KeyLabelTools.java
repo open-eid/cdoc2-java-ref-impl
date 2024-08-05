@@ -8,9 +8,9 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -25,6 +25,7 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.KeyLabelDataVersion.toNumberic
  */
 public final class KeyLabelTools {
 
+    private static final String DATA = "data:";
     private static final String DATA_DELIMITER = ",";
     private static final String DATA_PARAMETERS_DELIMITER = "&";
     private static final String DATA_PARAMETERS_KEY_VALUE_DELIMITER = "=";
@@ -61,7 +62,7 @@ public final class KeyLabelTools {
         }
         if (keyLabelIsFormatted(encryptionKeyLabel) && !keyLabelIsFormatted(decryptionKeyLabel)) {
             String encryptedKeyLabel = extractKeyLabel(encryptionKeyLabel.toString());
-            if (encryptedKeyLabel.equals(decryptionKeyLabel)) {
+            if (null != encryptedKeyLabel && encryptedKeyLabel.equals(decryptionKeyLabel)) {
                 return encryptionKeyLabel;
             }
         }
@@ -96,13 +97,8 @@ public final class KeyLabelTools {
 
     private static Map<String, String> decodeKeyLabelParamsFromUrlScheme(String keyLabel) {
         String keyLabelData = fromDataUrlScheme(keyLabel);
-        Map<String, String> keyLabelParams = convertStringToKeyLabelParamsMap(keyLabelData);
 
-        return keyLabelParams.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                param -> urlDecodeValue(param.getValue()))
-            );
+        return convertStringToKeyLabelParamsMap(keyLabelData);
     }
 
     /**
@@ -260,7 +256,7 @@ public final class KeyLabelTools {
         EncryptionKeyOrigin encryptionKeyOrigin,
         KeyLabelTools.KeyLabelDataVersion version
     ) {
-        Map<String, String> keyLabelParams = new HashMap<>();
+        Map<String, String> keyLabelParams = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         keyLabelParams.put(
             KeyLabelDataFields.V.name(),
             urlEncodeValue(toNumbericString(version))
@@ -309,11 +305,14 @@ public final class KeyLabelTools {
         Map<String, String> keyLabelParams
     ) {
         switch (keyLabelType) {
-            case AUTH -> { // +
+            case AUTH -> {
                 return keyLabelParams.get(KeyLabelDataFields.PNO.name());
             }
-            case PW, SECRET -> { // +
+            case PW, SECRET -> {
                 return keyLabelParams.get(KeyLabelDataFields.LABEL.name());
+            }
+            case PUB_KEY -> {
+                return null;
             }
             default -> throw new IllegalArgumentException("Wrong key label type");
         }
@@ -326,7 +325,7 @@ public final class KeyLabelTools {
      */
     private static String toDataUrlScheme(String data) {
         StringBuilder sb = new StringBuilder();
-        sb.append("data:");
+        sb.append(DATA);
 
         if (isEncoded(data)) {
             sb.append(BASE_64_DELIMITER + "base64");
@@ -357,7 +356,7 @@ public final class KeyLabelTools {
     }
 
     private static boolean keyLabelIsFormatted(Object keyLabel) {
-        return keyLabel.toString().contains("data:");
+        return keyLabel.toString().contains(DATA);
     }
 
     public static boolean isFormatted(String keyLabel) {
@@ -365,7 +364,7 @@ public final class KeyLabelTools {
             return false;
         }
 
-        return  keyLabel.startsWith("data:");
+        return  keyLabel.startsWith(DATA);
     }
 
 
@@ -395,7 +394,7 @@ public final class KeyLabelTools {
     }
 
     private static Map<String, String> convertStringToKeyLabelParamsMap(String data) {
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         if (data.isBlank()) {
             return result;
         }
@@ -404,7 +403,7 @@ public final class KeyLabelTools {
 
         for (String keyValue : parts) {
             String[] params = keyValue.split(DATA_PARAMETERS_KEY_VALUE_DELIMITER);
-            result.put(params[0], params[1]);
+            result.put(params[0], urlDecodeValue(params[1]));
         }
 
         return result;
@@ -441,8 +440,18 @@ public final class KeyLabelTools {
             return type.name().toLowerCase(Locale.ROOT);
         }
 
-        public static KeyLabelType fromParams(String typeInLowerCase) {
-            return KeyLabelType.valueOf(typeInLowerCase.toUpperCase());
+        public static KeyLabelType fromParams(String type) {
+            return KeyLabelType.getName(type);
+        }
+
+        public static KeyLabelType getName(String keyLabelType) {
+            for (var type : KeyLabelType.values()) {
+                if (null != keyLabelType && type.name().compareToIgnoreCase(keyLabelType) == 0) {
+                    return type;
+                }
+            }
+
+            return null;
         }
     }
 

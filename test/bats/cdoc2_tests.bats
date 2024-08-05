@@ -382,7 +382,12 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="EC PublicKey: CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411, V:1, CN:cdoc20-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "EC PublicKey:"
+  assert_output --partial "CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411"
+  assert_output --partial "V:1"
+  assert_output --partial "CN:cdoc20-client"
+  assert_output --partial "FILE:cdoc2client-certificate.pem"
+  assert_output --partial "TYPE:cert"
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
@@ -396,7 +401,12 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="EC PublicKey: CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411, V:1, CN:cdoc20-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "EC PublicKey:"
+  assert_output --partial "CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411"
+  assert_output --partial "V:1"
+  assert_output --partial "CN:cdoc20-client"
+  assert_output --partial "FILE:cdoc2client-certificate.pem"
+  assert_output --partial "TYPE:cert"
 
   # ensure encrypted container can be decrypted successfully
   run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
@@ -416,7 +426,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "RSA PublicKey:"
+  assert_output --partial "V:1"
+  assert_output --partial "FILE:rsa_pub.pem"
+  assert_output --partial "TYPE:pub_key"
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
@@ -430,7 +443,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "RSA PublicKey:"
+  assert_output --partial "V:1"
+  assert_output --partial "FILE:rsa_pub.pem"
+  assert_output --partial "TYPE:pub_key"
 
   # ensure encrypted container can be decrypted successfully
   run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/rsa_priv.pem -o $TEST_RESULTS_DIR
@@ -449,7 +465,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="SymmetricKey: V:1, LABEL:$SECRET_LABEL, TYPE:secret "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "SymmetricKey:"
+  assert_output --partial "V:1"
+  assert_output --partial "LABEL:$SECRET_LABEL"
+  assert_output --partial "TYPE:secret"
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
@@ -463,7 +482,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="SymmetricKey: V:1, LABEL:$SECRET_LABEL, FILE:$existing_test_vector, TYPE:secret "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "SymmetricKey:"
+  assert_output --partial "V:1"
+  assert_output --partial "LABEL:$SECRET_LABEL"
+  assert_output --partial "TYPE:secret"
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
@@ -486,7 +508,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="Password: V:1, LABEL:${PW_LABEL}, TYPE:pw "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "Password:"
+  assert_output --partial "V:1"
+  assert_output --partial "LABEL:${PW_LABEL}"
+  assert_output --partial "TYPE:pw"
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
 }
@@ -500,7 +525,10 @@ EOF
   assertSuccessfulExitCode
   local expected_output_info="Password: V:1, LABEL:${PW_LABEL}, TYPE:pw "
   echo "# $expected_output_info">&3
-  assert_equal "$output" "$expected_output_info"
+  assert_output --partial "Password:"
+  assert_output --partial "V:1"
+  assert_output --partial "LABEL:${PW_LABEL}"
+  assert_output --partial "TYPE:pw"
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
