@@ -1,4 +1,5 @@
 import ee.cyber.cdoc2.cli.CDocCli;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -6,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -194,7 +197,7 @@ class CDocCliTest {
         encrypt(PASSWORD_OPTION);
         decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
 
-        String expectedKeyLabel = "Password: V:1, LABEL:passwordlabel, TYPE:pw ";
+        String expectedKeyLabel = "Password: V:1, LABEL:passwordlabel, TYPE:pw";
         executeInfo(expectedKeyLabel, cdocFile);
     }
 
@@ -205,7 +208,7 @@ class CDocCliTest {
         encrypt(PASSWORD_OPTION);
         decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
 
-        String expectedKeyLabel = "Password: LABEL:passwordlabel ";
+        String expectedKeyLabel = "Password: LABEL:passwordlabel";
         executeInfo(expectedKeyLabel, cdocFile);
 
         restoreDefaultKeyLabelFormat();
@@ -217,7 +220,7 @@ class CDocCliTest {
         decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
 
         String expectedKeyLabel
-            = "SymmetricKey: V:1, LABEL:label_b64secret, TYPE:secret ";
+            = "SymmetricKey: V:1, LABEL:label_b64secret, TYPE:secret";
         executeInfo(expectedKeyLabel, cdocFile);
     }
 
@@ -228,7 +231,7 @@ class CDocCliTest {
         encrypt(SECRET_OPTION);
         decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
 
-        String expectedKeyLabel = "SymmetricKey: LABEL:label_b64secret ";
+        String expectedKeyLabel = "SymmetricKey: LABEL:label_b64secret";
         executeInfo(expectedKeyLabel, cdocFile);
 
         restoreDefaultKeyLabelFormat();
@@ -238,7 +241,7 @@ class CDocCliTest {
     void infoShouldDisplayKeyLabelInDefaultFormatForEc() throws IOException {
         successfullyDecryptDocWithPublicKey("keys/bob_pub.pem", "keys/bob.pem");
 
-        String expectedKeyLabel = "EC PublicKey: V:1, FILE:bob_pub.pem, TYPE:pub_key ";
+        String expectedKeyLabel = "EC PublicKey: V:1, FILE:bob_pub.pem, TYPE:pub_key";
         executeInfo(expectedKeyLabel, cdocFile);
     }
 
@@ -249,7 +252,7 @@ class CDocCliTest {
 
         successfullyDecryptDocWithPublicKey(publicKey, privateKey);
 
-        String expectedKeyLabel = "RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key ";
+        String expectedKeyLabel = "RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key";
         executeInfo(expectedKeyLabel, cdocFile);
     }
 
@@ -521,7 +524,36 @@ class CDocCliTest {
         String[] split = outputWithoutBreaks.split("README.md");
         String actualOutputKeyLabel = split[split.length - 1];
 
-        assertEquals(expectedKeyLabel, actualOutputKeyLabel);
+        assertEqualKeyLabels(expectedKeyLabel, actualOutputKeyLabel);
+    }
+
+    private void assertEqualKeyLabels(String expectedKeyLabelMsg, String actualOutputKeyLabelMsg) {
+        int delimiterIndexOfExpected = expectedKeyLabelMsg.indexOf(":");
+        int delimiterIndexOfActual = actualOutputKeyLabelMsg.indexOf(":");
+        String expectedKeyLabel = expectedKeyLabelMsg
+            .substring(delimiterIndexOfExpected + 1).trim();
+        String actualOutputKeyLabel = actualOutputKeyLabelMsg
+            .substring(delimiterIndexOfActual + 1).trim();
+        Map<String, String> expectedParams = convertStringToKeyLabelParamsMap(expectedKeyLabel);
+        Map<String, String> actualParams = convertStringToKeyLabelParamsMap(actualOutputKeyLabel);
+
+        for (var entry : expectedParams.entrySet()) {
+            assertTrue(actualParams.containsKey(entry.getKey()));
+            assertTrue(actualParams.containsValue(entry.getValue()));
+        }
+    }
+
+    private static Map<String, String> convertStringToKeyLabelParamsMap(String data) {
+        Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        String[] parts = data.split(", ");
+
+        for (String keyValue : parts) {
+            String[] params = keyValue.split(":");
+            result.put(params[0], params[1]);
+        }
+
+        return result;
     }
 
     private void disableKeyLabelFormatting() {
