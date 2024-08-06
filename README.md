@@ -2,16 +2,20 @@
 
 [CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
-Crypto Digidoc, encrypted file transmission format used in the [Estonian eID](https://github.com/open-eid) ecosystem
+CDOC stands for 'Crypto Digidoc', encrypted file transmission format used in the [Estonian eID](https://github.com/open-eid) ecosystem
 
 CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security 
 measures with optional server backend. CDOC version are not compatible. 
 Additional background info can be found in [why CDOC2](https://www.youtube.com/watch?v=otrO2A6TuGQ).
 
+End-user software to create/decrypt CDOC2: https://github.com/open-eid/DigiDoc4-Client
+
+## Implemented scenarios
+
 **Warning**: Following scenario descriptions are simplification to give general idea, details and **final truth is in
 [CDOC2 specification](https://open-eid.github.io/CDOC2/)**.
 
-## CDOC2 ECDH scenario
+### CDOC2 ECDH scenario
 
 1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
    EC public key.
@@ -37,7 +41,7 @@ Additional background info can be found in [why CDOC2](https://www.youtube.com/w
 
 [^3]: Content is zlib compressed tar archive
 
-## CDOC2 ECDH server scenario
+### CDOC2 ECDH server scenario
 
 1. *Follow steps from previous scenario 1-6*
 2. Sender chooses key transaction server (preconfigured list)
@@ -58,7 +62,7 @@ Key transfer server benefits:
 
 [^4]: key transfer server protocol is defined in cdoc2-openapi module
 
-## CDOC2 RSA-OAEP
+### CDOC2 RSA-OAEP
 
 RSA-OAEP is similar to ECDH scenario, with difference that KEK is generated from secure random (not ECDH) and
 KEK is encrypted with recipient RSA public key and included into CDOC header (instead of
@@ -82,7 +86,7 @@ sender public key).
 15. Recipient calculates hmac and checks it against hmac in CDoc.
 16. Recipient decrypts content using CEK.
 
-## CDOC2 RSA-OAEP with server scenario
+### CDOC2 RSA-OAEP with server scenario
 
 1. *Follow steps from RSA-OAEP scenario 1-6*
 2. Sender chooses key capsule server (by providing server configuration)
@@ -97,7 +101,7 @@ sender public key).
     capsule that contains encrypted KEK
 11. *Follow steps from RSA-OAEP scenario steps 12-15*
 
-## CDOC2 with symmetric key from password
+### CDOC2 with symmetric key from password
 
 Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
 
@@ -115,7 +119,7 @@ Similar to Symmetric Key scenario, but symmetric key is derived from password an
 cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
 can do that.
 
-## CDOC2 with symmetric key from secret
+### CDOC2 with symmetric key from secret
 
 Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
 
@@ -139,6 +143,7 @@ cdoc2-java-ref-impl does not provide solution for securely storing the secret, b
 
 - cdoc2-schema      - flatbuffers schemas and code generation
 - cdoc2-lib         - CDOC2 creation and processing library
+- cdoc2-client      - client for communicating with [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)
 - cdoc2-cli         - Command line utility to create/process CDOC2 files
 - test              - Sample CDOC2 containers (with script to create and decrypt them) 
                       and automated tests for CLI
@@ -154,7 +159,7 @@ Server related components are in separate https://github.com/open-eid/cdoc2-caps
 ## Maven dependencies
 
 Depends on:
-* https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for server stub generation
+https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for client stub generation
 
 Configure github package repo access
 https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token
@@ -183,6 +188,8 @@ So defining any Maven package repo from `open-eid` is enough for pulling cdoc2-*
 All packages published under `open-eid` can be found https://github.com/orgs/open-eid/packages
 
 ## Building
+[![Java CI with Maven](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml/badge.svg)](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml)
+
 CDOC2 has been tested with JDK 17 and Maven 3.8.8
 
 ```
@@ -216,6 +223,11 @@ mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=pkcs11-test-safenet.properties
 ```
 
 By default, the pkcs11 configuration is read from the file `pkcs11-test-idcard.properties`.
+
+### Bats tests
+
+Additional tests using [Bats](https://github.com/bats-core/bats-core) and `cdoc2-cli`. 
+Refer [test/README.md](test/README.md)
 
 ### Entropy
 In case the tests run slowly (probably due to waiting on entropy generation),
