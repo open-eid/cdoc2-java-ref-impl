@@ -152,7 +152,10 @@ can do that.
                       and automated tests for CLI
 - cdoc2-example-app - Example, how to use cdoc2-java-ref-impl and cdoc4j together
 
-Server related components are in separate https://github.com/open-eid/cdoc2-capsule-server repository
+Other CDOC2 repositories:
+- https://github.com/open-eid/cdoc2-openapi CDOC2 OpenAPI specifications
+- https://github.com/open-eid/cdoc2-capsule-server CDOC2 Capsule Server
+- https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server
 
 ## Preconditions for building
 * Java 17
