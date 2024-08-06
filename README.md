@@ -1,12 +1,14 @@
-# CDOC2 reference implementation
+# CDOC2 reference implementation (Java)
 
-[CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
+[CDOC2](https://open-eid.github.io/CDOC2/) reference implementation (Java)
 
 CDOC stands for 'Crypto Digidoc', encrypted file transmission format used in the [Estonian eID](https://github.com/open-eid) ecosystem
 
 CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security 
 measures with optional server backend. CDOC version are not compatible. 
-Additional background info can be found in [why CDOC2](https://www.youtube.com/watch?v=otrO2A6TuGQ).
+
+Additional background info can be found in [RIA CDOC2 presentation](https://www.youtube.com/watch?v=otrO2A6TuGQ) 
+and [id.ee CDOC 2.0 article](https://www.id.ee/artikkel/cdoc-2-0/)
 
 End-user software to create/decrypt CDOC2: https://github.com/open-eid/DigiDoc4-Client
 
@@ -246,12 +248,4 @@ See [cdoc2-cli/README.md](cdoc2-cli/README.md)
 ## Releasing and version management
 
 See [VERSIONING.md](VERSIONING.md)
-
-
-
-
-
-
-
-
 
