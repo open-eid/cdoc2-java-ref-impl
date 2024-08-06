@@ -2,8 +2,11 @@
 
 [CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
 
+Crypto Digidoc, encrypted file transmission format used in the [Estonian eID](https://github.com/open-eid) ecosystem
+
 CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security 
-measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [why CDOC2](https://www.youtube.com/watch?v=otrO2A6TuGQ).
+measures with optional server backend. CDOC version are not compatible. 
+Additional background info can be found in [why CDOC2](https://www.youtube.com/watch?v=otrO2A6TuGQ).
 
 **Warning**: Following scenario descriptions are simplification to give general idea, details and **final truth is in
 [CDOC2 specification](https://open-eid.github.io/CDOC2/)**.
@@ -141,19 +144,46 @@ cdoc2-java-ref-impl does not provide solution for securely storing the secret, b
                       and automated tests for CLI
 - cdoc2-example-app - Example, how to use cdoc2-java-ref-impl and cdoc4j together
 
-Server related components are in separate cdoc2-servers repo TODO: link to public repo
+Server related components are in separate https://github.com/open-eid/cdoc2-capsule-server repository
 
 ## Preconditions for building
 * Java 17
 * Maven 3.8.x
-* Docker available and running (required for running tests)
+* Docker available and running (required for running tests, use `-Dmaven.test.skip=true` to skip)
 
 ## Maven dependencies
 
-See README.md in cdoc2-servers repo TODO: update link
+Depends on:
+* https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for server stub generation
+
+Configure github package repo access
+https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token
+
+Example `<profile>` section of `settings.xml` for using cdoc2 dependencies:
+```xml
+  <profile>
+      <id>github</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/open-eid/cdoc2-openapi</url>
+        </repository>
+      </repositories>
+  </profile>
+```
+
+Note: When pulling, the [package index is based on the organization level](https://stackoverflow.com/questions/63041402/github-packages-single-maven-repository-for-github-organization)
+, not the repository level.
+
+So defining any Maven package repo from `open-eid` is enough for pulling cdoc2-* dependencies.
+All packages published under `open-eid` can be found https://github.com/orgs/open-eid/packages
 
 ## Building
-CDOC2 has been tested with JDK 17 and Maven 3.8.4
+CDOC2 has been tested with JDK 17 and Maven 3.8.8
 
 ```
 mvn clean install
@@ -199,7 +229,7 @@ service haveged start
 
 ## Running
 
-See `cdoc2-cli/README.md`
+See [cdoc2-cli/README.md](cdoc2-cli/README.md)
 
 ## Releasing and version management
 

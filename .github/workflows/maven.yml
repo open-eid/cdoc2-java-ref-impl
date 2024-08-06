@@ -33,30 +33,10 @@ jobs:
         overwrite-settings: true #generate settings.xml
         cache: maven
 
-#    - name: 'Create settings.xml with maven-settings-xml-action'
-#      uses: whelk-io/maven-settings-xml-action@v22
-#      with:
-#        servers: >
-#          [
-#            {
-#              "id": "github",
-#              "username": "${{ env.GITHUB_ACTOR }}",
-#              "password": "${{ env.GITHUB_TOKEN }}"
-#            }
-#          ]
-#      env:
-#        GITHUB_TOKEN: ${{ github.token }}
-
-
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
-
-    - name: Debug settings.xml
-      run: |
-        echo $(cat ~/.m2/settings.xml)
-        echo "GITHUB_ACTOR=${{ env.GITHUB_ACTOR }}"
 
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
