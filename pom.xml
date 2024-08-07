@@ -137,12 +137,12 @@
             <distributionManagement>
                 <!-- env variables are available, when run by gitlab CI -->
                 <repository>
-                    <id>gitlab.ext.cyber.ee</id>
+                    <id>${env.CI_SERVER_HOST}</id>
                     <!--suppress UnresolvedMavenProperty -->
                     <url>${env.CI_SERVER_URL}/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
                 </repository>
                 <snapshotRepository>
-                    <id>gitlab.ext.cyber.ee</id>
+                    <id>${env.CI_SERVER_HOST}</id>
                     <!--suppress UnresolvedMavenProperty -->
                     <url>${env.CI_SERVER_URL}/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
                 </snapshotRepository>
