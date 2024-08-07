@@ -23,26 +23,6 @@
         <maven.repository.url>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</maven.repository.url>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-
     <dependencies>
         <dependency>
             <groupId>ch.qos.logback</groupId>
