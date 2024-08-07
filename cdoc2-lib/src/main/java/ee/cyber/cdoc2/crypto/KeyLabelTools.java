@@ -323,11 +323,11 @@ public final class KeyLabelTools {
      * @param data key label data
      * @return data URL scheme String
      */
-    private static String toDataUrlScheme(String data) {
+    public static String toDataUrlScheme(String data) {
         StringBuilder sb = new StringBuilder();
         sb.append(DATA);
 
-        if (isEncoded(data)) {
+        if (isBase64Encoded(data)) {
             sb.append(BASE_64_DELIMITER + "base64");
         }
         sb.append(DATA_DELIMITER);
@@ -367,11 +367,10 @@ public final class KeyLabelTools {
         return  keyLabel.startsWith(DATA);
     }
 
-
     private static String decodeFromBase64(String data) {
         if (data.contains("base64")) {
             String dataAfterDelimiter = StringUtils.substringAfter(data, DATA_DELIMITER);
-            if (isEncoded(dataAfterDelimiter)) {
+            if (isBase64Encoded(dataAfterDelimiter)) {
                 return new String(Base64.getDecoder().decode(dataAfterDelimiter));
             }
             return dataAfterDelimiter;
@@ -379,15 +378,15 @@ public final class KeyLabelTools {
         return data;
     }
 
-    private static String urlDecodeValue(String encodedDataFieldValue) {
+    public static String urlDecodeValue(String encodedDataFieldValue) {
         return URLDecoder.decode(encodedDataFieldValue, StandardCharsets.UTF_8);
     }
 
-    private static boolean isEncoded(String data) {
+    private static boolean isBase64Encoded(String data) {
         return BASE64_PATTERN.matcher(data).matches();
     }
 
-    private static String convertKeyLabelParamsMapToString(Map<String, String> map) {
+    public static String convertKeyLabelParamsMapToString(Map<String, String> map) {
         return map.keySet().stream()
             .map(key -> key + DATA_PARAMETERS_KEY_VALUE_DELIMITER + map.get(key))
             .collect(Collectors.joining(DATA_PARAMETERS_DELIMITER));
