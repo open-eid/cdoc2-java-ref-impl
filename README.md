@@ -187,7 +187,7 @@ Example `<profile>` section of `settings.xml` for using cdoc2 dependencies:
   </profile>
 ```
 
-Note: When pulling, the [package index is based on the organization level](https://stackoverflow.com/questions/63041402/github-packages-single-maven-repository-for-github-organization)
+Note: When pulling, the [GitHub package index is based on the organization level](https://stackoverflow.com/questions/63041402/github-packages-single-maven-repository-for-github-organization)
 , not the repository level.
 
 So defining any Maven package repo from `open-eid` is enough for pulling cdoc2-* dependencies.
@@ -252,4 +252,21 @@ See [cdoc2-cli/README.md](cdoc2-cli/README.md)
 ## Releasing and version management
 
 See [VERSIONING.md](VERSIONING.md)
+
+## Publishing
+
+### GitHub
+
+Create release on tag done by VERSIONING.md process. It will trigger `maven-release.yml` workflow that
+will deploy Maven packages to GitHub Maven package repository.
+
+### Manual
+
+Since build uses `exists-maven-plugin` then `altDeploymentRepository` doesn't work as it only works 
+for `deploy` plugin. Set `project.distributionManagement` user properties instead:
+```
+mvn deploy -Dproject.distributionManagement.repository.id=github \
+-Dproject.distributionManagement.repository.url=https://maven.pkg.github.com/open-eid/cdoc2-java-ref-impl`
+```
+
 
