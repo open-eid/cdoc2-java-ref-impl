@@ -18,8 +18,20 @@ env:
   ACTIONS_STEP_DEBUG: true
 
 jobs:
-  build:
+  fork_setup:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
+    outputs:
+      base_repo_name: ${{ steps.base_repo.outputs.name }}
+      is_fork: ${{ steps.is_fork.outputs.is_fork }}
 
+    steps:
+      - id: base_repo
+        run: echo "name=${{github.event.pull_request.base.repo.name}}" >> "$GITHUB_OUTPUT"
+      - id: is_fork
+        run: echo "is_fork=true" >> "$GITHUB_OUTPUT"
+
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,9 +46,15 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      needs: fork_setup
+      run:
+        - echo "base_repo=$BASE_REPO is_fork=$IS_FORK"
+        - mvn -B package --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
+        IS_FORK: ${{needs.fork_setup.outputs.is_fork}}
+        BASE_REPO: ${{needs.fork_setup.outputs.base_repo}}
+
 
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
