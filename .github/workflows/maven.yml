@@ -48,7 +48,7 @@ jobs:
 
     - name: Build with Maven
       run: | 
-        echo "base_repo=$BASE_REPO is_fork=$IS_FORK"
+        echo "Debug env vars: is_fork=$IS_FORK base_repo=$BASE_REPO MAVEN_REPO=$MAVEN_REPO"
         mvn help:active-profiles
         echo "Using Maven repo=$(mvn help:evaluate -Dexpression=github_ci.maven_repo -q -DforceStdout)"
         mvn -B package --file pom.xml

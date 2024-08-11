@@ -115,6 +115,18 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>overwrite "github_ci.maven_repo" from env var "MAVEN_REPO"</id>
+            <activation>
+                <property>
+                    <name>env.MAVEN_REPO</name>
+                </property>
+            </activation>
+            <properties>
+                <github_ci.maven_repo>https://maven.pkg.github.com/${env.MAVEN_REPO}</github_ci.maven_repo>
+            </properties>
+        </profile>
+
 
         <profile>
             <!-- activate github profile when run by github actions -->
