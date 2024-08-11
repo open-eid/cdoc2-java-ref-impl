@@ -160,7 +160,6 @@ Other CDOC2 repositories:
 ## Preconditions for building
 * Java 17
 * Maven 3.8.x
-* Docker available and running (required for running tests, use `-Dmaven.test.skip=true` to skip)
 
 ## Maven dependencies
 
@@ -202,8 +201,18 @@ CDOC2 has been tested with JDK 17 and Maven 3.8.8
 mvn clean install
 ```
 
+### GitHub workflow build
+
+Maven build is executed for GH event `pull_request` an and `push` to 'master'. 
+
+GH build workflow configures Maven repository automatically. For fork based pull_requests 
+Maven repo value will be set to `github.event.pull_request.base.repo.full_name`. It can be overwritten
+by [defining repository variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/variables#creating-configuration-variables-for-a-repository) 
+`MAVEN_REPO`
+
+
 ## Testing
-By default tests that require smart-card are excluded from running. To execute all tests enable allTests maven profile
+By default, tests that require smart-card are excluded from running. To execute all tests enable allTests maven profile
 ```
 mvn -PallTests test
 ```
