@@ -86,6 +86,49 @@
         </profile>
 
         <profile>
+            <id>github_ci_fork</id>
+            <!-- for forks use base maven repo "open-eid/cdoc2-java-ref-impl" -->
+            <activation>
+                <property>
+                    <!-- defined by maven.yml for forks only -->
+                    <name>env.BASE_REPO</name>
+                </property>
+            </activation>
+            <properties>
+                <github_ci.maven_repo>https://maven.pkg.github.com/${env.BASE_REPO}</github_ci.maven_repo>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>github_ci_not_fork_or_not_pull_request</id>
+            <activation>
+                <property>
+                    <!-- set by maven.yml for forks only -->
+                    <name>env.IS_FORK</name>
+                    <!-- "is_fork" is not defined, or is defined with a value which is not "true". -->
+                    <value>!true</value>
+                </property>
+            </activation>
+            <properties>
+                <!--suppress UnresolvedMavenProperty -->
+                <github_ci.maven_repo>https://maven.pkg.github.com/${env.GITHUB_REPOSITORY}</github_ci.maven_repo>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>overwrite "github_ci.maven_repo" from env var "MAVEN_REPO"</id>
+            <activation>
+                <property>
+                    <name>env.MAVEN_REPO</name>
+                </property>
+            </activation>
+            <properties>
+                <github_ci.maven_repo>https://maven.pkg.github.com/${env.MAVEN_REPO}</github_ci.maven_repo>
+            </properties>
+        </profile>
+
+
+        <profile>
             <!-- activate github profile when run by github actions -->
             <id>github_ci</id>
             <activation>
@@ -103,7 +146,7 @@
                     <!-- Although GITHUB_REPOSITORY contains repo, all organization packages are indexed there -->
                     <!-- https://stackoverflow.com/questions/63041402/github-packages-single-maven-repository-for-github-organization -->
                     <!--suppress UnresolvedMavenProperty -->
-                    <url>https://maven.pkg.github.com/${env.GITHUB_REPOSITORY}</url>
+                    <url>${github_ci.maven_repo}</url>
                 </repository>
 
             </repositories>
