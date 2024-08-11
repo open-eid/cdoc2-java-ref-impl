@@ -33,6 +33,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    needs: fork_setup
 
     steps:
     - uses: actions/checkout@v4
@@ -46,7 +47,7 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      needs: fork_setup
+
       run:
         - echo "base_repo=$BASE_REPO is_fork=$IS_FORK"
         - mvn -B package --file pom.xml
