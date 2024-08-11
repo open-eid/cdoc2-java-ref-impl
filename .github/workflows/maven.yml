@@ -50,8 +50,7 @@ jobs:
       run: | 
         echo "base_repo=$BASE_REPO is_fork=$IS_FORK"
         mvn help:active-profiles
-        mvn help:evaluate -Dexpression=github_ci.maven_repo
-        mvn help:effective-settings
+        echo "Using Maven repo=$(mvn help:evaluate -Dexpression=github_ci.maven_repo -q -DforceStdout)"
         mvn -B package --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password

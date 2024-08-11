@@ -91,24 +91,20 @@
             <activation>
                 <property>
                     <!-- defined by maven.yml for forks only -->
-                    <name>env.base_repo</name>
+                    <name>env.BASE_REPO</name>
                 </property>
             </activation>
             <properties>
-                <github_ci.maven_repo>https://maven.pkg.github.com/${env.base_repo}</github_ci.maven_repo>
+                <github_ci.maven_repo>https://maven.pkg.github.com/${env.BASE_REPO}</github_ci.maven_repo>
             </properties>
         </profile>
 
         <profile>
             <id>github_ci_not_fork_or_not_pull_request</id>
             <activation>
-                <!--property>
-                    <name>env.GITHUB_ACTIONS</name>
-                    <value>true</value>
-                </property-->
                 <property>
                     <!-- set by maven.yml for forks only -->
-                    <name>env.is_fork</name>
+                    <name>env.IS_FORK</name>
                     <!-- "is_fork" is not defined, or is defined with a value which is not "true". -->
                     <value>!true</value>
                 </property>
