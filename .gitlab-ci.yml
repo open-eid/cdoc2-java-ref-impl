@@ -13,15 +13,18 @@ test:
     - cd test/bats
     - source install_bats.sh
     - source variables.sh 
-    - $BATS_HOME/bats-core/bin/bats cdoc2_tests.bats
+    - $BATS_HOME/bats-core/bin/bats --gather-test-outputs-in target/reports -x --report-formatter junit --output target/ cdoc2_tests.bats
+    - 'for file in target/reports/*; do echo "## $file ##" >> target/bats-test.log; cat "$file" >> target/bats-test.log; done'
   coverage: /Total \d+\.\d+ %/
   artifacts:
     when: always
     reports:
       junit:
         - "**/target/surefire-reports/*.xml"
+        - "**/target/report.xml"
     paths:
       - "**/target/site/jacoco"
+      - "**/target/bats-test.log"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
