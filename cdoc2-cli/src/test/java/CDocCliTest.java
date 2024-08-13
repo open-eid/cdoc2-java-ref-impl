@@ -13,6 +13,7 @@ import java.util.TreeMap;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
@@ -88,6 +89,21 @@ class CDocCliTest {
     void testSuccessfulCreateDecryptDocWithPassword() throws IOException {
         encrypt(PASSWORD_OPTION);
         decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
+    }
+
+    @Test
+    @Disabled
+    void testSuccessfulCreateDecryptDocWithPasswordWhenItIsInsertedInteractively()
+        throws IOException {
+        encrypt(PASSWORD_OPTION);
+        decrypt("--password=", SUCCESSFUL_EXIT_CODE);
+    }
+
+    @Test
+    void testSuccessfulCreateDecryptDocWithPasswordWhenLabelIsMissing()
+        throws IOException {
+        encrypt(PASSWORD_OPTION);
+        decrypt("--password=:myPlainTextPassword", SUCCESSFUL_EXIT_CODE);
     }
 
     @Test
@@ -203,7 +219,7 @@ class CDocCliTest {
 
     @Test
     void infoShouldDisplayKeyLabelInPlainText() throws IOException {
-        disableKeyLabelFormatting();
+        setUpKeyLabelFormat(false);
 
         encrypt(PASSWORD_OPTION);
         decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
@@ -211,7 +227,7 @@ class CDocCliTest {
         String expectedKeyLabel = "Password: LABEL:passwordlabel";
         executeInfo(expectedKeyLabel, cdocFile);
 
-        restoreDefaultKeyLabelFormat();
+        setUpKeyLabelFormat(true);
     }
 
     @Test
@@ -226,7 +242,7 @@ class CDocCliTest {
 
     @Test
     void infoShouldDisplayKeyLabelInPlainTextForSecret() throws IOException {
-        disableKeyLabelFormatting();
+        setUpKeyLabelFormat(false);
 
         encrypt(SECRET_OPTION);
         decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
@@ -234,7 +250,7 @@ class CDocCliTest {
         String expectedKeyLabel = "SymmetricKey: LABEL:label_b64secret";
         executeInfo(expectedKeyLabel, cdocFile);
 
-        restoreDefaultKeyLabelFormat();
+        setUpKeyLabelFormat(true);
     }
 
     @Test
@@ -556,19 +572,11 @@ class CDocCliTest {
         return result;
     }
 
-    private void disableKeyLabelFormatting() {
+    private void setUpKeyLabelFormat(boolean isFormatted) {
         Properties props = System.getProperties();
         props.setProperty(
             "ee.cyber.cdoc2.key-label.machine-readable-format.enabled",
-            "false"
-        );
-    }
-
-    private void restoreDefaultKeyLabelFormat() {
-        Properties props = System.getProperties();
-        props.setProperty(
-            "ee.cyber.cdoc2.key-label.machine-readable-format.enabled",
-            "true"
+            String.valueOf(isFormatted)
         );
     }
 

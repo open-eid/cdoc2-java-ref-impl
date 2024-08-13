@@ -14,7 +14,8 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.FormattedOptionParts;
 
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.checkKeyLabelFormatAndGet;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.getPlainKeyLabel;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.isFormatted;
 
 
 /**
@@ -26,20 +27,19 @@ public final class SymmetricKeyTools {
 
     /**
      * Extract decryption key material from password.
-     * @param passwordAndLabel split password and label
+     * @param pwAndLabel split password and label
      * @param recipients       the list of recipients
      * @return DecryptionKeyMaterial created from password
      */
     public static DecryptionKeyMaterial extractDecryptionKeyMaterialFromPassword(
-        FormattedOptionParts passwordAndLabel,
+        FormattedOptionParts pwAndLabel,
         List<Recipient> recipients
     ) {
         for (Recipient recipient : recipients) {
-            if (recipient instanceof PBKDF2Recipient) {
-
+            if (keyLabelMatches(recipient, EncryptionKeyOrigin.PASSWORD, pwAndLabel.label())) {
                 return DecryptionKeyMaterial.fromPassword(
-                    passwordAndLabel.optionChars(),
-                    passwordAndLabel.label()
+                    pwAndLabel.optionChars(),
+                    recipient.getRecipientKeyLabel()
                 );
             }
         }
@@ -57,14 +57,11 @@ public final class SymmetricKeyTools {
         List<Recipient> recipients
     ) {
         for (Recipient recipient : recipients) {
-            Object decryptionKeyLabel = checkKeyLabelFormatAndGet(
-                recipient.getRecipientKeyLabel(),
-                secretAndLabel.label()
-                );
-            if (recipient instanceof SymmetricKeyRecipient
-                && recipient.getRecipientKeyLabel().equals(decryptionKeyLabel)) {
+            if (keyLabelMatches(recipient, EncryptionKeyOrigin.SECRET, secretAndLabel.label())) {
                 var entry = extractKeyMaterialFromSecret(secretAndLabel);
-                return DecryptionKeyMaterial.fromSecretKey(decryptionKeyLabel.toString(), entry.getKey());
+                return DecryptionKeyMaterial.fromSecretKey(
+                    entry.getKey(), recipient.getRecipientKeyLabel()
+                );
             }
         }
         return null;
@@ -110,6 +107,34 @@ public final class SymmetricKeyTools {
         FormattedOptionParts splitPasswordAndLabel
     ) {
         return EncryptionKeyMaterial.fromPassword(splitPasswordAndLabel.optionChars(), splitPasswordAndLabel.label());
+    }
+
+    private static boolean keyLabelMatches(
+        Recipient recipient,
+        EncryptionKeyOrigin keyOrigin,
+        String requestedKeyLabel
+    ) {
+        String recipientKeyLabel = recipient.getRecipientKeyLabel();
+        String plainKeyLabel = getPlainKeyLabel(recipientKeyLabel);
+        if (EncryptionKeyOrigin.PASSWORD == keyOrigin) {
+            return passwordKeyLabelMatches(recipient, plainKeyLabel, requestedKeyLabel);
+        } else if (EncryptionKeyOrigin.SECRET == keyOrigin) {
+            return recipient instanceof SymmetricKeyRecipient
+                && plainKeyLabel.equals(requestedKeyLabel);
+        }
+        return false;
+    }
+
+    private static boolean passwordKeyLabelMatches(
+        Recipient recipient,
+        String plainKeyLabel,
+        String requestedKeyLabel
+    ) {
+        if (isFormatted(requestedKeyLabel)) {
+            return recipient instanceof PBKDF2Recipient
+                && recipient.getRecipientKeyLabel().equals(requestedKeyLabel);
+        }
+        return recipient instanceof PBKDF2Recipient && plainKeyLabel.equals(requestedKeyLabel);
     }
 
 }

@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static ee.cyber.cdoc2.CDocConfiguration.KEY_LABEL_FILE_NAME_PROPERTY;
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.checkKeyLabelFormatAndGet;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.convertKeyLabelParamsMapToString;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
@@ -23,6 +22,7 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSecretKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.extractKeyLabelParams;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.getPlainKeyLabel;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.isFormatted;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.keyLabelParamsForDisplaying;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.toDataUrlScheme;
@@ -288,41 +288,23 @@ class KeyLabelToolsTest {
     }
 
     @Test
-    void shouldReturnPlainDecryptionKeyLabelIfEncryptedWithPlainText() {
+    void shouldReturnPlainKeyLabelIfEncryptedWithPlainText() {
         final String plainKeyLabel = "plainKeyLabel";
-        Object keyLabelForDecryption = checkKeyLabelFormatAndGet(
-            plainKeyLabel,
-            plainKeyLabel
-        );
+        String keyLabelForDecryption = getPlainKeyLabel(plainKeyLabel);
         assertEquals(plainKeyLabel, keyLabelForDecryption);
     }
 
     @Test
-    void shouldReturnFormattedDecryptionKeyLabel() {
-        Object keyLabelForDecryption = checkKeyLabelFormatAndGet(
-            "plainKeyLabel",
-            FORMATTED_KEY_LABEL
-        );
-        assertEquals(FORMATTED_KEY_LABEL, keyLabelForDecryption);
+    void shouldReturnPlainKeyLabelIfEncryptedWithFormattedForm() {
+        String keyLabelForDecryption = getPlainKeyLabel(FORMATTED_KEY_LABEL);
+        assertEquals(PLAIN_KEY_LABEL, keyLabelForDecryption);
     }
 
     @Test
-    void shouldReturnDecryptionKeyLabelIfEncryptionKeyLabelDiffers() {
-        Object keyLabelForDecryption = checkKeyLabelFormatAndGet(
-            "data:,V=1&TYPE=pub_key",
-            "plainKeyLabel"
-        );
-        assertEquals("plainKeyLabel", keyLabelForDecryption);
-    }
-
-    @Test
-    void shouldReturnDecryptionKeyLabelIfLabelParamIsMissingInEncryptionKeyLabel() {
+    void shouldReturnNullIfLabelParamIsMissingInEncryptionKeyLabel() {
         final String keyLabelWithMissingLabelParam = "data:,V=1&TYPE=pw";
-        Object keyLabelForDecryption = checkKeyLabelFormatAndGet(
-            keyLabelWithMissingLabelParam,
-            "plainKeyLabel"
-        );
-        assertEquals("plainKeyLabel", keyLabelForDecryption);
+        String keyLabelForDecryption = getPlainKeyLabel(keyLabelWithMissingLabelParam);
+        assertNull(keyLabelForDecryption);
     }
 
     @Test

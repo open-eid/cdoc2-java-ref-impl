@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.crypto.keymaterial;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EncryptionKeyMaterialCollectionBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
@@ -70,10 +71,14 @@ public interface EncryptionKeyMaterial {
         KeyLabelParams keyLabelParams
     ) {
         Objects.requireNonNull(pubKey);
+        EncryptionKeyOrigin origin = EncryptionKeyOrigin.PUBLIC_KEY;
+        if (!keyLabelParams.isFromOrigin(origin)) {
+            throw new IllegalArgumentException("KeyLabelParams must be of type " + origin);
+        }
 
         KeyLabelParams labelParams = (keyLabelParams == null)
             ? createPublicKeyLabelParams(null, null)
-            : keyLabelParams; //TODO: check params RM-3549
+            : keyLabelParams;
 
         return new PublicKeyEncryptionKeyMaterial(pubKey, formatKeyLabel(labelParams));
     }
@@ -119,13 +124,12 @@ public interface EncryptionKeyMaterial {
     ) {
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabelParams);
-// TODO: check params RM-3549
-//        if (!keyLabelParams.isFromOrigin(EncryptionKeyOrigin.SECRET)
-//            || !keyLabelParams.hasParam(KeyLabelTools.KeyLabelDataFields.LABEL.name())) {
-//
-//            throw new IllegalArgumentException("keyLabelParams must have type "
-//                + KeyLabelTools.KeyLabelType.SECRET + " and have a label");
-//        }
+        KeyLabelTools.KeyLabelDataFields label = KeyLabelTools.KeyLabelDataFields.LABEL;
+        if (!keyLabelParams.isFromOrigin(EncryptionKeyOrigin.SECRET)
+            || !keyLabelParams.hasParam(label)) {
+            throw new IllegalArgumentException("KeyLabelParams must be of type "
+                + KeyLabelTools.KeyLabelType.SECRET + " and have a parameter " + label);
+        }
 
         return new SecretEncryptionKeyMaterial(preSharedKey, formatKeyLabel(keyLabelParams));
     }
@@ -133,6 +137,5 @@ public interface EncryptionKeyMaterial {
     static EncryptionKeyMaterialCollectionBuilder collectionBuilder() {
         return new EncryptionKeyMaterialCollectionBuilder();
     }
-
 
 }

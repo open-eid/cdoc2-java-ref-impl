@@ -48,26 +48,16 @@ public final class KeyLabelTools {
     }
 
     /**
-     * Validates encryption key label with decryption key label.
-     * @param encryptionKeyLabel encryption key label
-     * @param decryptionKeyLabel decryption key label
-     * @return Key Label in the same format as it used for encryption
+     * Validates key label format.
+     * @param keyLabel encryption key label
+     * @return Key Label in plain text
      */
-    public static Object checkKeyLabelFormatAndGet(
-        Object encryptionKeyLabel,
-        Object decryptionKeyLabel
-    ) {
-        if (encryptionKeyLabel.equals(decryptionKeyLabel)) {
-            return decryptionKeyLabel;
-        }
-        if (keyLabelIsFormatted(encryptionKeyLabel) && !keyLabelIsFormatted(decryptionKeyLabel)) {
-            String encryptedKeyLabel = extractKeyLabel(encryptionKeyLabel.toString());
-            if (null != encryptedKeyLabel && encryptedKeyLabel.equals(decryptionKeyLabel)) {
-                return encryptionKeyLabel;
-            }
+    public static String getPlainKeyLabel(String keyLabel) {
+        if (keyLabelIsFormatted(keyLabel)) {
+            return extractKeyLabel(keyLabel);
         }
 
-        return decryptionKeyLabel;
+        return keyLabel;
     }
 
     /**
@@ -219,7 +209,7 @@ public final class KeyLabelTools {
         KeyLabelParams keyLabelParams = createSymmetricKeyLabelParams(
             EncryptionKeyOrigin.SECRET, keyLabel
         );
-        //ToDo add correct file, not payload file RM-3549
+        //ToDo add correct file, not payload file RM-3648
 //        if (isKeyLabelFileNameAllowedToBeAdded()) {
 //            keyLabelParams.addParam(KeyLabelDataFields.FILE.name(), payloadFileName);
 //        }
