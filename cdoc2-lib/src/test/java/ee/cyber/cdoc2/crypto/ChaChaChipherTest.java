@@ -207,7 +207,7 @@ class ChaChaChipherTest {
         InputStream inputStream = Files.newInputStream(biggerFile.toPath());
 
         byte[] aad = Envelope.getAdditionalData(new byte[]{}, new byte[] {});
-        byte[] secret = new byte[32];
+        byte[] secret = new byte[Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES];
         Crypto.getSecureRandom().nextBytes(secret);
         SecretKey cek = new SecretKeySpec(secret, "");
         try (CipherOutputStream cipherOutputStream = ChaChaCipher.initChaChaOutputStream(destChaChaStream, cek, aad)) {

@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.container;
 
 import ee.cyber.cdoc2.crypto.Crypto;
+import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -53,7 +54,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
+import static ee.cyber.cdoc2.CDocConfiguration.isKeyLabelMachineReadableFormatEnabled;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -298,7 +301,7 @@ public final class EnvelopeTestUtils {
                 passwordKeyMaterial.getPassword(), keyLabel
             );
         } else if (keyMaterial instanceof SecretDecryptionKeyMaterial secretKeyMaterial) {
-            return EncryptionKeyMaterial.fromSecret(
+            return createEncryptionKeyMaterialAccordingToKeyLabelFormat(
                 secretKeyMaterial.getSecretKey(), keyLabel
             );
         } else {
@@ -382,6 +385,10 @@ public final class EnvelopeTestUtils {
         builder.buildToFile(cdocFileToCreate);
     }
 
+    public static KeyLabelParams getPublicKeyLabelParams() {
+        return getPublicKeyLabelParams(null);
+    }
+
     public static KeyLabelParams getPublicKeyLabelParams(@Nullable String label) {
         return createPublicKeyLabelParams(label, null);
     }
@@ -397,6 +404,24 @@ public final class EnvelopeTestUtils {
             return null;
         };
 
+    }
+
+    private static EncryptionKeyMaterial createEncryptionKeyMaterialAccordingToKeyLabelFormat(
+        SecretKey secretKey,
+        String keyLabel
+    ) {
+        if (isKeyLabelMachineReadableFormatEnabled()) {
+            KeyLabelParams keyLabelParams = createSymmetricKeyLabelParams(
+                EncryptionKeyOrigin.SECRET, keyLabel
+            );
+            return EncryptionKeyMaterial.fromSecret(
+                secretKey, keyLabelParams
+            );
+        } else {
+            return EncryptionKeyMaterial.fromSecret(
+                secretKey, keyLabel
+            );
+        }
     }
 
 }

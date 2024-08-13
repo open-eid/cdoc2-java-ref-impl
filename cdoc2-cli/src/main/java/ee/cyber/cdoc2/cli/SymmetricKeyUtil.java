@@ -206,7 +206,11 @@ public final class SymmetricKeyUtil {
                     splitFormattedOption(formattedPassword, EncryptionKeyOrigin.PASSWORD);
                 //overwrite label with recipient label to allow entering password without label for
                 //single pbkdfRecipient eg -pw ":pw"
-                return new FormattedOptionParts(parsed.optionChars(), label, EncryptionKeyOrigin.PASSWORD);
+                return new FormattedOptionParts(
+                    parsed.optionChars(),
+                    parsed.label().isBlank() ? label : parsed.label(),
+                    EncryptionKeyOrigin.PASSWORD
+                );
             }
         } else {
             return getSplitPasswordAndLabel(formattedPassword, false);

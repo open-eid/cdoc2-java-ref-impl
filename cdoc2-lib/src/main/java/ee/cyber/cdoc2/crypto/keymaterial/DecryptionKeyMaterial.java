@@ -29,8 +29,16 @@ public interface DecryptionKeyMaterial {
      */
     EncryptionKeyOrigin getKeyOrigin();
 
-    static DecryptionKeyMaterial fromSecretKey(String label, SecretKey secretKey) {
-        return new SecretDecryptionKeyMaterial(label, secretKey);
+    /**
+     * Deprecated decryption key. Will be removed later.
+     * Creates decryption key material with secret key.
+     * @param secretKey secret key
+     * @param label key label
+     * @return DecryptionKeyMaterial key material required for decryption
+     */
+    @Deprecated
+    static DecryptionKeyMaterial fromSecretKey(SecretKey secretKey, String label) {
+        return new SecretDecryptionKeyMaterial(secretKey, label);
     }
 
     static DecryptionKeyMaterial fromPassword(char[] password, String label) {

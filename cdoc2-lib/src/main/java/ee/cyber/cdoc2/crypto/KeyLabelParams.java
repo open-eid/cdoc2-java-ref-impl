@@ -1,6 +1,8 @@
 package ee.cyber.cdoc2.crypto;
 
 import java.util.Map;
+import java.util.Objects;
+
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.urlEncodeValue;
 
 
@@ -19,15 +21,14 @@ public record KeyLabelParams(
         return this;
     }
 
-    //ToDo RM-3549
-//    public boolean hasParam(String key) {
-//        Objects.requireNonNull(key);
-//        return true;
-//    }
-//
-//    public boolean isFromOrigin(EncryptionKeyOrigin origin) {
-//        Objects.requireNonNull(origin);
-//        return true;
-//    }
+    public boolean hasParam(KeyLabelTools.KeyLabelDataFields key) {
+        Objects.requireNonNull(key);
+        return this.keyLabelParams.containsKey(key.name());
+    }
+
+    public boolean isFromOrigin(EncryptionKeyOrigin origin) {
+        Objects.requireNonNull(origin);
+        return this.encryptionKeyOrigin.equals(origin);
+    }
 
 }

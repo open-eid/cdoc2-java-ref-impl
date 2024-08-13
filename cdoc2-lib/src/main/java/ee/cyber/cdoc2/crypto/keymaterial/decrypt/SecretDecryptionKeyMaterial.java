@@ -8,15 +8,15 @@ import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
+
 /**
  * Represents key material required for decryption with symmetric key derived from secret.
- *
- * @param keyLabel  key label
  * @param secretKey symmetric key
+ * @param keyLabel  key label
  */
 public record SecretDecryptionKeyMaterial(
-    String keyLabel,
-    SecretKey secretKey
+    SecretKey secretKey,
+    String keyLabel
 ) implements DecryptionKeyMaterial, Destroyable {
 
     @Override
