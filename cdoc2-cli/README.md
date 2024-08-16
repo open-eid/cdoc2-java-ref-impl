@@ -1,6 +1,6 @@
 # Building & Running
 
-To run without building, download latest version of cdoc2-cli.jar from https://github.com/jann0k?tab=packages TODO: update repo
+To run without building, download latest version of cdoc2-cli.jar from https://github.com/orgs/open-eid/packages 
 
 ## Building
 Run from cdoc2-java-ref-impl parent directory
@@ -37,7 +37,7 @@ java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.p
 ```
 
 ### Encryption with server scenario
-Server must be running, see cdoc2-server/README.md for starting the server
+Server must be running, see cdoc2-capsule-server/README.md for starting the server
 
 To store keys in key server, specify addition `--server` option:
 
@@ -130,7 +130,7 @@ java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem 
 ```
 
 ### Decrypting with server scenario
-Server must be running, see cdoc2-server/README.md for starting the server
+Server must be running, see cdoc2-capsule-server/README.md for starting the server
 
 To decrypt CDOC document that has its keys distributed through key server, cdoc-cli must have `--server` option:
 

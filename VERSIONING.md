@@ -37,7 +37,7 @@ After creating new version Maven module or artifact, install it locally
 
 * `mvn -f <module> versions:use-latest-versions -Dincludes=ee.cyber.cdoc2:* -DexcludeReactor=false -DallowSnapshots=true`
 
-Example: `mvn -f cdoc2-server/get-server versions:use-latest-versions -Dincludes=ee.cyber.cdoc2:* -DexcludeReactor=false -DallowSnapshots=true`
+Example: `mvn -f get-server versions:use-latest-versions -Dincludes=ee.cyber.cdoc2:* -DexcludeReactor=false -DallowSnapshots=true`
 
 
 ### Update cdoc2 dependencies for all modules in repository
