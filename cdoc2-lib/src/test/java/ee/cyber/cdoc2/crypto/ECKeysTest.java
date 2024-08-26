@@ -108,11 +108,13 @@ class ECKeysTest {
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
         @SuppressWarnings("checkstyle:OperatorWrap")
-        String pubKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
-                "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO\n" +
-                "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii\n" +
-                "3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw\n" +
-                "-----END PUBLIC KEY-----\n";
+        String pubKeyPem = """
+            -----BEGIN PUBLIC KEY-----
+            MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO
+            IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii
+            3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw
+            -----END PUBLIC KEY-----
+            """;
 
 //        openssl ec -in key.pem -text -noout
 //        read EC key
@@ -144,7 +146,7 @@ class ECKeysTest {
 
         assertTrue(ECKeys.isEcSecp384r1Curve(ecPublicKey));
 
-        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams().toString());
+        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams());
 
         assertEquals(expectedHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
@@ -291,9 +293,8 @@ class ECKeysTest {
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
 
-
     @Test
-    void testLoadCertWithLabel() throws CertificateException, IOException {
+    void testLoadCertWithLabel() throws CertificateException {
 
         @SuppressWarnings("checkstyle:OperatorWrap")
         final String igorCertificate =
@@ -351,7 +352,7 @@ class ECKeysTest {
 
         ECParameterSpec ecParameterSpec = params.getParameterSpec(ECParameterSpec.class);
 
-        ECPublicKey infinityPublicKey = new ECPublicKey() {
+        return new ECPublicKey() {
             @Override
             public ECPoint getW() {
                 return ECPoint.POINT_INFINITY;
@@ -377,8 +378,6 @@ class ECKeysTest {
                 return ecParameterSpec;
             }
         };
-
-        return infinityPublicKey;
     }
 
     @Test
