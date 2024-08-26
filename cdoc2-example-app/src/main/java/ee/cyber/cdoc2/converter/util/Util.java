@@ -80,6 +80,7 @@ public class Util {
                                  @Nullable Path tempDir) throws CDocException,
         IOException, CDocValidationException, CDOCException {
 
+        @SuppressWarnings("java:S5443")
         Path outDir = (tempDir != null)
             ? Files.createDirectories(tempDir.resolve(UUID.randomUUID().toString()))
             : Files.createTempDirectory(UUID.randomUUID().toString());
