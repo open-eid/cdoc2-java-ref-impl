@@ -32,6 +32,10 @@ import java.util.UUID;
 
 public class Util {
 
+    private Util() {
+        // utility class
+    }
+
     static final int LABEL_LEN_BYTES = 64/8;
     private static final Logger log = LoggerFactory.getLogger(Util.class);
 
@@ -61,9 +65,9 @@ public class Util {
             if (result == JOptionPane.OK_OPTION) {
                 return pf.getPassword();
             } else if (result == JOptionPane.OK_CANCEL_OPTION) {
-                throw new RuntimeException("Password entry cancelled by user");
+                throw new CDocUserException("Password entry cancelled by user");
             } else {
-                throw new RuntimeException("Password not entered");
+                throw new CDocUserException("Password not entered");
             }
         }
     }
