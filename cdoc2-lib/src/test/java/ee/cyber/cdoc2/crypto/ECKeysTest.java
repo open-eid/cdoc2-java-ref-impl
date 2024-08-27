@@ -291,7 +291,6 @@ class ECKeysTest {
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPrivKey.getAlgorithm()));
         assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
 
-
         if (log.isDebugEnabled()) {
             log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
         }

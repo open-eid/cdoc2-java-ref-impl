@@ -7,6 +7,7 @@ import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import java.util.Arrays;
 import java.util.Objects;
 
+
 /**
  * Java POJO that represents flatbuffers {@link RecipientRecord header.RecipientRecord}
  * Capsule union field(s) will be implemented by subclasses.
@@ -15,11 +16,12 @@ public abstract class Recipient implements KekDerivable, SerializableFBS {
     // header.RecipientRecord specific fields
     protected final byte[] encryptedFmk;
     protected final String recipientKeyLabel;
-    protected final byte fmkEncryptionMethod = FMKEncryptionMethod.XOR;
+    protected final byte fmkEncryptionMethod;
 
     protected Recipient(byte[] encFmk, String recipientLabel) {
         this.recipientKeyLabel = recipientLabel;
         this.encryptedFmk = encFmk.clone();
+        this.fmkEncryptionMethod = FMKEncryptionMethod.XOR;
     }
 
     public String getRecipientKeyLabel() {
@@ -59,4 +61,5 @@ public abstract class Recipient implements KekDerivable, SerializableFBS {
         result = 31 * result + Arrays.hashCode(encryptedFmk);
         return result;
     }
+
 }

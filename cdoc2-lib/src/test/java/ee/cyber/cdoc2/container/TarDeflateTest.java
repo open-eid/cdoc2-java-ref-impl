@@ -196,7 +196,7 @@ class TarDeflateTest {
 
     @Test
     void shouldValidateFileNameWhenCreatingTar(@TempDir Path tempDir) throws IOException {
-        File outputTarFile = tempDir.resolve(TGZ_FILE_NAME).toFile();
+        tempDir.resolve(TGZ_FILE_NAME).toFile();
 
         assertFalse(INVALID_FILE_NAMES.isEmpty());
 
@@ -204,9 +204,10 @@ class TarDeflateTest {
         for (String fileName: INVALID_FILE_NAMES) {
             File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
             OutputStream os = new ByteArrayOutputStream();
+            List<File> files = List.of(file);
             assertThrows(
                 InvalidPathException.class,
-                () -> Tar.archiveFiles(os, List.of(file)),
+                () -> Tar.archiveFiles(os, files),
                 "File with name '" + file + "' should not be allowed in created tar"
             );
         }
@@ -282,7 +283,7 @@ class TarDeflateTest {
     }
 
     @Test
-    void shouldSupportLongFileName(@TempDir Path tempDir) throws IOException {
+    void shouldSupportLongFileName() throws IOException {
         byte[] data = {0x00};
         ByteArrayOutputStream destTarZ = new ByteArrayOutputStream();
 
