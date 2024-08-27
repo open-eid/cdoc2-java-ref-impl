@@ -463,7 +463,9 @@ public final class Envelope {
 
         byte[] ignored = new byte[1024];
         try {
-            while (cis.read(ignored) > 0) { }
+            while (cis.read(ignored) > 0) {
+                // do nothing
+            }
         } catch (IOException drainingException) { // MAC check error is thrown as IOException
             if (cleanUpFunc != null) {
                 cleanUpFunc.run();
