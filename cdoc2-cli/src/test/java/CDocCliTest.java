@@ -92,7 +92,7 @@ class CDocCliTest {
     }
 
     @Test
-    @Disabled
+    @Disabled("Requires user interaction for inserting password 'myPlainTextPassword'")
     void testSuccessfulCreateDecryptDocWithPasswordWhenItIsInsertedInteractively()
         throws IOException {
         encrypt(PASSWORD_OPTION);

@@ -25,7 +25,7 @@ import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @Command(name = "create", aliases = {"c", "encrypt"}, showAtFileInUsageHelp = true)
 public class CDocCreateCmd implements Callable<Void> {
 
