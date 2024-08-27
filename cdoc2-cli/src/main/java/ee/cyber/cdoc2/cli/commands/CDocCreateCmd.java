@@ -105,9 +105,6 @@ public class CDocCreateCmd implements Callable<Void> {
                 Arrays.toString(inputFiles));
         }
 
-
-
-
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(inputFiles));
 
@@ -115,7 +112,6 @@ public class CDocCreateCmd implements Callable<Void> {
             Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
         }
-
 
         List<EncryptionKeyMaterial> symmetricKMs =
             SymmetricKeyUtil.getEncryptionKeyMaterialFromFormattedSecrets(recipient.secrets);
