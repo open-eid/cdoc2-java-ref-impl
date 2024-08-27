@@ -37,6 +37,7 @@ class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);
 
     @Test
+    @SuppressWarnings({"java:S1481", "java:S1854"})
     void testBigInteger() {
         byte[] neg = new BigInteger("-255").toByteArray(); //0xff, 0x01
         byte[] neg254 = new BigInteger("-254").toByteArray(); //0xff, 0x02
