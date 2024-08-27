@@ -17,8 +17,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-@Command( name = "cdoc-convert"
-)
+@Command( name = "cdoc-convert")
+@SuppressWarnings("squid:S106")
 public class ConverterCmd implements Callable<Void> {
 
     private static final Logger log = LoggerFactory.getLogger(ConverterCmd.class);
@@ -48,8 +48,6 @@ public class ConverterCmd implements Callable<Void> {
     @Option(names = { "-h", "--help" }, usageHelp = false, description = "display a help message")
     private boolean helpRequested = false;
 
-
-
     public static void main(String... args) {
 
         if (args.length == 0) {
@@ -60,7 +58,6 @@ public class ConverterCmd implements Callable<Void> {
         int exitCode = new CommandLine(new ConverterCmd()).execute(args);
         System.exit(exitCode);
     }
-
 
     @Override
     public Void call() throws Exception {

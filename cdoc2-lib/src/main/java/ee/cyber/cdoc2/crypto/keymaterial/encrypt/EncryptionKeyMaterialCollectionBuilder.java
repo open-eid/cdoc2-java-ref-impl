@@ -94,7 +94,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
             .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
             .map(SkLdapUtil::toEncryptionKeyMaterial)
-            .collect(Collectors.toList());
+            .toList();
 
         recipients.addAll(keyMaterials);
         return this;

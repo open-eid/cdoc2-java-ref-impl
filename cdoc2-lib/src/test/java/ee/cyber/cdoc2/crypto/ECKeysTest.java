@@ -70,12 +70,14 @@ class ECKeysTest {
     void testLoadEcPrivKey() throws GeneralSecurityException, IOException {
         @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
-                "-----BEGIN EC PRIVATE KEY-----\n" +
-                        "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
-                        "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j\n" +
-                        "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
-                        "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
-                        "-----END EC PRIVATE KEY-----\n";
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+                4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+                C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+                yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+                -----END EC PRIVATE KEY-----
+                """;
 
         //        openssl ec -in key.pem -text -noout
         //        read EC key
@@ -283,12 +285,16 @@ class ECKeysTest {
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 
-        //log.debug("key: {}", ecPrivKey.getS().toString(16));
+        if (log.isDebugEnabled()) {
+            log.debug("key: {}", ecPrivKey.getS().toString(16));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPrivKey.getAlgorithm()));
         assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
 
 
-        //log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        if (log.isDebugEnabled()) {
+            log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPublicKey.getAlgorithm()));
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }

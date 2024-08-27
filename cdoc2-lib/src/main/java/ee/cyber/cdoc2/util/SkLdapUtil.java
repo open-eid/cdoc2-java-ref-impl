@@ -59,6 +59,7 @@ public final class SkLdapUtil {
     // distinguished name fragment for authentication certificates using e-resident digi-id
     private static final String AUTH_E_RESIDENT_DIGI_ID = AUTH_CERT_PART + E_RESIDENT_DIGI_ID;
 
+    @SuppressWarnings("java:S1149")
     private static DirContext initDirContext() throws NamingException {
         Hashtable<String, Object> env = new Hashtable<>(11);
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");

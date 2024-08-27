@@ -60,7 +60,9 @@ public final class KekTools {
             secretKey,
             recipient.getSalt(),
             FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
-        log.debug("kek={}", HexFormat.of().formatHex(kek.getEncoded()));
+        if (log.isDebugEnabled()) {
+            log.debug("kek={}", HexFormat.of().formatHex(kek.getEncoded()));
+        }
         return kek.getEncoded();
     }
 

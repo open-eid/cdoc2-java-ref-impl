@@ -132,13 +132,11 @@ class TarDeflateTest {
     void testTarGzBomb(@TempDir Path tempDir) throws IOException {
         byte[] zeros = new byte[1024]; //1KB
 
+        // can multiply with 1024 ones more for 1GM size
         long bigFileSize = 1024 //1KB
                 * 1024; //1MB
-                //*1024 //1GB
-                //;
 
         Path bombPath =  tempDir.resolve("bomb.tgz");
-        //bombPath.toFile().deleteOnExit();
 
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(Files.newOutputStream(bombPath))))) {
@@ -161,14 +159,14 @@ class TarDeflateTest {
             tarOs.closeArchiveEntry();
         }
 
-
         Path outDir = tempDir.resolve("testTarGzBomb");
         Files.createDirectories(outDir);
 
         log.debug("Extracting {} to {}", bombPath, outDir);
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
 
-            try (TarDeflate tar = new TarDeflate(Files.newInputStream(bombPath))) {
+        InputStream inputStream = Files.newInputStream(bombPath);
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            try (TarDeflate tar = new TarDeflate(inputStream)) {
                 tar.extractToDir(outDir);
             }
         });
@@ -243,7 +241,7 @@ class TarDeflateTest {
             File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
             var result = new TarDeflate(new FileInputStream(file))
                 .extractFilesToDir(List.of(fileName), tempDir);
-            assertTrue(result.size() == 1);
+            assertEquals(1, result.size());
         }
     }
 
