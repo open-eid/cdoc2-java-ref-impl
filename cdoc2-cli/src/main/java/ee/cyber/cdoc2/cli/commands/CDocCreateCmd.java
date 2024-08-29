@@ -1,7 +1,12 @@
 package ee.cyber.cdoc2.cli.commands;
 
-import ee.cyber.cdoc2.FormattedOptionParts;
-import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
+import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import org.slf4j.Logger;
@@ -20,7 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
-import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
 
 
 //S106 - Standard outputs should not be used directly to log anything
@@ -57,12 +62,14 @@ public class CDocCreateCmd implements Callable<Void> {
         private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-        private String[] secrets;
+            converter = LabeledSecretConverter.class,
+            description = CliConstants.SECRET_DESCRIPTION)
+        private LabeledSecret[] labeledSecrets;
 
         @Option(names = {"-pw", "--password"}, arity = "0..1",
-            paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-        private String password;
+            converter = LabeledPasswordParamConverter.class,
+            paramLabel = "<label>:<password>", description = CliConstants.PASSWORD_DESCRIPTION)
+        private LabeledPasswordParam labeledPasswordParam;
     }
 
     // allow -Dkey for setting System properties
@@ -100,13 +107,10 @@ public class CDocCreateCmd implements Callable<Void> {
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
-                (recipient.secrets != null) ? "****" : null,
-                (recipient.password != null) ? "****" : null,
+                (recipient.labeledSecrets != null) ? "****" : null,
+                (recipient.labeledPasswordParam != null) ? "****" : null,
                 Arrays.toString(inputFiles));
         }
-
-
-
 
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(inputFiles));
@@ -116,27 +120,21 @@ public class CDocCreateCmd implements Callable<Void> {
             cDocBuilder.withServerProperties(p);
         }
 
-
-        List<EncryptionKeyMaterial> symmetricKMs =
-            SymmetricKeyUtil.getEncryptionKeyMaterialFromFormattedSecrets(recipient.secrets);
+        LabeledPassword labeledPassword = null;
+        if (this.recipient.labeledPasswordParam != null) {
+            labeledPassword = (this.recipient.labeledPasswordParam.isEmpty())
+                    ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
+                    : this.recipient.labeledPasswordParam.labeledPassword();
+        }
 
         List<EncryptionKeyMaterial> recipients = EncryptionKeyMaterial.collectionBuilder()
+            .fromPassword(labeledPassword)
+            .fromSecrets(this.recipient.labeledSecrets)
             .fromPublicKey(this.recipient.pubKeys)
             .fromX509Certificate(this.recipient.certs)
             // fetch authentication certificates' public keys for natural person identity codes
             .fromEId(this.recipient.identificationCodes)
             .build();
-
-        if (recipient.password != null) {
-            FormattedOptionParts passwordAndLabel
-                = SymmetricKeyUtil.getPasswordAndLabel(recipient.password);
-
-            recipients.addAll(
-                EncryptionKeyMaterial.collectionBuilder().fromPassword(
-                    passwordAndLabel.optionChars(), passwordAndLabel.label()).build());
-        }
-
-        recipients.addAll(symmetricKMs);
 
         cDocBuilder.withRecipients(recipients);
 
@@ -152,7 +150,7 @@ public class CDocCreateCmd implements Callable<Void> {
     }
 
     private void setExpiryDurationOrLogWarn(CDocBuilder cDocBuilder) {
-        if (null != this.recipient.secrets || null != recipient.password) {
+        if (null != this.recipient.labeledSecrets || null != recipient.labeledPasswordParam) {
             String warnMsg = "Key capsule expiry duration cannot be requested for symmetric key "
                 + "encryption";
             log.warn("WARNING: {}", warnMsg);

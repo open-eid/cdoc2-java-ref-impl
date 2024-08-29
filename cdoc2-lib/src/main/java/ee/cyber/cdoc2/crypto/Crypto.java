@@ -176,6 +176,15 @@ public final class Crypto {
     public static SecretKey extractSymmetricKeyFromPassword(
         final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
+
+        // Java char is 16 bit Unicode. It gets secretly encoded into bytes using utf-8 encoding
+        // before using it as P param for PBKDF2 function
+        // https://github.com/openjdk/jdk/blob/8555e0f6c40c045f7763777a9bf976de99c0534c/
+        // src/java.base/share/classes/com/sun/crypto/provider/PBKDF2KeyImpl.java#L72
+        // BC has option to use other encodings
+        // https://stackoverflow.com/questions/77451714/working-rfc2898derivebytes-pbkdf2-in-java
+        // CDOC2 spec says that passwords for PBKDF2 are utf-8 encoded, so OpenJDK PBKDF2 impl is ok
+
         SecretKeyFactory skf = SecretKeyFactory.getInstance(
             KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256)
         );

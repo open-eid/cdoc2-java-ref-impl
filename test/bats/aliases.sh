@@ -21,6 +21,7 @@ if [ -z ${TEST_VECTORS+x} ]
 then
   export TEST_VECTORS=${CDOC2_DIR}/test/testvectors
   export TEST_VECTORS_V_1_2=${CDOC2_DIR}/test/testvectors-v1.2
+  export TEST_VECTORS_V_1_4=${CDOC2_DIR}/test/testvectors-v1.4
   cd "$TESTING_DIR" || exit
 fi
 

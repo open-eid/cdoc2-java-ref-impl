@@ -138,14 +138,14 @@ run_alias() {
   assert_output --partial "Created $CDOC2_CONTAINER"
 }
 
-@test "test5: successfully decrypt CDOC2 container from test1 with password" {
+@test "test5: successfully decrypt CDOC2 container from test4 with password" {
   run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
   assertSuccessfulExitCode
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
 }
 
-@test "test5a: successfully decrypt CDOC2 container from test1 with password and without label" {
+@test "test5a: successfully decrypt CDOC2 container from test4 with password and without label" {
   run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw ":$PW" --output $TEST_RESULTS_DIR
   assertSuccessfulExitCode
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
@@ -167,10 +167,11 @@ run_alias() {
 }
 
 @test "test7: assert decryption with symmetric key is compatible with earlier encrypted CDOC2" {
-  local existing_test_vector="symmetric_old_version_DO_NOT_DELETE.cdoc"
+  # from tag v1.0.0 test/testvectors/symmetric.cdoc
+  local existing_test_vector="symmetric_v1.0.0.cdoc"
 
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${existing_test_vector} --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${existing_test_vector} --secret create_symmetric_label:$SECRET --output $TEST_RESULTS_DIR
 
   assertSuccessfulExitCode
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
@@ -212,6 +213,19 @@ run_alias() {
   assertSuccessfulExitCode
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
+
+  removeEncryptedCdoc
+}
+
+@test "test11a: fail to decrypt if two keys are used for decryption" {
+  # encrypt with secret key and password
+  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
+  assertSuccessfulExitCode
+
+  # try to decrypt with two keys
+  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+  assert_output --partial "Error:"
+  assert_output --partial "(specify only one)"
 
   removeEncryptedCdoc
 }
@@ -335,13 +349,13 @@ EOF
 }
 
 @test "test15: assert earlier encrypted CDOC2 with Symmetric key displays only pure key label" {
-  local cdoc_file="symmetric_old_version_DO_NOT_DELETE.cdoc"
+  local cdoc_file="symmetric_v1.0.0.cdoc"
 
   echo "# Requesting info for ${cdoc_file}">&3
   run run_alias cdoc-cli info -f ${TEST_VECTORS}/${cdoc_file}
 
   assertSuccessfulExitCode
-  local expected_output_info="SymmetricKey: LABEL:$SECRET_LABEL "
+  local expected_output_info="SymmetricKey: LABEL:create_symmetric_label "
   echo "# $expected_output_info">&3
   assert_equal "$output" "$expected_output_info"
 }
@@ -476,7 +490,7 @@ EOF
   local existing_test_vector="symmetric_with_formatted_key_label.cdoc"
 
   echo "# Requesting info for ${existing_test_vector}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_2}/${existing_test_vector}
+  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_4}/${existing_test_vector}
 
   assertSuccessfulExitCode
   local expected_output_info="SymmetricKey: V:1, LABEL:$SECRET_LABEL, FILE:$existing_test_vector, TYPE:secret "
@@ -488,10 +502,10 @@ EOF
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS_V_1_2}/${existing_test_vector} --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS_V_1_4}/${existing_test_vector} --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
 
   assertSuccessfulExitCode
-  assert_output --partial "Decrypting ${TEST_VECTORS_V_1_2}/${existing_test_vector}"
+  assert_output --partial "Decrypting ${TEST_VECTORS_V_1_4}/${existing_test_vector}"
   assertSuccessfulDecryption
 
   rm -f $TEST_RESULTS_DIR/$existing_test_vector
