@@ -145,6 +145,10 @@ public final class SkLdapUtil {
         try {
             for (String id: ids) {
                 Map<X509Certificate, String> certs = findAuthenticationEstEidCertificates(ctx, id);
+                if (certs.isEmpty()) {
+                    throw new CertificateException("Identity code " + id + "is  not found at server");
+                }
+
                 for (var certNameEntry: certs.entrySet()) {
                     X509Certificate cert = certNameEntry.getKey();
                     String distinguishedName = certNameEntry.getValue();

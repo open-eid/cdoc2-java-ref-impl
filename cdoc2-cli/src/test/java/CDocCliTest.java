@@ -71,8 +71,8 @@ class CDocCliTest {
 
     @Test
     void testCreateDecryptDocECShort() throws IOException {
-        String publicKey = "keys/cdoc2client_pub.pem";
-        String privateKey = "keys/cdoc2client.pem";
+        String publicKey = "keys/cdoc2client_pub.key";
+        String privateKey = "keys/cdoc2client_priv.key";
 
         successfullyDecryptDocWithPublicKey(publicKey, privateKey);
     }

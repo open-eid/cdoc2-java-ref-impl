@@ -54,7 +54,7 @@ create_simple_ec() {
   if $RUN_DECRYPT
   then
     echo "Decrypting ${cdoc_file}"
-    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client_priv.key -o ${TMP_DIR}
   fi
 }
 
@@ -72,7 +72,7 @@ create_simple_ec_with_formatted_key_label() {
   if $RUN_DECRYPT
   then
     echo "Decrypting ${cdoc_file}"
-    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_v_1_2_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client_priv.key -o ${TMP_DIR}
   fi
 }
 
@@ -95,7 +95,7 @@ create_ec_server_ria_dev_pkcs12() {
     echo "Decrypting ${cdoc_file}"
       cd $CLI_DIR && $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
           --server=${CLI_CONF}/ria-dev/ria-dev_pkcs12.properties \
-          -k ${CLI_KEYS_DIR}/cdoc2client.pem -o ${TMP_DIR}
+          -k ${CLI_KEYS_DIR}/cdoc2client_priv.key -o ${TMP_DIR}
   fi
 }
 

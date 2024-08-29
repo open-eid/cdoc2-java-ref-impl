@@ -16,7 +16,6 @@ setup() {
   else
       HAS_EXPECT=false
   fi
-
 }
 
 
@@ -100,7 +99,7 @@ run_alias() {
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f $TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client_priv.key -o $TEST_RESULTS_DIR
   assertSuccessfulDecryption
 
   rm -f $TEST_RESULTS_DIR/$cdoc_file
@@ -110,7 +109,7 @@ run_alias() {
   local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
 
   echo "# Decrypting ${cdoc_file}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${cdoc_file} -k $CLI_KEYS_DIR/cdoc2client.pem --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${cdoc_file} -k $CLI_KEYS_DIR/expired/cdoc2client_expired_priv.key --output $TEST_RESULTS_DIR
 
   assertSuccessfulExitCode
   assert_output --partial "Decrypting ${TEST_VECTORS}/${cdoc_file}"
@@ -380,12 +379,12 @@ EOF
   run run_alias cdoc-cli info -f ${TEST_RESULTS_DIR}/${cdoc_file}
 
   assertSuccessfulExitCode
-  local expected_output_info="EC PublicKey: CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411, V:1, CN:cdoc20-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
+  local expected_output_info="EC PublicKey: CERT_SHA1:9460be97b0f67a2fb98f0d73821293879804ab5e, V:1, CN:cdoc2-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
   echo "# $expected_output_info">&3
   assert_output --partial "EC PublicKey:"
-  assert_output --partial "CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411"
+  assert_output --partial "CERT_SHA1:9460be97b0f67a2fb98f0d73821293879804ab5e"
   assert_output --partial "V:1"
-  assert_output --partial "CN:cdoc20-client"
+  assert_output --partial "CN:cdoc2-client"
   assert_output --partial "FILE:cdoc2client-certificate.pem"
   assert_output --partial "TYPE:cert"
 
@@ -409,7 +408,7 @@ EOF
   assert_output --partial "TYPE:cert"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/cdoc2client.pem -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/cdoc2client_priv.key -o $TEST_RESULTS_DIR
   assertSuccessfulDecryption
 
   rm -f $TEST_RESULTS_DIR/$existing_test_vector
