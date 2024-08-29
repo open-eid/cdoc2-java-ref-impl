@@ -1,5 +1,16 @@
 This directory contains pre-generate EC keys and downloaded id-card certificates.
 
+## Extract private and public keys from newly generated client certificate only if it was updated in capsule server
+Remote repository and branches must be set up manually in `remote_repository.sh` before running keys
+extracting script to copy updated client-certificate.pem and keystore cdoc2client.p12 from
+cdoc2-capsule-server/cdoc2-server/keys into cdoc2-cli/keys.
+Then run following script `extract_client_keys.sh` here for extracting keys from certificate:
+
+```bash
+source remote_repository.sh
+sh extract_client_keys.sh
+```
+
 ## Convert X509 Certificate DER to PEM
 .der and .cer are the same binary format. 
 ```

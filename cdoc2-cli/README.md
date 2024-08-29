@@ -50,7 +50,7 @@ Optionally cdoc2-cli also supports encrypting with "soft" key or certificate
 
 Public key (`-p`)
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.pem README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.key README.md
 ```
 
 Certificate (`-c` option):
@@ -143,7 +143,7 @@ It is also possible to decrypt documents created with "soft" keys, but configura
 key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
 mutual TLS.
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client.pem -o /tmp/
+java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key -o /tmp/
 ```
 
 
@@ -178,7 +178,7 @@ java -jar target/cdoc2-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
 or with server scenario:
 
 ```
-java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client.pem
+java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key
 ```
 
 or with password:
@@ -253,7 +253,7 @@ java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/cdoc2clie
 
 Decrypt created container with private key:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc2client.pem --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc2client_priv.key --output /tmp
 ```
 
 ### Troubleshooting ID-card

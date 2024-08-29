@@ -59,8 +59,9 @@ public class EncryptionKeyMaterialCollectionBuilder {
      * @param certificates certificates
      * @return the list of EncryptionKeyMaterial
      */
-    public EncryptionKeyMaterialCollectionBuilder fromX509Certificate(File[] certificates)
-        throws IOException, CertificateException {
+    public EncryptionKeyMaterialCollectionBuilder fromX509Certificate(
+        File[] certificates
+    ) throws IOException, CertificateException {
 
         List<SkLdapUtil.CertificateData> certData = PemTools.loadCertKeysWithLabel(certificates);
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
