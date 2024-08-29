@@ -90,10 +90,14 @@ public interface EncryptionKeyMaterial {
             KeyLabelParams keyLabelParams = createSymmetricKeyLabelParams(
                 EncryptionKeyOrigin.PASSWORD, keyLabel
             );
-            return new PasswordEncryptionKeyMaterial(passwordChars, formatKeyLabel(keyLabelParams));
+            return fromPassword(passwordChars, keyLabelParams);
         } else {
             return new PasswordEncryptionKeyMaterial(passwordChars, keyLabel);
         }
+    }
+
+    static EncryptionKeyMaterial fromPassword(char[] password, KeyLabelParams keyLabelParams) {
+        return new PasswordEncryptionKeyMaterial(password, formatKeyLabel(keyLabelParams));
     }
 
     /**
@@ -116,7 +120,6 @@ public interface EncryptionKeyMaterial {
             return new SecretEncryptionKeyMaterial(preSharedKey, keyLabel);
         }
     }
-
 
     static EncryptionKeyMaterial fromSecret(
         SecretKey preSharedKey,

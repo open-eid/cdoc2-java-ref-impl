@@ -24,7 +24,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
-import java.util.HexFormat;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -60,7 +59,6 @@ public final class KekTools {
             secretKey,
             recipient.getSalt(),
             FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
-        log.debug("kek={}", HexFormat.of().formatHex(kek.getEncoded()));
         return kek.getEncoded();
     }
 

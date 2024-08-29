@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.util.PasswordValidationUtil;
 
 
 /**
@@ -18,6 +19,10 @@ public record PasswordEncryptionKeyMaterial(
     char[] password,
     String keyLabel
 ) implements EncryptionKeyMaterial {
+
+    public PasswordEncryptionKeyMaterial {
+        PasswordValidationUtil.validatePassword(password);
+    }
 
     @Override
     public boolean equals(Object o) {
