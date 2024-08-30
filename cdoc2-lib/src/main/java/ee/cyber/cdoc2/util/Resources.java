@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+
 /**
  * Utility class for loading resources (ex. properties files) from classpath
  */
@@ -46,4 +47,5 @@ public final class Resources {
             return Files.newInputStream(Path.of(name));
         }
     }
+
 }
