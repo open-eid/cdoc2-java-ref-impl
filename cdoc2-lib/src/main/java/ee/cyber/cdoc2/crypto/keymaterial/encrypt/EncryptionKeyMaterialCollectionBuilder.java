@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.formatKeyLabel;
+
 
 /**
  * Class for creating collection of EncryptionKeyMaterial from multiple sources.
@@ -72,12 +72,10 @@ public class EncryptionKeyMaterialCollectionBuilder {
                     KeyLabelParams keyLabelParams = createCertKeyLabelParams(
                         entry.getKeyLabel(), entry.getFingerprint(), entry.getFile()
                     );
-                    return new PublicKeyEncryptionKeyMaterial(
-                        entry.getPublicKey(), formatKeyLabel(keyLabelParams)
-                    );
+                    return EncryptionKeyMaterial.fromPublicKey(entry.getPublicKey(), keyLabelParams);
                 }
             )
-            .collect(Collectors.toList());
+            .toList();
 
         recipients.addAll(keyMaterials);
         return this;
