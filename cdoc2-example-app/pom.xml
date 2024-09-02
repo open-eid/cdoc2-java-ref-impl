@@ -14,8 +14,8 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-        <junit.jupiter.version>5.9.2</junit.jupiter.version>
+        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <junit.jupiter.version>5.10.3</junit.jupiter.version>
     </properties>
 
     <dependencyManagement>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.open-eid.cdoc4j</groupId>
             <artifactId>cdoc4j</artifactId>
-            <version>1.4</version>
+            <version>1.5</version>
             <exclusions>
                 <exclusion>
                     <!-- 2.11.0 from cdoc4j causes runtime MethodNotFound with cdoc2 commons-io 2.16.1 -->
@@ -74,7 +74,7 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.2.5</version>
+            <version>3.5.0</version>
             <configuration>
                 <trimStackTrace>false</trimStackTrace>
             </configuration>
