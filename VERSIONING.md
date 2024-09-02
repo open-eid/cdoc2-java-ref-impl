@@ -53,7 +53,7 @@ General release procedure:
 * `prepare_release.sh` (changes versions to RELEASE versions and runs tests)
 * Verify changes (`git diff`)
 * Edit CHANGELOG.md
-* `make_release.sh` (`git commit; git push` RELEASE branch and `mvn deploy` RELEASE artifacts)
+* `make_release.sh -d` (`git commit; git push` to RELEASE branch)
 
 This will change -SNAPSHOT version to release version, update dependencies in all modules to latest
 non-SNAPSHOT version. Build, test, create release branch, push changes, deploy maven artifacts.
@@ -64,8 +64,8 @@ version in parent pom before changing other versions.
 
 If everything went well, then
 * release branch was created with name 'release_v<parent-pom.version>'
-* Maven artifacts with release version are in Maven repository
 * original branch is checked out ('master' usually)
+* Nothing is commited to main branch ('master')
 
 To finish create squash merge from release branch to main branch
 ```bash
@@ -73,6 +73,10 @@ git merge --squash $RELEASE_BRANCH
 git commit -m "Squashed commit from $RELEASE_BRANCH"
 git push $GIT_REMOTE $GIT_BRANCH
 ```
+
+or create GitHub PR (recommended) from release branch and merge from GitHub. 
+
+Finish by [publishing](README.md#publishing) deliverables from a release tag.
 
 ### Release cdoc2-java-ref-impl and cdoc2-capsule-server
 

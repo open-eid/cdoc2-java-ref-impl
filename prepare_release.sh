@@ -34,5 +34,9 @@ done
 
 # replace module -SNAPSHOT version with release version (non-SNAPSHOT)
 mvn versions:set -DremoveSnapshot
+mvn versions:set -DremoveSnapshot -pl cdoc2-schema
+mvn versions:set -DremoveSnapshot -pl cdoc2-client
+mvn versions:set -DremoveSnapshot -pl cdoc2-lib
+mvn versions:set -DremoveSnapshot -pl cdoc2-cli
 # build and install into local maven package repository
 mvn install

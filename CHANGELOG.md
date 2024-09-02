@@ -1,10 +1,29 @@
 # Changelog
 
-## [1.4.0] Key label formatting (2024-XX-XX)
+## [1.4.0] Key label formatting (2024-09-02)
+
+### Features
+
+* Support for [machine-readable KeyLabel format](https://open-eid.github.io/CDOC2/1.1/02_protocol_and_cryptography_spec/appendix_d_keylabel/)
+  - When encrypting, then this formatted key label is enabled by default. Can be disabled by setting `ee.cyber.cdoc2.key-label.machine-readable-format.enabled=false` system property (`-D`)
+  - When decrypting, then both formatted and unformatted key label field versions are supported.
+
+### Bug Fixes
+
+* Fix cdoc2-cli encrypting functionality for SymmetricKey (`--secret` parameter). Bug was introduced with 1.1.0 release
+  - Rewrote symmetric key (secret) and password handling in cdoc2-cli/cdoc2-lib
+  - Bumped cdoc2-lib major version to `2.0.0`, as broken classes (`FormattedOptionParts`) were removed and replaced with a new ones (`LabeledPassword` and `LabeledSecret`)
+  - cdoc2-lib was not broken, when using `EncryptionKeyMaterial#fromSecret(SecretKey,String)` directly (without `FormattedOptionParts`)
+  - broken example cdoc2 files were removed from `test/testvectors` and replaced with a correct ones
+* Fix cdoc2-client ApiClient timeouts (`cdoc2.client.server.*-timeout` were not working)
+* Allow loading [pkcs11 (smart-card) test properties](README.md#pkcs11-tests) from file system (previously only classpath was working)
 
 ### Internal
 
-* Upgraded Spring 3.2.5 -> 3.3.3 + other third-party dependency updates
+* Third-party dependency updates to latest
+* Added GitHub workflows for building and releasing
+* Resolve issues reported by SonarCloud/SonarQube
+* Update client and server certificates used for unit-tests. Add scripts for future updates
 
 ## [1.3.0] '/key-capsules' OAS v2.1.0 support (2024-07-02)
 
