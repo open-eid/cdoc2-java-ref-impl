@@ -10,11 +10,13 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
  * Represents key material required for encryption key derived from the public key.
  *
  * @param publicKey public key
- * @param keyLabel  key label
+ * @param keyLabel key label
+ * @param encryptionKeyOrigin encryption key origin
  */
 public record PublicKeyEncryptionKeyMaterial(
     PublicKey publicKey,
-    String keyLabel
+    String keyLabel,
+    EncryptionKeyOrigin encryptionKeyOrigin
 ) implements EncryptionKeyMaterial {
 
     @Override
@@ -24,7 +26,7 @@ public record PublicKeyEncryptionKeyMaterial(
 
     @Override
     public EncryptionKeyOrigin getKeyOrigin() {
-        return EncryptionKeyOrigin.PUBLIC_KEY;
+        return encryptionKeyOrigin;
     }
 
     /**

@@ -74,8 +74,8 @@ class CDocCliTest {
 
     @Test
     void testCreateDecryptDocECShort() throws IOException {
-        String publicKey = "keys/cdoc2client_pub.pem";
-        String privateKey = "keys/cdoc2client.pem";
+        String publicKey = "keys/cdoc2client_pub.key";
+        String privateKey = "keys/cdoc2client_priv.key";
 
         successfullyDecryptDocWithPublicKey(publicKey, privateKey);
     }
@@ -145,7 +145,6 @@ class CDocCliTest {
     @Test
     void shouldFailToEncryptDocWithPasswordIfItsValidationHasFailed() {
         String passwordForEncrypt = "--password=passwordlabel:short";
-
         assertThrowsException(() ->
             encrypt(passwordForEncrypt)
         );
@@ -164,15 +163,9 @@ class CDocCliTest {
     }
 
     @Test
-    void shouldSucceedToEncryptDocWithOneKeyButTryToDecryptWithTwo() throws IOException {
-        encrypt(PASSWORD_OPTION);
-        decryptWithTwoKeys(SECRET_OPTION, PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
-    }
-
-    @Test
     void testSuccessfulReEncryption(@TempDir Path tempPath) throws IOException {
         String secret = "mysecret:base64," + Base64.getEncoder()
-            .encodeToString("topSecret!".getBytes(StandardCharsets.UTF_8));
+            .encodeToString("topSecret!123456topSecret!123456".getBytes(StandardCharsets.UTF_8));
         String secretForEncrypt = "--secret=" + secret;
         String secretForDecrypt = "--secret=" + secret;
 
@@ -193,7 +186,7 @@ class CDocCliTest {
     @Test
     void shouldFailWithTheSameOutputDirectoryWhenReEncrypt(@TempDir Path tempPath) {
         String secret = "mysecret:base64," + Base64.getEncoder()
-            .encodeToString("topSecret!".getBytes(StandardCharsets.UTF_8));
+            .encodeToString("topSecret!123456topSecret!123456".getBytes(StandardCharsets.UTF_8));
 
         String secretCmd = "--secret=" + secret;
 
@@ -391,16 +384,6 @@ class CDocCliTest {
             "--output=" + outputPath
         };
         executeDecryption(decryptArgs, decryptionFilePath, outputPath, cdocCliPath, expectedExitCode);
-    }
-
-    private void decryptWithTwoKeys(
-        String decryptionArgument1,
-        String decryptionArgument2,
-        int expectedDecryptExitCode
-    ) throws IOException {
-
-        String[] decryptArgs = createDecryptArgs(decryptionArgument1, decryptionArgument2);
-        executeDecryptionWithDefaultPath(decryptArgs, expectedDecryptExitCode);
     }
 
     private String[] createEncryptArgs(String encryptionArgument1, String encryptionArgument2) {

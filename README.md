@@ -231,10 +231,16 @@ To run the tests using a physical PKCS11 device (smart card or usb token), execu
 mvn test -Dtests=pkcs11
 ```
 
-The pkcs11 device configuration (PKCS11 library, slot, pin, etc) can be specified using `cdoc2.pkcs11.conf-file` system property, for example:
+The pkcs11 device configuration (PKCS11 library, slot, pin, etc) can be specified using 
+`cdoc2.pkcs11.conf-file` system property, for example run with configuration file from filesystem 
+from the root of the project:
 
 ```
-mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=pkcs11-test-safenet.properties
+mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=src/test/resources/pkcs11-test-safenet.properties
+```
+or
+```
+mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=src/test/resources/pkcs11-test-idcard.properties
 ```
 
 By default, the pkcs11 configuration is read from the file `pkcs11-test-idcard.properties`.

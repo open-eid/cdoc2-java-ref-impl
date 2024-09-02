@@ -12,12 +12,12 @@
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
-        <logback-classic.version>1.4.14</logback-classic.version>
+        <logback-classic.version>1.5.7</logback-classic.version>
         <jersey.version>3.1.6</jersey.version>
-        <jackson.version>2.15.4</jackson.version>
+        <jackson.version>2.17.2</jackson.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
 
-        <spotbugs-annotations.version>4.8.5</spotbugs-annotations.version>
+        <spotbugs-annotations.version>4.8.3</spotbugs-annotations.version>
 
         <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
@@ -120,7 +120,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.8.0</version>
                 <executions>
 
                     <!-- download openapi yaml using dependency::get -->
@@ -165,7 +165,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.5.0</version>
+                <version>7.8.0</version>
                 <executions>
                     <execution>
                         <id>generate-key-capsules-api-client</id>

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0] Key label formatting (2024-XX-XX)
+
+### Internal
+
+* Upgraded Spring 3.2.5 -> 3.3.3 + other third-party dependency updates
+
 ## [1.3.0] '/key-capsules' OAS v2.1.0 support (2024-07-02)
 
 ### Features
@@ -9,7 +15,7 @@
   Label is not required, when CDOC2 file contains single password recipient.
 * Add example project to demonstrate usage of cdoc2-java-ref-impl with cdoc4j (convert cdoc -> cdoc2)
 
-## [1.2.0 ] Repository split and maintenance (2024-05-30)
+## [1.2.0] Repository split and maintenance (2024-05-30)
 
 ### Features
 

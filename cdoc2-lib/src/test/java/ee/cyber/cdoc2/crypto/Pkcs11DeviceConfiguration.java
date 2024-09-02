@@ -1,11 +1,15 @@
 package ee.cyber.cdoc2.crypto;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ee.cyber.cdoc2.util.Resources;
+
 
 /**
  * Test configuration for running PKCS11 tests using a hardware device.
@@ -36,14 +40,25 @@ public record Pkcs11DeviceConfiguration(
      *
      */
     public static Pkcs11DeviceConfiguration load() {
-        String filename = System.getProperty("cdoc2.pkcs11.conf-file", "pkcs11-test-idcard.properties");
-        return loadFromPropertiesFile(filename);
+        final String classpath = "classpath:";
+        String filename = System.getProperty(
+            "cdoc2.pkcs11.conf-file",
+            classpath + "pkcs11-test-idcard.properties"
+        );
+        String propertyFileName;
+        if (filename.contains(classpath)) {
+            propertyFileName = filename;
+        } else {
+            propertyFileName = new File(filename).getAbsolutePath();
+        }
+        return loadFromPropertiesFile(propertyFileName);
     }
 
     private static Pkcs11DeviceConfiguration loadFromPropertiesFile(String filename) {
         log.info("Loading PKCS11 device configuration from {}", filename);
 
-        try (InputStream is = Pkcs11Test.class.getClassLoader().getResourceAsStream(filename)) {
+        try (InputStream is
+                 = Resources.getResourceAsStream(filename, Pkcs11Test.class.getClassLoader())) {
             var properties = new Properties();
             properties.load(is);
 
@@ -64,4 +79,5 @@ public record Pkcs11DeviceConfiguration(
         return Optional.ofNullable(properties.getProperty(property))
             .orElseThrow(() -> new IllegalArgumentException("Required property '" + property + "' not found"));
     }
+
 }

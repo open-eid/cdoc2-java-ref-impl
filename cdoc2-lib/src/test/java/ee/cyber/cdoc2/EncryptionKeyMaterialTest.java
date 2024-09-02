@@ -31,6 +31,35 @@ class EncryptionKeyMaterialTest {
     }
 
     @Test
+    void shouldCreateEncryptionKeyMaterialFromPublicKeyWithIdCard() throws Exception {
+        EncryptionKeyMaterial encryptionKeyMaterial = EncryptionKeyMaterial.fromPublicKey(
+            createPublicKey(),
+            createKeyLabelParams(EncryptionKeyOrigin.ID_CARD)
+        );
+
+        assertEquals(EncryptionKeyOrigin.ID_CARD, encryptionKeyMaterial.getKeyOrigin());
+    }
+
+    @Test
+    void shouldCreateEncryptionKeyMaterialFromPublicKeyWithCertificate() throws Exception {
+        EncryptionKeyMaterial encryptionKeyMaterial = EncryptionKeyMaterial.fromPublicKey(
+            createPublicKey(),
+            createKeyLabelParams(EncryptionKeyOrigin.CERTIFICATE)
+        );
+
+        assertEquals(EncryptionKeyOrigin.CERTIFICATE, encryptionKeyMaterial.getKeyOrigin());
+    }
+
+    @Test
+    void shouldFailToCreateEncryptionKeyMaterialFromPublicKeyWithInvalidKeyOrigin() {
+        assertThrowsIllegalArgumentException(() ->
+            EncryptionKeyMaterial.fromPublicKey(
+                createPublicKey(),
+                createKeyLabelParams(EncryptionKeyOrigin.PASSWORD))
+        );
+    }
+
+    @Test
     void shouldCreateEncryptionKeyMaterialFromSecretKey() throws Exception {
         KeyLabelParams keyLabelParams = createKeyLabelParams(
             EncryptionKeyOrigin.SECRET, "keyLabel"

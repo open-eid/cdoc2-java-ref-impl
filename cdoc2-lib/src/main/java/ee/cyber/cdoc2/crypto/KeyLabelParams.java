@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,6 +30,15 @@ public record KeyLabelParams(
     public boolean isFromOrigin(EncryptionKeyOrigin origin) {
         Objects.requireNonNull(origin);
         return this.encryptionKeyOrigin.equals(origin);
+    }
+
+    public boolean ofPublicKeyOrigin() {
+        List<EncryptionKeyOrigin> pubKeyOrigins = List.of(
+            EncryptionKeyOrigin.PUBLIC_KEY,
+            EncryptionKeyOrigin.ID_CARD,
+            EncryptionKeyOrigin.CERTIFICATE
+        );
+        return pubKeyOrigins.contains(this.encryptionKeyOrigin);
     }
 
 }
