@@ -37,6 +37,7 @@ class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);
 
     @Test
+    @SuppressWarnings({"java:S1481", "java:S1854"})
     void testBigInteger() {
         byte[] neg = new BigInteger("-255").toByteArray(); //0xff, 0x01
         byte[] neg254 = new BigInteger("-254").toByteArray(); //0xff, 0x02
@@ -70,12 +71,14 @@ class ECKeysTest {
     void testLoadEcPrivKey() throws GeneralSecurityException, IOException {
         @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
-                "-----BEGIN EC PRIVATE KEY-----\n" +
-                        "MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd\n" +
-                        "4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j\n" +
-                        "C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd\n" +
-                        "yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=\n" +
-                        "-----END EC PRIVATE KEY-----\n";
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIGkAgEBBDBh1UAT832Nh2ZXvdc5JbNv3BcEZSYk90esUkSPFmg2XEuoA7avS/kd
+                4HtHGRbRRbagBwYFK4EEACKhZANiAASERl1rD+bm2aoiuGicY8obRkcs+jt8ks4j
+                C1jD/f/EQ8KdFYrJ+KwnM6R8rIXqDnUnLJFiF3OzDpu8TUjVOvdXgzQL+n67QiLd
+                yerTE6f5ujIXoXNkZB8O2kX/3vADuDA=
+                -----END EC PRIVATE KEY-----
+                """;
 
         //        openssl ec -in key.pem -text -noout
         //        read EC key
@@ -108,11 +111,13 @@ class ECKeysTest {
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
         @SuppressWarnings("checkstyle:OperatorWrap")
-        String pubKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
-                "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO\n" +
-                "IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii\n" +
-                "3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw\n" +
-                "-----END PUBLIC KEY-----\n";
+        String pubKeyPem = """
+            -----BEGIN PUBLIC KEY-----
+            MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO
+            IwtYw/3/xEPCnRWKyfisJzOkfKyF6g51JyyRYhdzsw6bvE1I1Tr3V4M0C/p+u0Ii
+            3cnq0xOn+boyF6FzZGQfDtpF/97wA7gw
+            -----END PUBLIC KEY-----
+            """;
 
 //        openssl ec -in key.pem -text -noout
 //        read EC key
@@ -144,7 +149,7 @@ class ECKeysTest {
 
         assertTrue(ECKeys.isEcSecp384r1Curve(ecPublicKey));
 
-        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams().toString());
+        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams());
 
         assertEquals(expectedHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
@@ -281,19 +286,21 @@ class ECKeysTest {
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 
-        //log.debug("key: {}", ecPrivKey.getS().toString(16));
+        if (log.isDebugEnabled()) {
+            log.debug("key: {}", ecPrivKey.getS().toString(16));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPrivKey.getAlgorithm()));
         assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
 
-
-        //log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        if (log.isDebugEnabled()) {
+            log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPublicKey.getAlgorithm()));
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
 
-
     @Test
-    void testLoadCertWithLabel() throws CertificateException, IOException {
+    void testLoadCertWithLabel() throws CertificateException {
 
         @SuppressWarnings("checkstyle:OperatorWrap")
         final String igorCertificate =
@@ -351,7 +358,7 @@ class ECKeysTest {
 
         ECParameterSpec ecParameterSpec = params.getParameterSpec(ECParameterSpec.class);
 
-        ECPublicKey infinityPublicKey = new ECPublicKey() {
+        return new ECPublicKey() {
             @Override
             public ECPoint getW() {
                 return ECPoint.POINT_INFINITY;
@@ -377,8 +384,6 @@ class ECKeysTest {
                 return ecParameterSpec;
             }
         };
-
-        return infinityPublicKey;
     }
 
     @Test

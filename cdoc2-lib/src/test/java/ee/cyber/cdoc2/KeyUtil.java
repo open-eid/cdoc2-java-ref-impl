@@ -17,7 +17,7 @@ import ee.cyber.cdoc2.crypto.PemTools;
 public final class KeyUtil {
 
     @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
-    private static final String bobKeyPem = """
+    private static final String BOB_KEY_PEM = """
         -----BEGIN EC PRIVATE KEY-----
         MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL
         mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B
@@ -33,7 +33,7 @@ public final class KeyUtil {
     }
 
     public static KeyPair createKeyPair() throws Exception {
-        return PemTools.loadKeyPair(bobKeyPem);
+        return PemTools.loadKeyPair(BOB_KEY_PEM);
     }
 
     public static PublicKey createPublicKey() throws Exception {

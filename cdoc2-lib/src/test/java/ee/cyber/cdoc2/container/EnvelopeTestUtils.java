@@ -171,8 +171,6 @@ public final class EnvelopeTestUtils {
 
         log.debug("Compressed {} into {}", randomBytes.length, destTarZlib.size());
 
-        // Tar is able to process empty tar without exceptions
-        //assertTrue(Tar.listFiles(new ByteArrayInputStream(destTarZlib.toByteArray())).isEmpty());
         return destTarZlib.toByteArray();
     }
 
@@ -180,7 +178,6 @@ public final class EnvelopeTestUtils {
 
         String validFileName = "validFile";
         byte[] data = new byte[10 * 1024];
-        //new Random().nextBytes(data);
 
         ByteArrayOutputStream dest = new ByteArrayOutputStream();
 

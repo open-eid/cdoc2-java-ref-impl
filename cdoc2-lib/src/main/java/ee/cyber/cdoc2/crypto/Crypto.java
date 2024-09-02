@@ -206,7 +206,7 @@ public final class Crypto {
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
         Provider configuredPKCS11Provider = Pkcs11Tools.getConfiguredPKCS11Provider();
-        if (isECPKCS11Key(ecPrivateKey) && (configuredPKCS11Provider != null)) {
+        if (isECPKCS11Key(ecPrivateKey) && configuredPKCS11Provider != null) {
             keyAgreement = KeyAgreement.getInstance("ECDH", configuredPKCS11Provider);
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");

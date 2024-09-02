@@ -103,6 +103,7 @@ public final class KekTools {
         return Crypto.deriveKeyDecryptionKey(recipientKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
     }
 
+    @SuppressWarnings("java:S2139")
     public static byte[] deriveKekForEccServer(
         EccServerKeyRecipient keyRecipient,
         KeyPairDecryptionKeyMaterial keyMaterial,

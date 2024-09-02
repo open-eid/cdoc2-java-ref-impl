@@ -26,7 +26,7 @@ import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientF
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @Command(name = "decrypt", aliases = {"x", "extract"}, showAtFileInUsageHelp = true)
 public class CDocDecryptCmd implements Callable<Void> {
     // commented out until public key server is in live

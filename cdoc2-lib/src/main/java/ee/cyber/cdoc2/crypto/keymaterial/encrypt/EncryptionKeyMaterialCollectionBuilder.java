@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
@@ -96,7 +95,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
             .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
             .map(SkLdapUtil::toEncryptionKeyMaterial)
-            .collect(Collectors.toList());
+            .toList();
 
         recipients.addAll(keyMaterials);
         return this;

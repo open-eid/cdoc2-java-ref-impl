@@ -12,6 +12,8 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Optional;
 
+
+@SuppressWarnings("java:S2139")
 public class EcCapsuleClientImpl implements EcCapsuleClient {
     private static final Logger log = LoggerFactory.getLogger(EcCapsuleClientImpl.class);
 
