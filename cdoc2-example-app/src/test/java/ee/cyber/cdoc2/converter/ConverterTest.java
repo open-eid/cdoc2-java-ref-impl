@@ -27,15 +27,14 @@ class ConverterTest {
     Logger log = LoggerFactory.getLogger(ConverterTest.class);
 
     // cdoc4j sample files from https://github.com/open-eid/cdoc4j/tree/master/src/test/resources
-    final static String CDOC_FILE = "src/test/resources/cdoc/valid_cdoc11_ECC.cdoc";
-    final static String ECC_P12 = "src/test/resources/ecc/ecc.p12";
+    static final String CDOC_FILE = "src/test/resources/cdoc/valid_cdoc11_ECC.cdoc";
+    static final String ECC_P12 = "src/test/resources/ecc/ecc.p12";
 
     // password for ECC_P12
-    final static String ECC_P12_PW = "test";
-
+    static final String ECC_P12_PW = "test";
 
     // password used to derive bytes for re-encryption
-    final static char[] CDOC2_TEST_PW = {'t', 'e', 's', 't', ' ', 't', 's', 'e', 't'};
+    static final char[] CDOC2_TEST_PW = {'t', 'e', 's', 't', ' ', 't', 's', 'e', 't'};
 
     // cdoc2 requires label with password
     public static final String CDOC2_TEST_LABEL = "pw_label";

@@ -21,7 +21,6 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.extractKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.keyLabelParamsForDisplaying;
 
 
-
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
@@ -44,18 +43,15 @@ public class CDocInfoCmd implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-
-
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
         for (Recipient recipient: recipients) {
-
             String type = getHumanReadableType(recipient);
 
             Map<String, String> keyLabelParams
                 = extractKeyLabelParams(recipient.getRecipientKeyLabel());
 
-            String server = (recipient instanceof ServerRecipient)
-                ? "(server: " + ((ServerRecipient) recipient).getKeyServerId() + ")"
+            String server = (recipient instanceof ServerRecipient serverRecipient)
+                ? "(server: " + serverRecipient.getKeyServerId() + ")"
                 : "";
 
             System.out.println(
@@ -69,8 +65,8 @@ public class CDocInfoCmd implements Callable<Void> {
     String getHumanReadableType(Recipient recipient) {
         Objects.requireNonNull(recipient); //can't have null recipient, fail with exception
 
-        if (recipient instanceof PublicKeyRecipient) {
-            return ((PublicKeyRecipient) recipient).getRecipientPubKey().getAlgorithm() + " PublicKey";
+        if (recipient instanceof PublicKeyRecipient publicKeyRecipient) {
+            return publicKeyRecipient.getRecipientPubKey().getAlgorithm() + " PublicKey";
         } else if (recipient instanceof SymmetricKeyRecipient) {
             return "SymmetricKey";
         } else if (recipient instanceof PBKDF2Recipient) {
@@ -81,4 +77,5 @@ public class CDocInfoCmd implements Callable<Void> {
             return recipient.getClass().toString();
         }
     }
+    
 }

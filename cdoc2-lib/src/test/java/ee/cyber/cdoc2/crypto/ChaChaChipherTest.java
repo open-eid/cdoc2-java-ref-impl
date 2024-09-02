@@ -94,11 +94,6 @@ class ChaChaChipherTest {
         byte[] additionalData = Envelope.getAdditionalData(header, headerHMAC);
         String payload = "secret";
 
-
-        //Path encryptedPath = Path.of(System.getProperty("java.io.tmpdir")).resolve( "encrypted.tar.gz");
-        //encrypted.toFile().deleteOnExit();
-
-
         ByteBuffer encryptedTarGzBuf;
 
         String tarEntryName = "payload-" + UUID.randomUUID();
@@ -168,7 +163,7 @@ class ChaChaChipherTest {
         String bigFileNameEncrypted = "bigFile.enc";
 
         byte[] buf = new byte[4096];
-        int read = 0;
+        int read;
         long totalread = 0;
 
         byte[] oneMb = new byte[1024 * 1024]; // 1 MB
@@ -199,8 +194,8 @@ class ChaChaChipherTest {
                 totalread += read;
             }
         }
+        assertTrue(totalread > 0);
         log.debug("Read {}B in {} seconds", totalread, Duration.between(readStart, Instant.now()).toSeconds());
-
 
         log.debug("Encrypting");
         OutputStream destChaChaStream = Files.newOutputStream(tempDir.resolve(bigFileNameEncrypted));
@@ -219,7 +214,6 @@ class ChaChaChipherTest {
         Instant decryptStart = Instant.now();
         log.debug("Decrypting {}", tempDir.resolve(bigFileNameEncrypted));
 
-        read = 0;
         totalread = 0;
         try (CipherInputStream cis = ChaChaCipher.initChaChaInputStream(
                 Files.newInputStream(tempDir.resolve(bigFileNameEncrypted)), cek, aad)) {
@@ -227,9 +221,8 @@ class ChaChaChipherTest {
                 totalread += read;
             }
         }
+        assertTrue(totalread > 0);
         log.debug("Decrypted {}B in {} seconds", totalread, Duration.between(decryptStart, Instant.now()).toSeconds());
-
     }
-
 
 }

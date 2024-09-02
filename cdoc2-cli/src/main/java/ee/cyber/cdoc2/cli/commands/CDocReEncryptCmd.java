@@ -25,7 +25,7 @@ import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getKeyCapsulesClientFactor
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @CommandLine.Command(name = "re-encrypt", aliases = {"re", "reencrypt"}, showAtFileInUsageHelp =
     true)
 public class CDocReEncryptCmd implements Callable<Void> {

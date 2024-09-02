@@ -1,3 +1,5 @@
+package cli;
+
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.crypto.Crypto;

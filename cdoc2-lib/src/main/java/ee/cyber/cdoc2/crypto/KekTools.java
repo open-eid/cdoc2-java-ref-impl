@@ -60,7 +60,9 @@ public final class KekTools {
             secretKey,
             recipient.getSalt(),
             FMKEncryptionMethod.name(recipient.getFmkEncryptionMethod()));
-        log.debug("kek={}", HexFormat.of().formatHex(kek.getEncoded()));
+        if (log.isDebugEnabled()) {
+            log.debug("kek={}", HexFormat.of().formatHex(kek.getEncoded()));
+        }
         return kek.getEncoded();
     }
 
@@ -105,6 +107,7 @@ public final class KekTools {
         return Crypto.deriveKeyDecryptionKey(recipientKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
     }
 
+    @SuppressWarnings("java:S2139")
     public static byte[] deriveKekForEccServer(
         EccServerKeyRecipient keyRecipient,
         KeyPairDecryptionKeyMaterial keyMaterial,

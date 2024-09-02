@@ -25,7 +25,7 @@ import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @Command(name = "create", aliases = {"c", "encrypt"}, showAtFileInUsageHelp = true)
 public class CDocCreateCmd implements Callable<Void> {
 
@@ -105,9 +105,6 @@ public class CDocCreateCmd implements Callable<Void> {
                 Arrays.toString(inputFiles));
         }
 
-
-
-
         CDocBuilder cDocBuilder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(inputFiles));
 
@@ -115,7 +112,6 @@ public class CDocCreateCmd implements Callable<Void> {
             Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
         }
-
 
         List<EncryptionKeyMaterial> symmetricKMs =
             SymmetricKeyUtil.getEncryptionKeyMaterialFromFormattedSecrets(recipient.secrets);

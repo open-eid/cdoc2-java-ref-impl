@@ -96,13 +96,6 @@ public final class SymmetricKeyTools {
         return EncryptionKeyMaterial.fromSecret(entry.getKey(), entry.getValue());
     }
 
-//    public static EncryptionKeyMaterial getEncryptionKeyMaterial(
-//        AbstractMap.SimpleEntry<SecretKey, String> entry, String payloadFileName
-//    ) {
-//        return EncryptionKeyMaterial.builder()
-//            .fromSecret(entry.getKey(), entry.getValue(), payloadFileName);
-//    }
-
     public static EncryptionKeyMaterial getEncryptionKeyMaterialFromPassword(
         FormattedOptionParts splitPasswordAndLabel
     ) {

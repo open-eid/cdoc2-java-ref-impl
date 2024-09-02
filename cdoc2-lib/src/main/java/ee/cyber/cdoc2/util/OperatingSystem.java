@@ -18,7 +18,9 @@ public enum OperatingSystem {
      * @return the operating system
      */
     public static OperatingSystem getOS() {
-        log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty(OS_NAME));
+        if (log.isDebugEnabled()) {
+            log.debug("os.family: {}, os.name: {}", System.getProperty("os.family"), System.getProperty(OS_NAME));
+        }
         String os = System.getProperty(OS_NAME).toLowerCase();
 
         if (os.contains("win")) {
@@ -31,9 +33,11 @@ public enum OperatingSystem {
             return OperatingSystem.MAC;
         }
 
-        log.error("Unknown operating system: os.family: {}, os.name: {}",
-            System.getProperty("os.family"), System.getProperty(OS_NAME)
-        );
+        if (log.isErrorEnabled()) {
+            log.error("Unknown operating system: os.family: {}, os.name: {}",
+                System.getProperty("os.family"), System.getProperty(OS_NAME)
+            );
+        }
         throw new IllegalStateException("Unknown OS");
     }
 }

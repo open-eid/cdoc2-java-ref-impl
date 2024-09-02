@@ -30,13 +30,13 @@ public interface DecryptionKeyMaterial {
     EncryptionKeyOrigin getKeyOrigin();
 
     /**
-     * Deprecated decryption key. Will be removed later.
      * Creates decryption key material with secret key.
+     * @deprecated decryption key
      * @param secretKey secret key
      * @param label key label
      * @return DecryptionKeyMaterial key material required for decryption
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     static DecryptionKeyMaterial fromSecretKey(SecretKey secretKey, String label) {
         return new SecretDecryptionKeyMaterial(secretKey, label);
     }

@@ -38,6 +38,7 @@ public record PasswordEncryptionKeyMaterial(
     }
 
     @Override
+    @SuppressWarnings("java:S2068")
     public String toString() {
         return "PasswordEncryptionKeyMaterial{"
             + "password=[hidden]"

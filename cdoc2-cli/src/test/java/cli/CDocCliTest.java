@@ -1,4 +1,4 @@
-import ee.cyber.cdoc2.cli.CDocCli;
+package cli;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,6 +21,9 @@ import org.opentest4j.AssertionFailedError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import ee.cyber.cdoc2.cli.CDocCli;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,7 +95,7 @@ class CDocCliTest {
     }
 
     @Test
-    @Disabled
+    @Disabled("Requires user interaction for inserting password 'myPlainTextPassword'")
     void testSuccessfulCreateDecryptDocWithPasswordWhenItIsInsertedInteractively()
         throws IOException {
         encrypt(PASSWORD_OPTION);
