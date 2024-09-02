@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -o xtrace
+#set -o xtrace
 # git commit
 # git tag
 # git push
