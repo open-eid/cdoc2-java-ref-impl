@@ -203,7 +203,6 @@ class CDocCliTest {
         );
     }
 
-
     @Test
     void infoShouldDisplayKeyLabelInDefaultFormatForPassword() throws IOException {
         encrypt(PASSWORD_OPTION);

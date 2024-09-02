@@ -41,7 +41,7 @@ public interface EncryptionKeyMaterial {
      * For backward compatibility. This method doesn't support correct keylabel generation as there
      * is no info, where pubKey is coming from (pubkey, cert, LDAP)
      * Use {@link #fromPublicKey(PublicKey, KeyLabelParams)} instead.
-     * @deprecated ecryption key
+     * @deprecated encryption key
      * @param pubKey public key
      * @param keyLabel key label
      * @return EncryptionKeyMaterial
