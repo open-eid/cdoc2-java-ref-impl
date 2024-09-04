@@ -59,6 +59,7 @@ public final class SkLdapUtil {
     // distinguished name fragment for authentication certificates using e-resident digi-id
     private static final String AUTH_E_RESIDENT_DIGI_ID = AUTH_CERT_PART + E_RESIDENT_DIGI_ID;
 
+    @SuppressWarnings("java:S1149")
     private static DirContext initDirContext() throws NamingException {
         Hashtable<String, Object> env = new Hashtable<>(11);
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
@@ -78,11 +79,11 @@ public final class SkLdapUtil {
      * @throws CertificateException If parsing found certificate fails
      * @see <a href=https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/>SK LDAP</a>
      */
-    public static Map<X509Certificate, String> findAuthenticationEstEidCertificates(DirContext ctx,
-            String identificationCode) throws NamingException, CertificateException {
-
+    public static Map<X509Certificate, String> findAuthenticationEstEidCertificates(
+        DirContext ctx,
+        String identificationCode
+    ) throws NamingException, CertificateException {
         Map<X509Certificate, String> certificateNameMap = new LinkedHashMap<>();
-        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -99,28 +100,38 @@ public final class SkLdapUtil {
             String dn = searchResult.getName();
 
             if (dn.contains(AUTH_ID_CARD) || dn.contains(AUTH_DIGI_ID) || dn.contains(AUTH_E_RESIDENT_DIGI_ID)) {
-
-                // there can be more than one 'userCertificate;binary' attribute
-                var certAttrs = (NamingEnumeration<Object>) attrs.get("userCertificate;binary").getAll();
-                while (certAttrs.hasMore()) {
-                    Object certObject = certAttrs.nextElement();
-                    if (certObject != null) {
-                        byte[] certBuf = (byte[]) certObject;
-                        try {
-                            X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
-                                    new ByteArrayInputStream(certBuf));
-                            log.debug("Found cert for {}, name:{}", identificationCode, dn);
-                            certificateNameMap.put(cert, dn);
-                        } catch (CertificateException ce) {
-                            log.error("Invalid certificate for {}", identificationCode);
-                            throw ce;
-                        }
-                    }
-                }
+                mapCertificates(certificateNameMap, attrs, identificationCode, dn);
             }
         }
 
         return certificateNameMap;
+    }
+
+    private static void mapCertificates(
+        Map<X509Certificate, String> certificateNameMap,
+        Attributes attrs,
+        String identificationCode,
+        String distinguishedName
+    ) throws CertificateException, NamingException {
+        // there can be more than one 'userCertificate;binary' attribute
+        var certAttrs = (NamingEnumeration<Object>) attrs.get("userCertificate;binary").getAll();
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+
+        while (certAttrs.hasMore()) {
+            Object certObject = certAttrs.nextElement();
+            if (certObject != null) {
+                byte[] certBuf = (byte[]) certObject;
+                try {
+                    X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
+                        new ByteArrayInputStream(certBuf));
+                    log.debug("Found cert for {}, name:{}", identificationCode, distinguishedName);
+                    certificateNameMap.put(cert, distinguishedName);
+                } catch (CertificateException ce) {
+                    log.error("Invalid certificate for {}", identificationCode);
+                    throw ce;
+                }
+            }
+        }
     }
 
     /**
@@ -145,6 +156,10 @@ public final class SkLdapUtil {
         try {
             for (String id: ids) {
                 Map<X509Certificate, String> certs = findAuthenticationEstEidCertificates(ctx, id);
+                if (certs.isEmpty()) {
+                    throw new CertificateException("Identity code " + id + "is  not found at server");
+                }
+
                 for (var certNameEntry: certs.entrySet()) {
                     X509Certificate cert = certNameEntry.getKey();
                     String distinguishedName = certNameEntry.getValue();
@@ -242,7 +257,9 @@ public final class SkLdapUtil {
         @Nullable
         private BigInteger serialNumber;
 
-        public CertificateData() { }
+        public CertificateData() {
+            // utility class
+        }
 
         public PublicKey getPublicKey() {
             return this.publicKey;

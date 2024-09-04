@@ -309,6 +309,7 @@ public final class Pkcs11Tools {
         return confPath;
     }
 
+    @SuppressWarnings("java:S2139")
     private static KeyStore getConfiguredPkcs11KeyStore(KeyStore.ProtectionParameter keyProtection)
             throws KeyStoreException {
         try {

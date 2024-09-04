@@ -41,11 +41,12 @@ public interface EncryptionKeyMaterial {
      * For backward compatibility. This method doesn't support correct keylabel generation as there
      * is no info, where pubKey is coming from (pubkey, cert, LDAP)
      * Use {@link #fromPublicKey(PublicKey, KeyLabelParams)} instead.
-     * @param pubKey
-     * @param keyLabel
-     * @return
+     * @deprecated encryption key
+     * @param pubKey public key
+     * @param keyLabel key label
+     * @return EncryptionKeyMaterial
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     static EncryptionKeyMaterial fromPublicKey(
         PublicKey pubKey,
         String keyLabel
@@ -54,7 +55,7 @@ public interface EncryptionKeyMaterial {
             KeyLabelParams keyLabelParams = createPublicKeyLabelParams(keyLabel, null);
             return fromPublicKey(pubKey, keyLabelParams);
         } else {
-            return new PublicKeyEncryptionKeyMaterial(pubKey, keyLabel);
+            return new PublicKeyEncryptionKeyMaterial(pubKey, keyLabel, EncryptionKeyOrigin.PUBLIC_KEY);
         }
     }
 
@@ -71,16 +72,18 @@ public interface EncryptionKeyMaterial {
         KeyLabelParams keyLabelParams
     ) {
         Objects.requireNonNull(pubKey);
-        EncryptionKeyOrigin origin = EncryptionKeyOrigin.PUBLIC_KEY;
-        if (!keyLabelParams.isFromOrigin(origin)) {
-            throw new IllegalArgumentException("KeyLabelParams must be of type " + origin);
+        if (!keyLabelParams.ofPublicKeyOrigin()) {
+            throw new IllegalArgumentException("Invalid Key Label parameters type: "
+                + keyLabelParams.encryptionKeyOrigin());
         }
 
         KeyLabelParams labelParams = (keyLabelParams == null)
             ? createPublicKeyLabelParams(null, null)
             : keyLabelParams;
 
-        return new PublicKeyEncryptionKeyMaterial(pubKey, formatKeyLabel(labelParams));
+        return new PublicKeyEncryptionKeyMaterial(
+            pubKey, formatKeyLabel(labelParams), labelParams.encryptionKeyOrigin()
+        );
     }
 
     static EncryptionKeyMaterial fromPassword(char[] passwordChars, String keyLabel) {
@@ -90,10 +93,14 @@ public interface EncryptionKeyMaterial {
             KeyLabelParams keyLabelParams = createSymmetricKeyLabelParams(
                 EncryptionKeyOrigin.PASSWORD, keyLabel
             );
-            return new PasswordEncryptionKeyMaterial(passwordChars, formatKeyLabel(keyLabelParams));
+            return fromPassword(passwordChars, keyLabelParams);
         } else {
             return new PasswordEncryptionKeyMaterial(passwordChars, keyLabel);
         }
+    }
+
+    static EncryptionKeyMaterial fromPassword(char[] password, KeyLabelParams keyLabelParams) {
+        return new PasswordEncryptionKeyMaterial(password, formatKeyLabel(keyLabelParams));
     }
 
     /**
@@ -116,7 +123,6 @@ public interface EncryptionKeyMaterial {
             return new SecretEncryptionKeyMaterial(preSharedKey, keyLabel);
         }
     }
-
 
     static EncryptionKeyMaterial fromSecret(
         SecretKey preSharedKey,

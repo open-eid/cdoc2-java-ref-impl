@@ -3,7 +3,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.4.0</version>
     <groupId>ee.cyber.cdoc2</groupId>
     <artifactId>cdoc2</artifactId>
     <description>CDOC2 reference implementation </description>
@@ -25,14 +25,14 @@
         <tests>!(pkcs11 | slow | ldap)</tests>
 
         <!-- versions of dependencies has to correspond with spring boot version-->
-        <!-- https://docs.spring.io/spring-boot/docs/current/reference/html/dependency-versions
-        .html-->
-        <junit-jupiter.version>5.10.2</junit-jupiter.version>
-        <logback-classic.version>1.5.6</logback-classic.version>
-        <exec-maven-plugin.version>3.2.0</exec-maven-plugin.version>
-        <maven-shade-plugin.version>3.5.2</maven-shade-plugin.version>
+        <!-- https://docs.spring.io/spring-boot/appendix/dependency-versions/coordinates.html-->
+        <junit-jupiter.version>5.10.3</junit-jupiter.version>
+        <logback-classic.version>1.5.7</logback-classic.version>
+        <exec-maven-plugin.version>3.4.1</exec-maven-plugin.version>
+        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
-        <spring-boot.version>3.2.5</spring-boot.version>
+        <spring-boot.version>3.3.3</spring-boot.version>
         <spring.version>6.1.6</spring.version>
     </properties>
 
@@ -222,7 +222,6 @@
         </dependencies>
     </dependencyManagement>
 
-
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -238,7 +237,7 @@
                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>${maven-checkstyle-plugin.version}</version>
 
                     <configuration>
                         <configLocation>checkstyle.xml</configLocation>
@@ -272,7 +271,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.2.5</version>
+                    <version>3.5.0</version>
                     <configuration>
                         <trimStackTrace>false</trimStackTrace>
                         <groups>${tests}</groups>
@@ -287,7 +286,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>3.1.1</version>
                     <configuration>
                         <tagNameFormat>v@{project.version}</tagNameFormat>
                     </configuration>
@@ -313,7 +312,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.4.0</version>
+                <version>4.8.6.2</version>
             </plugin>
 
             <plugin>
@@ -365,7 +364,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.1.3</version>
             </plugin>
 
         </plugins>

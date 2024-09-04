@@ -303,6 +303,7 @@ public final class PemTools {
         return new KeyPair(publicKey, key);
     }
 
+    @SuppressWarnings("java:S4790")
     private static String getCertFingerprint(X509Certificate cert) {
         try {
             return DigestUtils.sha1Hex(cert.getEncoded());

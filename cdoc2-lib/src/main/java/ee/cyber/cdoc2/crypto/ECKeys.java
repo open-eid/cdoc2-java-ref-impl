@@ -253,7 +253,9 @@ public final class ECKeys {
         }
 
         if (!isEcSecp384r1Curve(ecPublicKey)) {
-            log.debug("EC pub key curve OID {} is not secp384r1", getCurveOid(ecPublicKey));
+            if (log.isDebugEnabled()) {
+                log.debug("EC pub key curve OID {} is not secp384r1", getCurveOid(ecPublicKey));
+            }
             return false;
         }
 

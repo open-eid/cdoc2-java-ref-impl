@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public class AutoRemovableDir implements AutoCloseable {
 
+    private static final Logger log = LoggerFactory.getLogger(AutoRemovableDir.class);
+
     Path pathToRemove;
     public AutoRemovableDir(Path pathToRemove) {
         this.pathToRemove = pathToRemove;
@@ -27,6 +29,7 @@ public class AutoRemovableDir implements AutoCloseable {
             if (file.isDirectory())
                 purgeDirectory(file);
             file.delete();
+            log.info("Directory " + dir + " was deleted");
         }
     }
 }

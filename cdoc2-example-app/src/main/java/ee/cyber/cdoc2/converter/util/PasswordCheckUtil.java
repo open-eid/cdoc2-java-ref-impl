@@ -59,6 +59,7 @@ public class PasswordCheckUtil {
 
         byte[] bytes = StandardCharsets.UTF_8.encode(CharBuffer.wrap(passwd)).array();
 
+        @SuppressWarnings("java:S4790")
         MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
         sha1.update(bytes);
         String digest = HexFormat.of().formatHex(sha1.digest()).toUpperCase();

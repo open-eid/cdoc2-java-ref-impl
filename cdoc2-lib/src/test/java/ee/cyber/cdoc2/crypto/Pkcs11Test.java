@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class Pkcs11Test {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
-    // load pkcs11 devive properties
+    // load pkcs11 device properties
     private static final Pkcs11DeviceConfiguration CONF = Pkcs11DeviceConfiguration.load();
 
     @Test

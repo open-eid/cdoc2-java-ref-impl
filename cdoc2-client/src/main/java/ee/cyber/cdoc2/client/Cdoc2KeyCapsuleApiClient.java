@@ -190,6 +190,7 @@ public final class Cdoc2KeyCapsuleApiClient {
             return new Cdoc2KeyCapsuleApiClient(new Cdoc2KeyCapsulesApi(apiClient));
         }
 
+        @SuppressWarnings("java:S2139")
         private SSLContext createSslContext() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException,
                 KeyStoreException, KeyManagementException {
             SSLContext sslContext;

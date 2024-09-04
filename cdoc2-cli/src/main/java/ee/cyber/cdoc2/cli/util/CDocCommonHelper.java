@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.cli;
+package ee.cyber.cdoc2.cli.util;
 
 
 import java.io.IOException;

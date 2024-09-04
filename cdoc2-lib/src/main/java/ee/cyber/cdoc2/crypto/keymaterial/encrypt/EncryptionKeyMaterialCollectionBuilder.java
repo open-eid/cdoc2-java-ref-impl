@@ -4,8 +4,11 @@ import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.util.SkLdapUtil;
 
+import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.File;
 import java.io.IOException;
@@ -13,15 +16,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.formatKeyLabel;
+
 
 /**
  * Class for creating collection of EncryptionKeyMaterial from multiple sources.
@@ -59,8 +61,9 @@ public class EncryptionKeyMaterialCollectionBuilder {
      * @param certificates certificates
      * @return the list of EncryptionKeyMaterial
      */
-    public EncryptionKeyMaterialCollectionBuilder fromX509Certificate(File[] certificates)
-        throws IOException, CertificateException {
+    public EncryptionKeyMaterialCollectionBuilder fromX509Certificate(
+        File[] certificates
+    ) throws IOException, CertificateException {
 
         List<SkLdapUtil.CertificateData> certData = PemTools.loadCertKeysWithLabel(certificates);
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
@@ -68,12 +71,10 @@ public class EncryptionKeyMaterialCollectionBuilder {
                     KeyLabelParams keyLabelParams = createCertKeyLabelParams(
                         entry.getKeyLabel(), entry.getFingerprint(), entry.getFile()
                     );
-                    return new PublicKeyEncryptionKeyMaterial(
-                        entry.getPublicKey(), formatKeyLabel(keyLabelParams)
-                    );
+                    return EncryptionKeyMaterial.fromPublicKey(entry.getPublicKey(), keyLabelParams);
                 }
             )
-            .collect(Collectors.toList());
+            .toList();
 
         recipients.addAll(keyMaterials);
         return this;
@@ -94,7 +95,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
             .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
             .map(SkLdapUtil::toEncryptionKeyMaterial)
-            .collect(Collectors.toList());
+            .toList();
 
         recipients.addAll(keyMaterials);
         return this;
@@ -104,15 +105,34 @@ public class EncryptionKeyMaterialCollectionBuilder {
      * Create PasswordEncryptionKeyMaterial from password and keyLabel. KeyLabel can be in plain
      * text or as data params.
      * To decrypt CDOC, recipient must have same password that is identified by the same keyLabel.
-     * @param passwordChars password chars for extracting pre-shared SecretKey
-     * @param keyLabel password key label
+     * @param labeledPassword labeled password
      * @return EncryptionKeyMaterial object
      */
-    public EncryptionKeyMaterialCollectionBuilder fromPassword(char[] passwordChars, String keyLabel) {
+    public EncryptionKeyMaterialCollectionBuilder fromPassword(@Nullable LabeledPassword labeledPassword) {
+        if (labeledPassword != null) {
+            recipients.add(EncryptionKeyMaterial.fromPassword(labeledPassword.getPassword(),
+                labeledPassword.getKeyLabelParams()));
+        }
+        return this;
+    }
 
-        Objects.requireNonNull(passwordChars);
-        Objects.requireNonNull(keyLabel);
-        recipients.add(EncryptionKeyMaterial.fromPassword(passwordChars, keyLabel));
+    /**
+     * Create EncryptionKeyMaterial from label and secret.
+     * @param secrets the array of labeled secrets
+     * @return
+     */
+    public EncryptionKeyMaterialCollectionBuilder fromSecrets(@Nullable LabeledSecret[] secrets) {
+        if (secrets != null) {
+            Arrays.stream(secrets)
+                .map(labeledSecret ->
+                    EncryptionKeyMaterial.fromSecret(
+                        labeledSecret.getSecretKey(),
+                        labeledSecret.getKeyLabelParams()
+                    )
+                )
+                .forEach(encryptionKeyMaterial -> recipients.add(encryptionKeyMaterial));
+        }
+
         return this;
     }
 
@@ -120,7 +140,6 @@ public class EncryptionKeyMaterialCollectionBuilder {
         recipients.addAll(c);
         return this;
     }
-
 
     /**
      * Create EncryptionKeyMaterial collection from all provided sources
