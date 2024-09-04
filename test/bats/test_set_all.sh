@@ -1,0 +1,2 @@
+source test_set_no_server.sh
+source test_set_server.sh
