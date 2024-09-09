@@ -18,22 +18,32 @@ env:
   ACTIONS_STEP_DEBUG: true
 
 jobs:
+  base_setup:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    outputs:
+      base_repo: ${{ steps.base_repo.outputs.name }}
+    steps:
+      - id: base_repo
+        run: echo "name=${{ github.repository }}" >> "$GITHUB_OUTPUT"
+
   fork_setup:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
+    if: ${{ github.event_name == 'pull_request' }}
     outputs:
       base_repo: ${{ steps.base_repo.outputs.name }}
       is_fork: ${{ steps.is_fork.outputs.is_fork }}
 
     steps:
       - id: base_repo
-        run: echo "name=${{github.event.pull_request.base.repo.full_name}}" >> "$GITHUB_OUTPUT"
+        run: echo "name=${{github.event.pull_request.base.repo.full_name }}" >> "$GITHUB_OUTPUT"
       - id: is_fork
-        run: echo "is_fork=true" >> "$GITHUB_OUTPUT"
+        run: echo "is_fork=${{ github.event.pull_request.head.repo.fork }}" >> "$GITHUB_OUTPUT"
 
   build:
     runs-on: ubuntu-latest
-    needs: fork_setup
+    if: ${{ always() }}
+    needs: [ base_setup, fork_setup ]
 
     steps:
     - uses: actions/checkout@v4
@@ -45,18 +55,32 @@ jobs:
         distribution: 'temurin'
         overwrite-settings: true #generate settings.xml
         cache: maven
-
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
       run: | 
         echo "Debug env vars: is_fork=$IS_FORK base_repo=$BASE_REPO MAVEN_REPO=$MAVEN_REPO"
         mvn help:active-profiles
         echo "Using Maven repo=$(mvn help:evaluate -Dexpression=github_ci.maven_repo -q -DforceStdout)"
-        mvn -B package --file pom.xml
+        mvn -B verify --file pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=${SONAR_PROJECT}
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
         IS_FORK: ${{needs.fork_setup.outputs.is_fork}}
         BASE_REPO: ${{needs.fork_setup.outputs.base_repo}}
-
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION}}
+        SONAR_PROJECT: "open-eid_cdoc2-java-ref-impl"
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive

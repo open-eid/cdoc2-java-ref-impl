@@ -150,6 +150,10 @@
                 </repository>
 
             </repositories>
+            <properties>
+                <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
+                <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
+            </properties>
             <distributionManagement>
                 <repository>
                     <id>github</id>
