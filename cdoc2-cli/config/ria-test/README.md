@@ -12,7 +12,7 @@ Run from cdoc2-cli directory
 
 ### Encrypt for id-card
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/ria-test/ria-test.properties -f /tmp/ria.cdoc -r 37903130370 README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/ria-test/ria-test.properties -f /tmp/ria.cdoc -r 38001085718 README.md
 ```
 
 ### Decrypting with id-card
