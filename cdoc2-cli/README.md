@@ -43,7 +43,7 @@ To store keys in key server, specify addition `--server` option:
 
 When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 38001085718 README.md
 ```
 
 Optionally cdoc2-cli also supports encrypting with "soft" key or certificate
