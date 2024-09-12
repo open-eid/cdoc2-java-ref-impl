@@ -123,8 +123,8 @@ public class CDocCreateCmd implements Callable<Void> {
         LabeledPassword labeledPassword = null;
         if (this.recipient.labeledPasswordParam != null) {
             labeledPassword = (this.recipient.labeledPasswordParam.isEmpty())
-                    ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
-                    : this.recipient.labeledPasswordParam.labeledPassword();
+                ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
+                : this.recipient.labeledPasswordParam.labeledPassword();
         }
 
         List<EncryptionKeyMaterial> recipients = EncryptionKeyMaterial.collectionBuilder()
