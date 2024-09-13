@@ -25,7 +25,7 @@ mkdir -p $TEST_RESULTS_DIR
 #https://github.com/bats-core/bats-core/issues/259
 run_alias() {
 	shopt -s expand_aliases
-	source "aliases.sh"
+	source "aliases_server.sh"
 	eval "$*"
 }
 
@@ -81,6 +81,10 @@ run_alias() {
 @test "preparing: assert CDOC2_CONFIG package exists" {
   run ${CDOC2_CONFIG}
   assert_output --partial '/config'
+}
+
+@test "preparing: Waiting server to start" {
+  timeout 15s bash -c 'until curl -k --silent --show-error --connect-timeout 1 https://localhost:18443/actuator/health|grep UP; do echo "# Checking ...">&3; sleep 1;done'
 }
 
 @test "server-test1: successfully encrypt CDOC2 container with server capsule and send capsule to server, then use GET server to decrypt" {
