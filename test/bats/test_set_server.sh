@@ -5,14 +5,14 @@ mkdir config
 cd config/
 mkdir localhost
 cd localhost/
-cp ../../../../cdoc2-cli/config/localhost/localhost_pkcs12.properties .
-cp ../../../../cdoc2-cli/config/localhost/clienttruststore.jks .
+cp ../../../config/server/clientconf/localhost_pkcs12.properties .
+cp ../../../config/server/clientconf/clienttruststore.jks .
 cd ../../
 mkdir keys
 cd keys/
-cp ../../../cdoc2-cli/keys/cdoc2client.p12 .
-cp ../../../cdoc2-cli/keys/cdoc2client_pub.key .
-cp ../../../cdoc2-cli/keys/cdoc2client_priv.key .
+cp ../../config/server/clientconf/cdoc2client.p12 .
+cp ../../config/server/clientconf/cdoc2client_pub.key .
+cp ../../config/server/clientconf/cdoc2client_priv.key .
 cd ..
 
 source variables_server.sh
