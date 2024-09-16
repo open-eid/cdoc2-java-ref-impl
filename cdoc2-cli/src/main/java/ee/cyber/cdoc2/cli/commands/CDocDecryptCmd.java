@@ -1,10 +1,7 @@
 package ee.cyber.cdoc2.cli.commands;
 
-import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
-import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
-import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -16,13 +13,14 @@ import java.util.Map;
 
 import java.util.concurrent.Callable;
 
-import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
+
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -36,30 +34,8 @@ public class CDocDecryptCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2 file")
     private File cdocFile;
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Exclusive exclusive;
-
-    static class Exclusive {
-        @Option(names = {"-k", "--key"},
-                paramLabel = "PEM", description = "Private key PEM to use for decrypting")
-        private File privKeyFile;
-
-        @Option(names = {"-p12"},
-                paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-        private String p12;
-
-        @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-                converter = LabeledSecretConverter.class,
-                description = CliConstants.SECRET_DESCRIPTION)
-        private LabeledSecret secret;
-
-        @Option(names = {"-pw", "--password"}, arity = "0..1",
-            converter = LabeledPasswordParamConverter.class,
-            paramLabel = "<label>:<password>", description = CliConstants.PASSWORD_DESCRIPTION)
-        // if empty --pw was provided labeledPasswordParam.isEmpty() is true
-        // if option was not provided then labeledPasswordParam is null
-        private LabeledPasswordParam labeledPasswordParam;
-    }
+    @CommandLine.ArgGroup
+    DecryptionKeyExclusiveArgument exclusive;
 
     @Option (names = {"--slot"},
             description = "Smart card key slot to use for decrypting. Default: 0")
@@ -103,15 +79,15 @@ public class CDocDecryptCmd implements Callable<Void> {
             keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
 
-        DecryptionKeyMaterial decryptionKeyMaterial = getDecryptionKeyMaterial(
-            this.cdocFile,
-            this.exclusive.labeledPasswordParam,
-            this.exclusive.secret,
-            this.exclusive.p12,
-            this.exclusive.privKeyFile,
-            this.slot,
-            this.keyAlias
-        );
+        DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            : getDecryptionKeyMaterial(
+                this.cdocFile,
+                this.exclusive.getLabeledPasswordParam(),
+                this.exclusive.getSecret(),
+                this.exclusive.getP12(),
+                this.exclusive.getPrivKeyFile()
+            );
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
             this.cdocFile,

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+
 /**
  * Utility class for building {@link CDocDecrypter}.
  */
@@ -41,6 +42,26 @@ public final class CDocDecryptionHelper {
     /**
      * Loads DecryptionKeyMaterial from CLI options. If decryption material is not given by user, then
      * tries to load decryption key material from smart-card. Asks PIN interactively when using smart-card
+     * @param slot smart-card slot number when overwriting default
+     * @param keyAlias key alias
+     * @return loaded DecryptionKeyMaterial
+     * @throws GeneralSecurityException general security exception
+     * @throws IOException in case decryption key material extraction has failed
+     */
+    public static DecryptionKeyMaterial getSmartCardDecryptionKeyMaterial(
+        Integer slot,
+        String keyAlias
+    ) throws GeneralSecurityException, IOException {
+        log.info("Decryption key not provided as CLI parameter, trying to read it from smart-card");
+
+        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
+        KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
+
+        return DecryptionKeyMaterial.fromKeyPair(keyPair);
+    }
+
+    /**
+     * Loads DecryptionKeyMaterial from CLI options.
      * @param cdocFile cdoc file that is decrypted. Used to find correct key label,
      *                 if password is entered without a label ":password"
      * @param labeledPasswordParam when labeledPasswordParam.isEmpty() == true (-pw without value),
@@ -48,31 +69,20 @@ public final class CDocDecryptionHelper {
      * @param secret LabeledSecret value when provided, otherwise null
      * @param p12 Read private key from .p12 file. Format is "FILE.p12:password". null when not provided
      * @param privKeyFile file containing privateKey in PEM format. null when not provided
-     * @param slot smart-card slot number when overwriting default
-     * @param keyAlias
      * @return loaded DecryptionKeyMaterial
-     * @throws GeneralSecurityException
-     * @throws IOException
-     * @throws CDocParseException
+     * @throws GeneralSecurityException general security exception
+     * @throws IOException in case decryption key material extraction has failed
+     * @throws CDocParseException in case decryption key material extraction has failed
      */
     public static DecryptionKeyMaterial getDecryptionKeyMaterial(
         File cdocFile,
         @Nullable LabeledPasswordParam labeledPasswordParam,
         @Nullable LabeledSecret secret,
         @Nullable String p12,
-        @Nullable File privKeyFile,
-        @Nullable Integer slot,
-        @Nullable String keyAlias
+        @Nullable File privKeyFile
     ) throws GeneralSecurityException, IOException, CDocParseException {
-
         Objects.requireNonNull(cdocFile);
-
-        int n = countParams(labeledPasswordParam, secret, p12, privKeyFile);
-
-        if (n == 0) {
-            log.info("Decryption key not provided as CLI parameter, trying to read it from smart-card");
-        }
-
+        countParams(labeledPasswordParam, secret, p12, privKeyFile);
 
         DecryptionKeyMaterial decryptionKm = null;
         if (secret != null) {
@@ -92,14 +102,15 @@ public final class CDocDecryptionHelper {
         }
 
         if (decryptionKm == null)  {
-            String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
             KeyPair keyPair;
             if (p12 != null) {
                 keyPair = PemTools.loadKeyPairFromP12File(p12);
+            } else if (privKeyFile != null) {
+                keyPair = PemTools.loadKeyPair(privKeyFile);
             } else {
-                keyPair = (privKeyFile != null)
-                    ? PemTools.loadKeyPair(privKeyFile)
-                    : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
+                throw new CDocParseException(
+                    "At least one of decryption keys must be present"
+                );
             }
 
             decryptionKm = DecryptionKeyMaterial.fromKeyPair(keyPair);
@@ -108,10 +119,12 @@ public final class CDocDecryptionHelper {
         return decryptionKm;
     }
 
-    private static int countParams(LabeledPasswordParam labeledPasswordParam,
-                                   LabeledSecret secret,
-                                   String p12,
-                                   File privKeyFile) {
+    private static void countParams(
+        LabeledPasswordParam labeledPasswordParam,
+        LabeledSecret secret,
+        String p12,
+        File privKeyFile
+    ) {
         int n = 0;
         if (labeledPasswordParam != null) n += 1;
         if (secret != null) n += 1;
@@ -122,7 +135,6 @@ public final class CDocDecryptionHelper {
             //should be detected by picocli ArgGroup(exclusive = true) before reaching here
             throw new IllegalArgumentException("More than one decryption key provided");
         }
-        return n;
     }
 
     public static CDocDecrypter getDecrypterWithFilesExtraction(

@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
@@ -26,6 +27,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
 //S106 Standard outputs should not be used directly to log anything
@@ -40,30 +42,9 @@ public class CDocReEncryptCmd implements Callable<Void> {
     @CommandLine.Option(names = {"-f", "--file" }, required = true,
         paramLabel = "CDOC", description = "the CDOC2 file")
     private File cdocFile;
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Exclusive exclusive;
 
-    static class Exclusive {
-        @CommandLine.Option(names = {"-k", "--key"},
-            paramLabel = "PEM", description = "Private key PEM to use for decrypting")
-        private File privKeyFile;
-
-        @CommandLine.Option(names = {"-p12"},
-            paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-        private String p12;
-
-        @CommandLine.Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-            converter = LabeledSecretConverter.class,
-            description = CliConstants.SECRET_DESCRIPTION
-                + ". Used to decrypt existing CDOC container.")
-        private LabeledSecret secret;
-
-        @CommandLine.Option(names = {"-pw", "--password"}, arity = "0..1",
-            converter = LabeledPasswordParamConverter.class,
-            paramLabel = "<label>:<password>",
-            description = CliConstants.PASSWORD_DESCRIPTION + ". Used to decrypt existing CDOC container.")
-        private LabeledPasswordParam password;
-    }
+    @CommandLine.ArgGroup
+    DecryptionKeyExclusiveArgument exclusive;
 
     @CommandLine.Option(names = {"-encpw", "--encpassword"}, arity = "0..1",
         converter = LabeledPasswordParamConverter.class,
@@ -75,7 +56,6 @@ public class CDocReEncryptCmd implements Callable<Void> {
         converter = LabeledSecretConverter.class,
         description = CliConstants.SECRET_DESCRIPTION + ". Used for re-encryption part.")
     private LabeledSecret reEncryptSecret;
-
 
     @CommandLine.Option(names = {"--slot"},
         description = "Smart card key slot to use for decrypting. Default: 0")
@@ -111,14 +91,14 @@ public class CDocReEncryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        DecryptionKeyMaterial decryptionKeyMaterial = getDecryptionKeyMaterial(
+        DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            : getDecryptionKeyMaterial(
             this.cdocFile,
-            this.exclusive.password,
-            this.exclusive.secret,
-            this.exclusive.p12,
-            this.exclusive.privKeyFile,
-            this.slot,
-            this.keyAlias
+            this.exclusive.getLabeledPasswordParam(),
+            this.exclusive.getSecret(),
+            this.exclusive.getP12(),
+            this.exclusive.getPrivKeyFile()
         );
 
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
