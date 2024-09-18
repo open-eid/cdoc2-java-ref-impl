@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AutoRemovableDir implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(AutoRemovableDir.class);
