@@ -157,6 +157,10 @@ Other CDOC2 repositories:
 - https://github.com/open-eid/cdoc2-capsule-server CDOC2 Capsule Server
 - https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server
 
+## Using
+
+Refer [cdoc2-lib/README.md](cdoc2-lib/README.md) and see [cdoc2-example-app](cdoc2-example-app)
+
 ## Preconditions for building
 * Java 17
 * Maven 3.8.x
@@ -169,7 +173,8 @@ https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for client stub
 Configure github package repo access
 https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token
 
-Example `<profile>` section of `settings.xml` for using cdoc2 dependencies:
+Add repository url to `<profile>` section of your PC local file `.m2/settings.xml` for using cdoc2 
+dependencies:
 ```xml
   <profile>
       <id>github</id>

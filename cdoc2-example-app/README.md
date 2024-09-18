@@ -8,7 +8,7 @@ Requirements:
 
 * Java17
 
-TODO: howto setup mvn repository for getting cdoc2 dependencies (depends: GitHub maven repo)
+Configure cdoc2 maven dependencies: https://github.com/open-eid/cdoc2-java-ref-impl/tree/master?tab=readme-ov-file#maven-dependencies
 
 ```bash
 mvnw install

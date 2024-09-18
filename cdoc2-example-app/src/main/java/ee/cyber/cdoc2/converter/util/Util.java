@@ -2,7 +2,9 @@ package ee.cyber.cdoc2.converter.util;
 
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.CDocUserException;
 import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 import org.openeid.cdoc4j.CDOCDecrypter;
@@ -65,9 +67,9 @@ public class Util {
             if (result == JOptionPane.OK_OPTION) {
                 return pf.getPassword();
             } else if (result == JOptionPane.OK_CANCEL_OPTION) {
-                throw new CDocUserException("Password entry cancelled by user");
+                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password entry cancelled by user");
             } else {
-                throw new CDocUserException("Password not entered");
+                throw new CDocUserException(UserErrorCode.USER_CANCEL, "Password not entered");
             }
         }
     }
