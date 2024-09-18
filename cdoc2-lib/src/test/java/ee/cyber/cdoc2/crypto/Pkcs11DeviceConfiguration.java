@@ -19,7 +19,7 @@ public class Pkcs11DeviceConfiguration {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11DeviceConfiguration.class);
 
     public Pkcs11DeviceConfiguration() {
-        load();
+        this.loadInternal();
     }
 
     private String pkcs11Library;
@@ -36,12 +36,27 @@ public class Pkcs11DeviceConfiguration {
         return pkcs11Library;
     }
 
+    @Deprecated(since = "2.0.1")
+    public String pkcs11Library() {
+        return getPkcs11Library();
+    }
+
     public int getSlot() {
         return slot;
     }
 
+    @Deprecated(since = "2.0.1")
+    public int slot() {
+        return getSlot();
+    }
+
     public char[] getPin() {
         return pin;
+    }
+
+    @Deprecated(since = "2.0.1")
+    public char[] pin() {
+        return getPin();
     }
 
     @Nullable
@@ -49,8 +64,26 @@ public class Pkcs11DeviceConfiguration {
         return keyAlias;
     }
 
+    @Deprecated(since = "2.0.1")
+    public String keyAlias() {
+        return getKeyAlias();
+    }
+
     public String getCertCn() {
         return certCn;
+    }
+
+    @Deprecated(since = "2.0.1")
+    public String certCn() {
+        return getCertCn();
+    }
+
+    /**
+     * @deprecated Use {@link #Pkcs11DeviceConfiguration()} instead.
+     */
+    @Deprecated(since = "2.0.1")
+    public static Pkcs11DeviceConfiguration load() {
+        return new Pkcs11DeviceConfiguration();
     }
 
     /**
@@ -59,7 +92,7 @@ public class Pkcs11DeviceConfiguration {
      * The properties file can be specified with the system property cdoc2.pkcs11.test-configuration
      * e.g -D cdoc2.pkcs11.test-configuration=pkcs11-test-idcard.properties
      */
-    private void load() {
+    private void loadInternal() {
         final String classpath = "classpath:";
         String filename = System.getProperty(
             "cdoc2.pkcs11.conf-file",
