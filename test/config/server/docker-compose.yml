@@ -1,21 +1,31 @@
-version: '3.4'
-
 services:
   cdoc2-postgres:
     container_name: cdoc2-postgres-bats
-    # Instruction to build local cdoc2-db: https://github.com/open-eid/cdoc2-capsule-server/server-db/README.md
-    image: cdoc2-db:version3
+    image: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres -U postgres" ]
+      interval: 5s
+      timeout: 10s
+      retries: 120
     restart: always
     ports:
       - "7432:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: postgres
-      PGDATA: postgres
+      POSTGRES_USER: postgres
+
+  db-init:
+    image: ghcr.io/open-eid/cdoc2-server-liquibase:${CDOC2_SERVERS_TAG}
+    depends_on:
+      cdoc2-postgres:
+        condition: service_healthy
+    command: --url jdbc:postgresql://cdoc2-postgres/postgres --username=postgres --password=postgres  --defaultsFile=liquibase.properties update
+
 
   cdoc2-put-server:
     container_name: cdoc2-put-server-bats
-    image: ghcr.io/open-eid/cdoc2-put-server:v1.4.0-docker.0-7b16600584da49d0a504f7cdaa1066ba41f2b20e
+    image: ghcr.io/open-eid/cdoc2-put-server:${CDOC2_SERVERS_TAG}
     ports:
       - "8443:8443"
       # monitoring
@@ -34,7 +44,9 @@ services:
 #      - JAVA_OPTS=-Djavax.net.debug=ssl:handshake:verbose:keymanager:trustmanager -Djava.security.debug=access:stack
     depends_on:
       cdoc2-postgres:
-        condition: service_started
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
 # curl is not installed on image, and following healthcheck will fail
 #    healthcheck:
 #      test: curl -k --silent --fail --connect-timeout 1 https://localhost:18443/actuator/health|grep UP
@@ -46,7 +58,7 @@ services:
 
   cdoc2-get-server:
     container_name: cdoc2-get-server-bats
-    image: ghcr.io/open-eid/cdoc2-get-server:v1.4.0-docker.0-7b16600584da49d0a504f7cdaa1066ba41f2b20e
+    image: ghcr.io/open-eid/cdoc2-get-server:${CDOC2_SERVERS_TAG}
     ports:
       - "8444:8444"
       # monitoring
@@ -63,7 +75,9 @@ services:
 #      - JAVA_OPTS=-Djavax.net.debug=ssl:handshake:verbose:keymanager:trustmanager -Djava.security.debug=access:stack
     depends_on:
       cdoc2-postgres:
-        condition: service_started
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     mem_limit: 1g
 
 
