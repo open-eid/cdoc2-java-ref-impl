@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1] Bug fixes, documentation, tests improvements (2024-09-19)
+
+### Bug Fixes
+* Fix `cdoc2-cli decrypt` crash, when using server scenario
+* Fix Junit tests on Windows
+* Fix pkcs11 (smart-card) test properties loading from filesystem  
+
+### Internal
+* Added [cdoc2-lib Usage Guide](cdoc2-lib/README.md)
+* cdoc2-cli bats tests for server scenario (using docker compose)
+* Update cdoc2-example-app to use `cdoc2-lib:2.0.0`
+
 ## [1.4.0] Key label formatting (2024-09-02)
 
 ### Features

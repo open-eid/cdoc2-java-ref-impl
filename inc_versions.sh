@@ -83,7 +83,7 @@ for module in $MODULES; do
         echo "Ignoring $module as it already on SNAPSHOT "
     else
         echo "Creating -SNAPSHOT minor version for $module;"
-        mvn -f "$module" versions:set -DnextSnapshot -DnextSnapshotIndexToIncrement=2
+        mvn -f "$module" versions:set -DnextSnapshot -DnextSnapshotIndexToIncrement=3
     fi
   else
     echo "Dry-run. Not increasing version for $module."
