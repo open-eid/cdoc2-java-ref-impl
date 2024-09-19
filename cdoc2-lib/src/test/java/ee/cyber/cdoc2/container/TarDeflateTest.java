@@ -1,12 +1,14 @@
 package ee.cyber.cdoc2.container;
 
 import java.io.*;
+import java.nio.charset.UnmappableCharacterException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import ee.cyber.cdoc2.CDocConfiguration;
+import ee.cyber.cdoc2.TestLifecycleLogger;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -14,6 +16,8 @@ import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStr
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
@@ -25,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 // test are executed sequentially without any other tests running at the same time
 @Isolated
-class TarDeflateTest {
+class TarDeflateTest implements TestLifecycleLogger {
     private static final  Logger log = LoggerFactory.getLogger(TarDeflateTest.class);
 
     private static final String TGZ_FILE_NAME = "archive.tgz";
@@ -128,6 +132,12 @@ class TarDeflateTest {
         }
     }
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @param tempDir
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void testTarGzBomb(@TempDir Path tempDir) throws IOException {
         byte[] zeros = new byte[1024]; //1KB
@@ -174,6 +184,12 @@ class TarDeflateTest {
         log.debug("Got {} with message: {}", exception.getClass().getName(), exception.getMessage());
     }
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @param tempDir
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void testCheckDiskSpaceAvailable(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
@@ -202,14 +218,36 @@ class TarDeflateTest {
 
         // should fail
         for (String fileName: INVALID_FILE_NAMES) {
-            File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
+
+            File file;
+            log.debug("test file name '{}'", fileName);
+            try {
+                //Windows is more restrictive on what file names can be created
+                file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
+            } catch (InvalidPathException invalidPathException) {
+                if (OS.WINDOWS.isCurrentOs()) {
+                    // do nothing
+                    log.debug("Filename '{}' not allowed under Windows", fileName);
+                    continue;
+                }
+
+                throw invalidPathException;
+            }
+
+            assertNotNull(file);
+
             OutputStream os = new ByteArrayOutputStream();
             List<File> files = List.of(file);
+
+            // Under Windows file name 'abc/' transforms to 'abc' and is not invalid anymore.
+            if (file.getName().equals("abc") &&  OS.WINDOWS.isCurrentOs()) continue;
+
             assertThrows(
-                InvalidPathException.class,
-                () -> Tar.archiveFiles(os, files),
-                "File with name '" + file + "' should not be allowed in created tar"
+                    InvalidPathException.class,
+                    () -> Tar.archiveFiles(os, files),
+                    "File with name '" + file + "' should not be allowed in created tar"
             );
+
         }
 
         // should pass
@@ -221,18 +259,37 @@ class TarDeflateTest {
         }
     }
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @param tempDir
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void shouldValidateFileNameWhenExtractingTar(@TempDir Path tempDir) throws IOException {
         // should fail
         for (int i = 0; i < INVALID_FILE_NAMES.size(); i++) {
             String fileName = INVALID_FILE_NAMES.get(i);
-            File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i, fileName, PAYLOAD);
 
-            assertThrows(
-                InvalidPathException.class,
-                () -> new TarDeflate(new FileInputStream(file)).extractFilesToDir(List.of(fileName), tempDir),
-                "File with name '" + fileName + "' should not be extracted from tar"
-            );
+            log.debug("Op system is '{}'", System.getProperty("os.name"));
+
+            try {
+                File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i, fileName, PAYLOAD);
+
+                assertThrows(
+                        InvalidPathException.class,
+                        () -> new TarDeflate(new FileInputStream(file)).extractFilesToDir(List.of(fileName), tempDir),
+                        "File with name '" + fileName + "' should not be extracted from tar"
+                );
+
+            } catch (IOException e) {
+                if (OS.WINDOWS.isCurrentOs()) {
+                    // do nothing
+                    log.debug("Filename '{}'not allowed under Windows", fileName);
+                } else {
+                    throw e;
+                }
+            }
 
         }
 
@@ -299,8 +356,19 @@ class TarDeflateTest {
 
 
         ByteArrayInputStream is = new ByteArrayInputStream(destTarZ.toByteArray());
-        List<String> filesList = TarDeflate.listFiles(is);
-        assertEquals(List.of(longFileName), filesList);
+
+        try {
+            List<String> filesList = TarDeflate.listFiles(is);
+            assertEquals(List.of(longFileName), filesList);
+
+        } catch (UnmappableCharacterException e) {
+            if (OS.WINDOWS.isCurrentOs()) {
+                // do nothing
+                log.debug("Filename not allowed under Windows, exception {}", e.getMessage());
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Test

@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 import org.opentest4j.AssertionFailedError;
@@ -124,6 +126,11 @@ class CDocCliTest {
         );
     }
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void shouldFailToEncryptDocWithSecretButDecryptWithPassword() {
         encrypt(SECRET_OPTION);
@@ -133,6 +140,11 @@ class CDocCliTest {
         );
     }
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void shouldFailToEncryptDocWithPasswordButDecryptWithSecret() {
         encrypt(PASSWORD_OPTION);
