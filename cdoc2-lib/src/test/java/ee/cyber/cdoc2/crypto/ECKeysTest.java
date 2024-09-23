@@ -23,7 +23,8 @@ import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.HexFormat;
-import java.util.Map;
+
+import ee.cyber.cdoc2.util.SkLdapUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +36,7 @@ class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);
 
     @Test
+    @SuppressWarnings({"java:S1481", "java:S1854"})
     void testBigInteger() {
         byte[] neg = new BigInteger("-255").toByteArray(); //0xff, 0x01
         byte[] neg254 = new BigInteger("-254").toByteArray(); //0xff, 0x02
@@ -144,7 +146,7 @@ class ECKeysTest {
 
         assertTrue(ECKeys.isEcSecp384r1Curve(ecPublicKey));
 
-        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams().toString());
+        log.debug("{} {}", ECKeys.getCurveOid(ecPublicKey), ecPublicKey.getParams());
 
         assertEquals(expectedHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
@@ -279,19 +281,21 @@ class ECKeysTest {
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
 
-        //log.debug("key: {}", ecPrivKey.getS().toString(16));
+        if (log.isDebugEnabled()) {
+            log.debug("key: {}", ecPrivKey.getS().toString(16));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPrivKey.getAlgorithm()));
         assertEquals(expectedSecretHex, ecPrivKey.getS().toString(16));
 
-
-        //log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        if (log.isDebugEnabled()) {
+            log.debug("pub: {}", HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
+        }
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(ecPublicKey.getAlgorithm()));
         assertEquals(expectedPubHex, HexFormat.of().formatHex(ECKeys.encodeEcPubKeyForTls(ecPublicKey)));
     }
 
-
     @Test
-    void testLoadCertWithLabel() throws CertificateException, IOException {
+    void testLoadCertWithLabel() throws CertificateException {
 
         final String igorCertificate =
             """
@@ -334,9 +338,9 @@ class ECKeysTest {
 
 
         InputStream certStream = new ByteArrayInputStream(igorCertificate.getBytes(StandardCharsets.UTF_8));
-        Map.Entry<PublicKey, String> keyLabel =  PemTools.loadCertKeyWithLabel(certStream);
+        SkLdapUtil.CertificateData certificateData =  PemTools.loadCertKeyWithLabel(certStream);
 
-        String label = keyLabel.getValue();
+        String label = certificateData.getKeyLabel();
 
         assertEquals("\u017DAIKOVSKI,IGOR,37101010021", label);
     }
@@ -348,7 +352,7 @@ class ECKeysTest {
 
         ECParameterSpec ecParameterSpec = params.getParameterSpec(ECParameterSpec.class);
 
-        ECPublicKey infinityPublicKey = new ECPublicKey() {
+        return new ECPublicKey() {
             @Override
             public ECPoint getW() {
                 return ECPoint.POINT_INFINITY;
@@ -374,8 +378,6 @@ class ECKeysTest {
                 return ecParameterSpec;
             }
         };
-
-        return infinityPublicKey;
     }
 
     @Test

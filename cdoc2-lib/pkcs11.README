@@ -15,11 +15,7 @@ CKA_TOKEN = false
 }
 
 
-
-
-
 pkcs15-tool --dump
-
 
 
 keytool 
@@ -49,10 +45,10 @@ flags: CKF_TOKEN_PRESENT | CKF_REMOVABLE_DEVICE | CKF_HW_SLOT
 hardwareVersion: 0.00
 firmwareVersion: 0.00
 Token info for token in slot 0:
-label: KUSMAN,JANNO,37903130370 (PIN1)
+label: JÕEORG,JAAK-KRISTJAN,38001085718 (PIN1)
 manufacturerID: IDEMIA                          
 model: PKCS#15 emulated
-serialNumber: AB0584325       
+serialNumber: 38001085718
 flags: CKF_WRITE_PROTECTED | CKF_LOGIN_REQUIRED | CKF_USER_PIN_INITIALIZED | CKF_TOKEN_INITIALIZED
 ulMaxSessionCount: CK_EFFECTIVELY_INFINITE
 ulSessionCount: 0
@@ -162,8 +158,3 @@ Your keystore contains 1 entry
 
 Isikutuvastus, PrivateKeyEntry,
 Certificate fingerprint (SHA-256): F2:5F:A3:E8:D0:6C:ED:AE:5D:11:77:C1:35:A2:F3:07:42:9B:4D:3A:3C:E9:B6:EC:7F:3A:E3:F9:6A:76:35:01
-
-
-
-
-

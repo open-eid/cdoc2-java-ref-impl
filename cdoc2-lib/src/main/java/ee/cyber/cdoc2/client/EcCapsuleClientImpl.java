@@ -12,6 +12,8 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Optional;
 
+
+@SuppressWarnings("java:S2139")
 public class EcCapsuleClientImpl implements EcCapsuleClient {
     private static final Logger log = LoggerFactory.getLogger(EcCapsuleClientImpl.class);
 
@@ -22,7 +24,10 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
     }
 
     @Override
-    public String storeSenderKey(ECPublicKey receiverKey, ECPublicKey senderKey) throws ExtApiException {
+    public String storeSenderKey(
+        ECPublicKey receiverKey,
+        ECPublicKey senderKey
+    ) throws ExtApiException {
 
         EllipticCurve curve;
         try {
@@ -79,4 +84,5 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
     public String getServerIdentifier() {
         return keyCapsulesClient.getServerIdentifier();
     }
+
 }

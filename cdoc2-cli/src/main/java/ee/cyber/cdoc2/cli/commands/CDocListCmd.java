@@ -1,17 +1,13 @@
 package ee.cyber.cdoc2.cli.commands;
 
-import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
-import ee.cyber.cdoc2.CDocConfiguration;
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.PemTools;
-import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.util.Resources;
 import java.io.File;
 import java.nio.file.InvalidPathException;
-import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -20,8 +16,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import org.apache.commons.compress.archivers.ArchiveEntry;
+
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
+
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -32,21 +34,8 @@ public class CDocListCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2 file")
     private File cdocFile;
 
-    @Option(names = {"-k", "--key"},
-            paramLabel = "PEM", description = "EC private key PEM used to decrypt")
-    private File privKeyFile;
-
-    @Option(names = {"-p12"},
-            paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-    private String p12;
-
-    @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-    private String secret;
-
-    @Option(names = {"-pass", "--password"}, arity = "0..1",
-        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-    private String password;
+    @CommandLine.ArgGroup
+    DecryptionKeyExclusiveArgument exclusive;
 
     @Option (names = {"--slot"},
             description = "Key from smartcard slot used for decrypting. Default 0")
@@ -77,7 +66,6 @@ public class CDocListCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
         Properties p;
 
         KeyCapsuleClientFactory keyCapsulesClient = null;
@@ -88,28 +76,20 @@ public class CDocListCmd implements Callable<Void> {
             keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
         }
 
-        DecryptionKeyMaterial decryptionKm =
-            SymmetricKeyUtil.extractDecryptionKeyMaterialFromSymmetricKey(
-                this.cdocFile.toPath(), this.password, this.secret
-            );
-
-        if (decryptionKm == null)  {
-            KeyPair keyPair;
-            if (p12 != null) {
-                keyPair = PemTools.loadKeyPairFromP12File(p12);
-            } else {
-                keyPair = privKeyFile != null
-                        ? PemTools.loadKeyPair(privKeyFile)
-                        : Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
-            }
-
-            decryptionKm = DecryptionKeyMaterial.fromKeyPair(keyPair);
-        }
+        DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            : getDecryptionKeyMaterial(
+            this.cdocFile,
+            this.exclusive.getLabeledPasswordParam(),
+            this.exclusive.getSecret(),
+            this.exclusive.getP12(),
+            this.exclusive.getPrivKeyFile()
+        );
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
                 .withKeyServers(keyCapsulesClient)
-                .withRecipient(decryptionKm);
+                .withRecipient(decryptionKeyMaterial);
 
         System.out.println("Listing contents of " + cdocFile);
         List<ArchiveEntry> files = cDocDecrypter.list();

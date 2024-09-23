@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Java CI with Maven
+name: Build cdoc2-java-ref-impl with CI
 
 on:
   push:
@@ -18,28 +18,46 @@ env:
   ACTIONS_STEP_DEBUG: true
 
 jobs:
-  build:
-
+  fork_setup:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true }}
+    outputs:
+      base_repo: ${{ steps.base_repo.outputs.name }}
+      is_fork: ${{ steps.is_fork.outputs.is_fork }}
 
     steps:
-    - uses: actions/checkout@v3
+      - id: base_repo
+        run: echo "name=${{github.event.pull_request.base.repo.full_name}}" >> "$GITHUB_OUTPUT"
+      - id: is_fork
+        run: echo "is_fork=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: fork_setup
+
+    steps:
+    - uses: actions/checkout@v4
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
 
       with:
         java-version: '17'
         distribution: 'temurin'
+        overwrite-settings: true #generate settings.xml
         cache: maven
-    - name: Debug settings.xml
-      run: |
-        echo $(cat ~/.m2/settings.xml)
-        echo $env.GITHUB_ACTOR
 
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: | 
+        echo "Debug env vars: is_fork=$IS_FORK base_repo=$BASE_REPO MAVEN_REPO=$MAVEN_REPO"
+        mvn help:active-profiles
+        echo "Using Maven repo=$(mvn help:evaluate -Dexpression=github_ci.maven_repo -q -DforceStdout)"
+        mvn -B package --file pom.xml
       env:
         GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
+        IS_FORK: ${{needs.fork_setup.outputs.is_fork}}
+        BASE_REPO: ${{needs.fork_setup.outputs.base_repo}}
+
+
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     #- name: Update dependency graph

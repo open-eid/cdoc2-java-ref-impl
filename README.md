@@ -1,16 +1,23 @@
-# CDOC2 reference implementation
+# CDOC2 reference implementation (Java)
 
-[CDOC2](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf) reference implementation (Java)
+[CDOC2](https://open-eid.github.io/CDOC2/) reference implementation (Java)
 
-CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security measures with optional server backend. CDoc version are not compatible. Additional background info can be found in [CDOC2](https://www.ria.ee/media/2340/download).
+CDOC stands for 'Crypto Digidoc', encrypted file transmission format used in the [Estonian eID](https://github.com/open-eid) ecosystem
 
+CDOC2 is a new version of [CDOC](https://www.id.ee/wp-content/uploads/2020/06/sk-cdoc-1.0-20120625_en.pdf) (CDOC lib [cdoc4j](https://github.com/open-eid/cdoc4j)), featuring additional security 
+measures with optional server backend. CDOC version are not compatible. 
 
-Current CDOC2 supports five scenarios
+Additional background info can be found in [RIA CDOC2 presentation](https://www.youtube.com/watch?v=otrO2A6TuGQ) 
+and [id.ee CDOC 2.0 article](https://www.id.ee/artikkel/cdoc-2-0/)
 
-## CDOC2 ECDH scenario
+End-user software to create/decrypt CDOC2: https://github.com/open-eid/DigiDoc4-Client
 
-**Warning**: This description is simplification to give general idea, details and **final truth is in 
-[CDOC2 specification](https://installer.id.ee/media/cdoc/cdoc_2_0_spetsifikatsioon_d-19-12_v1.9.pdf)**.
+## Implemented scenarios
+
+**Warning**: Following scenario descriptions are simplification to give general idea, details and **final truth is in
+[CDOC2 specification](https://open-eid.github.io/CDOC2/)**.
+
+### CDOC2 ECDH scenario
 
 1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
    EC public key.
@@ -36,7 +43,7 @@ Current CDOC2 supports five scenarios
 
 [^3]: Content is zlib compressed tar archive
 
-## CDOC2 ECDH server scenario
+### CDOC2 ECDH server scenario
 
 1. *Follow steps from previous scenario 1-6*
 2. Sender chooses key transaction server (preconfigured list)
@@ -57,7 +64,7 @@ Key transfer server benefits:
 
 [^4]: key transfer server protocol is defined in cdoc2-openapi module
 
-## CDOC2 RSA-OAEP
+### CDOC2 RSA-OAEP
 
 RSA-OAEP is similar to ECDH scenario, with difference that KEK is generated from secure random (not ECDH) and
 KEK is encrypted with recipient RSA public key and included into CDOC header (instead of
@@ -81,7 +88,7 @@ sender public key).
 15. Recipient calculates hmac and checks it against hmac in CDoc.
 16. Recipient decrypts content using CEK.
 
-## CDOC2 RSA-OAEP with server scenario
+### CDOC2 RSA-OAEP with server scenario
 
 1. *Follow steps from RSA-OAEP scenario 1-6*
 2. Sender chooses key capsule server (by providing server configuration)
@@ -96,25 +103,7 @@ sender public key).
     capsule that contains encrypted KEK
 11. *Follow steps from RSA-OAEP scenario steps 12-15*
 
-## CDOC2 with symmetric key from password
-
-Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
-
-1. Sender and recipient have a pre shared password identified by key_label
-2. Symmetric key is created from password and salt (generated using secure random) using PBKDF2 algorithm
-3. Sender derives key encryption key (KEK) from symmetric key and previously generated salt using HKDF algorithm
-4. *Follow steps from ECDH scenario 4-6*
-5. Sender adds encrypted FMK with key_label to CDoc header
-6. *Follow steps from ECDH scenario 8-10*
-7. Recipient searches CDoc header for key_label and finds salt and encrypted FMK
-8. Recipient derives encryption key (KEK) from salt, key_label and pre-shared symmetric key (password)
-9. Recipient decrypts FMK using KEK.
-10. *Follow steps from ECDH scenario 13-15*
-
-cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
-can do that.
-
-## CDOC2 with symmetric key from secret
+### CDOC2 with symmetric key from secret
 
 Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identified by key_label using HKDF algorithm.
 
@@ -132,37 +121,98 @@ Similar to ECDH scenario, but KEK is derived from symmetric key (secret) identif
 cdoc2-java-ref-impl does not provide solution for securely storing the secret, but most password managers
  can do that.
 
+### CDOC2 with symmetric key from password
+
+Similar to Symmetric Key scenario, but symmetric key is derived from password and salt using PBKDF2 algorithm.
+
+1. Sender and recipient have a pre shared password identified by key_label
+2. Symmetric key is created from password and salt (generated using secure random) using PBKDF2 algorithm
+3. Sender derives key encryption key (KEK) from symmetric key and previously generated salt using HKDF algorithm
+4. *Follow steps from ECDH scenario 4-6*
+5. Sender adds encrypted FMK with key_label to CDoc header
+6. *Follow steps from ECDH scenario 8-10*
+7. Recipient searches CDoc header for key_label and finds salt and encrypted FMK
+8. Recipient derives encryption key (KEK) from salt, key_label and pre-shared symmetric key (password)
+9. Recipient decrypts FMK using KEK.
+10. *Follow steps from ECDH scenario 13-15*
+
+cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
+can do that.
+
+
 
 ## Structure
 [![CDOC2 Dependencies](./cdoc2-docs/arch/images/cdoc2-deps.png)](https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1&title=CDOC2%20deps#R3VjbcpswEP0aPybDpWDnMb4knY7bycQzbZ03BTagVCAiCxvn6yuZxYjBdpOpEzx%2Bsvbs6sI5q11wzx0lxa0gWfydh8B6jhUWPXfccxzb8x31o5F1iQz8fglEgoYYVAMz%2BgoIWojmNIRFI1ByziTNmmDA0xQC2cCIEHzVDHvirLlrRiLc0aqBWUAYtMJ%2B0VDGiNqWEf4VaBTj1gMPHQmpghFYxCTkKwNyJz13JDiX5SgpRsA0eRUv5bybPd7twQSk8i0TnucvM7h6%2BnMzvh4%2B59l1dHPPLmwfDyfX1RNDqAhAkwsZ84inhE1qdCh4noagl7WUVcdMOc8UaCvwGaRco5okl1xBsUwYeqGg8rcxnuulLj20xgWuvDHWaKTcOMJmZnlyfdy9jCC04LkIMOoh96h1%2B230egdT9%2BVe%2Fnj8mV9gkkoiIpAH4rytbirhgScgxVrNE8CIpMvmOQhmXrSNq8VRA9TnPVoNutTKuvSvDLnsg2IpAcS6nNX3KntuOut5G2u%2FynrdOxBUcQgCoz5W%2BZ3k%2B5%2Bk%2FKFDLgnLcSdGH1vJoApMpocJD%2FON9oTRKFUAgyf1aMNFRgKaRtONNXYsIyJQvGl2h0sQkqrqd40OqbNkuIqphJmarpdfqULfTJG97OvVoDCgNoGVt4%2FPiG3CxaK5MmpuVXJjo9xW1fbolLstynuOzzSNIV2qYaSHPIOUZLTyqI0M51nrsyW%2BM4G8lkCLIIaEnBXtbofXYncP%2BtJFDzpW79%2F5SO4be7%2FTZe9vl6OA0VNL9VZe7xBkf6pb%2F8r0q09N9P5pJLrxJuW8603qiDfEe%2BMNcbu8ITv6AQiVkWd1SZzmJbH9rvuBv6su6Yc5K9b7p0a77XZRnYxa5P%2FvV532H%2Bez7lBennbJsr2OVWyIaL9bxA5azAe9hCmz%2FiNu4zP%2BznQnfwE%3D)
 
-- cdoc2-schema  - flatbuffers schemas and code generation
-- cdoc2-lib     - CDOC2 creation and processing library
-- cdoc2-client  - Optional client for server backend
-- cdoc2-cli     - Command line utility to create/process CDOC2 files
-- test          - Sample CDOC2 containers (with script to create and decrypt them) 
-                  and automated tests for CLI
+- cdoc2-schema      - flatbuffers schemas and code generation
+- cdoc2-lib         - CDOC2 creation and processing library
+- cdoc2-client      - client for communicating with [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)
+- cdoc2-cli         - Command line utility to create/process CDOC2 files
+- test              - Sample CDOC2 containers (with script to create and decrypt them) 
+                      and automated tests for CLI
+- cdoc2-example-app - Example, how to use cdoc2-java-ref-impl and cdoc4j together
 
-Server related components are in separate cdoc2-servers repo TODO: link to public repo
+Other CDOC2 repositories:
+- https://github.com/open-eid/cdoc2-openapi CDOC2 OpenAPI specifications
+- https://github.com/open-eid/cdoc2-capsule-server CDOC2 Capsule Server
+- https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server
 
 ## Preconditions for building
 * Java 17
 * Maven 3.8.x
-* Docker available and running (required for running tests)
 
 ## Maven dependencies
 
-See README.md in cdoc2-servers repo TODO: update link
+Depends on:
+https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for client stub generation
+
+Configure github package repo access
+https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token
+
+Example `<profile>` section of `settings.xml` for using cdoc2 dependencies:
+```xml
+  <profile>
+      <id>github</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/open-eid/cdoc2-openapi</url>
+        </repository>
+      </repositories>
+  </profile>
+```
+
+Note: When pulling, the [GitHub package index is based on the organization level](https://stackoverflow.com/questions/63041402/github-packages-single-maven-repository-for-github-organization)
+, not the repository level.
+
+So defining any Maven package repo from `open-eid` is enough for pulling cdoc2-* dependencies.
+All packages published under `open-eid` can be found https://github.com/orgs/open-eid/packages
 
 ## Building
-CDOC2 has been tested with JDK 17 and Maven 3.8.4
+[![Java CI with Maven](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml/badge.svg)](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml)
+
+CDOC2 has been tested with JDK 17 and Maven 3.8.8
 
 ```
 mvn clean install
 ```
 
+### GitHub workflow build
+
+Maven build is executed for GH event `pull_request` an and `push` to 'master'. 
+
+GH build workflow configures Maven repository automatically. For fork based pull_requests 
+Maven repo value will be set to `github.event.pull_request.base.repo.full_name`. It can be overwritten
+by [defining repository variable](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/variables#creating-configuration-variables-for-a-repository) 
+`MAVEN_REPO`
+
+
 ## Testing
-By default tests that require smart-card are excluded from running. To execute all tests enable allTests maven profile
+By default, tests that require smart-card are excluded from running. To execute all tests enable allTests maven profile
 ```
 mvn -PallTests test
 ```
@@ -181,13 +231,24 @@ To run the tests using a physical PKCS11 device (smart card or usb token), execu
 mvn test -Dtests=pkcs11
 ```
 
-The pkcs11 device configuration (PKCS11 library, slot, pin, etc) can be specified using `cdoc2.pkcs11.conf-file` system property, for example:
+The pkcs11 device configuration (PKCS11 library, slot, pin, etc) can be specified using 
+`cdoc2.pkcs11.conf-file` system property, for example run with configuration file from filesystem 
+from the root of the project:
 
 ```
-mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=pkcs11-test-safenet.properties
+mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=src/test/resources/pkcs11-test-safenet.properties
+```
+or
+```
+mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=src/test/resources/pkcs11-test-idcard.properties
 ```
 
 By default, the pkcs11 configuration is read from the file `pkcs11-test-idcard.properties`.
+
+### Bats tests
+
+Additional tests using [Bats](https://github.com/bats-core/bats-core) and `cdoc2-cli`. 
+Refer [test/README.md](test/README.md)
 
 ### Entropy
 In case the tests run slowly (probably due to waiting on entropy generation),
@@ -201,35 +262,26 @@ service haveged start
 
 ## Running
 
-See `cdoc2-cli/README.md`
+See [cdoc2-cli/README.md](cdoc2-cli/README.md)
 
-## Releasing
+## Releasing and version management
 
-First update CHANGELOG.md - follow semantic versioning
+See [VERSIONING.md](VERSIONING.md)
 
-Will update version numbers in pom.xml files and create tag with version v{x.y.z} in git
+## Publishing
 
-# Non-Interactive mode without pushing changes (for release simulation)
+### GitHub
+
+Create release on tag done by VERSIONING.md process. It will trigger `maven-release.yml` workflow that
+will deploy Maven packages to GitHub Maven package repository.
+
+### Manual
+
+Since build uses `exists-maven-plugin` then `altDeploymentRepository` doesn't work as it only works 
+for `deploy` plugin. Set `project.distributionManagement` user properties instead:
 ```
-mvn release:clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdryRun=true -DpushChanges=false
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
+mvn deploy -Dproject.distributionManagement.repository.id=github \
+-Dproject.distributionManagement.repository.url=https://maven.pkg.github.com/open-eid/cdoc2-java-ref-impl`
 ```
-
-# Non-Interactive mode
-```
-mvn release:clean
-mvn --batch-mode -Dtag=v{x.y.z} release:prepare -DreleaseVersion={x.y.z} -DdevelopmentVersion={x.y+1.z}-SNAPSHOT -DdeveloperConnectionUrl=scm:git:${git.repo.url}"
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
-```
-
-Verify that git repositories are synced (master points to same commit) and the tag is pushed (using `git push <remote> v{x.y.z}`).
-
-As maven repository doesn't exist yet, then maven deploy is not performed
-
-For more info, see
-[Maven Non-interactive Release](https://maven.apache.org/maven-release/maven-release-plugin/examples/non-interactive-release.html)
-
-
 
 

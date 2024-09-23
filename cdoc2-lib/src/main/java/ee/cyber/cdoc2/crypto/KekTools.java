@@ -6,9 +6,9 @@ import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
-import ee.cyber.cdoc2.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.PasswordDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
@@ -54,6 +54,8 @@ public final class KekTools {
         );
 
         SecretKey secretKey = keyMaterial.getSecretKey();
+
+        log.debug("KekTools.deriveKekForSymmetricKey keyLabel={}", recipient.getRecipientKeyLabel());
         SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),
             secretKey,
             recipient.getSalt(),
@@ -102,6 +104,7 @@ public final class KekTools {
         return Crypto.deriveKeyDecryptionKey(recipientKeyPair, senderPubKey, Crypto.CEK_LEN_BYTES);
     }
 
+    @SuppressWarnings("java:S2139")
     public static byte[] deriveKekForEccServer(
         EccServerKeyRecipient keyRecipient,
         KeyPairDecryptionKeyMaterial keyMaterial,

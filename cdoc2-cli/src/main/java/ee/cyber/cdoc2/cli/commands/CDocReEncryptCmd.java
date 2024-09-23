@@ -1,5 +1,12 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -12,21 +19,20 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
+import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocReEncrypter;
-import ee.cyber.cdoc2.exceptions.CDocValidationException;
-import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
-import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @CommandLine.Command(name = "re-encrypt", aliases = {"re", "reencrypt"}, showAtFileInUsageHelp =
     true)
 public class CDocReEncryptCmd implements Callable<Void> {
@@ -37,33 +43,19 @@ public class CDocReEncryptCmd implements Callable<Void> {
         paramLabel = "CDOC", description = "the CDOC2 file")
     private File cdocFile;
 
-    @CommandLine.Option(names = {"-k", "--key"},
-        paramLabel = "PEM", description = "Private key PEM to use for decrypting")
-    private File privKeyFile;
-
-    @CommandLine.Option(names = {"-p12"},
-        paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-    private String p12;
-
-    @CommandLine.Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-        description = SymmetricKeyUtil.SECRET_DESCRIPTION
-            + ". Used to decrypt existing CDOC container.")
-    private String secret;
-
-    @CommandLine.Option(names = {"-pw", "--password"}, arity = "0..1",
-        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION
-        + ". Used to decrypt existing CDOC container.")
-    private String password;
+    @CommandLine.ArgGroup
+    DecryptionKeyExclusiveArgument exclusive;
 
     @CommandLine.Option(names = {"-encpw", "--encpassword"}, arity = "0..1",
-        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION
-        + ". Used for re-encryption part.")
-    private String reEncryptPassword;
+        converter = LabeledPasswordParamConverter.class,
+        paramLabel = "<label>:<password>",
+        description = CliConstants.PASSWORD_DESCRIPTION + ". Used for re-encryption part.")
+    private LabeledPasswordParam reEncryptPasswordParam;
 
     @CommandLine.Option(names = {"-encs", "--encsecret"}, paramLabel = "<label>:<secret>",
-        description = SymmetricKeyUtil.SECRET_DESCRIPTION + ". Used for re-encryption part.")
-    private String reEncryptSecret;
-
+        converter = LabeledSecretConverter.class,
+        description = CliConstants.SECRET_DESCRIPTION + ". Used for re-encryption part.")
+    private LabeledSecret reEncryptSecret;
 
     @CommandLine.Option(names = {"--slot"},
         description = "Smart card key slot to use for decrypting. Default: 0")
@@ -99,14 +91,14 @@ public class CDocReEncryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        DecryptionKeyMaterial decryptionKeyMaterial = getDecryptionKeyMaterial(
+        DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            : getDecryptionKeyMaterial(
             this.cdocFile,
-            this.password,
-            this.secret,
-            this.p12,
-            this.privKeyFile,
-            this.slot,
-            this.keyAlias
+            this.exclusive.getLabeledPasswordParam(),
+            this.exclusive.getSecret(),
+            this.exclusive.getP12(),
+            this.exclusive.getPrivKeyFile()
         );
 
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
@@ -130,17 +122,21 @@ public class CDocReEncryptCmd implements Callable<Void> {
         return null;
     }
 
-    private EncryptionKeyMaterial extractSymmetricKeyEncKeyMaterial()
-        throws CDocValidationException {
+    private EncryptionKeyMaterial extractSymmetricKeyEncKeyMaterial() {
+        if (null != this.reEncryptPasswordParam) {
+            LabeledPassword labeledPassword = (this.reEncryptPasswordParam.isEmpty())
+                    ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
+                    : this.reEncryptPasswordParam.labeledPassword();
 
-        if (null != this.reEncryptPassword) {
-            FormattedOptionParts splitPasswordAndLabel
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(this.reEncryptPassword);
-            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(splitPasswordAndLabel);
+            return EncryptionKeyMaterial.fromPassword(
+                labeledPassword.getPassword(), labeledPassword.getLabel()
+            );
         }
 
         if (null != this.reEncryptSecret) {
-            return SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecret(this.reEncryptSecret);
+            return EncryptionKeyMaterial.fromSecret(
+                this.reEncryptSecret.getSecretKey(), this.reEncryptSecret.getLabel()
+            );
         }
 
         throw new IllegalArgumentException("Cannot re-create document without password");

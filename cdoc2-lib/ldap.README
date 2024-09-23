@@ -1,9 +1,12 @@
-ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "c=EE" "(cn=KUSMAN,JANNO,37903130370)"
+# 38001085718 is a test person and his cert is not available in SK Ldap. Use own ID code instead
+# with cn=<your_surname,you_name,you_id_code>
 
-ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38207162766)"
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "c=EE" "(cn=JÕEORG,JAAK-KRISTJAN,38001085718)"
+
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38001085718)"
 
 Certificate type (digi-id vs id-kaart)
 https://github.com/open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3116dff450/client/SslCertificate.cpp#L302
 https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
 
-ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38207162766)"
+ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38001085718)"

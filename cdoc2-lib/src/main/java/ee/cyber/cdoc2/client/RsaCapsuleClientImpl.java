@@ -6,7 +6,6 @@ import ee.cyber.cdoc2.client.model.Capsule;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Optional;
 
-
 public class RsaCapsuleClientImpl implements RsaCapsuleClient {
     final KeyCapsuleClient keyCapsulesClient;
 
@@ -15,7 +14,11 @@ public class RsaCapsuleClientImpl implements RsaCapsuleClient {
     }
 
     @Override
-    public String storeRsaCapsule(RSAPublicKey recipient, byte[] encryptedKek) throws ExtApiException {
+    public String storeRsaCapsule(
+        RSAPublicKey recipient,
+        byte[] encryptedKek
+
+    ) throws ExtApiException {
         Capsule capsule = new Capsule()
             .capsuleType(Capsule.CapsuleTypeEnum.RSA)
             .recipientId(RsaUtils.encodeRsaPubKey(recipient))
@@ -44,4 +47,5 @@ public class RsaCapsuleClientImpl implements RsaCapsuleClient {
     public String getServerIdentifier() {
         return keyCapsulesClient.getServerIdentifier();
     }
+
 }

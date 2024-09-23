@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -8,20 +10,21 @@ import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.util.List;
 import java.util.Map;
+
 import java.util.concurrent.Callable;
 
-import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
-import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
-import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
+
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @Command(name = "decrypt", aliases = {"x", "extract"}, showAtFileInUsageHelp = true)
 public class CDocDecryptCmd implements Callable<Void> {
     // commented out until public key server is in live
@@ -31,21 +34,8 @@ public class CDocDecryptCmd implements Callable<Void> {
             paramLabel = "CDOC", description = "the CDOC2 file")
     private File cdocFile;
 
-    @Option(names = {"-k", "--key"},
-            paramLabel = "PEM", description = "Private key PEM to use for decrypting")
-    private File privKeyFile;
-
-    @Option(names = {"-p12"},
-            paramLabel = ".p12", description = "Load private key from .p12 file (FILE.p12:password)")
-    private String p12;
-
-    @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-    private String secret;
-
-    @Option(names = {"-pw", "--password"}, arity = "0..1",
-        paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-    private String password;
+    @CommandLine.ArgGroup
+    DecryptionKeyExclusiveArgument exclusive;
 
     @Option (names = {"--slot"},
             description = "Smart card key slot to use for decrypting. Default: 0")
@@ -89,15 +79,15 @@ public class CDocDecryptCmd implements Callable<Void> {
             keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
 
-        DecryptionKeyMaterial decryptionKeyMaterial = getDecryptionKeyMaterial(
-            this.cdocFile,
-            this.password,
-            this.secret,
-            this.p12,
-            this.privKeyFile,
-            this.slot,
-            this.keyAlias
-        );
+        DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            : getDecryptionKeyMaterial(
+                this.cdocFile,
+                this.exclusive.getLabeledPasswordParam(),
+                this.exclusive.getSecret(),
+                this.exclusive.getP12(),
+                this.exclusive.getPrivKeyFile()
+            );
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
             this.cdocFile,

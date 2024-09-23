@@ -21,7 +21,7 @@ class RsaTest {
 
     // openssl genrsa -out rsa_priv.pem 2048
     @SuppressWarnings("secrets:S6706")
-    static final String rsaKeyPem =
+    static final String RSA_KEY_PEM =
         """
             -----BEGIN RSA PRIVATE KEY-----
             MIIEogIBAAKCAQEAs18v09QVTnzSTRrFnVhkxDWM2rSHOua2rPz60CVazfOk5Vv9
@@ -62,7 +62,7 @@ class RsaTest {
     //                INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
     //                INTEGER 65537
     // openssl rsa -in rsa_priv.pem -outform PEM -pubout -out rsa_pub.pem
-    static final String pubKeyPem = """
+    static final String PUB_KEY_PEM = """
         -----BEGIN PUBLIC KEY-----
         MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs18v09QVTnzSTRrFnVhk
         xDWM2rSHOua2rPz60CVazfOk5Vv9Jo4Nq6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsP
@@ -79,7 +79,7 @@ class RsaTest {
     //    SEQUENCE (2 elem)
     //        INTEGER (2048 bit) 226435949622400733452861302723380091312050670462871263385722374431288…
     //        INTEGER 65537
-    static final String pubKeyRSAPublicKeyB64 =
+    static final String PUB_KEY_RSA_PUB_KEY_B64 =
         //-----BEGIN RSA PUBLIC KEY-----
         "MIIBCgKCAQEAs18v09QVTnzSTRrFnVhkxDWM2rSHOua2rPz60CVazfOk5Vv9Jo4N"
             + "q6Uzo3yWS4DZ+3JgO5iRntFeI0NWZGsPGbMWGWKlb4OYlbK0gnBdwsi4LS6LnRx7"
@@ -117,8 +117,8 @@ class RsaTest {
 
     @Test
     void testLoadRsaKeys() throws Exception {
-        PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
-        KeyPair keyPair = PemTools.loadKeyPair(rsaKeyPem);
+        PublicKey publicKey = PemTools.loadPublicKey(PUB_KEY_PEM);
+        KeyPair keyPair = PemTools.loadKeyPair(RSA_KEY_PEM);
 
         assertTrue(KeyAlgorithm.isRsaKeysAlgorithm(keyPair.getPublic().getAlgorithm()));
         assertEquals(publicKey, keyPair.getPublic());
@@ -128,19 +128,19 @@ class RsaTest {
 
     @Test
     void testRsaPubKeyEncode() throws IOException {
-        RSAPublicKey rsaPublicKey = (RSAPublicKey) PemTools.loadPublicKey(pubKeyPem);
+        RSAPublicKey rsaPublicKey = (RSAPublicKey) PemTools.loadPublicKey(PUB_KEY_PEM);
         byte[] encoded = RsaUtils.encodeRsaPubKey(rsaPublicKey);
 
-        assertEquals(pubKeyRSAPublicKeyB64, Base64.getEncoder().encodeToString(encoded));
+        assertEquals(PUB_KEY_RSA_PUB_KEY_B64, Base64.getEncoder().encodeToString(encoded));
     }
 
     @Test
     void testRsaPubKeyDecode() throws IOException, GeneralSecurityException {
 
-        byte[] rsaPubDer = Base64.getDecoder().decode(pubKeyRSAPublicKeyB64);
+        byte[] rsaPubDer = Base64.getDecoder().decode(PUB_KEY_RSA_PUB_KEY_B64);
 
         RSAPublicKey rsaPublicKey = RsaUtils.decodeRsaPubKey(rsaPubDer);
-        RSAPublicKey expected = (RSAPublicKey) PemTools.loadPublicKey(pubKeyPem);
+        RSAPublicKey expected = (RSAPublicKey) PemTools.loadPublicKey(PUB_KEY_PEM);
 
         assertEquals(expected, rsaPublicKey);
     }

@@ -1,0 +1,78 @@
+version: '3.4'
+
+services:
+  cdoc2-postgres:
+    container_name: cdoc2-postgres-bats
+    # Instruction to build local cdoc2-db: https://github.com/open-eid/cdoc2-capsule-server/server-db/README.md
+    image: cdoc2-db:version3
+    restart: always
+    ports:
+      - "7432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: postgres
+
+  cdoc2-put-server:
+    container_name: cdoc2-put-server-bats
+    image: ghcr.io/open-eid/cdoc2-put-server:v1.4.0-docker.0-7b16600584da49d0a504f7cdaa1066ba41f2b20e
+    ports:
+      - "8443:8443"
+      # monitoring
+      - "18443:18443"
+#    volumes:
+#      - ./serverconf:/opt/cdoc2
+    configs:
+      - source: put-server-conf
+        target: /config/application-put-server.properties
+      - source: truststore
+        target: /config/servertruststore.jks
+      - source: keystore
+        target: /config/cdoc2server.p12
+    environment:
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/application-put-server.properties
+#      - JAVA_OPTS=-Djavax.net.debug=ssl:handshake:verbose:keymanager:trustmanager -Djava.security.debug=access:stack
+    depends_on:
+      cdoc2-postgres:
+        condition: service_started
+# curl is not installed on image, and following healthcheck will fail
+#    healthcheck:
+#      test: curl -k --silent --fail --connect-timeout 1 https://localhost:18443/actuator/health|grep UP
+#      interval: 5s
+#      timeout: 30s
+#      retries: 3
+#      start_period: 5s
+    mem_limit: 1g
+
+  cdoc2-get-server:
+    container_name: cdoc2-get-server-bats
+    image: ghcr.io/open-eid/cdoc2-get-server:v1.4.0-docker.0-7b16600584da49d0a504f7cdaa1066ba41f2b20e
+    ports:
+      - "8444:8444"
+      # monitoring
+      - "18444:18444"
+    configs:
+      - source: get-server-conf
+        target: /config/application-get-server.properties
+      - source: truststore
+        target: /config/servertruststore.jks
+      - source: keystore
+        target: /config/cdoc2server.p12
+    environment:
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/application-get-server.properties
+#      - JAVA_OPTS=-Djavax.net.debug=ssl:handshake:verbose:keymanager:trustmanager -Djava.security.debug=access:stack
+    depends_on:
+      cdoc2-postgres:
+        condition: service_started
+    mem_limit: 1g
+
+
+configs:
+  put-server-conf:
+    file: serverconf/application-put-server.properties
+  get-server-conf:
+    file: serverconf/application-get-server.properties
+  truststore:
+    file: ./serverconf/servertruststore.jks
+  keystore:
+    file: ./serverconf/cdoc2server.p12

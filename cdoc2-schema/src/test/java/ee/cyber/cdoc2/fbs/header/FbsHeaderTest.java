@@ -9,18 +9,19 @@ import org.junit.jupiter.api.Test;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_KeyServerCapsule;
+
 
 class FbsHeaderTest {
 
     public static final int KEYLEN_BYTES = 256 / 8;
 
     @Test
-    void testFbsHeaderSerialization() throws IOException {
+    @SuppressWarnings("java:S125")
+    void testFbsHeaderSerialization() {
 
         byte payloadEnc = PayloadEncryptionMethod.CHACHA20POLY1305;
 

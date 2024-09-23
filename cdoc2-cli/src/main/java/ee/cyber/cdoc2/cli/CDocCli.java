@@ -47,6 +47,7 @@ public class CDocCli implements Callable<Void> {
             CommandLine.usage(new CDocInfoCmd(), System.out);
         }
         int exitCode = new CommandLine(new CDocCli()).execute(args);
+
         System.exit(exitCode);
     }
 

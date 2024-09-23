@@ -1,14 +1,14 @@
 package ee.cyber.cdoc2.cli.commands;
 
-
-import ee.cyber.cdoc2.cli.SymmetricKeyUtil;
+import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocBuilder;
-import ee.cyber.cdoc2.exceptions.CDocValidationException;
-import ee.cyber.cdoc2.FormattedOptionParts;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.EllipticCurve;
-import ee.cyber.cdoc2.crypto.PemTools;
-import ee.cyber.cdoc2.util.SkLdapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,24 +17,27 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
-import java.security.PublicKey;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
-import static ee.cyber.cdoc2.cli.CDocCommonHelper.getServerProperties;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
+
 
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
-@SuppressWarnings("java:S106")
+@SuppressWarnings({"java:S106", "java:S125"})
 @Command(name = "create", aliases = {"c", "encrypt"}, showAtFileInUsageHelp = true)
 public class CDocCreateCmd implements Callable<Void> {
+
     private static final Logger log = LoggerFactory.getLogger(CDocCreateCmd.class);
+
+    private static final String DURATION_FORMAT = "P(n)DT(n)H(n)M(n)S";
 
     // default server configuration disabled, until public key server is up and running
     //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost.properties";
@@ -60,12 +63,14 @@ public class CDocCreateCmd implements Callable<Void> {
         private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
-            description = SymmetricKeyUtil.SECRET_DESCRIPTION)
-        private String[] secrets;
+            converter = LabeledSecretConverter.class,
+            description = CliConstants.SECRET_DESCRIPTION)
+        private LabeledSecret[] labeledSecrets;
 
         @Option(names = {"-pw", "--password"}, arity = "0..1",
-            paramLabel = "<label>:<password>", description = SymmetricKeyUtil.PASSWORD_DESCRIPTION)
-        private String password;
+            converter = LabeledPasswordParamConverter.class,
+            paramLabel = "<label>:<password>", description = CliConstants.PASSWORD_DESCRIPTION)
+        private LabeledPasswordParam labeledPasswordParam;
     }
 
     // allow -Dkey for setting System properties
@@ -76,7 +81,7 @@ public class CDocCreateCmd implements Callable<Void> {
 
     @Option(names = {"-S", "--server"},
         paramLabel = "FILE.properties",
-        description = "Key server connection properties file"
+        description = "key server connection properties file"
         // default server configuration disabled, until public key server is up and running
         //, arity = "0..1"
         //, fallbackValue = DEFAULT_SERVER_PROPERTIES
@@ -86,6 +91,12 @@ public class CDocCreateCmd implements Callable<Void> {
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     private File[] inputFiles;
 
+    @Option(names = { "-exp", "--expiry" }, paramLabel = DURATION_FORMAT,
+        description = "Key capsule expiry duration",
+        converter = DurationConverter.class
+    )
+    private Duration keyCapsuleExpiryDuration;
+
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
@@ -93,40 +104,43 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --pubkey {} --cert {} {}",
+            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} {}",
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
+                (recipient.labeledSecrets != null) ? "****" : null,
+                (recipient.labeledPasswordParam != null) ? "****" : null,
                 Arrays.toString(inputFiles));
         }
 
-        //Map of PublicKey, keyLabel
-        Map<PublicKey, String> recipientsMap = new LinkedHashMap<>();
-
-        recipientsMap.putAll(PemTools.loadPubKeysWithKeyLabel(this.recipient.pubKeys));
-        recipientsMap.putAll(PemTools.loadCertKeysWithLabel(this.recipient.certs));
-
-        // fetch authentication certificates' public keys for natural person identity codes
-        Map<PublicKey, String> ldapKeysWithLabels =
-            SkLdapUtil.getPublicKeysWithLabels(this.recipient.identificationCodes).entrySet()
-                .stream()
-                .filter(entry -> EllipticCurve.isSupported(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        recipientsMap.putAll(ldapKeysWithLabels);
-
-        List<EncryptionKeyMaterial> recipients = recipientsMap.entrySet().stream()
-            .map(entry -> EncryptionKeyMaterial.fromPublicKey(entry.getKey(), entry.getValue()))
-            .collect(Collectors.toList());
-
-        addSymmetricKeysWithLabels(recipients);
-
         CDocBuilder cDocBuilder = new CDocBuilder()
-            .withRecipients(recipients)
             .withPayloadFiles(Arrays.asList(inputFiles));
 
         if (keyServerPropertiesFile != null) {
             Properties p = getServerProperties(keyServerPropertiesFile);
             cDocBuilder.withServerProperties(p);
+        }
+
+        LabeledPassword labeledPassword = null;
+        if (this.recipient.labeledPasswordParam != null) {
+            labeledPassword = (this.recipient.labeledPasswordParam.isEmpty())
+                ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
+                : this.recipient.labeledPasswordParam.labeledPassword();
+        }
+
+        List<EncryptionKeyMaterial> recipients = EncryptionKeyMaterial.collectionBuilder()
+            .fromPassword(labeledPassword)
+            .fromSecrets(this.recipient.labeledSecrets)
+            .fromPublicKey(this.recipient.pubKeys)
+            .fromX509Certificate(this.recipient.certs)
+            // fetch authentication certificates' public keys for natural person identity codes
+            .fromEId(this.recipient.identificationCodes)
+            .build();
+
+        cDocBuilder.withRecipients(recipients);
+
+        if (keyCapsuleExpiryDuration != null) {
+            setExpiryDurationOrLogWarn(cDocBuilder);
         }
 
         cDocBuilder.buildToFile(cdocFile);
@@ -136,16 +150,26 @@ public class CDocCreateCmd implements Callable<Void> {
         return null;
     }
 
-    private void addSymmetricKeysWithLabels(List<EncryptionKeyMaterial> recipients)
-        throws CDocValidationException {
+    private void setExpiryDurationOrLogWarn(CDocBuilder cDocBuilder) {
+        if (null != this.recipient.labeledSecrets || null != recipient.labeledPasswordParam) {
+            String warnMsg = "Key capsule expiry duration cannot be requested for symmetric key "
+                + "encryption";
+            log.warn("WARNING: {}", warnMsg);
+        } else {
+            cDocBuilder.withCapsuleExpiryDuration(keyCapsuleExpiryDuration);
+        }
+    }
 
-        recipients.addAll(SymmetricKeyUtil.extractEncryptionKeyMaterialFromSecrets(
-            recipient.secrets)
-        );
-        if (null != recipient.password) {
-            FormattedOptionParts password
-                = SymmetricKeyUtil.getSplitPasswordAndLabel(recipient.password);
-            recipients.add(SymmetricKeyUtil.extractEncryptionKeyMaterialFromPassword(password));
+    public static class DurationConverter implements CommandLine.ITypeConverter<Duration> {
+        @Override
+        public Duration convert(String arg) {
+            try {
+                return Duration.parse(arg);
+            } catch (DateTimeParseException e) {
+                throw new CommandLine.TypeConversionException(
+                    "Expiry duration format should be " + DURATION_FORMAT
+                );
+            }
         }
     }
 

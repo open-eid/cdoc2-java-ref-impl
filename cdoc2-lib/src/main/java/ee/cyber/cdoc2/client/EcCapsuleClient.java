@@ -11,7 +11,10 @@ public interface EcCapsuleClient extends ServerClient {
      * @return transactionId to retrieve senderKey from the server
      * @throws ExtApiException if error happens
      */
-    String storeSenderKey(ECPublicKey receiverKey, ECPublicKey senderKey) throws ExtApiException;
+    String storeSenderKey(
+        ECPublicKey receiverKey,
+        ECPublicKey senderKey
+    ) throws ExtApiException;
 
     /**
      * Retrieve previously stored sender key using transaction id

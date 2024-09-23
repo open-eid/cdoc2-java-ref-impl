@@ -10,11 +10,11 @@ import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.PasswordEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
-import ee.cyber.cdoc2.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
@@ -58,9 +58,11 @@ public final class RecipientFactory {
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws ExtApiException if communication with key server failed
      */
-    public static Recipient[] buildRecipients(byte[] fmk, List<EncryptionKeyMaterial> recipientKeys,
-                                              @Nullable KeyCapsuleClient serverClient)
-            throws GeneralSecurityException, ExtApiException {
+    public static Recipient[] buildRecipients(
+        byte[] fmk,
+        List<EncryptionKeyMaterial> recipientKeys,
+        @Nullable KeyCapsuleClient serverClient
+    ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientKeys);
@@ -74,7 +76,9 @@ public final class RecipientFactory {
 
         List<Recipient> result = new ArrayList<>(recipientKeys.size());
         for (EncryptionKeyMaterial encKeyMaterial : recipientKeys) {
-            addRecipientsByKeyOrigin(result, serverClient, fmk, encKeyMaterial);
+            addRecipientsByKeyOrigin(
+                result, serverClient, fmk, encKeyMaterial
+            );
         }
 
         return result.toArray(new Recipient[0]);
@@ -88,7 +92,9 @@ public final class RecipientFactory {
     ) throws GeneralSecurityException, ExtApiException {
 
         if (encKeyMaterial instanceof PublicKeyEncryptionKeyMaterial publicKeyMaterial) {
-            addPublicKeyRecipient(recipients, serverClient, fileMasterKey, publicKeyMaterial);
+            addPublicKeyRecipient(
+                recipients, serverClient, fileMasterKey, publicKeyMaterial
+            );
         } else {
             addSymmetricKeyRecipient(
                 recipients,
@@ -194,8 +200,11 @@ public final class RecipientFactory {
      * @param keyLabel recipientPubRsaKey description
      * @throws GeneralSecurityException if kek encryption with recipientPubRsaKey fails
      */
-    static RSAPubKeyRecipient buildRsaRecipient(byte[] fmk, RSAPublicKey recipientPubRsaKey, String keyLabel)
-            throws GeneralSecurityException {
+    static RSAPubKeyRecipient buildRsaRecipient(
+        byte[] fmk,
+        RSAPublicKey recipientPubRsaKey,
+        String keyLabel
+    ) throws GeneralSecurityException {
 
         Objects.requireNonNull(recipientPubRsaKey);
         Objects.requireNonNull(fmk);
@@ -221,8 +230,11 @@ public final class RecipientFactory {
      * @throws InvalidKeyException if recipient key is not suitable
      * @throws GeneralSecurityException if other crypto related exceptions happen
      */
-    static EccPubKeyRecipient buildEccRecipient(byte[] fmk, ECPublicKey recipientPubKey, String keyLabel)
-            throws GeneralSecurityException {
+    static EccPubKeyRecipient buildEccRecipient(
+        byte[] fmk,
+        ECPublicKey recipientPubKey,
+        String keyLabel
+    ) throws GeneralSecurityException {
 
         Objects.requireNonNull(recipientPubKey);
         Objects.requireNonNull(fmk);
@@ -263,8 +275,12 @@ public final class RecipientFactory {
      * @param serverClient used to store sender public key and get transactionId
      * @return For each recipient create EccServerKeyRecipient with fields filled
      */
-    static EccServerKeyRecipient buildEccServerKeyRecipient(byte[] fmk, ECPublicKey recipientPubKey,
-            String keyLabel, EcCapsuleClient serverClient) throws GeneralSecurityException, ExtApiException {
+    static EccServerKeyRecipient buildEccServerKeyRecipient(
+        byte[] fmk,
+        ECPublicKey recipientPubKey,
+        String keyLabel,
+        EcCapsuleClient serverClient
+    ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientPubKey);
@@ -276,18 +292,22 @@ public final class RecipientFactory {
         EccPubKeyRecipient eccPubKeyRecipient = buildEccRecipient(fmk, recipientPubKey, keyLabel);
 
         String transactionId = serverClient.storeSenderKey(
-            eccPubKeyRecipient.getRecipientPubKey(), eccPubKeyRecipient.getSenderPubKey()
+            eccPubKeyRecipient.getRecipientPubKey(),
+            eccPubKeyRecipient.getSenderPubKey()
         );
         String serverId = serverClient.getServerIdentifier();
 
         return new EccServerKeyRecipient(eccPubKeyRecipient.getEllipticCurve(),
-                eccPubKeyRecipient.getRecipientPubKey(), serverId, transactionId,
-                eccPubKeyRecipient.getEncryptedFileMasterKey(), keyLabel);
+            eccPubKeyRecipient.getRecipientPubKey(), serverId, transactionId,
+            eccPubKeyRecipient.getEncryptedFileMasterKey(), keyLabel);
     }
 
-    static RSAServerKeyRecipient buildRsaServerKeyRecipient(byte[] fmk, RSAPublicKey recipientPubKey,
-                                                            String keyLabel, RsaCapsuleClient serverClient)
-            throws GeneralSecurityException, ExtApiException {
+    static RSAServerKeyRecipient buildRsaServerKeyRecipient(
+        byte[] fmk,
+        RSAPublicKey recipientPubKey,
+        String keyLabel,
+        RsaCapsuleClient serverClient
+    ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientPubKey);
@@ -300,7 +320,7 @@ public final class RecipientFactory {
         RSAPubKeyRecipient rsaPubKeyRecipient = buildRsaRecipient(fmk, recipientPubKey, keyLabel);
 
         String transactionId = serverClient.storeRsaCapsule(
-                recipientPubKey, rsaPubKeyRecipient.getEncryptedKek()
+            recipientPubKey, rsaPubKeyRecipient.getEncryptedKek()
         );
 
         String serverId = serverClient.getServerIdentifier();
@@ -318,17 +338,19 @@ public final class RecipientFactory {
      * @return SymmetricKeyRecipient that can be serialized into FBS {@link SymmetricKeyCapsule}
      * @throws GeneralSecurityException if security/crypto error has occurred
      */
-    static SymmetricKeyRecipient buildSymmetricKeyRecipient(byte[] fmk, SecretKey preSharedKey,
-                String keyLabel, String fmkEncMethod) throws GeneralSecurityException {
+    static SymmetricKeyRecipient buildSymmetricKeyRecipient(
+        byte[] fmk,
+        SecretKey preSharedKey,
+        String keyLabel,
+        String fmkEncMethod
+    ) throws GeneralSecurityException {
 
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(preSharedKey);
         Objects.requireNonNull(keyLabel);
 
         byte[] salt = Crypto.generateSaltForKey();
-
         SecretKey kek = Crypto.deriveKeyEncryptionKey(keyLabel, preSharedKey, salt, fmkEncMethod);
-
         byte[] encryptedFmk = Crypto.xor(fmk, kek.getEncoded());
         return new SymmetricKeyRecipient(salt, encryptedFmk, keyLabel);
     }

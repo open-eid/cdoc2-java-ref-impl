@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.client;
 
+import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
@@ -14,6 +15,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -22,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getInteger;
+import static ee.cyber.cdoc2.util.DurationUtil.getExpiryTime;
 
 
 /**
@@ -35,18 +39,26 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     private final Cdoc2KeyCapsuleApiClient getClient; // mTLS client
     @Nullable
     private KeyStore clientKeyStore; //initialised only from #create(Properties)
+    @Nullable
+    private Duration capsuleExpiryDuration; //initialised only when #setExpiryDuration() was called
 
-    private KeyCapsuleClientImpl(String serverIdentifier, Cdoc2KeyCapsuleApiClient postClient,
-                                 Cdoc2KeyCapsuleApiClient getClient, @Nullable KeyStore clientKeyStore) {
+    private KeyCapsuleClientImpl(
+        String serverIdentifier,
+        Cdoc2KeyCapsuleApiClient postClient,
+        Cdoc2KeyCapsuleApiClient getClient,
+        @Nullable KeyStore clientKeyStore
+    ) {
         this.serverId = serverIdentifier;
         this.postClient = postClient;
         this.getClient = getClient;
         this.clientKeyStore = clientKeyStore;
     }
 
-    public static KeyCapsuleClient create(String serverIdentifier,
-                                          Cdoc2KeyCapsuleApiClient postClient,
-                                          Cdoc2KeyCapsuleApiClient getClient) {
+    public static KeyCapsuleClient create(
+        String serverIdentifier,
+        Cdoc2KeyCapsuleApiClient postClient,
+        Cdoc2KeyCapsuleApiClient getClient
+    ) {
         return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
     }
 
@@ -66,8 +78,9 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *            If false and {@link KeyCapsuleClient#getCapsule(String)} is called, then IllegalStateException is
      *            thrown.
      * @return KeyCapsulesClient
-     * @throws GeneralSecurityException
-     * @throws IOException
+     * @throws GeneralSecurityException if client key store loading or client initialization has
+     *                                  failed
+     * @throws IOException if trusted key store loading has failed
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
         throws GeneralSecurityException, IOException, ConfigurationLoadingException {
@@ -130,6 +143,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     /**
      *
      * @param p properties to load the key store
+     * @return client key store or null if not defined in properties
      * @throws KeyStoreException if no Provider supports a KeyStoreSpi implementation for the specified type in
      *      properties file
      * @throws IOException – if an I/O error occurs,
@@ -137,7 +151,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
-     * @return client key store or null if not defined in properties
      * @KeyStoreException
      * @IOException
      */
@@ -219,17 +232,31 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     @Override
+    public void setExpiryDuration(Duration duration) {
+        this.capsuleExpiryDuration = duration;
+    }
+
+    @Override
     public String storeCapsule(Capsule capsule) throws ExtApiException {
         Objects.requireNonNull(postClient);
 
         String result = null;
         try {
-            result = postClient.createCapsule(capsule);
+            result = createCapsule(capsule);
         } catch (Exception e) {
             log.error("Failed to create capsule", e);
             handleOpenApiException(e);
         }
         return result;
+    }
+
+    private String createCapsule(Capsule capsule) throws ApiException {
+        if (null != capsuleExpiryDuration) {
+            OffsetDateTime expiryTime = getExpiryTime(capsuleExpiryDuration);
+            return postClient.createCapsule(capsule, expiryTime);
+        } else {
+            return postClient.createCapsule(capsule);
+        }
     }
 
     @Override

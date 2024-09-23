@@ -2,12 +2,14 @@ package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.KekTools;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+
 
 public class SymmetricKeyRecipient extends Recipient {
 
@@ -20,6 +22,9 @@ public class SymmetricKeyRecipient extends Recipient {
 
     @Override
     public Object getRecipientId() {
+        if (KeyLabelTools.isFormatted(recipientKeyLabel)) {
+            return KeyLabelTools.extractKeyLabel(recipientKeyLabel);
+        }
         return recipientKeyLabel;
     }
 

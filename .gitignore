@@ -30,3 +30,6 @@ hs_err_pid*
 
 /doc/
 /test/testvectors/zipbomb.cdoc
+
+/test/bats/keys
+/test/bats/config

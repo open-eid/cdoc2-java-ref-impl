@@ -3,14 +3,12 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>1.3.0-SNAPSHOT</version>
+        <version>SID-1.4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>cdoc2-lib</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-
+    <version>SID-2.0.1-SNAPSHOT</version>
     <description>CDOC2 creation and processing library</description>
 
     <properties>
@@ -22,13 +20,13 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-schema</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>SID-1.3.0</version>
         </dependency>
 
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-client</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>SID-1.6.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -58,7 +56,7 @@
         <dependency>
             <groupId>org.passay</groupId>
             <artifactId>passay</artifactId>
-            <version>1.6.4</version>
+            <version>1.6.5</version>
         </dependency>
 
         <dependency>
@@ -95,7 +93,7 @@
                 <!-- compile tests as a jar for use by sibling projects -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.4.2</version>
                 <executions>
                     <execution>
                         <goals>

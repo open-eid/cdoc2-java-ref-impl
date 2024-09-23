@@ -1,11 +1,14 @@
 package ee.cyber.cdoc2.container;
 
 import ee.cyber.cdoc2.crypto.Crypto;
+import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.crypto.KeyLabelParams;
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.KeyPairDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.PasswordDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.exceptions.CDocException;
@@ -43,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,6 +55,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
+import static ee.cyber.cdoc2.CDocConfiguration.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -165,8 +172,6 @@ public final class EnvelopeTestUtils {
 
         log.debug("Compressed {} into {}", randomBytes.length, destTarZlib.size());
 
-        // Tar is able to process empty tar without exceptions
-        //assertTrue(Tar.listFiles(new ByteArrayInputStream(destTarZlib.toByteArray())).isEmpty());
         return destTarZlib.toByteArray();
     }
 
@@ -174,7 +179,6 @@ public final class EnvelopeTestUtils {
 
         String validFileName = "validFile";
         byte[] data = new byte[10 * 1024];
-        //new Random().nextBytes(data);
 
         ByteArrayOutputStream dest = new ByteArrayOutputStream();
 
@@ -232,7 +236,9 @@ public final class EnvelopeTestUtils {
         }
 
         byte[] cdocContainerBytes;
-        Envelope senderEnvelope = Envelope.prepare(List.of(encKeyMaterial), capsuleClient);
+        Envelope senderEnvelope = Envelope.prepare(
+            List.of(encKeyMaterial), capsuleClient
+        );
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
             cdocContainerBytes = dst.toByteArray();
@@ -263,9 +269,9 @@ public final class EnvelopeTestUtils {
 
         EncryptionKeyMaterial encKeyMaterial =
             (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial)
-                ? EncryptionKeyMaterial.fromPublicKey(
-                keyPairKeyMaterial.getKeyPair().getPublic(), keyLabel
-            )
+                ? createEncryptionKeyMaterialForPublicKey(
+                    keyPairKeyMaterial.getKeyPair().getPublic(),
+                    keyLabel)
                 : createEncryptionKeyMaterialForSymmetricKey(keyMaterial, keyLabel);
 
         byte[] cdocContainerBytes = createContainer(payloadFile,
@@ -278,13 +284,22 @@ public final class EnvelopeTestUtils {
             List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
     }
 
+    private static EncryptionKeyMaterial createEncryptionKeyMaterialForPublicKey(
+        PublicKey publicKey,
+        String label
+    ) {
+        return EncryptionKeyMaterial.fromPublicKey(publicKey, KeyLabelTools.createPublicKeyLabelParams(label, null));
+    }
+
     private static EncryptionKeyMaterial createEncryptionKeyMaterialForSymmetricKey(
         DecryptionKeyMaterial keyMaterial, String keyLabel
     ) {
         if (keyMaterial instanceof PasswordDecryptionKeyMaterial passwordKeyMaterial) {
-            return EncryptionKeyMaterial.fromPassword(passwordKeyMaterial.getPassword(), keyLabel);
+            return EncryptionKeyMaterial.fromPassword(
+                passwordKeyMaterial.getPassword(), keyLabel
+            );
         } else if (keyMaterial instanceof SecretDecryptionKeyMaterial secretKeyMaterial) {
-            return EncryptionKeyMaterial.fromSecret(
+            return createEncryptionKeyMaterialAccordingToKeyLabelFormat(
                 secretKeyMaterial.getSecretKey(), keyLabel
             );
         } else {
@@ -368,6 +383,14 @@ public final class EnvelopeTestUtils {
         builder.buildToFile(cdocFileToCreate);
     }
 
+    public static KeyLabelParams getPublicKeyLabelParams() {
+        return getPublicKeyLabelParams(null);
+    }
+
+    public static KeyLabelParams getPublicKeyLabelParams(@Nullable String label) {
+        return createPublicKeyLabelParams(label, null);
+    }
+
     private static KeyCapsuleClientFactory getCapsulesClientFactory(KeyCapsuleClient capsulesClient) {
         return (capsulesClient == null) ? null : serverId -> {
             Objects.requireNonNull(serverId);
@@ -378,6 +401,25 @@ public final class EnvelopeTestUtils {
             log.warn("No KeyCapsulesClient for {}", serverId);
             return null;
         };
+
+    }
+
+    private static EncryptionKeyMaterial createEncryptionKeyMaterialAccordingToKeyLabelFormat(
+        SecretKey secretKey,
+        String keyLabel
+    ) {
+        if (isKeyLabelMachineReadableFormatEnabled()) {
+            KeyLabelParams keyLabelParams = createSymmetricKeyLabelParams(
+                EncryptionKeyOrigin.SECRET, keyLabel
+            );
+            return EncryptionKeyMaterial.fromSecret(
+                secretKey, keyLabelParams
+            );
+        } else {
+            return EncryptionKeyMaterial.fromSecret(
+                secretKey, keyLabel
+            );
+        }
     }
 
 }
