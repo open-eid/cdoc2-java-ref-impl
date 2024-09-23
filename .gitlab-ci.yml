@@ -10,14 +10,21 @@ test:
     - mvn clean verify -s $MAVEN_SETTINGS -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
     - shopt -s globstar
     - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print "Total", 100*covered/instructions, "% covered" }' /builds/**/target/site/jacoco/jacoco.csv
+    - cd test/bats
+    - source install_bats.sh
+    - source variables.sh 
+    - $BATS_HOME/bats-core/bin/bats --gather-test-outputs-in target/reports -x --report-formatter junit --output target/ cdoc2_tests.bats
+    - 'for file in target/reports/*; do echo "## $file ##" >> target/bats-test.log; cat "$file" >> target/bats-test.log; done'
   coverage: /Total \d+\.\d+ %/
   artifacts:
     when: always
     reports:
       junit:
         - "**/target/surefire-reports/*.xml"
+        - "**/target/report.xml"
     paths:
       - "**/target/site/jacoco"
+      - "**/target/bats-test.log"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -74,4 +81,6 @@ publish:
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: on_success
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+      when: manual
     - when: never

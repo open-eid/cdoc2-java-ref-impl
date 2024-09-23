@@ -132,13 +132,11 @@ class TarDeflateTest {
     void testTarGzBomb(@TempDir Path tempDir) throws IOException {
         byte[] zeros = new byte[1024]; //1KB
 
+        // can multiply with 1024 ones more for 1GM size
         long bigFileSize = 1024 //1KB
                 * 1024; //1MB
-                //*1024 //1GB
-                //;
 
         Path bombPath =  tempDir.resolve("bomb.tgz");
-        //bombPath.toFile().deleteOnExit();
 
         try (TarArchiveOutputStream tarOs = new TarArchiveOutputStream(new DeflateCompressorOutputStream(
                 new BufferedOutputStream(Files.newOutputStream(bombPath))))) {
@@ -161,14 +159,14 @@ class TarDeflateTest {
             tarOs.closeArchiveEntry();
         }
 
-
         Path outDir = tempDir.resolve("testTarGzBomb");
         Files.createDirectories(outDir);
 
         log.debug("Extracting {} to {}", bombPath, outDir);
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
 
-            try (TarDeflate tar = new TarDeflate(Files.newInputStream(bombPath))) {
+        InputStream inputStream = Files.newInputStream(bombPath);
+        Exception exception = assertThrows(IllegalStateException.class, () -> {
+            try (TarDeflate tar = new TarDeflate(inputStream)) {
                 tar.extractToDir(outDir);
             }
         });
@@ -198,7 +196,7 @@ class TarDeflateTest {
 
     @Test
     void shouldValidateFileNameWhenCreatingTar(@TempDir Path tempDir) throws IOException {
-        File outputTarFile = tempDir.resolve(TGZ_FILE_NAME).toFile();
+        tempDir.resolve(TGZ_FILE_NAME).toFile();
 
         assertFalse(INVALID_FILE_NAMES.isEmpty());
 
@@ -206,9 +204,10 @@ class TarDeflateTest {
         for (String fileName: INVALID_FILE_NAMES) {
             File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
             OutputStream os = new ByteArrayOutputStream();
+            List<File> files = List.of(file);
             assertThrows(
                 InvalidPathException.class,
-                () -> Tar.archiveFiles(os, List.of(file)),
+                () -> Tar.archiveFiles(os, files),
                 "File with name '" + file + "' should not be allowed in created tar"
             );
         }
@@ -243,7 +242,7 @@ class TarDeflateTest {
             File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
             var result = new TarDeflate(new FileInputStream(file))
                 .extractFilesToDir(List.of(fileName), tempDir);
-            assertTrue(result.size() == 1);
+            assertEquals(1, result.size());
         }
     }
 
@@ -284,7 +283,7 @@ class TarDeflateTest {
     }
 
     @Test
-    void shouldSupportLongFileName(@TempDir Path tempDir) throws IOException {
+    void shouldSupportLongFileName() throws IOException {
         byte[] data = {0x00};
         ByteArrayOutputStream destTarZ = new ByteArrayOutputStream();
 

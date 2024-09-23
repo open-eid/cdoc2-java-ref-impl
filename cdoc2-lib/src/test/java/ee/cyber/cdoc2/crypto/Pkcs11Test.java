@@ -10,9 +10,7 @@ import javax.naming.ldap.LdapName;
 
 import ee.cyber.cdoc2.container.EnvelopeTestUtils;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
-import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,12 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class Pkcs11Test {
     private static final Logger log = LoggerFactory.getLogger(Pkcs11Test.class);
 
-    private static Pkcs11DeviceConfiguration config;
-
-    @BeforeAll
-    static void initConfigProperties() throws ConfigurationLoadingException {
-        config = Pkcs11DeviceConfiguration.load();
-    }
+    // load pkcs11 device properties
+    private Pkcs11DeviceConfiguration conf = new Pkcs11DeviceConfiguration();
 
     @Test
     @Tag("pkcs11")
@@ -46,7 +40,7 @@ class Pkcs11Test {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
         // so running this test with other tests doesn't make much sense
         KeyPair keyPair = Pkcs11Tools.loadFromPKCS11Interactively(
-            config.pkcs11Library(), config.slot(), config.keyAlias()
+            conf.getPkcs11Library(), conf.getSlot(), conf.getKeyAlias()
         );
 
         if (Crypto.isECPKCS11Key(keyPair.getPrivate())) {
@@ -58,9 +52,9 @@ class Pkcs11Test {
     @Tag("pkcs11")
     void testLoadCert() throws Exception {
         var pair = Pkcs11Tools.loadFromPKCS11(
-            Pkcs11Tools.createSunPkcsConfigurationFile(null, config.pkcs11Library(), config.slot()),
-            new KeyStore.PasswordProtection(config.pin()),
-            config.keyAlias()
+            Pkcs11Tools.createSunPkcsConfigurationFile(null, conf.getPkcs11Library(), conf.getSlot()),
+            new KeyStore.PasswordProtection(conf.getPin()),
+            conf.getKeyAlias()
         );
 
         X509Certificate cert = pair.getValue();
@@ -80,7 +74,7 @@ class Pkcs11Test {
         log.debug("CN {}", cn);
 
         assertEquals(1, cn.size());
-        assertTrue(cn.get(0).contains(config.certCn()));
+        assertTrue(cn.get(0).contains(conf.getCertCn()));
     }
 
     @Test
@@ -96,10 +90,11 @@ class Pkcs11Test {
                 "testContainerUsingPKCS11Key", null);
     }
 
-    private static KeyPair loadFromPKCS11() throws Exception {
-        Path confPath = Pkcs11Tools.createSunPkcsConfigurationFile("OpenSC", config.pkcs11Library(), config.slot());
+    private KeyPair loadFromPKCS11() throws Exception {
+        Path confPath = Pkcs11Tools.createSunPkcsConfigurationFile(
+            "OpenSC", conf.getPkcs11Library(), conf.getSlot());
         var entry = Pkcs11Tools.loadFromPKCS11(
-            confPath, new KeyStore.PasswordProtection(config.pin()), config.keyAlias()
+            confPath, new KeyStore.PasswordProtection(conf.getPin()), conf.getKeyAlias()
         );
         return new KeyPair(entry.getValue().getPublicKey(), entry.getKey());
     }

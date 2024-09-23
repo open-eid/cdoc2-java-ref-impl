@@ -1,6 +1,6 @@
 # Building & Running
 
-To run without building, download latest version of cdoc2-cli.jar from https://github.com/jann0k?tab=packages TODO: update repo
+To run without building, download latest version of cdoc2-cli.jar from https://github.com/orgs/open-eid/packages 
 
 ## Building
 Run from cdoc2-java-ref-impl parent directory
@@ -37,20 +37,20 @@ java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.p
 ```
 
 ### Encryption with server scenario
-Server must be running, see cdoc2-server/README.md for starting the server
+Server must be running, see cdoc2-capsule-server/README.md for starting the server
 
 To store keys in key server, specify addition `--server` option:
 
 When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 37903130370 README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 38001085718 README.md
 ```
 
 Optionally cdoc2-cli also supports encrypting with "soft" key or certificate
 
 Public key (`-p`)
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.pem README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.key README.md
 ```
 
 Certificate (`-c` option):
@@ -58,7 +58,15 @@ Certificate (`-c` option):
 java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc2client-certificate.pem README.md
 ```
 
-### Encryption with symmetric key
+Key capsule expiration date can be requested when adding expiry duration:
+```
+-exp P365D
+```
+Default expiration duration will be used if it is not requested by the client. Default and max 
+expiration durations are configurable values in put-server and get-server.
+
+
+### Encryption with symmetric key and password
 
 Generate key with openssl (minimum length 32 bytes):
 ```
@@ -84,7 +92,7 @@ cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACf
 
 Or encrypt with password clear text (note, that password also can be encoded to base64 format, as secret):
 ```
-java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc README.md
 ```
 
 Decryption is done with the same label and key used for encryption
@@ -94,8 +102,14 @@ java -jar target/cdoc2-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetri
 
 Or with the same label and password used for encryption:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
 ```
+
+If cdoc2 file contains only one password, then specifying label is not required and label can be omitted:
+```
+java -jar target/cdoc2-cli-*.jar decrypt --password ":myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
+```
+
 
 Or with the same label and secret used for encryption:
 ```
@@ -103,7 +117,6 @@ java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgx
 ```
 
 Key and label can be safely stored in a password manager.
-
 
 
 ### Decryption
@@ -117,7 +130,7 @@ java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem 
 ```
 
 ### Decrypting with server scenario
-Server must be running, see cdoc2-server/README.md for starting the server
+Server must be running, see cdoc2-capsule-server/README.md for starting the server
 
 To decrypt CDOC document that has its keys distributed through key server, cdoc-cli must have `--server` option:
 
@@ -130,7 +143,7 @@ It is also possible to decrypt documents created with "soft" keys, but configura
 key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
 mutual TLS.
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client.pem -o /tmp/
+java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key -o /tmp/
 ```
 
 
@@ -165,7 +178,7 @@ java -jar target/cdoc2-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
 or with server scenario:
 
 ```
-java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client.pem
+java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key
 ```
 
 or with password:
@@ -240,7 +253,7 @@ java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/cdoc2clie
 
 Decrypt created container with private key:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc2client.pem --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc2client_priv.key --output /tmp
 ```
 
 ### Troubleshooting ID-card
@@ -340,3 +353,18 @@ default 10.0
 
 Decrypting will be stopped if compressed file compression ratio is over compressionThreshold
 
+#### ee.cyber.cdoc2.key-label.machine-readable-format.enabled
+default true
+
+Key label format can be defined while encrypting. Machine parsable format is enabled by default 
+and free text format is allowed if the property disabled.
+Machine-readable format is following, where `<data>` is the key label value:
+```
+data:[<mediatype>][;base64],<data>
+```
+
+#### ee.cyber.cdoc2.key-label.file-name.added
+default true
+
+Key label `<data>` field contains different parameters. File name is one of them. For security 
+purpose it can be hidden in configuration. File name is added by default.

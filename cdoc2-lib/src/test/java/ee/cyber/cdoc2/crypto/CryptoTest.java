@@ -143,7 +143,7 @@ class CryptoTest {
         assertNotNull(kek);
         assertEquals(Crypto.FMK_LEN_BYTES, kek.length);
         assertEquals("962b1d44a6e36e9d117136e972e2da0bff7b35fc29b3d8ec5bde246d2c145984",
-            HexFormat.of().formatHex(kek));
+                HexFormat.of().formatHex(kek));
     }
 
     @Test

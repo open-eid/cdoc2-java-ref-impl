@@ -165,7 +165,7 @@ public abstract class ApiClientBuilder {
 
         apiClient.setDebugging(debug);
         apiClient.addDefaultHeader("Accept", "application/json");
-        apiClient.selectHeaderAccept(new String[]{"application/json"});
+        apiClient.selectHeaderAccept("application/json");
 
         apiClient.setUserAgent(userAgent);
         if (username != null && password != null) {

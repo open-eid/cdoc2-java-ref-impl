@@ -176,6 +176,15 @@ public final class Crypto {
     public static SecretKey extractSymmetricKeyFromPassword(
         final char[] passwordChars, byte[] salt
     ) throws GeneralSecurityException {
+
+        // Java char is 16 bit Unicode. It gets secretly encoded into bytes using utf-8 encoding
+        // before using it as P param for PBKDF2 function
+        // https://github.com/openjdk/jdk/blob/8555e0f6c40c045f7763777a9bf976de99c0534c/
+        // src/java.base/share/classes/com/sun/crypto/provider/PBKDF2KeyImpl.java#L72
+        // BC has option to use other encodings
+        // https://stackoverflow.com/questions/77451714/working-rfc2898derivebytes-pbkdf2-in-java
+        // CDOC2 spec says that passwords for PBKDF2 are utf-8 encoded, so OpenJDK PBKDF2 impl is ok
+
         SecretKeyFactory skf = SecretKeyFactory.getInstance(
             KDFAlgorithmIdentifier.name(KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256)
         );
@@ -197,7 +206,7 @@ public final class Crypto {
         // As pkcs11 loaded key is not instance of ECPrivateKey, then it's possible to differentiate between keys
         // ECPublicKey is always "soft" key
         Provider configuredPKCS11Provider = Pkcs11Tools.getConfiguredPKCS11Provider();
-        if (isECPKCS11Key(ecPrivateKey) && (configuredPKCS11Provider != null)) {
+        if (isECPKCS11Key(ecPrivateKey) && configuredPKCS11Provider != null) {
             keyAgreement = KeyAgreement.getInstance("ECDH", configuredPKCS11Provider);
         } else {
             keyAgreement = KeyAgreement.getInstance("ECDH");

@@ -12,11 +12,13 @@ import java.security.spec.InvalidParameterSpecException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Curve values from {@link ee.cyber.cdoc2.fbs.recipients.EllipticCurve} defined as enum and mapped to
  * known elliptic curve names and oid's
  */
 public enum EllipticCurve {
+
     UNKNOWN(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.UNKNOWN, null, null),
     SECP384R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID);
 
@@ -31,6 +33,7 @@ public enum EllipticCurve {
         this.name = name;
         this.oid = oid;
     }
+
     public byte getValue() {
         return value;
     }
@@ -43,43 +46,34 @@ public enum EllipticCurve {
     }
 
     public boolean isValidKey(ECPublicKey key) throws GeneralSecurityException {
-        switch (this) {
-            case SECP384R1:
-                return ECKeys.isValidSecP384R1(key);
-            default:
-                throw new IllegalStateException("isValidKey not implemented for " + this);
+        if (this == EllipticCurve.SECP384R1) {
+            return ECKeys.isValidSecP384R1(key);
         }
+        throw new IllegalStateException("isValidKey not implemented for " + this);
     }
 
     public boolean isValidKeyPair(KeyPair keyPair) throws GeneralSecurityException {
-        switch (this) {
-            case SECP384R1:
-                return ECKeys.isECSecp384r1(keyPair);
-            default:
-                throw new IllegalStateException("isValidKeyPair not implemented for " + this);
+        if (this == EllipticCurve.SECP384R1) {
+            return ECKeys.isECSecp384r1(keyPair);
         }
+        throw new IllegalStateException("isValidKeyPair not implemented for " + this);
     }
 
     /**
      * Key length in bytes. For secp384r1, its 384/8=48
      */
     public int getKeyLength() {
-        switch (this) {
-            case SECP384R1:
-                return ECKeys.SECP_384_R_1_LEN_BYTES;
-            default:
-                throw new IllegalStateException("getKeyLength not implemented for " + this);
+        if (this == EllipticCurve.SECP384R1) {
+            return ECKeys.SECP_384_R_1_LEN_BYTES;
         }
+        throw new IllegalStateException("getKeyLength not implemented for " + this);
     }
 
     public ECPublicKey decodeFromTls(ByteBuffer encoded) throws GeneralSecurityException {
-        switch (this) {
-            case SECP384R1:
-                // calls also isValidSecP384R1
-                return ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
-            default:
-                throw new IllegalStateException("decodeFromTls not implemented for " + this);
+        if (this == EllipticCurve.SECP384R1) { // calls also isValidSecP384R1
+            return ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
         }
+        throw new IllegalStateException("decodeFromTls not implemented for " + this);
     }
 
     public KeyPair generateEcKeyPair() throws GeneralSecurityException {
@@ -101,17 +95,15 @@ public enum EllipticCurve {
     }
 
     public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
-        switch (value) {
-            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1:
-                return SECP384R1;
-            default:
-                throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
+        if (value == ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1) {
+            return SECP384R1;
         }
+        throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
     }
 
     /**
      * @param publicKey ECPublicKey
-     * @return
+     * @return EllipticCurve
      * @throws NoSuchAlgorithmException      if publicKey EC curve is not supported
      * @throws InvalidParameterSpecException
      * @throws NoSuchProviderException
@@ -120,8 +112,7 @@ public enum EllipticCurve {
     public static EllipticCurve forPubKey(PublicKey publicKey) throws NoSuchAlgorithmException,
         InvalidParameterSpecException, NoSuchProviderException, InvalidKeyException {
 
-        if (publicKey instanceof ECPublicKey) {
-            ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
+        if (publicKey instanceof ECPublicKey ecPublicKey) {
             return forOid(ECKeys.getCurveOid(ecPublicKey));
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
@@ -150,4 +141,5 @@ public enum EllipticCurve {
     public static String[] names() {
         return ee.cyber.cdoc2.fbs.recipients.EllipticCurve.names;
     }
+
 }

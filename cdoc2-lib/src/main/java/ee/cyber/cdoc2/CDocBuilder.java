@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2;
 
 import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
@@ -9,11 +10,11 @@ import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.PublicKeyEncryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.SecretEncryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.SecretEncryptionKeyMaterial;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +48,7 @@ public class CDocBuilder {
 
     private List<File> payloadFiles;
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
+    private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
@@ -60,6 +63,11 @@ public class CDocBuilder {
 
     public CDocBuilder withRecipients(List<EncryptionKeyMaterial> recipientsEncKM) {
         this.recipients.addAll(recipientsEncKM);
+        return this;
+    }
+
+    public CDocBuilder withCapsuleExpiryDuration(Duration xExpiryDuration) {
+        this.keyCapsuleExpiryDuration = xExpiryDuration;
         return this;
     }
 
@@ -113,11 +121,19 @@ public class CDocBuilder {
 
     private Envelope prepareEnvelope()
         throws ExtApiException, GeneralSecurityException, IOException, ConfigurationLoadingException {
+
         if (serverProperties == null) {
             return Envelope.prepare(recipients, null);
         } else {
             // for encryption, do not init mTLS client as this might require smart-card
-            return Envelope.prepare(recipients, KeyCapsuleClientImpl.create(serverProperties, false));
+           KeyCapsuleClient client = KeyCapsuleClientImpl.create(serverProperties, false);
+           if (null != keyCapsuleExpiryDuration) {
+               client.setExpiryDuration(keyCapsuleExpiryDuration);
+           }
+            return Envelope.prepare(
+                recipients,
+                client
+            );
         }
     }
 
@@ -131,7 +147,7 @@ public class CDocBuilder {
             }
 
         } catch (IOException ioException) {
-            log.error("Error when deleting {} {}", outputCDocFile, ioException);
+            log.error("Error when deleting {}", outputCDocFile, ioException);
         }
     }
 

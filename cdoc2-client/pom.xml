@@ -1,42 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>cdoc2</artifactId>
+        <groupId>ee.cyber.cdoc2</groupId>
+        <version>SID-1.4.0</version>
+    </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <groupId>ee.cyber.cdoc2</groupId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>SID-1.6.0-SNAPSHOT</version>
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
-        <logback-classic.version>1.4.14</logback-classic.version>
+        <logback-classic.version>1.5.7</logback-classic.version>
         <jersey.version>3.1.6</jersey.version>
-        <jackson.version>2.15.4</jackson.version>
+        <jackson.version>2.17.2</jackson.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
 
-        <spotbugs-annotations.version>4.7.3</spotbugs-annotations.version>
-        <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
-        <cdoc2-key-capsules-openapi.version>sid2.1.0</cdoc2-key-capsules-openapi.version>
+        <spotbugs-annotations.version>4.8.3</spotbugs-annotations.version>
+
+        <!--info.version from cdoc2-openapi/*-openapi.yaml -->
+        <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
+        <cdoc2-key-shares-openapi.version>1.0.0</cdoc2-key-shares-openapi.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>gitlab.ext.cyber.ee</id>
-            <url>https://gitlab.ext.cyber.ee/api/v4/projects/40/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
-
 
     <dependencies>
         <dependency>
@@ -135,11 +121,11 @@
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.8.0</version>
                 <executions>
 
                     <!-- download openapi yaml using dependency::get -->
-                    <!-- Can be also done using by defining cdoc2-key-capsules-openapi as dependency, -->
+                    <!-- Can be also done using by defining cdoc2-key-*-openapi as dependency, -->
                     <!-- but that breaks maven-shade plugin as it cannot handle non jar artifacts -->
                     <execution>
                         <id>download-cdoc2-key-capsules-openapi-yaml</id>
@@ -152,11 +138,8 @@
                             <artifactId>cdoc2-key-capsules-openapi</artifactId>
                             <version>${cdoc2-key-capsules-openapi.version}</version>
                             <packaging>yaml</packaging>
-                            <!-- can be removed when copied to cdoc2-java-ref-impl repo -->
-                            <remoteRepositories>gitlab.ext.cyber.ee::::https://gitlab.ext.cyber.ee/api/v4/projects/39/packages/maven</remoteRepositories>
                         </configuration>
                     </execution>
-
                     <execution>
                         <id>copy-cdoc2-key-capsules-openapi-yaml</id>
                         <phase>generate-sources</phase>
@@ -173,15 +156,50 @@
                                     <outputDirectory>${project.build.directory}/openapi</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
+                            <useBaseVersion>true</useBaseVersion>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>download-cdoc2-key-shares-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>get</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>ee.cyber.cdoc2.openapi</groupId>
+                            <artifactId>cdoc2-key-shares-openapi</artifactId>
+                            <version>${cdoc2-key-shares-openapi.version}</version>
+                            <packaging>yaml</packaging>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-cdoc2-key-shares-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>ee.cyber.cdoc2.openapi</groupId>
+                                    <artifactId>cdoc2-key-shares-openapi</artifactId>
+                                    <version>${cdoc2-key-shares-openapi.version}</version>
+                                    <type>yaml</type>
+                                    <outputDirectory>${project.build.directory}/openapi</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                            <useBaseVersion>true</useBaseVersion>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.5.0</version>
+                <version>7.8.0</version>
                 <executions>
                     <execution>
                         <id>generate-key-capsules-api-client</id>
@@ -196,6 +214,20 @@
                             <inputSpec>${project.build.directory}/openapi/cdoc2-key-capsules-openapi-${cdoc2-key-capsules-openapi.version}.yaml</inputSpec>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>generate-key-shares-api-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <configOptions>
+                                <useSpringBoot3>true</useSpringBoot3>
+                            </configOptions>
+                            <!-- copied by maven-dependency-plugin -->
+                            <inputSpec>${project.build.directory}/openapi/cdoc2-key-shares-openapi-${cdoc2-key-shares-openapi.version}.yaml</inputSpec>
+                        </configuration>
+                    </execution>
+
                 </executions>
 
                 <configuration>
@@ -209,11 +241,10 @@
                     <generateModelTests>false</generateModelTests>
                     <configOptions>
                         <delegatePattern>false</delegatePattern>
-                        <!--dateLibrary>java8-localdatetime</dateLibrary-->
                         <dateLibrary>java8</dateLibrary>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                         <oas3>true</oas3>
-                        <useOptional>true</useOptional>
+                        <useOptional>false</useOptional>
                         <bigDecimalAsString>true</bigDecimalAsString>
                         <legacyDiscriminatorBehavior>false</legacyDiscriminatorBehavior>
                     </configOptions>
