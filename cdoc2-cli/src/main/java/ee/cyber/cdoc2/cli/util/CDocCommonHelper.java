@@ -18,5 +18,4 @@ public final class CDocCommonHelper {
         p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
         return p;
     }
-
 }

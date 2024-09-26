@@ -36,7 +36,9 @@ import static ee.cyber.cdoc2.util.OperatingSystem.getOS;
 /**
  * Utility class for PKCS11 operations.
  * <p>
- * Common pkcs11 provider library locations:
+ * If pkcs11 provider library is not explicitly provided as method parameter, then pkcs11 lib location
+ * is read from `pkcs11-library` system property. If `pkcs11-library` system property is not defined, then
+ * following default pkcs11 provider library locations are used:
  * <ul>
  *   <li>For Windows, it could be C:\Windows\SysWOW64\opensc-pkcs11.dll,
  *   <li>For Linux, it could be /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so,

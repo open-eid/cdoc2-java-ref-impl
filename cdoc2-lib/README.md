@@ -215,7 +215,7 @@ directory and `.withServerProperties` method:
 the shortest name (without `_pkcs12` or `_p12` in name).
 
 Uploading key material to server allows to invalidate CDOC2 documents that are may be affected from
-future Security vulnerability like [ROCA vulnerability](https://en.wikipedia.org/wiki/ROCA_vulnerability)
+future security vulnerability like [ROCA vulnerability](https://en.wikipedia.org/wiki/ROCA_vulnerability)
 
 In non-server scenarios sender public key material is included in CDOC2 itself. For server scenarios
 sender public key material is uploaded to server and recipient needs first to download the
@@ -257,6 +257,11 @@ that takes `KeyCapsuleClientFactory` as parameter:
         .withDestinationDirectory(destDir.toFile())
         .decrypt();
 ```
+
+**Note**: `pkcs11-library` location can also be specified as Java system property 
+(`-Dpkcs11-library=<path>` or `System.setProperty("pkcs11-library", "<path>")`), 
+when not specified explicitly as method parameter. If `pkcs11-library` system property is not set,
+then pkcs11 library is looked for from [default locations](https://github.com/open-eid/cdoc2-java-ref-impl/blob/ae1351db7e13c3ede58a48757ae53c2c80166a70/cdoc2-lib/src/main/java/ee/cyber/cdoc2/crypto/Pkcs11Tools.java#L404)
 
 ### Latest server configuration
 

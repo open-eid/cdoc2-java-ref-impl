@@ -41,7 +41,9 @@ public final class CDocDecryptionHelper {
 
     /**
      * Loads DecryptionKeyMaterial from CLI options. If decryption material is not given by user, then
-     * tries to load decryption key material from smart-card. Asks PIN interactively when using smart-card
+     * tries to load decryption key material from smart-card. Asks PIN interactively when using smart-card.
+     * Reads pkcs11 library location from `pkcs11-library` Java system property if set. Otherwise, uses system default
+     * location.
      * @param slot smart-card slot number when overwriting default
      * @param keyAlias key alias
      * @return loaded DecryptionKeyMaterial
