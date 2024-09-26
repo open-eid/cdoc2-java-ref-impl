@@ -197,6 +197,13 @@ Note: When pulling, the [GitHub package index is based on the organization level
 So defining any Maven package repo from `open-eid` is enough for pulling cdoc2-* dependencies.
 All packages published under `open-eid` can be found https://github.com/orgs/open-eid/packages
 
+Test that you have configured your Maven `settings.xml` for `github` correctly 
+(run from `cdoc2-java-ref-impl` root):
+
+```
+./mvnw dependency::get -Dartifact=ee.cyber.cdoc2:cdoc2-lib:2.0.0
+```
+
 ## Building
 [![Java CI with Maven](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml/badge.svg)](https://github.com/open-eid/cdoc2-java-ref-impl/actions/workflows/maven.yml)
 

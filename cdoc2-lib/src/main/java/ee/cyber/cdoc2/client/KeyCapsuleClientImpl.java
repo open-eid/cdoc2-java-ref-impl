@@ -147,8 +147,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
-     * @KeyStoreException
-     * @IOException
+     * @throws KeyStoreException
      */
     @Nullable
     private static KeyStore loadClientKeyStore(Properties p) throws KeyStoreException, IOException,
@@ -185,7 +184,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
     /**
      * If "pkcs11-library" property is set in properties or System properties, return value specified.
-     * If both specify a balue then use one from System properties.
+     * If both specify a value then use one from System properties.
      * @param p properties provided
      * @return "pkcs11-library" value specified in properties or null if not property not present
      */
@@ -207,9 +206,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      *      if a password is required but not given,
      *      or if the given password was incorrect. If the error is due to a wrong password,
      *      the cause of the IOException should be an UnrecoverableKeyException
-     * @IOException
-     * @KeyStoreException
-     * @CertificateException – if any of the certificates in the keystore could not be loaded
+     * @throws KeyStoreException
+     * @throws CertificateException – if any of the certificates in the keystore could not be loaded
      */
     private static KeyStore loadTrustKeyStore(Properties p) throws KeyStoreException, IOException,
             CertificateException, NoSuchAlgorithmException {
