@@ -4,11 +4,11 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>SID-1.4.0</version>
+        <version>SID-1.4.1</version>
     </parent>
 
     <artifactId>cdoc2-cli</artifactId>
-    <version>SID-1.5.0</version>
+    <version>SID-1.5.1</version>
     <description>Command line utility to create/process CDOC2 files</description>
 
     <properties>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-lib</artifactId>
-            <version>SID-2.0.1-SNAPSHOT</version>
+            <version>SID-2.1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -86,20 +86,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-                    <!--plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>report</id>
-                                <goals>
-                                    <goal>report-aggregate</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                    </plugin-->
 
         </plugins>
     </build>

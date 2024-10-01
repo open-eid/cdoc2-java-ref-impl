@@ -18,7 +18,6 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSecretKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.formatKeyLabel;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
 
 
 /**
@@ -143,17 +142,6 @@ public interface EncryptionKeyMaterial {
 
     static EncryptionKeyMaterialCollectionBuilder collectionBuilder() {
         return new EncryptionKeyMaterialCollectionBuilder();
-    }
-
-    /**
-     * Create KeyShareEncryptionKeyMaterial for key share scheme.
-     * To decrypt CDOC, recipient must also have same preSharedKey and salt that are identified by
-     * the same recipient id
-     * @param semanticIdentifier unique identifiers for preSharedKey
-     * @return KeyShareEncryptionKeyMaterial object
-     */
-    static KeyShareEncryptionKeyMaterial fromAuthMeans(SemanticIdentification semanticIdentifier) {
-        return new KeyShareEncryptionKeyMaterial(semanticIdentifier);
     }
 
 }

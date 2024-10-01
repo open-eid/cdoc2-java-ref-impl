@@ -3,9 +3,7 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
-import ee.cyber.cdoc2.util.Resources;
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.time.LocalDateTime;
@@ -13,7 +11,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.Callable;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
@@ -22,6 +19,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
@@ -66,29 +64,24 @@ public class CDocListCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        Properties p;
-
-        KeyCapsuleClientFactory keyCapsulesClient = null;
-
+        KeyCapsuleClientFactory keyCapsulesClientFactory = null;
         if (keyServerPropertiesFile != null) {
-            p = new Properties();
-            p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
-            keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
+            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(
-            this.cdocFile,
-            this.exclusive.getLabeledPasswordParam(),
-            this.exclusive.getSecret(),
-            this.exclusive.getP12(),
-            this.exclusive.getPrivKeyFile()
-        );
+                this.cdocFile,
+                this.exclusive.getLabeledPasswordParam(),
+                this.exclusive.getSecret(),
+                this.exclusive.getP12(),
+                this.exclusive.getPrivKeyFile()
+                );
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
-                .withKeyServers(keyCapsulesClient)
+                .withKeyServers(keyCapsulesClientFactory)
                 .withRecipient(decryptionKeyMaterial);
 
         System.out.println("Listing contents of " + cdocFile);
@@ -107,4 +100,5 @@ public class CDocListCmd implements Callable<Void> {
 
         return null;
     }
+
 }

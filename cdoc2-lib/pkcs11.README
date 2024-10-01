@@ -26,7 +26,7 @@ keytool
 -storetype PKCS11 
 -list 
 
-jkusman@cn-3615:/etc/opensc$ keytool -providerclass sun.security.pkcs11.SunPKCS11 -providerarg /etc/opensc/opensc-java.cfg -keystore NONE -storetype PKCS11 -list -J-Djava.security.debug=sunpkcs11
+:/etc/opensc$ keytool -providerclass sun.security.pkcs11.SunPKCS11 -providerarg /etc/opensc/opensc-java.cfg -keystore NONE -storetype PKCS11 -list -J-Djava.security.debug=sunpkcs11
 SunPKCS11 loading /etc/opensc/opensc-java.cfg
 sunpkcs11: Initializing PKCS#11 library /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
 Information for provider SunPKCS11-OpenSC

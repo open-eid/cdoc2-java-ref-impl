@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
 @SuppressWarnings("secrets:S6706")
 class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);

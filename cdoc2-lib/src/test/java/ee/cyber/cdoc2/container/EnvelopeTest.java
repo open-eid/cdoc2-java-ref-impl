@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.container;
 
+import ee.cyber.cdoc2.TestLifecycleLogger;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
@@ -53,11 +54,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.io.input.CountingInputStream;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -94,7 +93,7 @@ import static org.mockito.Mockito.when;
 // some tests can be run parallel, but this is untested
 @Isolated
 @ExtendWith(MockitoExtension.class)
-class EnvelopeTest {
+class EnvelopeTest implements TestLifecycleLogger {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
     private static KeyLabelParams bobKeyLabelParams;
@@ -573,6 +572,12 @@ class EnvelopeTest {
     }
 
 
+    /**
+     * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     * @param tempDir
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
     void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws Exception {
@@ -624,6 +629,12 @@ class EnvelopeTest {
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
     }
 
+    /**
+     * This test fails under Windows because creating file with this invalid file name fails first
+     * @param tempDir
+     * @throws Exception
+     */
+    @DisabledOnOs(OS.WINDOWS)
     @Test
     void testThatIncompleteCDocFilesAreRemoved(@TempDir Path tempDir) throws Exception {
         PublicKey publicKey = createPublicKey();

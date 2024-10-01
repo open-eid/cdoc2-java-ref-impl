@@ -4,7 +4,7 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>SID-1.4.0</version>
+        <version>SID-1.4.1</version>
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
@@ -140,6 +140,7 @@
                             <packaging>yaml</packaging>
                         </configuration>
                     </execution>
+
                     <execution>
                         <id>copy-cdoc2-key-capsules-openapi-yaml</id>
                         <phase>generate-sources</phase>
@@ -241,6 +242,7 @@
                     <generateModelTests>false</generateModelTests>
                     <configOptions>
                         <delegatePattern>false</delegatePattern>
+                        <!--dateLibrary>java8-localdatetime</dateLibrary-->
                         <dateLibrary>java8</dateLibrary>
                         <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                         <oas3>true</oas3>

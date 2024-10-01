@@ -3,7 +3,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <version>SID-1.4.0</version>
+    <version>SID-1.4.1</version>
     <groupId>ee.cyber.cdoc2</groupId>
     <artifactId>cdoc2</artifactId>
     <description>CDOC2 reference implementation </description>
