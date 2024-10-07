@@ -368,3 +368,23 @@ default true
 
 Key label `<data>` field contains different parameters. File name is one of them. For security 
 purpose it can be hidden in configuration. File name is added by default.
+
+#### ee.cyber.key-shares.properties
+CLI option which indicates the path to key capsule client key-shares properties file.
+- ##### ee.cyber.key-shares.urls
+  Key shares servers URL-s, separated by comma `","`
+- ##### ee.cyber.key-shares.min_num
+  Minimum quantity of key shares servers
+- ##### ee.cyber.key-shares.algorithm
+  Key shares algorithm
+
+#### ee.cyber.smart-id.properties
+CLI option which indicates the path to smart-id properties file.
+- ##### ee.cyber.smartid.client.hostUrl
+  Smart ID client host URL
+- ##### ee.cyber.smartid.client.relyingPartyUuid
+  Smart ID client relying party UUID
+- ##### ee.cyber.smartid.client.relyingPartyName
+  Smart ID client relying party name
+- ##### ee.cyber.smartid.client.ssl.trust-store-password
+  Smart ID client SSL trust store password

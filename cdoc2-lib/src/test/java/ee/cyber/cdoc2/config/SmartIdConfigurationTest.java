@@ -3,8 +3,9 @@ package ee.cyber.cdoc2.config;
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.smartid.SmartIdConfigurationProperties;
+import ee.cyber.cdoc2.smartid.SmartIdClientConfiguration;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getSmartIdConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -16,12 +17,12 @@ class SmartIdConfigurationTest {
 
     @Test
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
-        SmartIdConfigurationProperties smartIdConfigurationProperties
-            = SmartIdConfigurationProperties.load();
+        SmartIdClientConfiguration smartIdClientConfiguration
+            = getSmartIdConfiguration();
 
-        assertEquals(HOST_URL, smartIdConfigurationProperties.getHostUrl());
-        assertEquals(RELYING_PARTY_UUID, smartIdConfigurationProperties.getRelyingPartyUuid());
-        assertEquals(RELYING_PARTY_NAME, smartIdConfigurationProperties.getRelyingPartyName());
+        assertEquals(HOST_URL, smartIdClientConfiguration.getHostUrl());
+        assertEquals(RELYING_PARTY_UUID, smartIdClientConfiguration.getRelyingPartyUuid());
+        assertEquals(RELYING_PARTY_NAME, smartIdClientConfiguration.getRelyingPartyName());
     }
 
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.SmartIdClientException;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getSmartIdConfiguration;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -21,6 +22,7 @@ class SmartIdClientTest {
     private final SmartIdClient smartIdClient;
 
     SmartIdClientTest() throws ConfigurationLoadingException {
+        getSmartIdConfiguration();
         this.smartIdClient = new SmartIdClient();
     }
 

@@ -27,8 +27,10 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
+import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.SmartIdClientException;
+import ee.cyber.cdoc2.util.Resources;
 
 
 /**
@@ -36,19 +38,17 @@ import ee.cyber.cdoc2.exceptions.SmartIdClientException;
  */
 public class SmartIdClientWrapper {
 
-    private static final String CERT_FILE_NAME
-        = "smartid/smartid_demo_server_trusted_ssl_certs.jks";
     private static final String CERT_NOT_FOUND = "Smart ID trusted SSL certificates not found";
 
     private final SmartIdClient smartIdClient;
-    private final SmartIdConfigurationProperties smartIdClientConfig;
+    private final SmartIdClientConfiguration smartIdClientConfig;
     private final AuthenticationResponseValidator authenticationResponseValidator;
 
     /**
      * Constructor for Smart-ID Client wrapper
      */
     public SmartIdClientWrapper() throws ConfigurationLoadingException {
-        this.smartIdClientConfig = SmartIdConfigurationProperties.load();
+        this.smartIdClientConfig = CDoc2ConfigurationProvider.getConfiguration().smartIdClientConfiguration();
         this.smartIdClient = new SmartIdClient();
         configureSmartIdClient();
         this.authenticationResponseValidator = new AuthenticationResponseValidator();
@@ -154,7 +154,9 @@ public class SmartIdClientWrapper {
      * Read trusted certificates for Smart ID client secure TLS transport
      */
     private KeyStore readTrustedCertificates() throws ConfigurationLoadingException {
-        try (InputStream is = this.getClass().getClassLoader().getResourceAsStream(CERT_FILE_NAME)) {
+        try (InputStream is = Resources.getResourceAsStream(
+            smartIdClientConfig.getTrustStore(), this.getClass().getClassLoader())
+        ) {
             if (null == is) {
                 throw new ConfigurationLoadingException(CERT_NOT_FOUND);
             } else {

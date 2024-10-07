@@ -2,11 +2,9 @@ package ee.cyber.cdoc2.client;
 
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.model.Capsule;
-import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.Resources;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -24,6 +22,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getInteger;
 import static ee.cyber.cdoc2.util.DurationUtil.getExpiryTime;
 
@@ -36,6 +35,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
 
     private final String serverId;
     private final Cdoc2KeyCapsuleApiClient postClient; // TLS client
+    @Nullable
     private final Cdoc2KeyCapsuleApiClient getClient; // mTLS client
     @Nullable
     private KeyStore clientKeyStore; //initialised only from #create(Properties)
@@ -45,7 +45,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     private KeyCapsuleClientImpl(
         String serverIdentifier,
         Cdoc2KeyCapsuleApiClient postClient,
-        Cdoc2KeyCapsuleApiClient getClient,
+        @Nullable Cdoc2KeyCapsuleApiClient getClient,
         @Nullable KeyStore clientKeyStore
     ) {
         this.serverId = serverIdentifier;
@@ -63,7 +63,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     public static KeyCapsuleClient create(Properties p)
-        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
+        throws GeneralSecurityException, IOException {
 
         return create(p, true);
     }
@@ -83,22 +83,19 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @throws IOException if trusted key store loading has failed
      */
     public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
-        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
+        throws GeneralSecurityException, IOException {
 
-        String serverId = p.getProperty("cdoc2.client.server.id");
+        String serverId = p.getProperty(CLIENT_SERVER_ID);
 
         var builder = Cdoc2KeyCapsuleApiClient.builder();
         builder.withTrustKeyStore(loadTrustKeyStore(p));
 
-        getInteger(log, p, "cdoc2.client.server.connect-timeout")
-            .ifPresent(builder::withConnectTimeoutMs);
-        getInteger(log, p, "cdoc2.client.server.read-timeout")
-            .ifPresent(builder::withReadTimeoutMs);
-        getBoolean(p, "cdoc2.client.server.debug")
-            .ifPresent(builder::withDebuggingEnabled);
+        getInteger(log, p, CLIENT_SERVER_CONNECT_TIMEOUT).ifPresent(builder::withConnectTimeoutMs);
+        getInteger(log, p, CLIENT_SERVER_READ_TIMEOUT).ifPresent(builder::withReadTimeoutMs);
+        getBoolean(p, CLIENT_SERVER_DEBUG).ifPresent(builder::withDebuggingEnabled);
 
-        String postBaseUrl = p.getProperty("cdoc2.client.server.base-url.post");
-        String getBaseUrl = p.getProperty("cdoc2.client.server.base-url.get");
+        String postBaseUrl = p.getProperty(CLIENT_SERVER_BASE_URL_POST);
+        String getBaseUrl = p.getProperty(CLIENT_SERVER_BASE_URL_GET);
 
         // postClient can be configured with client key store,
         builder.withBaseUrl(postBaseUrl);
@@ -119,19 +116,19 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     }
 
     public static KeyCapsuleClientFactory createFactory(Properties p)
-        throws GeneralSecurityException, IOException, ConfigurationLoadingException {
+        throws GeneralSecurityException, IOException {
 
         return (KeyCapsuleClientFactory) create(p);
     }
 
     private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter(Properties  p) {
-        String prompt = p.getProperty("cdoc2.client.ssl.client-store-password.prompt");
+        String prompt = p.getProperty(CLIENT_STORE_PWD_PROMPT);
         if (prompt != null) {
             log.debug("Using interactive client KS protection param");
             return Pkcs11Tools.getKeyStoreProtectionHandler(prompt + ":");
         }
 
-        String pw = p.getProperty("cdoc2.client.ssl.client-store-password");
+        String pw = p.getProperty(CLIENT_STORE_PWD);
         if (pw != null) {
             log.debug("Using password for client KS");
             return new KeyStore.PasswordProtection(pw.toCharArray());
@@ -159,7 +156,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         CertificateException, NoSuchAlgorithmException {
 
         KeyStore clientKeyStore;
-        String type = p.getProperty("cdoc2.client.ssl.client-store.type", null);
+        String type = p.getProperty(CLIENT_STORE_TYPE, null);
 
         if (null == type) {
             return null;
@@ -168,8 +165,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         if ("PKCS12".equalsIgnoreCase(type)) {
             clientKeyStore = KeyStore.getInstance(type);
 
-            String clientStoreFile = p.getProperty("cdoc2.client.ssl.client-store");
-            String passwd = p.getProperty("cdoc2.client.ssl.client-store-password");
+            String clientStoreFile = p.getProperty(CLIENT_STORE);
+            String passwd = p.getProperty(CLIENT_STORE_PWD);
 
             clientKeyStore.load(Resources.getResourceAsStream(clientStoreFile),
                 (passwd != null) ? passwd.toCharArray() : null);
@@ -181,7 +178,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             // default slot 0 - Isikutuvastus
             clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
         } else {
-            throw new IllegalArgumentException("cdoc2.client.ssl.client-store.type " + type + " not supported");
+            throw new IllegalArgumentException(CLIENT_STORE_TYPE + " " + type + " not supported");
         }
 
         return clientKeyStore;
@@ -196,8 +193,8 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
     private static String loadPkcs11LibPath(Properties p) {
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
-        return System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY,
-            p.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null));
+        return System.getProperty(PKCS11_LIBRARY_PROPERTY,
+            p.getProperty(PKCS11_LIBRARY_PROPERTY, null));
     }
 
     /**
@@ -218,10 +215,10 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         CertificateException, NoSuchAlgorithmException {
         KeyStore trustKeyStore;
 
-        String type = p.getProperty("cdoc2.client.ssl.trust-store.type", "JKS");
+        String type = p.getProperty(CLIENT_TRUST_STORE_TYPE, "JKS");
 
-        String trustStoreFile = p.getProperty("cdoc2.client.ssl.trust-store");
-        String passwd = p.getProperty("cdoc2.client.ssl.trust-store-password");
+        String trustStoreFile = p.getProperty(CLIENT_TRUST_STORE);
+        String passwd = p.getProperty(CLIENT_TRUST_STORE_PWD);
 
         trustKeyStore = KeyStore.getInstance(type);
         trustKeyStore.load(Resources.getResourceAsStream(trustStoreFile),
