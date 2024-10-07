@@ -4,7 +4,7 @@ package ee.cyber.cdoc2.exceptions;
 /**
  * Thrown when configuration properties are not found or not configured properly.
  */
-public class ConfigurationLoadingException extends Exception {
+public class ConfigurationLoadingException extends RuntimeException {
 
     /**
      * Constructor with message

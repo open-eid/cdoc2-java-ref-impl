@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-
 
 /**
  * Utility for validating and converting configuration property to different types.
@@ -18,18 +16,6 @@ import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 public final class ConfigurationPropertyUtil {
 
     private ConfigurationPropertyUtil() { }
-
-    /**
-     * Gets loaded properties from resource file.
-     *
-     * @param fileClasspath property file classpath
-     * @throws ConfigurationLoadingException if failed to load properties from resource file
-     */
-    public static Properties getLoadedProperties(String fileClasspath)
-        throws ConfigurationLoadingException {
-
-        return loadProperties(fileClasspath);
-    }
 
     /**
      * Gets configuration property value in string representation.

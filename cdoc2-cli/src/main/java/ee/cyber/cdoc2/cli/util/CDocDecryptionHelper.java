@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
+import ee.cyber.cdoc2.config.Cdoc2Configuration;
+import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
@@ -30,6 +32,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
+import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 
 
 /**
@@ -58,7 +64,7 @@ public final class CDocDecryptionHelper {
     ) throws GeneralSecurityException, IOException {
         log.info("Decryption key not provided as CLI parameter, trying to read it from smart-card");
 
-        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
+        String pkcs11LibPath = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
         KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
 
         return DecryptionKeyMaterial.fromKeyPair(keyPair);
@@ -237,6 +243,20 @@ public final class CDocDecryptionHelper {
         } else {
             return labeledPassword;
         }
+    }
+
+    // ToDo test resource loading and truststore from external filesystem via
+    //  option -Dsmart-id.properties. #3237
+    public static void loadSmartIdConfiguration() throws ConfigurationLoadingException {
+        String propertiesFilePath = System.getProperty(SMART_ID_PROPERTIES, null);
+        if (null == propertiesFilePath) {
+           throw new ConfigurationLoadingException("Smart ID configuration property is missing");
+        }
+        Properties properties = loadProperties(propertiesFilePath);
+        Cdoc2Configuration configuration =
+            new SmartIdClientConfigurationImpl(properties);
+
+        CDoc2ConfigurationProvider.init(configuration);
     }
 
 }

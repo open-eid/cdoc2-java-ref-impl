@@ -3,6 +3,7 @@ package ee.cyber.cdoc2;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.ECKeys;
@@ -107,14 +108,14 @@ public class CDocBuilder {
     }
 
     private void ensureFileCanBeCreatedInOutputDir(File outputCDocFile) throws FileAlreadyExistsException {
-        if (!CDocConfiguration.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
+        if (!Cdoc2ConfigurationProperties.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
             log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
             throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
         }
     }
 
     private OpenOption getOpenOption() {
-        return (CDocConfiguration.isOverWriteAllowed())
+        return (Cdoc2ConfigurationProperties.isOverWriteAllowed())
             ? StandardOpenOption.CREATE
             : StandardOpenOption.CREATE_NEW;
     }

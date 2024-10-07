@@ -9,56 +9,53 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 
 
 /**
- * Key capsule client configuration properties.
+ * Key shares configuration properties for key capsule client.
+ *
+ * @param keySharesServersNum number of key shares servers
+ * @param keySharesServersUrls key shares servers URL-s
+ * @param keySharesServersMinNum minimum quantity of key shares servers
+ * @param keySharesAlgorithm key shares algorithm
  */
-public record ClientConfigurationProperties(
+public record KeySharesConfiguration(
     int keySharesServersNum,
     List<String> keySharesServersUrls,
     int keySharesServersMinNum,
     String keySharesAlgorithm
 ) {
+    private static final Logger log = LoggerFactory.getLogger(KeySharesConfiguration.class);
 
-    private static final Logger log = LoggerFactory.getLogger(ClientConfigurationProperties.class);
-
-    private static final String PROPERTIES_FILE_CLASSPATH = "key-shares.properties";
-
-    private static final String KEY_SHARES_SERVERS_URLS_PROP = "key-shares.servers.urls";
-    private static final String KEY_SHARES_SERVERS_MIN_NUM_PROP = "key-shares.servers.min_num";
-    private static final String KEY_SHARES_ALGORITHM_PROP = "key-shares.algorithm";
-
-    public static ClientConfigurationProperties load() throws ConfigurationLoadingException {
-        log.info("Loading Client configuration from {}", PROPERTIES_FILE_CLASSPATH);
-        var properties = loadProperties(PROPERTIES_FILE_CLASSPATH);
-        return loadFromProperties(properties);
-    }
-
-    public static ClientConfigurationProperties loadFromProperties(Properties properties)
+    public static KeySharesConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
+
+        log.debug("Loading Key Shares configuration for Key Capsule client.");
 
         var keySharesServersUrls = ConfigurationPropertyUtil.splitString(
             log,
             properties,
-            KEY_SHARES_SERVERS_URLS_PROP
+            KEY_SHARES_SERVERS_URLS
         );
+
         var keySharesServersNum = keySharesServersUrls.size();
         var keySharesServersMinNum = ConfigurationPropertyUtil.getRequiredInteger(
             log,
             properties,
-            KEY_SHARES_SERVERS_MIN_NUM_PROP
+            KEY_SHARES_SERVERS_MIN_NUM
         );
-        var keySharesAlgorithm = getRequiredProperty(properties, KEY_SHARES_ALGORITHM_PROP);
+        validateServersMinQuantity(keySharesServersNum, keySharesServersMinNum);
+
+        var keySharesAlgorithm = getRequiredProperty(properties, KEY_SHARES_ALGORITHM);
         ConfigurationPropertyUtil.notBlank(
             log,
             keySharesAlgorithm,
-            KEY_SHARES_ALGORITHM_PROP
+            KEY_SHARES_ALGORITHM
         );
 
-        return new ClientConfigurationProperties(
+        return new KeySharesConfiguration(
             keySharesServersNum,
             keySharesServersUrls,
             keySharesServersMinNum,
@@ -80,6 +77,19 @@ public record ClientConfigurationProperties(
 
     public String getKeySharesAlgorithm() {
         return this.keySharesAlgorithm;
+    }
+
+    private static void validateServersMinQuantity(
+        int keySharesServersNum,
+        int keySharesServersMinNum
+    ) throws ConfigurationLoadingException {
+
+        if (keySharesServersNum < keySharesServersMinNum) {
+            String errorMsg = "Key shares servers quantity " + keySharesServersNum
+                + " cannot be less than required minimum " + keySharesServersMinNum;
+            log.error(errorMsg);
+            throw new ConfigurationLoadingException(errorMsg);
+        }
     }
 
 }

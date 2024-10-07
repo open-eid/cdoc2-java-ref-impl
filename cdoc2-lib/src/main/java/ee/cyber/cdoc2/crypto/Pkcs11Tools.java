@@ -1,6 +1,5 @@
 package ee.cyber.cdoc2.crypto;
 
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import java.io.BufferedWriter;
@@ -31,6 +30,9 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.swing.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_PROVIDER_SYSTEM_PROPERTY;
 import static ee.cyber.cdoc2.util.OperatingSystem.getOS;
 
 
@@ -248,7 +250,7 @@ public final class Pkcs11Tools {
         String library = openScLibrary;
 
         if (library == null) {
-            library = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
+            library = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
         }
 
         if (library == null) {
@@ -258,7 +260,7 @@ public final class Pkcs11Tools {
         if (!Files.isReadable(Path.of(library))) {
             log.error(
                 "OpenSC library not found at {}, define {} System.property to overwrite ",
-                library, CDocConfiguration.PKCS11_LIBRARY_PROPERTY
+                library, PKCS11_LIBRARY_PROPERTY
             );
         }
 
@@ -348,8 +350,8 @@ public final class Pkcs11Tools {
             return pkcs11ProviderName;
         }
 
-        if (System.getProperties().containsKey(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY)) {
-            pkcs11ProviderName = System.getProperty(CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY);
+        if (System.getProperties().containsKey(PKCS11_PROVIDER_SYSTEM_PROPERTY)) {
+            pkcs11ProviderName = System.getProperty(PKCS11_PROVIDER_SYSTEM_PROPERTY);
             return pkcs11ProviderName;
         }
 
@@ -377,7 +379,7 @@ public final class Pkcs11Tools {
             log.info("Several PKCS11 providers found that support \"KeyStore.PKCS11\" & \"KeyAgreement.ECDH\": {}",
                     common);
             log.info("Choose correct one by setting system property {} to one of {}",
-                    CDocConfiguration.PKCS11_PROVIDER_SYSTEM_PROPERTY, common);
+                    PKCS11_PROVIDER_SYSTEM_PROPERTY, common);
         }
 
         log.error("PKCS11 provider not configured");

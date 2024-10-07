@@ -55,7 +55,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
-import static ee.cyber.cdoc2.CDocConfiguration.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_SymmetricKeyCapsule;

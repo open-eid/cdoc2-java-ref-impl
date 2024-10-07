@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.TestLifecycleLogger;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -23,14 +22,16 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.DISK_USAGE_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.TAR_ENTRIES_THRESHOLD_PROPERTY;
 import static java.nio.charset.StandardCharsets.*;
 import static org.junit.jupiter.api.Assertions.*;
+
 
 // test are executed sequentially without any other tests running at the same time
 @Isolated
 class TarDeflateTest implements TestLifecycleLogger {
-    private static final  Logger log = LoggerFactory.getLogger(TarDeflateTest.class);
+    private static final Logger log = LoggerFactory.getLogger(TarDeflateTest.class);
 
     private static final String TGZ_FILE_NAME = "archive.tgz";
     private static final String PAYLOAD = "payload\n";
@@ -203,11 +204,11 @@ class TarDeflateTest implements TestLifecycleLogger {
     @Test
     void testMaxExtractEntries(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
-        System.setProperty(CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY, "1");
+        System.setProperty(TAR_ENTRIES_THRESHOLD_PROPERTY, "1");
 
         assertThrows(IllegalStateException.class, () -> testExtract(tempDir));
 
-        System.clearProperty(CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY);
+        System.clearProperty(TAR_ENTRIES_THRESHOLD_PROPERTY);
     }
 
     @Test

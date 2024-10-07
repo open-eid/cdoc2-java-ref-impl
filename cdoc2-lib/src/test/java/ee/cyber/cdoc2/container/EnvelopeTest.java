@@ -11,7 +11,6 @@ import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
@@ -66,6 +65,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
@@ -655,8 +655,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         Files.createFile(cdocFile.toPath());
         assertTrue(cdocFile.exists());
 
-        String overwrite = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
-        System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, "true");
+        String overwrite = System.getProperty(OVERWRITE_PROPERTY);
+        System.setProperty(OVERWRITE_PROPERTY, "true");
         try {
             assertThrows(
                 Exception.class,
@@ -667,7 +667,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             assertFalse(cdocFile.exists());
         } finally {
             if (overwrite != null) {
-                System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, overwrite);
+                System.setProperty(OVERWRITE_PROPERTY, overwrite);
             }
         }
     }

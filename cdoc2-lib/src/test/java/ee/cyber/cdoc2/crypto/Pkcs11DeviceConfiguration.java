@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.util.Resources;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_CONF_FILE;
+import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+
 
 /**
  * Test configuration for running PKCS11 tests using a hardware device.
@@ -93,13 +96,12 @@ public class Pkcs11DeviceConfiguration {
      * e.g -D cdoc2.pkcs11.test-configuration=pkcs11-test-idcard.properties
      */
     private void loadInternal() {
-        final String classpath = "classpath:";
         String filename = System.getProperty(
-            "cdoc2.pkcs11.conf-file",
-            classpath + "pkcs11-test-idcard.properties"
+            PKCS11_CONF_FILE,
+            CLASSPATH + "pkcs11-test-idcard.properties"
         );
         String propertyFileName;
-        if (filename.contains(classpath)) {
+        if (filename.contains(CLASSPATH)) {
             propertyFileName = filename;
         } else {
             propertyFileName = new File(filename).getAbsolutePath();
