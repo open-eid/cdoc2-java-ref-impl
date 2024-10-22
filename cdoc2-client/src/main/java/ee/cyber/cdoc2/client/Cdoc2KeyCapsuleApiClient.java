@@ -12,6 +12,7 @@ import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.client.ApiClientUtil.STATUS_CODE_NOT_FOUND;
 import static ee.cyber.cdoc2.client.ApiClientUtil.extractIdFromHeader;
 
 
@@ -23,8 +24,6 @@ import static ee.cyber.cdoc2.client.ApiClientUtil.extractIdFromHeader;
 public final class Cdoc2KeyCapsuleApiClient extends KeyCapsuleClientBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2KeyCapsuleApiClient.class);
-
-    private static final int STATUS_CODE_NOT_FOUND = 404;
 
     private final Cdoc2KeyCapsulesApi capsulesApi;
 
@@ -51,7 +50,7 @@ public final class Cdoc2KeyCapsuleApiClient extends KeyCapsuleClientBuilder {
 
     /**
      * @param capsule key capsule from openAPI
-     * @return transactionId ransaction ID
+     * @return transactionId transaction ID
      * @throws ApiException if Key capsule creation has failed
      */
     public String createCapsule(Capsule capsule) throws ApiException {

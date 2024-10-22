@@ -12,6 +12,7 @@ import ee.cyber.cdoc2.client.api.Cdoc2KeySharesApi;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 
+import static ee.cyber.cdoc2.client.ApiClientUtil.STATUS_CODE_NOT_FOUND;
 import static ee.cyber.cdoc2.client.ApiClientUtil.extractIdFromHeader;
 
 
@@ -49,7 +50,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param keyShare key share data from openAPI
-     * @return created share ID
+     * @return created key share ID
      * @throws ApiException if Key share creation fails
      */
     public String createKeyShare(KeyShare keyShare) throws ApiException {
@@ -64,16 +65,13 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param shareId key share ID
-     * @param body    request body (optional)
-     * @return created share nonce
-     * @throws ApiException if Key share creation fails
+     * @return NonceResponse created server nonce response
+     * @throws ApiException if server nonce creation fails
      */
-    public byte[] createNonce(String shareId, Optional<Object> body) throws ApiException {
+    public NonceResponse createNonce(String shareId) throws ApiException {
         Objects.requireNonNull(shareId);
 
-        NonceResponse response = sharesApi.createNonce(shareId, body.orElse(null));
-
-        return response.getNonce();
+        return sharesApi.createNonce(shareId, null);
     }
 
     /**
@@ -82,17 +80,24 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
      * @return KeyShare key share
      * @throws ApiException if http response code is something else that 200
      */
-    public KeyShare getKeyShare(String shareId, byte[] xAuthTicket) throws ApiException {
+    public Optional<KeyShare> getKeyShare(String shareId, byte[] xAuthTicket) throws ApiException {
         if (shareId == null) {
             throw new IllegalArgumentException("shareId cannot be null");
         }
 
         try {
-            return sharesApi.getKeyShareByShareId(shareId, xAuthTicket);
+            ApiResponse<KeyShare> response
+                = sharesApi.getKeyShareByShareIdWithHttpInfo(shareId, xAuthTicket);
+            return Optional.of(response.getData());
         } catch (ApiException ex) {
             log.error("Key share get request with share ID {} has failed with error code {}",
                 shareId, ex.getCode());
-            throw ex;
+            if (ex.getCode() == STATUS_CODE_NOT_FOUND) {
+                return Optional.empty();
+            } else {
+                log.error("Unexpected status code {}", ex.getCode());
+                throw ex;
+            }
         }
     }
 

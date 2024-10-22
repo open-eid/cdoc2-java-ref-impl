@@ -17,9 +17,7 @@ public class KeySharesConfigurationImpl implements Cdoc2Configuration {
     }
 
     @Override
-    public KeySharesConfiguration keySharesConfiguration()
-        throws ConfigurationLoadingException {
-
+    public KeySharesConfiguration keySharesConfiguration() throws ConfigurationLoadingException {
         return KeySharesConfiguration.load(properties);
     }
 

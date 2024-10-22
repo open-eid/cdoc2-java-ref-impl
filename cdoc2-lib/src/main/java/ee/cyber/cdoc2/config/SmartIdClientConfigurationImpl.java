@@ -3,7 +3,6 @@ package ee.cyber.cdoc2.config;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.smartid.SmartIdClientConfiguration;
 
 
 /**

@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.smartid;
+package ee.cyber.cdoc2.config;
 
 import java.util.Properties;
 
@@ -20,14 +20,15 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param trustStore client trust store
  * @param trustStorePassword client trust store password
  */
-public record SmartIdClientConfiguration(
+public record SmartIdClientConfigurationProps(
     String hostUrl,
     String relyingPartyUuid,
     String relyingPartyName,
     String trustStore,
     String trustStorePassword
-) {
-    private static final Logger log = LoggerFactory.getLogger(SmartIdClientConfiguration.class);
+) implements SmartIdClientConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(SmartIdClientConfigurationProps.class);
 
     public static SmartIdClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
@@ -40,29 +41,34 @@ public record SmartIdClientConfiguration(
         String trustStore = getRequiredProperty(properties, SMART_ID_CLIENT_TRUST_STORE);
         String trustStorePassword = getRequiredProperty(properties, SMART_ID_CLIENT_TRUST_STORE_PWD);
 
-        return new SmartIdClientConfiguration(
+        return new SmartIdClientConfigurationProps(
             hostUrl, relyingPartyUuid, relyingPartyName, trustStore, trustStorePassword
         );
     }
 
+    @Override
     public String getHostUrl() {
-        return this.hostUrl;
+        return hostUrl;
     }
 
+    @Override
     public String getRelyingPartyUuid() {
-        return this.relyingPartyUuid;
+        return relyingPartyUuid;
     }
 
+    @Override
     public String getRelyingPartyName() {
-        return this.relyingPartyName;
+        return relyingPartyName;
     }
 
-    public String getTrustStorePassword() {
-        return this.trustStorePassword;
-    }
-
+    @Override
     public String getTrustStore() {
-        return this.trustStore;
+        return trustStore;
+    }
+
+    @Override
+    public String getTrustStorePassword() {
+        return trustStorePassword;
     }
 
 }

@@ -1,9 +1,9 @@
 package ee.cyber.cdoc2.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 
 import org.slf4j.Logger;
 
@@ -88,15 +88,26 @@ public final class ConfigurationPropertyUtil {
     }
 
     /**
-     * Gets the list of configuration properties.
+     * Gets boolean value from the configuration property if exists.
+     *
+     * @param p properties
+     * @param name property name
+     * @return the boolean value of configuration property
+     */
+    public static Optional<Boolean> getBoolean(Properties p, String name) {
+        return Optional.ofNullable(p.getProperty(name)).map(Boolean::parseBoolean);
+    }
+
+    /**
+     * Gets the set of configuration properties.
      *
      * @param log logger
      * @param p properties
      * @param propertyName property name
-     * @return the list of configuration properties
+     * @return the set of configuration properties
      * @throws ConfigurationLoadingException if configuration value is missing
      */
-    public static List<String> splitString(
+    public static Set<String> splitString(
         Logger log,
         Properties p,
         String propertyName
@@ -104,7 +115,7 @@ public final class ConfigurationPropertyUtil {
         String property = getRequiredProperty(p, propertyName);
         notBlank(log, property, propertyName);
 
-        List<String> properties = new ArrayList<>();
+        Set<String> properties = new HashSet<>();
         String[] splitProperties = property.split(",");
         for (String splitProperty : splitProperties) {
             String propertyWithoutWhitespaces = splitProperty.strip();

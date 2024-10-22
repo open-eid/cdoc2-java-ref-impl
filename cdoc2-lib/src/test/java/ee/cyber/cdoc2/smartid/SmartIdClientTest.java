@@ -6,6 +6,7 @@ import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
 import org.junit.jupiter.api.Test;
 
+import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.SmartIdClientException;
 
