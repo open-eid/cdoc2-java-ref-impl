@@ -1,7 +1,6 @@
 package ee.cyber.cdoc2.config;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.smartid.SmartIdClientConfiguration;
 
 
 /**
@@ -14,6 +13,11 @@ public interface Cdoc2Configuration {
     }
 
     default KeySharesConfiguration keySharesConfiguration()
+        throws ConfigurationLoadingException {
+        return null;
+    }
+
+    default KeyCapsuleClientConfiguration keyCapsuleClientConfiguration()
         throws ConfigurationLoadingException {
         return null;
     }

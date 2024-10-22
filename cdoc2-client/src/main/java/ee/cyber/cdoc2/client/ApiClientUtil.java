@@ -13,6 +13,8 @@ import ee.cyber.cdoc2.client.api.ApiResponse;
  */
 public final class ApiClientUtil {
 
+    public static final int STATUS_CODE_NOT_FOUND = 404;
+
     private ApiClientUtil() { }
 
     public static String extractIdFromHeader(

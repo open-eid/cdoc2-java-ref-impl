@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.config;
 
-import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getKeySharesConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,10 +25,12 @@ class KeySharesConfigurationTest {
 
     @Test
     void loadClientConfigurationProperties() throws ConfigurationLoadingException {
-        KeySharesConfiguration config = getKeySharesConfiguration();
+        initKeySharesConfiguration();
+        KeySharesConfiguration config = CDoc2ConfigurationProvider.getConfiguration()
+                .keySharesConfiguration();
         assertTrue(config.getKeySharesServersNum() > 0);
         assertEquals(
-            List.of("https://server1", "https://server2"),
+            Set.of("https://server1", "https://server2"),
             config.getKeySharesServersUrls()
         );
         assertEquals(MIN_NUM_OF_SERVERS, config.getKeySharesServersMinNum());

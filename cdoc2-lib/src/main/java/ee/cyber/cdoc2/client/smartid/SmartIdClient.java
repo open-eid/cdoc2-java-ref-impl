@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.smartid;
+package ee.cyber.cdoc2.client.smartid;
 
 import ee.sk.smartid.AuthenticationHash;
 import ee.sk.smartid.DigestCalculator;

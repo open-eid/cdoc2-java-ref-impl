@@ -105,6 +105,40 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
 
 [Full example](https://github.com/open-eid/cdoc2-java-ref-impl/blob/master/cdoc2-example-app/pom.xml)
 
+### Configure cdoc2-lib with properties
+
+#### Initialize configuration for server scenarios:
+```java
+  public KeyCapsuleClientFactory getKeyCapsulesClientFactory(String keyServerPropertiesFile) {
+    Properties p = new Properties();
+    p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
+    return KeyCapsuleClientImpl.createFactory(p);
+  }
+```
+
+#### Initialize configuration for decryption with smart ID:
+```java
+  public void loadSmartIdConfiguration(String smartIdPropertiesFile) {
+    Properties properties = loadProperties(smartIdPropertiesFile);
+    Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
+    CDoc2ConfigurationProvider.init(configuration);
+  }
+```
+
+#### Initialize configuration for decryption with key shares:
+```java
+  public void loadKeySharesConfiguration(String keySharesPropertiesFile) {
+    Properties properties = loadProperties(keySharesPropertiesFile);
+    Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
+    CDoc2ConfigurationProvider.init(configuration);
+  }
+```
+
+Create `KeyShareClientFactory` for further usage:
+```java
+KeyShareClientFactory factory = KeySharesClientImpl.createFactory();
+```
+
 ### To create CDOC2 document with password:
 ```java
         File cdoc2FileToCreate = Paths.get("/tmp/first.cdoc2").toFile();

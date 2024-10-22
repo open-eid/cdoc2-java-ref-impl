@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.smartid;
+package ee.cyber.cdoc2.client.smartid;
 
 import ee.sk.smartid.AuthenticationHash;
 import ee.sk.smartid.AuthenticationResponseValidator;
@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
+import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.SmartIdClientException;
 import ee.cyber.cdoc2.util.Resources;

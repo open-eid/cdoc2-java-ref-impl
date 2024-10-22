@@ -121,7 +121,7 @@ public class CDocBuilder {
     }
 
     private Envelope prepareEnvelope()
-        throws ExtApiException, GeneralSecurityException, IOException, ConfigurationLoadingException {
+        throws ExtApiException, GeneralSecurityException, ConfigurationLoadingException {
 
         if (serverProperties == null) {
             return Envelope.prepare(recipients, null);
