@@ -27,6 +27,13 @@ public final class ClientConfigurationUtil {
         return configuration.smartIdClientConfiguration();
     }
 
+    public static SmartIdClientConfiguration registerFromProperties(Properties properties) {
+        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
+        CDoc2ConfigurationProvider.init(configuration);
+
+        return configuration.smartIdClientConfiguration();
+    }
+
     public static void initKeySharesConfiguration() throws ConfigurationLoadingException {
         Properties properties = loadProperties(
             CLASSPATH + "key_shares-test.properties"

@@ -39,7 +39,6 @@ class SmartIdClientTest {
 
         AuthenticationHash authenticationHash = AuthenticationHash.generateRandomHash();
         SmartIdAuthenticationResponse authResponse = smartIdClient.authenticate(
-            IDENTITY_NUMBER,
             semanticsIdentifier,
             authenticationHash,
             CERT_LEVEL_QUALIFIED
@@ -61,7 +60,6 @@ class SmartIdClientTest {
         AuthenticationHash authenticationHash = AuthenticationHash.generateRandomHash();
         SmartIdClientException exception = assertThrows(SmartIdClientException.class,
             () -> smartIdClient.authenticate(
-                nonExistingIdNumber,
                 semanticsIdentifier,
                 authenticationHash,
                 CERT_LEVEL_QUALIFIED

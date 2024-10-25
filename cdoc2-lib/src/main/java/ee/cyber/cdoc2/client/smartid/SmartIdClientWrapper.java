@@ -49,7 +49,11 @@ public class SmartIdClientWrapper {
      * Constructor for Smart-ID Client wrapper
      */
     public SmartIdClientWrapper() throws ConfigurationLoadingException {
-        this.smartIdClientConfig = CDoc2ConfigurationProvider.getConfiguration().smartIdClientConfiguration();
+        this(CDoc2ConfigurationProvider.getConfiguration().smartIdClientConfiguration());
+    }
+
+    public SmartIdClientWrapper(SmartIdClientConfiguration conf) {
+        this.smartIdClientConfig = conf;
         this.smartIdClient = new SmartIdClient();
         configureSmartIdClient();
         this.authenticationResponseValidator = new AuthenticationResponseValidator();
