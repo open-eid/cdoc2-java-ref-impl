@@ -1,8 +1,7 @@
 package ee.cyber.cdoc2.client.smartid;
 
+import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.sk.smartid.AuthenticationHash;
-import ee.sk.smartid.DigestCalculator;
-import ee.sk.smartid.HashType;
 import ee.sk.smartid.SmartIdAuthenticationResponse;
 import ee.sk.smartid.exception.permanent.ServerMaintenanceException;
 import ee.sk.smartid.exception.useraccount.DocumentUnusableException;
@@ -32,6 +31,10 @@ public class SmartIdClient {
         smartIdClientWrapper = new SmartIdClientWrapper();
     }
 
+    public SmartIdClient(SmartIdClientConfiguration conf) {
+        smartIdClientWrapper = new SmartIdClientWrapper(conf);
+    }
+
     /**
      * Authentication request to Smart ID client with ETSI semantics identifier.
      * @param semanticsIdentifier ETSI semantics identifier
@@ -41,13 +44,11 @@ public class SmartIdClient {
      * @return SmartIdAuthenticationResponse object
      */
     public SmartIdAuthenticationResponse authenticate(
-        String identityNumber,
         SemanticsIdentifier semanticsIdentifier,
         AuthenticationHash authenticationHash,
         String certificationLevel
     ) throws SmartIdClientException {
-        String errorMsg = "Failed to authenticate Smart ID client request for identity number "
-            + identityNumber;
+        String errorMsg = "Failed to authenticate Smart ID client request for " + semanticsIdentifier.getIdentifier();
 
         try {
             return smartIdClientWrapper.authenticate(
@@ -63,17 +64,6 @@ public class SmartIdClient {
             log.error(errorMsg);
             throw new SmartIdClientException(errorMsg + ". " + ex.getMessage());
         }
-    }
-
-    // ToDo use it when replace with correct data to be hashed. Ticket #2749
-    public static AuthenticationHash createAuthenticationHash(byte[] dataBytesForHashing) {
-        AuthenticationHash authenticationHash = new AuthenticationHash();
-        byte[] generatedDigest = DigestCalculator.calculateDigest(
-            dataBytesForHashing, HashType.SHA256
-        );
-        authenticationHash.setHash(generatedDigest);
-        authenticationHash.setHashType(HashType.SHA256);
-        return authenticationHash;
     }
 
     private SmartIdClientException logNoUserAccountErrorAndThrow(String requestErrorMsg) {
