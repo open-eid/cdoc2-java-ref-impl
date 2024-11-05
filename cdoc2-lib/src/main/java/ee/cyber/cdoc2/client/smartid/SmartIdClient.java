@@ -1,9 +1,11 @@
 package ee.cyber.cdoc2.client.smartid;
 
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
+import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.AuthenticationHash;
 import ee.sk.smartid.SmartIdAuthenticationResponse;
 import ee.sk.smartid.exception.permanent.ServerMaintenanceException;
+import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.exception.useraccount.DocumentUnusableException;
 import ee.sk.smartid.exception.useraccount.UserAccountNotFoundException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -15,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.exceptions.SmartIdClientException;
+import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 
 
 /**
@@ -47,7 +49,7 @@ public class SmartIdClient {
         SemanticsIdentifier semanticsIdentifier,
         AuthenticationHash authenticationHash,
         String certificationLevel
-    ) throws SmartIdClientException {
+    ) throws CdocSmartIdClientException {
         String errorMsg = "Failed to authenticate Smart ID client request for " + semanticsIdentifier.getIdentifier();
 
         try {
@@ -60,16 +62,22 @@ public class SmartIdClient {
                  | UserSelectedWrongVerificationCodeException
                  | SessionTimeoutException
                  | DocumentUnusableException
+                 | SmartIdClientException
                  | ServerMaintenanceException ex) {
             log.error(errorMsg);
-            throw new SmartIdClientException(errorMsg + ". " + ex.getMessage());
+            throw new CdocSmartIdClientException(errorMsg + ". " + ex.getMessage());
         }
     }
 
-    private SmartIdClientException logNoUserAccountErrorAndThrow(String requestErrorMsg) {
+    public AuthenticationIdentity validateResponse(SmartIdAuthenticationResponse authResponse)
+            throws CdocSmartIdClientException {
+        return smartIdClientWrapper.validateResponse(authResponse);
+    }
+
+    private CdocSmartIdClientException logNoUserAccountErrorAndThrow(String requestErrorMsg) {
         String errorMsg = requestErrorMsg + ". There is no such user account";
         log.error(errorMsg);
-        return new SmartIdClientException(errorMsg);
+        return new CdocSmartIdClientException(errorMsg);
     }
 
 }

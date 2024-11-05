@@ -4,9 +4,9 @@ package ee.cyber.cdoc2.exceptions;
 /**
  * Thrown in case of failed requests to Smart ID client API.
  */
-public class SmartIdClientException extends Exception {
+public class CdocSmartIdClientException extends Exception {
 
-    public SmartIdClientException(String message) {
+    public CdocSmartIdClientException(String message) {
         super(message);
     }
 
@@ -15,7 +15,7 @@ public class SmartIdClientException extends Exception {
      * @param msg   error message
      * @param cause original cause
      */
-    public SmartIdClientException(String msg, Throwable cause) {
+    public CdocSmartIdClientException(String msg, Throwable cause) {
         super(msg, cause);
     }
 

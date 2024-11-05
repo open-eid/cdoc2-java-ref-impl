@@ -7,7 +7,7 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jca.JCAContext;
 import com.nimbusds.jose.util.Base64URL;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
-import ee.cyber.cdoc2.exceptions.SmartIdClientException;
+import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 import ee.sk.smartid.AuthenticationHash;
 import ee.sk.smartid.DigestCalculator;
 import ee.sk.smartid.HashType;
@@ -104,7 +104,7 @@ public class SIDAuthJWSSigner implements JWSSigner {
             this.signerCertificate = resp.getCertificate();
 
             return Base64URL.encode(resp.getSignatureValue());
-        } catch (SmartIdClientException e) {
+        } catch (CdocSmartIdClientException e) {
             throw new JOSEException(e);
         }
     }

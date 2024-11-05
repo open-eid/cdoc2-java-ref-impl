@@ -1,8 +1,6 @@
 package ee.cyber.cdoc2.client.smartid;
 
-import ee.sk.smartid.AuthenticationHash;
-import ee.sk.smartid.AuthenticationResponseValidator;
-import ee.sk.smartid.SmartIdAuthenticationResponse;
+import ee.sk.smartid.*;
 import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.exception.UnprocessableSmartIdResponseException;
 import ee.sk.smartid.exception.permanent.ServerMaintenanceException;
@@ -30,7 +28,7 @@ import java.util.List;
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.exceptions.SmartIdClientException;
+import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 import ee.cyber.cdoc2.util.Resources;
 
 
@@ -89,7 +87,7 @@ public class SmartIdClientWrapper {
         SessionTimeoutException,
         DocumentUnusableException,
         ServerMaintenanceException,
-        SmartIdClientException {
+            CdocSmartIdClientException {
 
         SmartIdAuthenticationResponse authResponse = smartIdClient
             .createAuthentication()
@@ -100,7 +98,8 @@ public class SmartIdClientWrapper {
             .withAllowedInteractionsOrder(
                 Collections.singletonList(Interaction.displayTextAndPIN("Log in to self-service?"))
             )
-            .withShareMdClientIpAddress(true)
+            // Commented out as EIDPRX fails request parsing when this property is present
+            //.withShareMdClientIpAddress(true)
             .authenticate();
 
         validateResponse(authResponse);
@@ -108,16 +107,16 @@ public class SmartIdClientWrapper {
         return authResponse;
     }
 
-    private void validateResponse(
+    public AuthenticationIdentity validateResponse(
         SmartIdAuthenticationResponse authResponse
-    ) throws SmartIdClientException {
+    ) throws CdocSmartIdClientException {
 
         try {
-            authenticationResponseValidator.validate(authResponse);
+            return authenticationResponseValidator.validate(authResponse);
         } catch (
             UnprocessableSmartIdResponseException | CertificateLevelMismatchException ex
         ) {
-            throw new SmartIdClientException(
+            throw new CdocSmartIdClientException(
                 "Smart ID authentication response validation has failed", ex
             );
         }
