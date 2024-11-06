@@ -3,7 +3,10 @@ package ee.cyber.cdoc2.crypto.keymaterial;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
+import ee.cyber.cdoc2.crypto.SemanticIdentification;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EncryptionKeyMaterialCollectionBuilder;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EtsiIdentifierEncKeyMaterialBuilder;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.KeyShareEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.SecretEncryptionKeyMaterial;
@@ -64,7 +67,8 @@ public interface EncryptionKeyMaterial {
      * the private key part of the public key. RSA and EC public keys are supported by CDOC.
      * @param pubKey public key
      * @param keyLabelParams public key information, see
-     *            https://open-eid.github.io/CDOC2/1.1/02_protocol_and_cryptography_spec/appendix_d_keylabel/
+     *   <a href="https://open-eid.github.io/CDOC2/1.1/02_protocol_and_cryptography_spec/appendix_d_keylabel/">
+     *                       Keylabel field specificiation</a>
      * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial fromPublicKey(
@@ -104,8 +108,8 @@ public interface EncryptionKeyMaterial {
     }
 
     /**
-     * Create SecretEncryptionKeyMaterial from pre-shared key and keyLabel. KeyLabel can be in plain
-     * text or as data params.
+     * Create {@link SecretEncryptionKeyMaterial} from pre-shared key and keyLabel. KeyLabel can
+     * be in plain text or as data params.
      * To decrypt CDOC, recipient must have same preSharedKey and salt that are identified by
      * the same keyLabel.
      * @param preSharedKey pre-shared key from secret key
@@ -140,8 +144,27 @@ public interface EncryptionKeyMaterial {
         return new SecretEncryptionKeyMaterial(preSharedKey, formatKeyLabel(keyLabelParams));
     }
 
+    /**
+     * Create {@link KeyShareEncryptionKeyMaterial} from semantic identifier as a key label.
+     * KeyLabel is formatted into data format.
+     * @param semanticIdentifier identifier for
+     *                           {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
+     * @param keyLabelParams key label data parameters
+     * @return EncryptionKeyMaterial object
+     */
+    static EncryptionKeyMaterial fromAuthMeans(
+        SemanticIdentification semanticIdentifier,
+        KeyLabelParams keyLabelParams
+    ) {
+        return new KeyShareEncryptionKeyMaterial(semanticIdentifier, formatKeyLabel(keyLabelParams));
+    }
+
     static EncryptionKeyMaterialCollectionBuilder collectionBuilder() {
         return new EncryptionKeyMaterialCollectionBuilder();
+    }
+
+    static EtsiIdentifierEncKeyMaterialBuilder etsiBuilder() {
+        return new EtsiIdentifierEncKeyMaterialBuilder();
     }
 
 }

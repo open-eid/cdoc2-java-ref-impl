@@ -70,7 +70,7 @@ table KeyShare {
     //full url of key share, ex https://cdoc2-keyserver.dev.riaint.ee:8443/key-shares/SS0123456789ABCDEF
     //url:           string (required);
 
-    // or server, share id
+    // or server URL
     // https://cdoc2-keyserver.dev.riaint.ee:8443/
     server_base_url: string (required);
 

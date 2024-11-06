@@ -25,12 +25,8 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
 
-import ee.cyber.cdoc2.crypto.KeyLabelParams;
-import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
 
 
 /**
@@ -179,14 +175,6 @@ public final class SkLdapUtil {
         }
 
         return certDatas;
-    }
-
-    public static EncryptionKeyMaterial toEncryptionKeyMaterial(SkLdapUtil.CertificateData certData) {
-        KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-            certData.getKeyLabel(), certData.getSerialNumber()
-        );
-
-        return EncryptionKeyMaterial.fromPublicKey(certData.getPublicKey(), keyLabelParams);
     }
 
     /**

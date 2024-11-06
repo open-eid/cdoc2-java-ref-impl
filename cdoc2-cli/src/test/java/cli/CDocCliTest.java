@@ -26,6 +26,7 @@ import picocli.CommandLine;
 
 import ee.cyber.cdoc2.cli.CDocCli;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_SERVERS_URLS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +39,8 @@ class CDocCliTest {
     private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
     private static final String SECRET_OPTION
         = "--secret=label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=";
+    private static final String SMART_ID_FLAG = "-sid=true";
+
     private static final int SUCCESSFUL_EXIT_CODE = 0;
     private static final int FAILURE_EXIT_CODE = 1;
 
@@ -115,6 +118,14 @@ class CDocCliTest {
     void testSuccessfulCreateDecryptDocWithSecret() throws IOException {
         encrypt(SECRET_OPTION);
         decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
+    }
+
+    @Test
+    @Disabled("Needs running servers on configured option" + KEY_SHARES_SERVERS_URLS
+        + "in key-shares.properties")
+    void testSuccessfulCreateDocWithSmartId() {
+        encryptWithKeyShares(SMART_ID_FLAG);
+        // ToDo add decryption here
     }
 
     @Test
@@ -369,6 +380,11 @@ class CDocCliTest {
         executeEncryption(encryptArgs, cdocFile);
     }
 
+    private void encryptWithKeyShares(String encryptionArgument) {
+        String[] encryptArgs = createEncryptArgsForKeyShares(encryptionArgument);
+        executeEncryption(encryptArgs, cdocFile);
+    }
+
     private void encryptWithTwoKeys(String encryptionArgument1, String encryptionArgument2) {
         String[] encryptArgs = createEncryptArgs(encryptionArgument1, encryptionArgument2);
         executeEncryption(encryptArgs, cdocFile);
@@ -410,6 +426,17 @@ class CDocCliTest {
             "create",
             encryptionArgument1,
             encryptionArgument2,
+            "--file=" + cdocFile,
+            cdocCliPath.resolve("README.md").toString()
+        };
+    }
+
+    private String[] createEncryptArgsForKeyShares(String encryptionArgument) {
+        return new String[]{
+            "create",
+            encryptionArgument,
+            "-r 38001085718",
+            "-Dkey-shares.properties=config/localhost/key-shares.properties",
             "--file=" + cdocFile,
             cdocCliPath.resolve("README.md").toString()
         };

@@ -9,9 +9,8 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 /**
  * Represents key material required for encryption with symmetric key derived from secret.
- *
  * @param preSharedKey pre-shared symmetric key
- * @param keyLabel     key label
+ * @param keyLabel key label
  */
 public record SecretEncryptionKeyMaterial(
     SecretKey preSharedKey,

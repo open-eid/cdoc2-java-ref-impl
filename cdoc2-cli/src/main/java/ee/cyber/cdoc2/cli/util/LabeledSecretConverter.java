@@ -4,7 +4,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import picocli.CommandLine;
 
 /**
- * picocli converter to convert --secret parameter into LabeledSecret
+ * picocli converter to convert --secret parameter into {@link LabeledSecret}
  */
 public class LabeledSecretConverter implements CommandLine.ITypeConverter<LabeledSecret> {
     @Override

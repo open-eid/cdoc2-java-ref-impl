@@ -12,7 +12,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 /**
  * Represents key material required for decryption with symmetric key derived from secret.
  * @param secretKey symmetric key
- * @param keyLabel  key label
+ * @param keyLabel key label
  */
 public record SecretDecryptionKeyMaterial(
     SecretKey secretKey,

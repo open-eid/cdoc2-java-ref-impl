@@ -12,6 +12,7 @@ import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 
 /**
@@ -66,6 +67,11 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
                     String.format("Server configuration for server URL '%s' not found", serverUrl)
                 );
             });
+    }
+
+    @Override
+    public KeySharesConfiguration getKeySharesConfiguration() throws ConfigurationLoadingException {
+        return CDoc2ConfigurationProvider.getConfiguration().keySharesConfiguration();
     }
 
     private static KeySharesClientHelper initKeySharesClientByServer() throws GeneralSecurityException {

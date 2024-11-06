@@ -9,6 +9,7 @@ import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.RsaUtils;
+import ee.cyber.cdoc2.crypto.SemanticIdentification;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
@@ -65,6 +66,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_SERVERS_URLS;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
@@ -72,6 +74,7 @@ import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -124,7 +127,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPublicKey(publicKey, bobKeyLabelParams)),
-            null
+            null, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -167,7 +170,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(EncryptionKeyMaterial.fromPublicKey(
                 publicKey, getPublicKeyLabelParams())
             ),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -221,7 +224,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPublicKey(recipientPubKey, bobKeyLabelParams)),
-            capsuleClientMock
+            capsuleClientMock, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -270,7 +273,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(EncryptionKeyMaterial.fromPublicKey(
                 publicKey, getPublicKeyLabelParams())
             ),
-            capsuleClientMock
+            capsuleClientMock, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -310,7 +313,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         String keyLabel = "testSymmetricKeySerialization";
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromSecret(preSharedKey, keyLabel)),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -356,7 +359,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPassword(password.toCharArray(), keyLabel)),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -472,6 +475,15 @@ class EnvelopeTest implements TestLifecycleLogger {
             keyLabel,
             null
         );
+    }
+
+    @Test
+    @Disabled("Needs running servers on configured option" + KEY_SHARES_SERVERS_URLS
+        + "in key_shares-test.properties")
+    void testKeySharesScenario(@TempDir Path tempDir) throws Exception {
+        SemanticIdentification keyLabel = SemanticIdentification.forSid("38001085718");
+
+        testContainerWithKeyShares(tempDir, keyLabel);
     }
 
     @Test
@@ -852,7 +864,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         int singleKeyLen = Envelope.prepare(
                 List.of(EncryptionKeyMaterial
                     .fromPublicKey(bobPubKey, bobKeyLabelParams)),
-                null)
+                null, null)
             .serializeHeader().length;
         int twoKeyLen = Envelope.prepare(
                 List.of(
@@ -863,7 +875,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                             ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
                             getPublicKeyLabelParams()
                         )
-                ), null
+                ), null, null
             )
             .serializeHeader().length;
 
@@ -899,7 +911,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         log.debug("Generated {} EC keys in {}s", keyLabelMap.size(), end.getEpochSecond() - start.getEpochSecond());
 
         Instant prepareStart = Instant.now();
-        Envelope senderEnvelope = Envelope.prepare(recipients, null);
+        Envelope senderEnvelope = Envelope.prepare(recipients, null, null);
         Instant prepareEnd = Instant.now();
         log.debug("Prepared {} EC sender keys in {}s", keyLabelMap.size(),
             prepareEnd.getEpochSecond() - prepareStart.getEpochSecond());
@@ -919,7 +931,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                 )
         );
 
-        Envelope prepare = Envelope.prepare(recipients, null);
+        Envelope prepare = Envelope.prepare(recipients, null, null);
         IllegalStateException exception =
             assertThrows(IllegalStateException.class, prepare::serializeHeader);
 
@@ -1000,7 +1012,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromSecret(key, label)),
-            null
+            null, null
         );
 
         File bigDotCdoc = outDir.resolve("big.cdoc").toFile();

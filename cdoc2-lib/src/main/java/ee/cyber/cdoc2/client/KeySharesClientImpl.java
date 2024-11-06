@@ -12,7 +12,6 @@ import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 
 import static ee.cyber.cdoc2.util.ApiClientUtil.handleOpenApiException;
-import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
 
 
 /**
@@ -44,11 +43,7 @@ public final class KeySharesClientImpl implements KeySharesClient {
         var builder = Cdoc2KeySharesApiClient.builder();
         builder.withBaseUrl(serverUrl);
 
-        builder.withTrustKeyStore(loadClientTrustKeyStore(
-            config.getClientTrustStore(),
-            config.getClientTrustStoreType(),
-            config.getClientTrustStorePw()
-        ));
+        builder.withTrustKeyStore(config.getClientTrustStore());
         Cdoc2KeySharesApiClient keySharesApiClient = builder.build();
         return new KeySharesClientImpl(keySharesApiClient, serverUrl);
     }
@@ -58,7 +53,7 @@ public final class KeySharesClientImpl implements KeySharesClient {
         try {
             return apiClient.createKeyShare(keyShare);
         } catch (ApiException e) {
-            throw new ExtApiException("Failed to save key share", e);
+            throw new ExtApiException("Failed to save key share. Error code: " + e.getCode(), e);
         }
     }
 

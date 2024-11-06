@@ -21,7 +21,7 @@
 
         <!--info.version from cdoc2-openapi/*-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
-        <cdoc2-key-shares-openapi.version>1.0.0</cdoc2-key-shares-openapi.version>
+        <cdoc2-key-shares-openapi.version>1.0.0-draft</cdoc2-key-shares-openapi.version>
     </properties>
 
     <dependencies>

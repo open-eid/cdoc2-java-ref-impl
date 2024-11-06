@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.config;
 
+import java.security.KeyStore;
 import java.util.Properties;
 import java.util.Set;
 
@@ -22,10 +23,6 @@ public interface KeySharesConfiguration {
 
     String getKeySharesAlgorithm();
 
-    String getClientTrustStore();
-
-    String getClientTrustStoreType();
-
-    String getClientTrustStorePw();
+    KeyStore getClientTrustStore();
 
 }
