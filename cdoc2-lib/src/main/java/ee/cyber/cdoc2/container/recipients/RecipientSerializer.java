@@ -1,6 +1,10 @@
 package ee.cyber.cdoc2.container.recipients;
 
+import java.util.List;
+
 import com.google.flatbuffers.FlatBufferBuilder;
+
+import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.fbs.header.Capsule;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
@@ -8,12 +12,15 @@ import ee.cyber.cdoc2.fbs.recipients.ECCPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.EccKeyDetails;
 import ee.cyber.cdoc2.fbs.recipients.KeyDetailsUnion;
 import ee.cyber.cdoc2.fbs.recipients.KeyServerCapsule;
+import ee.cyber.cdoc2.fbs.recipients.KeyShare;
+import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.RsaKeyDetails;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
 
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
+
 
 /**
  * Utility class to serialize Recipient into flatbuffers FlatBufferBuilder
@@ -24,7 +31,8 @@ public final class RecipientSerializer {
 
     public static int serialize(EccServerKeyRecipient eccServerRecipient, FlatBufferBuilder builder) {
 
-        int recipientPubKeyOffset = builder.createByteVector(eccServerRecipient.getRecipientPubKeyTlsEncoded());
+        int recipientPubKeyOffset
+            = builder.createByteVector(eccServerRecipient.getRecipientPubKeyTlsEncoded());
 
         int serverEccDetailsOffset = EccKeyDetails.createEccKeyDetails(builder,
                 eccServerRecipient.getEllipticCurve().getValue(),
@@ -139,8 +147,10 @@ public final class RecipientSerializer {
         );
     }
 
-    public static int serializeSymmetricKeyRecipient(SymmetricKeyRecipient symRecipient, FlatBufferBuilder builder) {
-
+    public static int serializeSymmetricKeyRecipient(
+        SymmetricKeyRecipient symRecipient,
+        FlatBufferBuilder builder
+    ) {
         int saltOffset = builder.createByteVector(symRecipient.getSalt());
         int symmetricKeyCapsuleOffset = SymmetricKeyCapsule.createSymmetricKeyCapsule(builder, saltOffset);
         int encFmkOffset =
@@ -183,6 +193,44 @@ public final class RecipientSerializer {
         );
     }
 
+    public static int serializeKeyShareRecipient(
+        KeySharesRecipient keySharesRecipient, FlatBufferBuilder builder
+    ) {
+        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
+        int[] sharesOffsets = new int[shares.size()];
+        for (KeyShareUri share : shares) {
+            int serverUrlOffset = builder.createString(share.serverBaseUrl());
+            int shareIdOffset = builder.createString(share.shareId());
+            int keyShareOffset = KeyShare.createKeyShare(builder, serverUrlOffset, shareIdOffset);
+            sharesOffsets[shares.indexOf(share)] = keyShareOffset;
+        }
+        int sharesVector = KeySharesCapsule.createSharesVector(builder, sharesOffsets);
+
+        int encSaltOffset = builder.createByteVector(keySharesRecipient.getSalt());
+        int recipientIdOffset = builder.createString(keySharesRecipient.getRecipientId().toString());
+
+        int sharesCapsuleOffset = KeySharesCapsule.createKeySharesCapsule(
+            builder,
+            sharesVector,
+            encSaltOffset,
+            keySharesRecipient.getRecipientType(),
+            keySharesRecipient.getSharesScheme(),
+            recipientIdOffset
+        );
+        int encFmkOffset =
+            RecipientRecord.createEncryptedFmkVector(builder, keySharesRecipient.getEncryptedFileMasterKey());
+        int keyLabelOffset = builder.createString(getKeyLabelValue(keySharesRecipient));
+
+        return fillRecipientRecord(
+            builder,
+            recipients_KeySharesCapsule,
+            sharesCapsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            keySharesRecipient.getFmkEncryptionMethod()
+        );
+    }
+
     /**
      * Add RecipientRecord to the end of {@link FlatBufferBuilder builder}
      * @param builder builder to be updated
@@ -191,9 +239,14 @@ public final class RecipientSerializer {
      * @param keyLabelOffset keyLabelOffset in builder
      * @return recipientRecord offset in builder
      */
-    private static int fillRecipientRecord(FlatBufferBuilder builder, byte capsuleType, int capsuleOffset,
-                                           int keyLabelOffset, int encFmkOffset, byte fmkEncryptionMethod) {
-
+    private static int fillRecipientRecord(
+        FlatBufferBuilder builder,
+        byte capsuleType,
+        int capsuleOffset,
+        int keyLabelOffset,
+        int encFmkOffset,
+        byte fmkEncryptionMethod
+    ) {
         RecipientRecord.startRecipientRecord(builder);
         RecipientRecord.addCapsuleType(builder, capsuleType);
         RecipientRecord.addCapsule(builder, capsuleOffset);
@@ -225,4 +278,5 @@ public final class RecipientSerializer {
             return "N/A"; //can't be empty
         }
     }
+
 }

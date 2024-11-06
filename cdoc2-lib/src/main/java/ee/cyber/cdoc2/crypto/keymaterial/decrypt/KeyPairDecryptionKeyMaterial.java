@@ -9,7 +9,6 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
 /**
  * Represents key material required for decryption with key pair.
- *
  * @param recipientKeyPair recipient key pair
  */
 public record KeyPairDecryptionKeyMaterial(

@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc2.container.recipients.RecipientFactory;
@@ -95,29 +96,33 @@ public final class Envelope {
     }
 
     /**
-     * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For each recipient FMK is
-     * encrypted with generated key that single recipient can decrypt with their private key.
-     * @param recipients encryption key material either with public key or symmetric key and key label. After
-     *          {@link #prepare(List, KeyCapsuleClient)} has returned, it is safe
-     *           to clean up secret key material (it will not be referenced
-     *          anymore).
-     *
-     * @param capsuleClient if capsuleClient is provided then store generated ephemeral key material in the server
+     * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For
+     * each recipient FMK is encrypted with generated key that single recipient can decrypt with
+     * their private key.
+     * @param recipients encryption key material either with public key or symmetric key and key
+     *                   label. After {@link #prepare(List, KeyCapsuleClient, KeyShareClientFactory)}
+     *                   has returned, it is safe to clean up secret key material (it will not be
+     *                   referenced anymore).
+     * @param capsuleClient if capsuleClient is provided then store generated ephemeral key
+     *                      material in the server
+     * @param keyShareClientFactory key share client factory
      * @return Envelope that has key material prepared and can be used for
      *          {@link #encrypt(List, OutputStream) encryption}
      * @throws GeneralSecurityException if fmk generation has failed
-     * @throws ExtApiException if communication with capsuleClient to store ephemeral key material fails
+     * @throws ExtApiException if communication with capsuleClient to store ephemeral key
+     *                         material fails
      */
     public static Envelope prepare(
         List<EncryptionKeyMaterial> recipients,
-        @Nullable KeyCapsuleClient capsuleClient
+        @Nullable KeyCapsuleClient capsuleClient,
+        @Nullable KeyShareClientFactory keyShareClientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
 
         byte[] fmk = Crypto.generateFileMasterKey();
         return new Envelope(
-            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient),
+            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient, keyShareClientFactory),
             fmk
         );
     }
@@ -265,7 +270,8 @@ public final class Envelope {
                 throw new CDocException("Only password and symmetric key are supported for re-encryption.");
         }
 
-        Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null);
+        // ToDo set up Key Shares client factory for decryption when encrypted with smart ID. #4104
+        Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null, null);
 
         try (CipherOutputStream cipherOs = newContainer.prepareContainerForPayload(destReEncryptedCdoc);
             TarArchiveOutputStream transferToOs = Tar.createPosixTarZArchiveOutputStream(cipherOs)) {

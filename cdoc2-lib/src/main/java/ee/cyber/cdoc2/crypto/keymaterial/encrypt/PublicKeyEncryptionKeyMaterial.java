@@ -8,7 +8,6 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 /**
  * Represents key material required for encryption key derived from the public key.
- *
  * @param publicKey public key
  * @param keyLabel key label
  * @param encryptionKeyOrigin encryption key origin

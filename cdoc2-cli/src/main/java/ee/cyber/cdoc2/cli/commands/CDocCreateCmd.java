@@ -3,6 +3,7 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
@@ -17,6 +18,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
@@ -25,7 +27,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
+import javax.naming.NamingException;
+
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.loadKeySharesConfiguration;
 
 
 //S106 - Standard outputs should not be used directly to log anything
@@ -70,6 +75,14 @@ public class CDocCreateCmd implements Callable<Void> {
             converter = LabeledPasswordParamConverter.class,
             paramLabel = "<label>:<password>", description = CliConstants.PASSWORD_DESCRIPTION)
         private LabeledPasswordParam labeledPasswordParam;
+
+        @Option(names = {"-sid", "--smart-id"},
+            paramLabel = "SID", description = "flag for smart id encryption")
+        private boolean withSid;
+
+        @Option(names = {"-mid", "--mobile-id"},
+            paramLabel = "MID", description = "flag for mobile id encryption")
+        private boolean withMid;
     }
 
     // allow -Dkey for setting System properties
@@ -103,12 +116,15 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} {}",
+            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} "
+                    + "--smart-id={} --mobile-id={} {}",
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
                 (recipient.labeledSecrets != null) ? "****" : null,
                 (recipient.labeledPasswordParam != null) ? "****" : null,
+                recipient.withSid,
+                recipient.withMid,
                 Arrays.toString(inputFiles));
         }
 
@@ -132,9 +148,9 @@ public class CDocCreateCmd implements Callable<Void> {
             .fromSecrets(this.recipient.labeledSecrets)
             .fromPublicKey(this.recipient.pubKeys)
             .fromX509Certificate(this.recipient.certs)
-            // fetch authentication certificates' public keys for natural person identity codes
-            .fromEId(this.recipient.identificationCodes)
             .build();
+
+        addEtsiRecipientsIfAny(recipients, cDocBuilder);
 
         cDocBuilder.withRecipients(recipients);
 
@@ -170,6 +186,32 @@ public class CDocCreateCmd implements Callable<Void> {
                 );
             }
         }
+    }
+
+    private void addEtsiRecipientsIfAny(
+        List<EncryptionKeyMaterial> recipients,
+        CDocBuilder cDocBuilder
+    ) throws GeneralSecurityException, NamingException {
+
+        if (this.recipient.withSid || this.recipient.withMid) {
+            cDocBuilder.withKeyShares(
+                KeySharesClientHelper.createFactory(loadKeySharesConfiguration())
+            );
+        }
+
+        List<EncryptionKeyMaterial> etsiRecipients = EncryptionKeyMaterial.etsiBuilder()
+            .fromEtsiIdentifier(this.recipient.identificationCodes)
+            // for eId fetch authentication certificates' public keys for natural person identity codes
+            .forEId(
+                null != this.recipient.identificationCodes
+                    && !this.recipient.withSid
+                    && !this.recipient.withMid
+            )
+            .forSid(this.recipient.withSid)
+            .forMid(this.recipient.withMid)
+            .build();
+
+        recipients.addAll(etsiRecipients);
     }
 
 }

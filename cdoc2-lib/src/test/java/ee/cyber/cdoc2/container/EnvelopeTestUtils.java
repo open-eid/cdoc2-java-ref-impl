@@ -1,9 +1,12 @@
 package ee.cyber.cdoc2.container;
 
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
+import ee.cyber.cdoc2.crypto.SemanticIdentification;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
@@ -55,7 +58,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_SymmetricKeyCapsule;
@@ -237,7 +242,39 @@ public final class EnvelopeTestUtils {
 
         byte[] cdocContainerBytes;
         Envelope senderEnvelope = Envelope.prepare(
-            List.of(encKeyMaterial), capsuleClient
+            List.of(encKeyMaterial), capsuleClient, null
+        );
+        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+            senderEnvelope.encrypt(files, dst);
+            cdocContainerBytes = dst.toByteArray();
+        }
+        assertNotNull(cdocContainerBytes);
+        assertTrue(cdocContainerBytes.length > 0);
+        return cdocContainerBytes;
+    }
+
+    public static byte[] createContainerWithKeyShares(
+        File payloadFile,
+        byte[] payloadData,
+        SemanticIdentification semanticIdentification
+    ) throws IOException, GeneralSecurityException, ExtApiException {
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData);
+        }
+
+        List<File> files = new LinkedList<>();
+        files.add(payloadFile);
+
+        KeyLabelParams keyLabelParams
+            = createKeySharesKeyLabelParams(semanticIdentification.getIdentifier());
+
+        EncryptionKeyMaterial encKeyMaterial
+            = EncryptionKeyMaterial.fromAuthMeans(semanticIdentification, keyLabelParams);
+
+        byte[] cdocContainerBytes;
+        Envelope senderEnvelope = Envelope.prepare(
+            List.of(encKeyMaterial), null, getKeySharesFactory()
         );
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
@@ -284,6 +321,33 @@ public final class EnvelopeTestUtils {
             List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
     }
 
+    /**
+     * Creates CDOC2 container in tempDir and encrypts/decrypts it with key shares.
+     */
+    public static void testContainerWithKeyShares(
+        Path tempDir,
+        SemanticIdentification semanticIdentification
+    ) throws Exception {
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        byte[] cdocContainerBytes = createContainerWithKeyShares(
+            payloadFile,
+            payloadData.getBytes(StandardCharsets.UTF_8),
+            semanticIdentification
+        );
+
+        assertTrue(cdocContainerBytes.length > 0);
+
+        // ToDo add checkContainerDecrypt() here after decryption implemention #3241
+    }
+
     private static EncryptionKeyMaterial createEncryptionKeyMaterialForPublicKey(
         PublicKey publicKey,
         String label
@@ -305,6 +369,11 @@ public final class EnvelopeTestUtils {
         } else {
             throw new RuntimeException();
         }
+    }
+
+    private static KeyShareClientFactory getKeySharesFactory() throws GeneralSecurityException {
+        initKeySharesConfiguration();
+        return KeySharesClientHelper.createFactory();
     }
 
     public static void checkContainerDecrypt(

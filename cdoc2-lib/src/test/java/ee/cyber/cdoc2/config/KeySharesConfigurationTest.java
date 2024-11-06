@@ -30,7 +30,7 @@ class KeySharesConfigurationTest {
                 .keySharesConfiguration();
         assertTrue(config.getKeySharesServersNum() > 0);
         assertEquals(
-            Set.of("https://server1", "https://server2"),
+            Set.of("https://localhost:8442", "https://localhost:8443"),
             config.getKeySharesServersUrls()
         );
         assertEquals(MIN_NUM_OF_SERVERS, config.getKeySharesServersMinNum());

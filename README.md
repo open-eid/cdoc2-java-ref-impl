@@ -139,6 +139,46 @@ Similar to Symmetric Key scenario, but symmetric key is derived from password an
 cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
 can do that.
 
+### CDOC2 with symmetric key from/to N-of-N shares
+
+1. Sender knows recipient id-code and assumes that recipient might have Smart-ID or Mobile-ID account.   
+   _Note:_ No way to check if recipient has existing Smart-ID or Mobile-ID account.
+2. Sender [generates file master key (FMK)](https://github.com/open-eid/cdoc2-java-ref-impl/blob/main/cdoc20-lib/src/main/java/ee/cyber/cdoc20/crypto/Crypto.java#L94)
+   (FMK) using HKDF extract algorithm `HKDF_Extract(Static_FMK_Salt, CSRNG())`.
+3. Sender [generates encryption key (KEK)] using HKDF `HKDF_Expand(KEK_i_pm, "CDOC2kek" + FMKEncryptionMethod.XOR + RecipientInfo_i, 32)`, 
+   where `KEK_i_pm = HKDF_Extract(CSRNG(256), CSRNG(256))` and `RecipientInfo_i` is a recipient 
+   identifier `etsi/PNOEE-48010010101`.
+4. Sender splits `KEK` into `N` shares. `N` equals to configured servers quantity in CDOC2 
+   client configuration.
+   ```java
+      public static List<byte[]> splitKek(byte[] kek, int numOfShares) {
+        ArrayList<byte[]> shares = new ArrayList<>(numOfShares);
+        shares.add(kek);
+
+        for (int i=1; i < numOfShares; i++) {
+            byte[] share = new byte[kek.length];
+            sRnd.nextBytes(share);
+            shares.add(share);
+            shares.set(0, xor(shares.get(0), share));
+        }
+        return shares;
+    }
+   ```
+5. Sender uploads each `share` and recipient `etsi_identifier` to each CDOC2 server
+   (each CDOC2 server will receive a different share). CDOC2 servers are configured in client configuration.
+   Sender gets `shareID` for each share. [^1] FBS and OAS
+6. Sender [derives content encryption key](https://github.com/open-eid/cdoc2-java-ref-impl/blob/4fa3028298e7f1ea5414e3215dbfd8b0e9b49409/cdoc20-lib/src/main/java/ee/cyber/cdoc20/crypto/Crypto.java#L100) (CEK) `HKDF_Expand(FMK,"CDOC20cek")`and hmac key (HHK) `HKDF_Expand(FMK,"CDOC20hmac")` from FMK using HKDF expand algorithm.
+7. Sender encrypts FMK with KEK (xor) and gets encrypted_FMK
+8. Sender adds `encrypted FMK`, `key_label` and `server:shareId` pairs into CDOC2 header. [FBS]
+   (https://gitlab.ext.cyber.ee/cdoc2/cdoc20_java/-/blob/RM-55885/cdoc2-schema/src/main/fbs/recipients.fbs#L70)
+9. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
+10. Sender encrypts content with CEK (ChaCha20-Poly1305 with AAD)
+11. Sender sends CDOC2 document to Recipient
+12. Recipient  will choose Smart-ID decryption method (if he/she has Smart-ID account) and 
+    enter/choose his/her id-code. (TODO: for mobile-id, user needs to enter mobile phone connected to his id-code )
+13. Recipient searches CDOC header for Smart-ID record with entered id-code.
+14. Recipient loops over secret shares and for each `server:shareId` asks `nonce` from server.
+    Uses '/key-shares/{shareId}/nonce' endpoint in each server.
 
 
 ## Structure

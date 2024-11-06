@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.config;
 
+import java.security.KeyStore;
 import java.util.Properties;
 import java.util.Set;
 
@@ -10,7 +11,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
-import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
+import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
 
 
 /**
@@ -21,17 +22,13 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param keySharesServersMinNum minimum quantity of key shares servers
  * @param keySharesAlgorithm key shares algorithm
  * @param clientTrustStore client trust store
- * @param clientTrustStoreType client trust store type
- * @param clientTrustStorePw client trust store password
  */
 public record KeySharesConfigurationProps(
     int keySharesServersNum,
     Set<String> keySharesServersUrls,
     int keySharesServersMinNum,
     String keySharesAlgorithm,
-    String clientTrustStore,
-    String clientTrustStoreType,
-    String clientTrustStorePw
+    KeyStore clientTrustStore
 ) implements KeySharesConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(KeySharesConfigurationProps.class);
@@ -39,7 +36,7 @@ public record KeySharesConfigurationProps(
     public static KeySharesConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
 
-        log.debug("Loading Key Shares configuration for Key Capsule client.");
+        log.debug("Loading configuration for Key Shares client.");
 
         var keySharesServersUrls = ConfigurationPropertyUtil.splitString(
             log,
@@ -47,7 +44,7 @@ public record KeySharesConfigurationProps(
             KEY_SHARES_SERVERS_URLS
         );
 
-        var keySharesServersNum = keySharesServersUrls.size();
+        int keySharesServersNum = keySharesServersUrls.size();
         int keySharesServersMinNum = ConfigurationPropertyUtil.getRequiredInteger(
             log,
             properties,
@@ -55,25 +52,28 @@ public record KeySharesConfigurationProps(
         );
         validateServersMinQuantity(keySharesServersNum, keySharesServersMinNum);
 
-        var keySharesAlgorithm = getRequiredProperty(properties, KEY_SHARES_ALGORITHM);
+        var keySharesAlgorithm = ConfigurationPropertyUtil.getRequiredProperty(properties, KEY_SHARES_ALGORITHM);
         ConfigurationPropertyUtil.notBlank(
             log,
             keySharesAlgorithm,
             KEY_SHARES_ALGORITHM
         );
 
-        var clientTrustStore = properties.getProperty(CLIENT_TRUST_STORE);
-        var clientTrustStoreType = properties.getProperty(CLIENT_TRUST_STORE_TYPE, "JKS");
-        var clientTrustStorePw = properties.getProperty(CLIENT_TRUST_STORE_PWD);
+        var clientTrustStoreFile = properties.getProperty(KEY_SHARES_CLIENT_TRUST_STORE);
+        var clientTrustStoreType = properties.getProperty(KEY_SHARES_CLIENT_TRUST_STORE_TYPE, "JKS");
+        var clientTrustStorePw = properties.getProperty(KEY_SHARES_CLIENT_TRUST_STORE_PWD);
+        var clientTrustStore = loadClientTrustKeyStore(
+            clientTrustStoreFile,
+            clientTrustStoreType,
+            clientTrustStorePw
+        );
 
         return new KeySharesConfigurationProps(
             keySharesServersNum,
             keySharesServersUrls,
             keySharesServersMinNum,
             keySharesAlgorithm,
-            clientTrustStore,
-            clientTrustStoreType,
-            clientTrustStorePw
+            clientTrustStore
         );
     }
 
@@ -111,18 +111,8 @@ public record KeySharesConfigurationProps(
     }
 
     @Override
-    public String getClientTrustStore() {
+    public KeyStore getClientTrustStore() {
         return clientTrustStore;
-    }
-
-    @Override
-    public String getClientTrustStoreType() {
-        return clientTrustStoreType;
-    }
-
-    @Override
-    public String getClientTrustStorePw() {
-        return clientTrustStorePw;
     }
 
 }

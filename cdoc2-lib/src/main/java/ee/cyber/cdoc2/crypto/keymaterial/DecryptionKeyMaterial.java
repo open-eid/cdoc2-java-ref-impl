@@ -5,6 +5,7 @@ import javax.crypto.SecretKey;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.SemanticIdentification;

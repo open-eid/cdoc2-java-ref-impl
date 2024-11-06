@@ -16,6 +16,7 @@ import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 import ee.cyber.cdoc2.util.Resources;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 
 
@@ -52,7 +53,7 @@ public record KeyCapsuleClientConfigurationProps(
     public static KeyCapsuleClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
 
-        log.debug("Loading Key Shares configuration for Key Capsule client.");
+        log.debug("Loading configuration for Key Capsule client.");
         var clientServerId = properties.getProperty(CLIENT_SERVER_ID);
         var clientKeyStore = loadClientKeyStore(properties);
         var keyStoreProtectionParameter = loadClientKeyStoreProtectionParameter(properties);

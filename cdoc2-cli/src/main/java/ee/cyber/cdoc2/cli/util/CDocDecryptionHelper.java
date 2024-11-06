@@ -15,6 +15,7 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.Cdoc2Configuration;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfigurationImpl;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.container.CDocParseException;
@@ -172,7 +173,7 @@ public final class CDocDecryptionHelper {
         return KeyCapsuleClientImpl.createFactory(p);
     }
 
-    public static void loadKeySharesConfiguration() {
+    public static KeySharesConfiguration loadKeySharesConfiguration() {
         String propertiesFilePath = System.getProperty(KEY_SHARES_PROPERTIES);
         if (null == propertiesFilePath) {
             throw new ConfigurationLoadingException("Key Shares configuration property is missing");
@@ -181,6 +182,8 @@ public final class CDocDecryptionHelper {
         Properties properties = loadProperties(propertiesFilePath);
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
         CDoc2ConfigurationProvider.init(configuration);
+
+        return CDoc2ConfigurationProvider.getConfiguration().keySharesConfiguration();
     }
 
     public static List<Recipient> parseRecipients(File cdocFile)

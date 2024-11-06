@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.crypto;
 
+import java.io.Serializable;
+
 import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 
 
@@ -10,5 +12,5 @@ import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 public record KeyShareUri(
     String serverBaseUrl,
     String shareId
-) {
+) implements Serializable {
 }

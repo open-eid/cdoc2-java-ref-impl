@@ -1,8 +1,11 @@
 package ee.cyber.cdoc2;
 
+import jakarta.annotation.Nullable;
+
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
@@ -11,6 +14,7 @@ import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.KeyShareEncryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
@@ -40,6 +44,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.assertKeyLabelIsFormatted;
+
 
 /**
  * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys or symmetric key.
@@ -51,6 +57,8 @@ public class CDocBuilder {
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
     private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
+    @Nullable
+    private KeyShareClientFactory keyShareClientFactory;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
         this.payloadFiles = files;
@@ -74,6 +82,11 @@ public class CDocBuilder {
 
     public CDocBuilder withServerProperties(Properties p) {
         this.serverProperties = p;
+        return this;
+    }
+
+    public CDocBuilder withKeyShares(KeyShareClientFactory clientFactory) {
+        this.keyShareClientFactory = clientFactory;
         return this;
     }
 
@@ -124,16 +137,17 @@ public class CDocBuilder {
         throws ExtApiException, GeneralSecurityException, ConfigurationLoadingException {
 
         if (serverProperties == null) {
-            return Envelope.prepare(recipients, null);
+            return Envelope.prepare(recipients, null, keyShareClientFactory);
         } else {
             // for encryption, do not init mTLS client as this might require smart-card
-           KeyCapsuleClient client = KeyCapsuleClientImpl.create(serverProperties, false);
+           KeyCapsuleClient keyCapsuleClient = KeyCapsuleClientImpl.create(serverProperties, false);
            if (null != keyCapsuleExpiryDuration) {
-               client.setExpiryDuration(keyCapsuleExpiryDuration);
+               keyCapsuleClient.setExpiryDuration(keyCapsuleExpiryDuration);
            }
-            return Envelope.prepare(
+           return Envelope.prepare(
                 recipients,
-                client
+                keyCapsuleClient,
+               keyShareClientFactory
             );
         }
     }
@@ -183,6 +197,8 @@ public class CDocBuilder {
                 || (secretKey.getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
                 throw new CDocValidationException("Too short key for label: " + secretKeyMaterial.getLabel());
             }
+        } else if (keyMaterial instanceof KeyShareEncryptionKeyMaterial keyShareKeyMaterial) {
+            assertKeyLabelIsFormatted(keyShareKeyMaterial.keyLabel());
         } else {
             String errorMsg = "Unsupported key " + keyMaterial.getLabel();
             log.error(errorMsg);

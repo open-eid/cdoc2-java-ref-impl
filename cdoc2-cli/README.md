@@ -119,6 +119,13 @@ java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgx
 Key and label can be safely stored in a password manager.
 
 
+### Encryption with Smart ID
+
+```
+java -jar target/cdoc2-cli-*.jar create -r 38001085718 --smart-id=true -f /tmp/smartid.cdoc README.md
+```
+
+
 ### Decryption
 To decrypt:
 - CDOC2 file `/tmp/mydoc.cdoc`

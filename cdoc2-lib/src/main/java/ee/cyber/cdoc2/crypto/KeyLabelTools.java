@@ -48,12 +48,25 @@ public final class KeyLabelTools {
     }
 
     /**
+     * Validates that key label is in machine-readable format.
+     * @param formattedKeyLabel formatted key label
+     * @throws IllegalStateException if key label is not in machine-readable format
+     */
+    public static void assertKeyLabelIsFormatted(String formattedKeyLabel) {
+        boolean isFormatted = isFormatted(formattedKeyLabel);
+        if (!isFormatted) {
+            throw new IllegalArgumentException(
+                "Key label '" + formattedKeyLabel + "' must be in machine-readable format: ");
+        }
+    }
+
+    /**
      * Validates key label format.
      * @param keyLabel encryption key label
      * @return Key Label in plain text
      */
     public static String getPlainKeyLabel(String keyLabel) {
-        if (keyLabelIsFormatted(keyLabel)) {
+        if (isFormatted(keyLabel)) {
             return extractKeyLabel(keyLabel);
         }
 
@@ -77,7 +90,7 @@ public final class KeyLabelTools {
      * @return map of Key Label parameters
      */
     public static Map<String, String> extractKeyLabelParams(String keyLabel) {
-        boolean isFormatted = keyLabelIsFormatted(keyLabel);
+        boolean isFormatted = isFormatted(keyLabel);
         if (!isFormatted) {
             return Map.of(KeyLabelDataFields.LABEL.name(), keyLabel);
         }
@@ -345,10 +358,10 @@ public final class KeyLabelTools {
         return StringUtils.substringAfter(dataUrlScheme, ":");
     }
 
-    private static boolean keyLabelIsFormatted(Object keyLabel) {
-        return keyLabel.toString().contains(DATA);
-    }
-
+    /**
+     * Checks if key label is in machine-readable format or in plain text.
+     * @param keyLabel key label
+     */
     public static boolean isFormatted(String keyLabel) {
         if (keyLabel == null) {
             return false;
@@ -459,7 +472,7 @@ public final class KeyLabelTools {
                 case V_2 -> {
                     return "2";
                 }
-                default -> throw new IllegalStateException("Unexpected key label data version: " + v);
+                default -> throw new IllegalArgumentException("Unexpected key label data version: " + v);
             }
         }
     }
