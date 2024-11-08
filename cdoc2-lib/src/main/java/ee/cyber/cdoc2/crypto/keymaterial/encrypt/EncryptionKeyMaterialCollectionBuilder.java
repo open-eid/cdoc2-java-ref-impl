@@ -111,7 +111,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
     public EncryptionKeyMaterialCollectionBuilder fromPassword(@Nullable LabeledPassword labeledPassword) {
         if (labeledPassword != null) {
             recipients.add(EncryptionKeyMaterial.fromPassword(labeledPassword.getPassword(),
-                labeledPassword.getKeyLabelParams()));
+                labeledPassword.getLabel()));
         }
         return this;
     }
@@ -127,7 +127,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
                 .map(labeledSecret ->
                     EncryptionKeyMaterial.fromSecret(
                         labeledSecret.getSecretKey(),
-                        labeledSecret.getKeyLabelParams()
+                        labeledSecret.getLabel()
                     )
                 )
                 .forEach(encryptionKeyMaterial -> recipients.add(encryptionKeyMaterial));
