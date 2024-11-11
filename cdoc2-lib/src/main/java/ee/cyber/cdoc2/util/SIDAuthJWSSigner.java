@@ -52,6 +52,10 @@ public class SIDAuthJWSSigner implements JWSSigner {
         this.signerId = signer;
     }
 
+    public SemanticsIdentifier getSignerSemID() {
+        return this.signerId;
+    }
+
     /**
      * Sign signingInput data using Smart-ID RP API. Before returning Smart-ID generated
      * signature is verified using Smart-ID client library.
@@ -92,6 +96,8 @@ public class SIDAuthJWSSigner implements JWSSigner {
 
         AuthenticationHash hash = calcHash(signingInput, toSIDHashType(header.getAlgorithm()));
 
+        //TODO: RM-4086: add support to show SID verification code in UI
+        //until proper interface exists, use System.out
         System.out.println("Verification code: " + hash.calculateVerificationCode());
 
         try {

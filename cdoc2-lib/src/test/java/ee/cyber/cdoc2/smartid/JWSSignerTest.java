@@ -18,6 +18,7 @@ import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.util.SIDAuthCertData;
 import ee.cyber.cdoc2.util.SIDAuthJWSSigner;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,7 @@ class JWSSignerTest {
         -----END CERTIFICATE-----
         """;
 
+    @Tag("net")
     @Test
     void testSignature() throws JOSEException, ParseException {
 

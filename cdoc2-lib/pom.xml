@@ -33,7 +33,7 @@
             <!--TODO: package name will change -->
             <groupId>ee.cyber.cdoc2.auth</groupId>
             <artifactId>cdoc2-key-shares-auth</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>0.1.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>

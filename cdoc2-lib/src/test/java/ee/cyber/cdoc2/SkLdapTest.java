@@ -34,6 +34,7 @@ class SkLdapTest {
 
     @Test
     @Tag("ldap")
+    @Tag("net")
     @Disabled("Requires real ID code. As 38001085718 code is for test person - its certificate"
         + " is not available from SK LDAP. Needs to be run separately from other LDAP tests"
         + " with own ID code")
