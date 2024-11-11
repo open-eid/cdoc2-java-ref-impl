@@ -5,6 +5,7 @@ import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.SmartIdAuthenticationResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
@@ -30,6 +31,7 @@ class SmartIdClientTest {
         this.smartIdClient = new SmartIdClient();
     }
 
+    @Tag("net")
     @Test
     void successfullyAuthenticateUser() throws Exception {
         SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(
@@ -59,6 +61,7 @@ class SmartIdClientTest {
     }
 
     @Test
+    @Tag("net")
     void failAuthenticationOfNonExistingUser() {
         String nonExistingIdNumber = "12345678900";
         SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(
