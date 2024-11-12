@@ -110,6 +110,11 @@ class KeyLabelToolsTest {
     }
 
     @Test
+    void testPasswordKeyLabelParamsCreationWithMissingKeyLabelInSymmetricKey() {
+        createSymmetricKeyLabelParams(EncryptionKeyOrigin.PASSWORD, "");
+    }
+
+    @Test
     void testPublicKeyLabelParamsCreation() {
         KeyLabelParams keyLabelParams = createPublicKeyLabelParams(null, null);
 
