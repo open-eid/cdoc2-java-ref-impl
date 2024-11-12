@@ -12,6 +12,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
 
@@ -40,10 +41,6 @@ class FormattedLabeledSecretParam implements LabeledPassword, LabeledSecret {
     private final byte[] secretAsBytes;
 
     private final char[] secretAsPassword;
-
-    private record ParsedFields(String label, byte[] secret, char[] pw) {
-
-    }
 
     FormattedLabeledSecretParam(EncryptionKeyOrigin keyOrigin, ParsedFields parsed) {
         this.keyOrigin = keyOrigin;
@@ -92,7 +89,7 @@ class FormattedLabeledSecretParam implements LabeledPassword, LabeledSecret {
         if (secret.startsWith(BASE_64_PREFIX)) {
             byte[] secretAsBytes = Base64.getDecoder().decode(secret.substring(BASE_64_PREFIX.length()));
 
-            log.debug("Decoded bytes from base64", secretAsBytes.length);
+            log.debug("Decoded bytes from base64 with length {}", secretAsBytes.length);
 
             CharBuffer chBuf = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(secretAsBytes));
             char[] secretAsPassword = new char[chBuf.remaining()];
@@ -130,6 +127,34 @@ class FormattedLabeledSecretParam implements LabeledPassword, LabeledSecret {
 
     public char[] getPassword() {
         return Arrays.copyOf(secretAsPassword, secretAsPassword.length);
+    }
+
+    private record ParsedFields(String label, byte[] secret, char[] pw) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) return false;
+            ParsedFields that = (ParsedFields) o;
+            return Objects.deepEquals(this.pw, that.pw)
+                && Objects.equals(this.label, that.label)
+                && Objects.deepEquals(this.secret, that.secret);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.label, Arrays.hashCode(this.secret), Arrays.hashCode(this.pw));
+        }
+
+        @Override
+        public String toString() {
+            return "ParsedFields{"
+                + "label='" + this.label + '\''
+                + ", secret=*****"
+                + ", pw=*****"
+                + '}';
+        }
     }
 
 }

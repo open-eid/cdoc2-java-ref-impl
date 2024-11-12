@@ -93,7 +93,7 @@ class CDocCliTest {
     @Test
     void testSuccessfulCreateDecryptDocWithPassword() throws IOException {
         encrypt(PASSWORD_OPTION);
-        decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(PASSWORD_OPTION);
     }
 
     @Test
@@ -101,20 +101,31 @@ class CDocCliTest {
     void testSuccessfulCreateDecryptDocWithPasswordWhenItIsInsertedInteractively()
         throws IOException {
         encrypt(PASSWORD_OPTION);
-        decrypt("--password=", SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully("--password=");
     }
 
     @Test
-    void testSuccessfulCreateDecryptDocWithPasswordWhenLabelIsMissing()
-        throws IOException {
+    void testSuccessfulCreateDecryptDocWithPasswordWhenLabelIsMissing() throws IOException {
         encrypt(PASSWORD_OPTION);
-        decrypt("--password=:myPlainTextPassword", SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully("--password=:myPlainTextPassword");
+    }
+
+    @Test
+    void testSuccessfulCreateDecryptDocWithMissingLabelInPassword() throws IOException {
+        encrypt("--password=:myPlainTextPassword");
+        decryptSuccessfully("--password=:myPlainTextPassword");
+    }
+
+    @Test
+    void testSuccessfulCreateDecryptDocWithMissingLabelInSecretKey() throws IOException {
+        encrypt("--secret=:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=");
+        decryptSuccessfully("--secret=:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=");
     }
 
     @Test
     void testSuccessfulCreateDecryptDocWithSecret() throws IOException {
         encrypt(SECRET_OPTION);
-        decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(SECRET_OPTION);
     }
 
     @Test
@@ -135,9 +146,7 @@ class CDocCliTest {
     void shouldFailToEncryptDocWithSecretButDecryptWithPassword() {
         encrypt(SECRET_OPTION);
 
-        assertThrowsException(() ->
-            decrypt(PASSWORD_OPTION, FAILURE_EXIT_CODE)
-        );
+        assertThrowsException(() -> failToDecrypt(PASSWORD_OPTION));
     }
 
     /**
@@ -149,29 +158,25 @@ class CDocCliTest {
     void shouldFailToEncryptDocWithPasswordButDecryptWithSecret() {
         encrypt(PASSWORD_OPTION);
 
-        assertThrowsException(() ->
-            decrypt(SECRET_OPTION, FAILURE_EXIT_CODE)
-        );
+        assertThrowsException(() -> failToDecrypt(SECRET_OPTION));
     }
 
     @Test
     void shouldFailToEncryptDocWithPasswordIfItsValidationHasFailed() {
         String passwordForEncrypt = "--password=passwordlabel:short";
-        assertThrowsException(() ->
-            encrypt(passwordForEncrypt)
-        );
+        assertThrowsException(() -> encrypt(passwordForEncrypt));
     }
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithPassword() throws IOException {
         encryptWithTwoKeys(PASSWORD_OPTION, SECRET_OPTION);
-        decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(PASSWORD_OPTION);
     }
 
     @Test
     void shouldSucceedToEncryptDocWithTwoKeysAndDecryptWithSecret() throws IOException {
         encryptWithTwoKeys(PASSWORD_OPTION, SECRET_OPTION);
-        decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(SECRET_OPTION);
     }
 
     @Test
@@ -218,7 +223,7 @@ class CDocCliTest {
     @Test
     void infoShouldDisplayKeyLabelInDefaultFormatForPassword() throws IOException {
         encrypt(PASSWORD_OPTION);
-        decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(PASSWORD_OPTION);
 
         String expectedKeyLabel = "Password: V:1, LABEL:passwordlabel, TYPE:pw";
         executeInfo(expectedKeyLabel, cdocFile);
@@ -229,7 +234,7 @@ class CDocCliTest {
         setUpKeyLabelFormat(false);
 
         encrypt(PASSWORD_OPTION);
-        decrypt(PASSWORD_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(PASSWORD_OPTION);
 
         String expectedKeyLabel = "Password: LABEL:passwordlabel";
         executeInfo(expectedKeyLabel, cdocFile);
@@ -240,7 +245,7 @@ class CDocCliTest {
     @Test
     void infoShouldDisplayKeyLabelInDefaultFormatForSecret() throws IOException {
         encrypt(SECRET_OPTION);
-        decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(SECRET_OPTION);
 
         String expectedKeyLabel
             = "SymmetricKey: V:1, LABEL:label_b64secret, TYPE:secret";
@@ -252,7 +257,7 @@ class CDocCliTest {
         setUpKeyLabelFormat(false);
 
         encrypt(SECRET_OPTION);
-        decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(SECRET_OPTION);
 
         String expectedKeyLabel = "SymmetricKey: LABEL:label_b64secret";
         executeInfo(expectedKeyLabel, cdocFile);
@@ -287,7 +292,7 @@ class CDocCliTest {
         String privateKeyArg = "--key=" + privateKey;
 
         encrypt(publicKeyArg);
-        decrypt(privateKeyArg, SUCCESSFUL_EXIT_CODE);
+        decryptSuccessfully(privateKeyArg);
     }
 
     private void reEncryptCDocAndTestToDecrypt(
@@ -372,6 +377,14 @@ class CDocCliTest {
     private void encryptWithTwoKeys(String encryptionArgument1, String encryptionArgument2) {
         String[] encryptArgs = createEncryptArgs(encryptionArgument1, encryptionArgument2);
         executeEncryption(encryptArgs, cdocFile);
+    }
+
+    private void decryptSuccessfully(String decryptArgs) throws IOException {
+        decrypt(decryptArgs, SUCCESSFUL_EXIT_CODE);
+    }
+
+    private void failToDecrypt(String decryptArgs) throws IOException {
+        decrypt(decryptArgs, FAILURE_EXIT_CODE);
     }
 
     private void decrypt(String decryptionArgument, int expectedDecryptExitCode)

@@ -389,10 +389,14 @@ public final class KeyLabelTools {
         }
         String[] parts = data.split(DATA_PARAMETERS_DELIMITER);
 
-
         for (String keyValue : parts) {
             String[] params = keyValue.split(DATA_PARAMETERS_KEY_VALUE_DELIMITER);
-            result.put(params[0], urlDecodeValue(params[1]));
+            if (KeyLabelDataFields.LABEL.name().equals(params[0]) && params.length == 1) {
+
+                result.put(params[0], "");
+            } else {
+                result.put(params[0], urlDecodeValue(params[1]));
+            }
         }
 
         return result;
