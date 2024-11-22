@@ -135,7 +135,10 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     void setupKeyShareClientMocks() throws Exception {
         KeySharesConfiguration configuration = initKeySharesConfiguration();
-        shareClientFactory = new KeySharesClientHelper(List.of(mockKeySharesClient1, mockKeySharesClient2));
+        shareClientFactory = new KeySharesClientHelper(
+            List.of(mockKeySharesClient1, mockKeySharesClient2),
+            configuration
+        );
 
         List<String> keySharesServersUrls = configuration.getKeySharesServersUrls().stream().toList();
         assertTrue(keySharesServersUrls.size() >= 2);

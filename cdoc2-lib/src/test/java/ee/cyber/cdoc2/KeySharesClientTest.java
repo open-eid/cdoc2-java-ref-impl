@@ -126,8 +126,8 @@ class KeySharesClientTest {
 
     @Test
     void shouldFindRequiredKeyShareClient() throws GeneralSecurityException {
-        initKeySharesConfiguration();
-        KeyShareClientFactory factory = KeySharesClientHelper.createFactory();
+        KeyShareClientFactory factory
+            = KeySharesClientHelper.createFactory(initKeySharesConfiguration());
         Collection<KeySharesClient> clients = factory.getClients();
         for (KeySharesClient ksClient : clients) {
             String serverUrl = ksClient.getServerIdentifier();
@@ -139,8 +139,8 @@ class KeySharesClientTest {
 
     @Test
     void shouldFailToGetKeyShareClientWithWrongServerIdentifier() throws GeneralSecurityException {
-        initKeySharesConfiguration();
-        KeyShareClientFactory factory = KeySharesClientHelper.createFactory();
+        KeyShareClientFactory factory
+            = KeySharesClientHelper.createFactory(initKeySharesConfiguration());
 
         assertThrows(CDocUserException.class, () ->
             factory.getClientForServerUrl("wrong_server_identifier")

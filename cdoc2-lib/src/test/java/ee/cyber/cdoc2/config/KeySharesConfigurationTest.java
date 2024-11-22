@@ -25,9 +25,7 @@ class KeySharesConfigurationTest {
 
     @Test
     void loadClientConfigurationProperties() throws ConfigurationLoadingException {
-        initKeySharesConfiguration();
-        KeySharesConfiguration config = CDoc2ConfigurationProvider.getConfiguration()
-                .keySharesConfiguration();
+        KeySharesConfiguration config = initKeySharesConfiguration();
         assertTrue(config.getKeySharesServersNum() > 0);
         assertEquals(
             Set.of("https://localhost:8442", "https://localhost:8443"),
@@ -42,10 +40,9 @@ class KeySharesConfigurationTest {
         Properties properties = getProperties();
         properties.setProperty("key-shares.servers.urls", "https://server1, https://server2");
         properties.setProperty("key-shares.servers.min_num", "3");
-        Cdoc2Configuration configuration = initConfiguration(properties);
 
         assertThrowsConfigurationLoadingException(
-            configuration::keySharesConfiguration
+            () -> initConfiguration(properties)
         );
     }
 
@@ -62,10 +59,9 @@ class KeySharesConfigurationTest {
 
         Properties properties = getProperties();
         properties.setProperty(propKey, propValue);
-        Cdoc2Configuration configuration = initConfiguration(properties);
 
         assertThrowsConfigurationLoadingException(
-            configuration::keySharesConfiguration
+            () -> initConfiguration(properties)
         );
     }
 
@@ -75,10 +71,12 @@ class KeySharesConfigurationTest {
         );
     }
 
-    private Cdoc2Configuration initConfiguration(Properties properties) {
+    private KeySharesConfiguration initConfiguration(Properties properties)
+        throws ConfigurationLoadingException {
+
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-        CDoc2ConfigurationProvider.init(configuration);
-        return configuration;
+
+        return CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
     }
 
     private void assertThrowsConfigurationLoadingException(Executable validation) {

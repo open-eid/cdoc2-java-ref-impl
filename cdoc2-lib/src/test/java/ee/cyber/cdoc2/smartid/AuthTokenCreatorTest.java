@@ -10,6 +10,7 @@ import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
@@ -26,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +43,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+
 @ExtendWith(MockitoExtension.class)
 public class AuthTokenCreatorTest {
 
@@ -53,7 +56,6 @@ public class AuthTokenCreatorTest {
 
     @Mock
     KeySharesClient mockKeySharesClient2;
-
 
     public static final String SERVER1 = "https://cdoc2-css.ria.ee:443";
     public static final String SERVER2 = "https://cdoc2-css.smit.ee:443/css";
@@ -70,7 +72,11 @@ public class AuthTokenCreatorTest {
     private static final String DEMO_ID_CODE = "30303039914";
 
     KeyShareClientFactory setupMockSharesClientFac() {
-        sharesFac = new KeySharesClientHelper(List.of(mockKeySharesClient1, mockKeySharesClient2));
+        KeySharesConfiguration configuration = initKeySharesConfiguration();
+        sharesFac = new KeySharesClientHelper(
+            List.of(mockKeySharesClient1, mockKeySharesClient2),
+            configuration
+        );
 
         when(mockKeySharesClient1.getServerIdentifier()).thenReturn(SERVER1);
         when(mockKeySharesClient2.getServerIdentifier()).thenReturn(SERVER2);
@@ -155,4 +161,5 @@ public class AuthTokenCreatorTest {
         assertEquals(NONCE01, data.getNonce());
         assertEquals(SERVER1, data.getServerBaseUrl());
     }
+
 }

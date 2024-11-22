@@ -66,14 +66,12 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
 
     /**
      * Create EncryptionKeyMaterial with Smart ID, extracted from ETSI identifier.
-     * @param forSid true if encryption is arranging with Smart ID
+     * @param sidCodes natural ID codes
      * @return the list of EncryptionKeyMaterial
      */
-    public EtsiIdentifierEncKeyMaterialBuilder forSid(boolean forSid) {
-        if (forSid) {
-            ensureIdentificationCodeIsPresent();
-
-            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(identificationCodes)
+    public EtsiIdentifierEncKeyMaterialBuilder forSid(String[] sidCodes) {
+        if (null != sidCodes) {
+            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(sidCodes)
                 .map(idCode -> {
                     SemanticIdentification semanticIdentifier = SemanticIdentification.forSid(idCode);
                     KeyLabelParams keyLabelParams
@@ -90,13 +88,12 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
 
     /**
      * Create EncryptionKeyMaterial with Mobile ID, extracted from ETSI identifier.
-     * @param forMid true if encryption is arranging with Mobile ID
+     * @param midCodes natural ID codes
      * @return the list of EncryptionKeyMaterial
      */
-    public EtsiIdentifierEncKeyMaterialBuilder forMid(boolean forMid) {
-        if (forMid) {
-            ensureIdentificationCodeIsPresent();
-            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(identificationCodes)
+    public EtsiIdentifierEncKeyMaterialBuilder forMid(String[] midCodes) {
+        if (null != midCodes) {
+            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(midCodes)
                 .map(idCode -> {
                     // ToDo add mobile number here
                     SemanticIdentification semanticIdentifier = SemanticIdentification.forMid(idCode);
@@ -118,12 +115,6 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      */
     public List<EncryptionKeyMaterial> build() {
         return recipients;
-    }
-
-    private void ensureIdentificationCodeIsPresent() {
-        if (this.identificationCodes == null) {
-            throw new IllegalArgumentException("Identification code is missing for encryption");
-        }
     }
 
 }

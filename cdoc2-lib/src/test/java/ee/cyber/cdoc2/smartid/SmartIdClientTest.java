@@ -22,13 +22,11 @@ class SmartIdClientTest {
     private static final String CERT_LEVEL_ADVANCED = "ADVANCED";
     private static final String CERT_LEVEL_QUALIFIED = "QUALIFIED";
     private static final String IDENTITY_NUMBER = "30303039914";
-    // private static final String IDENTITY_NUMBER = "38001085718";
 
     private final SmartIdClient smartIdClient;
 
     SmartIdClientTest() throws ConfigurationLoadingException {
-        getSmartIdConfiguration();
-        this.smartIdClient = new SmartIdClient();
+        this.smartIdClient = new SmartIdClient(getSmartIdConfiguration());
     }
 
     @Tag("net")
@@ -71,7 +69,7 @@ class SmartIdClientTest {
         );
 
         AuthenticationHash authenticationHash = AuthenticationHash.generateRandomHash();
-        CdocSmartIdClientException exception = assertThrows(CdocSmartIdClientException.class,
+        assertThrows(CdocSmartIdClientException.class,
             () -> smartIdClient.authenticate(
                 semanticsIdentifier,
                 authenticationHash,

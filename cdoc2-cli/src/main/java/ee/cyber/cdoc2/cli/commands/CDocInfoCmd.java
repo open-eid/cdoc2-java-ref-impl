@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.container.Envelope;
+import ee.cyber.cdoc2.container.recipients.KeySharesRecipient;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.PublicKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
@@ -71,6 +72,8 @@ public class CDocInfoCmd implements Callable<Void> {
             return "SymmetricKey";
         } else if (recipient instanceof PBKDF2Recipient) {
             return "Password";
+        } else if (recipient instanceof KeySharesRecipient) {
+            return "Smart-ID/Mobile-ID";
         } else {
             //unknown recipient type, don't fail as other recipients might be supported
             log.warn("Unknown recipient {}", recipient.getClass());

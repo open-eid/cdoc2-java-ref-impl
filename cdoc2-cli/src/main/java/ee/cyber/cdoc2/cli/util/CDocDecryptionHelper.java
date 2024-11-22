@@ -8,14 +8,10 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.client.ExternalService;
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
-import ee.cyber.cdoc2.config.Cdoc2Configuration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
@@ -26,7 +22,6 @@ import ee.cyber.cdoc2.crypto.SemanticIdentification;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
-import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +30,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 
 
 /**
@@ -84,7 +77,6 @@ public final class CDocDecryptionHelper {
      *                       .p12:password". null when not provided
      *                     - privKeyFile: file containing privateKey in PEM format.
      *                       null when not provided
-     * @param identificationCode identification code
      * @return loaded DecryptionKeyMaterial
      * @throws GeneralSecurityException general security exception
      * @throws IOException in case decryption key material extraction has failed
@@ -92,8 +84,7 @@ public final class CDocDecryptionHelper {
      */
     public static DecryptionKeyMaterial getDecryptionKeyMaterial(
         File cdocFile,
-        DecryptionKeyExclusiveArgument decryptArguments,
-        String identificationCode
+        DecryptionKeyExclusiveArgument decryptArguments
     ) throws GeneralSecurityException, IOException, CDocParseException {
         Objects.requireNonNull(cdocFile);
         LabeledPasswordParam labeledPasswordParam = decryptArguments.getLabeledPasswordParam();
@@ -117,7 +108,7 @@ public final class CDocDecryptionHelper {
         }
 
         if (isWithSid && decryptionKm == null) {
-            decryptionKm = getSidDecryptionKeyMaterial(identificationCode);
+            decryptionKm = getSidDecryptionKeyMaterial(decryptArguments.getSid());
         }
 
         // this must be final initialization
@@ -197,7 +188,7 @@ public final class CDocDecryptionHelper {
         String[] filesToExtract,
         File outputPath,
         DecryptionKeyMaterial decryptionKeyMaterial,
-        ExternalService keyCapsulesClientFactory
+        @Nullable ExternalService keyCapsulesClientFactory
     ) throws IOException {
         return new CDocDecrypter()
             .withCDoc(cdocFile)
@@ -264,7 +255,6 @@ public final class CDocDecryptionHelper {
             .filter(PBKDF2Recipient.class::isInstance)
             .map(r -> (PBKDF2Recipient)r).toList();
 
-
         if (pbkdf2Recipients.size() == 1 && labeledPassword.getLabel().isEmpty()) {
             return new LabeledPassword() {
                 @Override
@@ -280,20 +270,6 @@ public final class CDocDecryptionHelper {
         } else {
             return labeledPassword;
         }
-    }
-
-    // ToDo test resource loading and truststore from external filesystem via
-    //  option -Dsmart-id.properties. #3237
-    public static void loadSmartIdConfiguration() throws ConfigurationLoadingException {
-        String propertiesFilePath = System.getProperty(SMART_ID_PROPERTIES, null);
-        if (null == propertiesFilePath) {
-           throw new ConfigurationLoadingException("Smart ID configuration property is missing");
-        }
-        Properties properties = loadProperties(propertiesFilePath);
-        Cdoc2Configuration configuration =
-            new SmartIdClientConfigurationImpl(properties);
-
-        CDoc2ConfigurationProvider.init(configuration);
     }
 
 }

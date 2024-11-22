@@ -93,12 +93,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
-            : getDecryptionKeyMaterial(
-            this.cdocFile,
-            this.exclusive,
-            // ToDo add identificationCode for SID re-encryption
-            null
-        );
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         ExternalService keyCapsulesClientFactory = null;
 

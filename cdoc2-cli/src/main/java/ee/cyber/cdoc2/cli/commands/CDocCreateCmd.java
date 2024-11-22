@@ -62,7 +62,7 @@ public class CDocCreateCmd implements Callable<Void> {
         private File[] certs;
 
         @Option(names = {"-r", "--recipient", "--receiver"},
-            paramLabel = "isikukood", description = "recipient id code (isikukood)")
+            paramLabel = "isikukood", description = "recipient id codes (isikukood)")
         private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
@@ -76,12 +76,12 @@ public class CDocCreateCmd implements Callable<Void> {
         private LabeledPasswordParam labeledPasswordParam;
 
         @Option(names = {"-sid", "--smart-id"},
-            paramLabel = "SID", description = "flag for smart id encryption")
-        private boolean withSid;
+            paramLabel = "SID", description = "ID codes for smart id encryption")
+        private String[] sidCodes;
 
         @Option(names = {"-mid", "--mobile-id"},
-            paramLabel = "MID", description = "flag for mobile id encryption")
-        private boolean withMid;
+            paramLabel = "MID", description = "ID codes for mobile id encryption")
+        private String[] midCodes;
     }
 
     // allow -Dkey for setting System properties
@@ -115,15 +115,16 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} "
-                    + "--smart-id={} --mobile-id={} {}",
+            log.debug("create --file={} --pubkey={} --cert={} --recipient={} --secret={} "
+                    + "--password={} --smart-id={} --mobile-id={} {}",
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
+                Arrays.toString(recipient.identificationCodes),
                 (recipient.labeledSecrets != null) ? "****" : null,
                 (recipient.labeledPasswordParam != null) ? "****" : null,
-                recipient.withSid,
-                recipient.withMid,
+                Arrays.toString(recipient.sidCodes),
+                Arrays.toString(recipient.midCodes),
                 Arrays.toString(inputFiles));
         }
 
@@ -192,7 +193,7 @@ public class CDocCreateCmd implements Callable<Void> {
         CDocBuilder cDocBuilder
     ) throws GeneralSecurityException, NamingException {
 
-        if (this.recipient.withSid || this.recipient.withMid) {
+        if (isWithSid() || isWithMid()) {
             cDocBuilder.withKeyShares(initKeyShareClientFactory());
         }
 
@@ -201,14 +202,22 @@ public class CDocCreateCmd implements Callable<Void> {
             // for eId fetch authentication certificates' public keys for natural person identity codes
             .forEId(
                 null != this.recipient.identificationCodes
-                    && !this.recipient.withSid
-                    && !this.recipient.withMid
+                    && !isWithSid()
+                    && !isWithMid()
             )
-            .forSid(this.recipient.withSid)
-            .forMid(this.recipient.withMid)
+            .forSid(this.recipient.sidCodes)
+            .forMid(this.recipient.midCodes)
             .build();
 
         recipients.addAll(etsiRecipients);
+    }
+
+    private boolean isWithSid() {
+        return this.recipient.sidCodes != null;
+    }
+
+    private boolean isWithMid() {
+        return this.recipient.midCodes != null;
     }
 
 }

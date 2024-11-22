@@ -38,12 +38,12 @@ public class DecryptionKeyExclusiveArgument {
     private LabeledPasswordParam labeledPasswordParam;
 
     @CommandLine.Option(names = {"-sid", "--smart-id"},
-        paramLabel = "SID", description = "flag for smart id decryption")
-    private boolean withSid;
+        paramLabel = "SID", description = "ID code for smart-id decryption")
+    private String sid;
 
     @CommandLine.Option(names = {"-mid", "--mobile-id"},
-        paramLabel = "MID", description = "flag for mobile id decryption")
-    private boolean withMid;
+        paramLabel = "MID", description = "ID code for mobile-id decryption")
+    private String mid;
 
     public File getPrivKeyFile() {
         return this.privKeyFile;
@@ -62,11 +62,19 @@ public class DecryptionKeyExclusiveArgument {
     }
 
     public boolean isWithSid() {
-        return this.withSid;
+        return this.sid != null;
     }
 
     public boolean isWithMid() {
-        return this.withMid;
+        return this.mid != null;
+    }
+
+    public String getSid() {
+        return this.sid;
+    }
+
+    public String getMid() {
+        return this.mid;
     }
 
 }
