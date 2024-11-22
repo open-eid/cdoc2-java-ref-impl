@@ -47,10 +47,6 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = "Alias of the keystore entry to use for decrypting")
     private String keyAlias;
 
-    @Option(names = {"-r", "--recipient", "--receiver"},
-        paramLabel = "isikukood", description = "recipient id code (isikukood)")
-    private String identificationCode;
-
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
     private File outputPath = new File(".");
@@ -87,11 +83,7 @@ public class CDocDecryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
-            : getDecryptionKeyMaterial(
-                this.cdocFile,
-                this.exclusive,
-                this.identificationCode
-            );
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
             this.cdocFile,

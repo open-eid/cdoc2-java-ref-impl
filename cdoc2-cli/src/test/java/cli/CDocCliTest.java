@@ -39,7 +39,7 @@ class CDocCliTest {
     private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
     private static final String SECRET_OPTION
         = "--secret=label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=";
-    private static final String SMART_ID_FLAG = "-sid=true";
+    private static final String SMART_ID_OPTION = "-sid=38001085718";
 
     private static final int SUCCESSFUL_EXIT_CODE = 0;
     private static final int FAILURE_EXIT_CODE = 1;
@@ -123,9 +123,10 @@ class CDocCliTest {
     @Test
     @Disabled("Needs running servers on configured option" + KEY_SHARES_SERVERS_URLS
         + "in key-shares.properties")
-    void testSuccessfulCreateDocWithSmartId() {
-        encryptWithKeyShares(SMART_ID_FLAG);
-        // ToDo add decryption here
+    // ToDo remove when bats tests are ready #3238
+    void testSuccessfulCreateDocWithSmartId() throws IOException {
+        encryptWithKeyShares();
+        decryptWithKeyShares();
     }
 
     @Test
@@ -380,9 +381,14 @@ class CDocCliTest {
         executeEncryption(encryptArgs, cdocFile);
     }
 
-    private void encryptWithKeyShares(String encryptionArgument) {
-        String[] encryptArgs = createEncryptArgsForKeyShares(encryptionArgument);
+    private void encryptWithKeyShares() {
+        String[] encryptArgs = createEncryptArgsForKeyShares(SMART_ID_OPTION);
         executeEncryption(encryptArgs, cdocFile);
+    }
+
+    private void decryptWithKeyShares() throws IOException {
+        String[] decryptArgs = createDecryptArgsForKeyShares(SMART_ID_OPTION);
+        executeDecryptionWithDefaultPath(decryptArgs, SUCCESSFUL_EXIT_CODE);
     }
 
     private void encryptWithTwoKeys(String encryptionArgument1, String encryptionArgument2) {
@@ -390,8 +396,7 @@ class CDocCliTest {
         executeEncryption(encryptArgs, cdocFile);
     }
 
-    private void decrypt(String decryptionArgument, int expectedDecryptExitCode)
-        throws IOException {
+    private void decrypt(String decryptionArgument, int expectedDecryptExitCode) throws IOException {
 
         String[] decryptArgs = createDecryptArgs(decryptionArgument, null);
         executeDecryptionWithDefaultPath(decryptArgs, expectedDecryptExitCode);
@@ -435,7 +440,6 @@ class CDocCliTest {
         return new String[]{
             "create",
             encryptionArgument,
-            "-r 38001085718",
             "-Dkey-shares.properties=config/localhost/key-shares.properties",
             "--file=" + cdocFile,
             cdocCliPath.resolve("README.md").toString()
@@ -456,6 +460,16 @@ class CDocCliTest {
             "--file=" + cdocFile,
             decryptionArgument1,
             decryptionArgument2,
+            "--output=" + outPath
+        };
+    }
+
+    private String[] createDecryptArgsForKeyShares(String decryptionArgument) {
+        return new String[]{
+            "decrypt",
+            "--file=" + cdocFile,
+            decryptionArgument,
+            "-Dkey-shares.properties=config/localhost/key-shares.properties",
             "--output=" + outPath
         };
     }

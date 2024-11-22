@@ -161,7 +161,7 @@ public class CDocBuilder {
 
     private static KeyCapsuleClientConfiguration initializeCapsuleConfiguration(Properties p) {
         Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
-        CDoc2ConfigurationProvider.init(configuration);
+        CDoc2ConfigurationProvider.initKeyCapsuleClientConfig(configuration);
         return configuration.keyCapsuleClientConfiguration();
     }
 

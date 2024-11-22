@@ -12,10 +12,12 @@ import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationImpl;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfigurationImpl;
+import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.Resources;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 
 
@@ -54,21 +56,39 @@ public final class CDocCommonHelper {
 
     private static KeyCapsuleClientConfiguration initializeCapsuleConfiguration(Properties p) {
         Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
-        CDoc2ConfigurationProvider.init(configuration);
+        CDoc2ConfigurationProvider.initKeyCapsuleClientConfig(configuration);
         return configuration.keyCapsuleClientConfiguration();
     }
 
     private static KeySharesConfiguration loadKeySharesConfiguration() {
-        String propertiesFilePath = System.getProperty(KEY_SHARES_PROPERTIES);
+        String propertiesFilePath = System.getProperty(
+            KEY_SHARES_PROPERTIES,
+            "config/localhost/" + KEY_SHARES_PROPERTIES
+        );
         if (null == propertiesFilePath) {
             throw new ConfigurationLoadingException("Key Shares configuration property is missing");
         }
 
         Properties properties = loadProperties(propertiesFilePath);
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-        CDoc2ConfigurationProvider.init(configuration);
+        CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
+        loadSmartIdConfiguration();
 
         return configuration.keySharesConfiguration();
+    }
+
+    private static void loadSmartIdConfiguration() throws ConfigurationLoadingException {
+        String propertiesFilePath = System.getProperty(
+            SMART_ID_PROPERTIES,
+            "config/localhost/smart-id/" + SMART_ID_PROPERTIES
+        );
+        if (null == propertiesFilePath) {
+            throw new ConfigurationLoadingException("Smart ID configuration property is missing");
+        }
+        Properties properties = loadProperties(propertiesFilePath);
+        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
+
+        CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
     }
 
 }

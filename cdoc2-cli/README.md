@@ -122,8 +122,23 @@ Key and label can be safely stored in a password manager.
 ### Encryption with Smart ID
 
 ```
-java -jar target/cdoc2-cli-*.jar create -r 38001085718 --smart-id=true -f /tmp/smartid.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc README.md
 ```
+
+Multiple ID codes are allowed to be sent for encryption:
+
+```
+java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 -f /tmp/smartid.cdoc README.md
+```
+
+Key shares or Smart-ID properties can be sent externally by adding following options (the same 
+for decryption):
+
+`-Dkey-shares.properties=config/localhost/key-shares.properties`
+
+and/or
+
+`-Dsmart-id.properties=config/localhost/smart-id/smart-id.properties`
 
 
 ### Decryption
@@ -135,6 +150,13 @@ To decrypt:
 ```
 java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
 ```
+
+or with Smart-ID:
+
+```
+java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc --output /tmp
+```
+
 
 ### Decrypting with server scenario
 Server must be running, see cdoc2-capsule-server/README.md for starting the server

@@ -25,7 +25,6 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
@@ -45,11 +44,8 @@ public class SmartIdClientWrapper {
 
     /**
      * Constructor for Smart-ID Client wrapper
+     * 2param conf Smart-ID client configuration
      */
-    public SmartIdClientWrapper() throws ConfigurationLoadingException {
-        this(CDoc2ConfigurationProvider.getConfiguration().smartIdClientConfiguration());
-    }
-
     public SmartIdClientWrapper(SmartIdClientConfiguration conf) {
         this.smartIdClientConfig = conf;
         this.smartIdClient = new SmartIdClient();

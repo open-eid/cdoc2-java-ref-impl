@@ -16,7 +16,6 @@ import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 
 
@@ -28,10 +27,6 @@ public class SmartIdClient {
     private static final Logger log = LoggerFactory.getLogger(SmartIdClient.class);
 
     private final SmartIdClientWrapper smartIdClientWrapper;
-
-    public SmartIdClient() throws ConfigurationLoadingException {
-        smartIdClientWrapper = new SmartIdClientWrapper();
-    }
 
     public SmartIdClient(SmartIdClientConfiguration conf) {
         smartIdClientWrapper = new SmartIdClientWrapper(conf);

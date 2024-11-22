@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.UserErrorCode;
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
@@ -23,18 +22,14 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
     private static final Logger log = LoggerFactory.getLogger(KeySharesClientHelper.class);
 
     private final Collection<KeySharesClient> clients;
+    private final KeySharesConfiguration configuration;
 
-    public KeySharesClientHelper(Collection<KeySharesClient> keyShareClients) {
+    public KeySharesClientHelper(
+        Collection<KeySharesClient> keyShareClients,
+        KeySharesConfiguration sharesConfiguration
+    ) {
         this.clients = keyShareClients;
-    }
-
-    /**
-     * Initialize Key share client instance for specified server.
-     * @return Key share client factory
-     * @throws CDocUserException when the requested server is not found
-     */
-    public static KeyShareClientFactory createFactory() throws GeneralSecurityException {
-        return initKeySharesClientByServer();
+        this.configuration = sharesConfiguration;
     }
 
     /**
@@ -71,14 +66,7 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
 
     @Override
     public KeySharesConfiguration getKeySharesConfiguration() throws ConfigurationLoadingException {
-        return CDoc2ConfigurationProvider.getConfiguration().keySharesConfiguration();
-    }
-
-    private static KeySharesClientHelper initKeySharesClientByServer() throws GeneralSecurityException {
-        KeySharesConfiguration keySharesConfiguration
-            = CDoc2ConfigurationProvider.getConfiguration().keySharesConfiguration();
-
-        return initKeySharesClientByServer(keySharesConfiguration);
+        return configuration;
     }
 
     private static KeySharesClientHelper initKeySharesClientByServer(
@@ -93,7 +81,7 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
             keyShareClients.add(KeySharesClientImpl.create(server, configuration));
         }
 
-        return new KeySharesClientHelper(keyShareClients);
+        return new KeySharesClientHelper(keyShareClients, configuration);
     }
 
 }

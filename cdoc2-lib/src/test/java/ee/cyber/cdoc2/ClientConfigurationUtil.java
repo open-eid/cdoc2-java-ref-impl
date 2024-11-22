@@ -23,16 +23,15 @@ public final class ClientConfigurationUtil {
             CLASSPATH + "smartid/smart_id-test.properties"
         );
         Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-        CDoc2ConfigurationProvider.init(configuration);
+        CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
 
-        return configuration.smartIdClientConfiguration();
+        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
     }
 
     public static SmartIdClientConfiguration registerFromProperties(Properties properties) {
         Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-        CDoc2ConfigurationProvider.init(configuration);
 
-        return configuration.smartIdClientConfiguration();
+        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
     }
 
     public static KeySharesConfiguration initKeySharesConfiguration() throws ConfigurationLoadingException {
@@ -40,9 +39,8 @@ public final class ClientConfigurationUtil {
             CLASSPATH + "key_shares-test.properties"
         );
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-        CDoc2ConfigurationProvider.init(configuration);
 
-        return configuration.keySharesConfiguration();
+        return CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
     }
 
 }
