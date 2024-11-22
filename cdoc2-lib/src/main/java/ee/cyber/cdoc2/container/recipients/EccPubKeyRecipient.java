@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
@@ -12,6 +12,7 @@ import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
+
 /**
  * ECC recipient using ECCPublicKey. POJO of
  * {@link ECCPublicKeyCapsule recipients.ECCPublicKeyCapsule} in CDOC header.
@@ -20,8 +21,13 @@ public class EccPubKeyRecipient extends EccRecipient {
 
     private final ECPublicKey senderPubKey;
 
-    public EccPubKeyRecipient(EllipticCurve eccCurve, ECPublicKey recipient, ECPublicKey sender,
-                              byte[] encFmk, String recipientLabel) {
+    public EccPubKeyRecipient(
+        EllipticCurve eccCurve,
+        ECPublicKey recipient,
+        ECPublicKey sender,
+        byte[] encFmk,
+        String recipientLabel
+    ) {
         super(eccCurve, recipient, recipientLabel, encFmk);
         this.senderPubKey = sender;
     }
@@ -52,7 +58,7 @@ public class EccPubKeyRecipient extends EccRecipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
         throws GeneralSecurityException {
         if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
             return KekTools.deriveKekForEcc(this, keyPairKeyMaterial);
@@ -67,4 +73,5 @@ public class EccPubKeyRecipient extends EccRecipient {
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serialize(this, builder);
     }
+
 }

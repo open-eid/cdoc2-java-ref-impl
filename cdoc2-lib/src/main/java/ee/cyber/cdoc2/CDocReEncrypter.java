@@ -11,10 +11,10 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.exceptions.CDocException;
 
 import org.slf4j.Logger;
@@ -36,14 +36,14 @@ public class CDocReEncrypter {
     private final EncryptionKeyMaterial reEncryptionKeyMaterial;
 
     @Nullable
-    private final KeyCapsuleClientFactory keyServerClientFactory;
+    private final ExternalService keyServerClientFactory;
 
     public CDocReEncrypter(
         File cDocFile,
         DecryptionKeyMaterial decryptionKeyMaterial,
         File destCdocFile,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
-        @Nullable KeyCapsuleClientFactory keyCapsulesClientFactory
+        @Nullable ExternalService keyCapsulesClientFactory
     ) {
         Objects.nonNull(cDocFile);
         Objects.nonNull(decryptionKeyMaterial);

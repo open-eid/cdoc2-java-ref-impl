@@ -7,7 +7,9 @@ import java.util.Objects;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.ExternalService;
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
@@ -23,6 +25,7 @@ import ee.cyber.cdoc2.fbs.recipients.SharesScheme;
 public class KeySharesRecipient extends Recipient {
 
     private final List<KeyShareUri> shares;
+    private final String recipientId;
     private final byte[] salt;
     private final byte recipientType;
     private final byte sharesScheme;
@@ -30,17 +33,20 @@ public class KeySharesRecipient extends Recipient {
     /**
      * Constructor
      * @param encFmk encrypted FMK key
-     * @param recipientId formatted key label value as recipient ID
+     * @param keyLabel formatted key label
+     * @param recipientId recipient ID as ETSI identifier (eg. 'etsi/PNOEE-48010010101')
      * @param shares list of share server URL and share ID
      * @param salt encryption salt
      */
     public KeySharesRecipient(
         byte[] encFmk,
+        String keyLabel,
         String recipientId,
         List<KeyShareUri> shares,
         byte[] salt
     ) {
-        super(encFmk, recipientId);
+        super(encFmk, keyLabel);
+        this.recipientId = recipientId;
         this.shares = shares;
         this.salt = salt;
         this.recipientType = KeyShareRecipientType.SID_MID;
@@ -49,7 +55,7 @@ public class KeySharesRecipient extends Recipient {
 
     @Override
     public Object getRecipientId() {
-        return recipientKeyLabel;
+        return recipientId;
     }
 
     public List<KeyShareUri> getKeyShares() {
@@ -72,11 +78,18 @@ public class KeySharesRecipient extends Recipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
-        throws GeneralSecurityException {
-        if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial) {
-            // ToDo derive key in #2752
-            return new byte[0];
+    public byte[] deriveKek(
+        DecryptionKeyMaterial keyMaterial,
+        ExternalService factory
+    ) throws GeneralSecurityException {
+
+        if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial
+        && factory instanceof KeyShareClientFactory keyShareClientFactory) {
+            return KekTools.deriveKekFromShares(
+                this,
+                keyShareKeyMaterial,
+                keyShareClientFactory
+            );
         }
 
         throw new GeneralSecurityException(

@@ -1,6 +1,11 @@
 package ee.cyber.cdoc2.container;
 
 import ee.cyber.cdoc2.TestLifecycleLogger;
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
@@ -60,18 +65,21 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_SERVERS_URLS;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
@@ -104,11 +112,38 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Mock
     KeyCapsuleClient capsuleClientMock;
 
+    @Mock
+    KeySharesClient mockKeySharesClient1;
+
+    @Mock
+    KeySharesClient mockKeySharesClient2;
+
+    @Captor
+    ArgumentCaptor<KeyShare> keyShareCaptor1;
+
+    @Captor
+    ArgumentCaptor<KeyShare> keyShareCaptor2;
+
+    KeyShareClientFactory shareClientFactory;
+
     Capsule capsuleData;
 
     @BeforeAll
     static void init() {
         bobKeyLabelParams = getPublicKeyLabelParams("bobKeyPem");
+    }
+
+    void setupKeyShareClientMocks() throws Exception {
+        KeySharesConfiguration configuration = initKeySharesConfiguration();
+        shareClientFactory = new KeySharesClientHelper(List.of(mockKeySharesClient1, mockKeySharesClient2));
+
+        List<String> keySharesServersUrls = configuration.getKeySharesServersUrls().stream().toList();
+        assertTrue(keySharesServersUrls.size() >= 2);
+        when(mockKeySharesClient1.getServerIdentifier()).thenReturn(keySharesServersUrls.get(0));
+        when(mockKeySharesClient2.getServerIdentifier()).thenReturn(keySharesServersUrls.get(1));
+
+        when(mockKeySharesClient1.storeKeyShare(any())).thenReturn("shareId1");
+        when(mockKeySharesClient2.storeKeyShare(any())).thenReturn("shareId2");
     }
 
     // Mainly flatbuffers and friends
@@ -478,12 +513,31 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
-    @Disabled("Needs running servers on configured option" + KEY_SHARES_SERVERS_URLS
-        + "in key_shares-test.properties")
     void testKeySharesScenario(@TempDir Path tempDir) throws Exception {
         SemanticIdentification keyLabel = SemanticIdentification.forSid("38001085718");
+        setupKeyShareClientMocks();
 
-        testContainerWithKeyShares(tempDir, keyLabel);
+        EnvelopeTestUtils.DecryptionData decryptionData
+            = testContainerWithKeyShares(tempDir, keyLabel, shareClientFactory);
+
+        verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
+        verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
+
+        KeyShare keyShare1 = keyShareCaptor1.getValue();
+        KeyShare keyShare2 = keyShareCaptor2.getValue();
+
+        when(mockKeySharesClient1.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare2));
+
+        checkContainerDecrypt(
+            decryptionData.cdocContainerBytes(),
+            decryptionData.outDir(),
+            decryptionData.decryptionKeyMaterial(),
+            List.of(decryptionData.payloadFileName()),
+            decryptionData.payloadFileName(),
+            decryptionData.payloadData(),
+            shareClientFactory
+        );
     }
 
     @Test
@@ -537,7 +591,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         // ensure that re-encrypted container is decipherable
         assertDoesNotThrow(
-            () ->  EnvelopeTestUtils.checkContainerDecrypt(
+            () ->  checkContainerDecrypt(
                 Files.readAllBytes(outputCDocFile.toPath()),
                 destinationDir,
                 DecryptionKeyMaterial.fromPassword(password.toCharArray(), passwordKeyLabel),
@@ -628,7 +682,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         var ex = assertThrows(
             Exception.class,
-            () -> EnvelopeTestUtils.checkContainerDecrypt(cdocContainerBytes, outDir,
+            () -> checkContainerDecrypt(cdocContainerBytes, outDir,
                 DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
                 List.of(payloadFileName), payloadFileName, payloadData, null)
         );
@@ -802,7 +856,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         IOException ioex = assertThrows(IOException.class, () -> Envelope.decrypt(
             countingInputStream,
-            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null
+            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null, null
         ));
 
         assertEquals("Tar entry with illegal type found", ioex.getMessage());
@@ -813,8 +867,6 @@ class EnvelopeTest implements TestLifecycleLogger {
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
 
-
-
         // MAC check exception is thrown instead of "Unexpected data after tar"
         byte[] wrongPoly1305MacCdoc = Arrays.copyOf(newCdocBytes, newCdocBytes.length);
         wrongPoly1305MacCdoc[wrongPoly1305MacCdoc.length - 1] = (byte) 0xff; //corrupt MAC
@@ -824,7 +876,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         IOException ex = assertThrows(IOException.class, () -> Envelope.decrypt(
             wrongMacIs,
-            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null
+            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null, null
         ));
 
         assertInstanceOf(AEADBadTagException.class, ex.getCause());
@@ -948,7 +1000,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
             try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
                 List<String> filesExtracted = Envelope.decrypt(bis, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
-                    outDir, null);
+                    outDir, null, null);
 
                 assertEquals(List.of(payloadFileName), filesExtracted);
                 Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);

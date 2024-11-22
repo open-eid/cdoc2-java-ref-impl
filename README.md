@@ -174,8 +174,8 @@ can do that.
 9. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
 10. Sender encrypts content with CEK (ChaCha20-Poly1305 with AAD)
 11. Sender sends CDOC2 document to Recipient
-12. Recipient  will choose Smart-ID decryption method (if he/she has Smart-ID account) and 
-    enter/choose his/her id-code. (TODO: for mobile-id, user needs to enter mobile phone connected to his id-code )
+12. Recipient will choose Smart-ID decryption method (if he/she has Smart-ID account) and 
+    enter/choose his/her id-code. (TODO: for mobile-id, user needs to enter mobile phone connected to his id-code)
 13. Recipient searches CDOC header for Smart-ID record with entered id-code.
 14. Recipient loops over secret shares and for each `server:shareId` asks `nonce` from server.
     Uses '/key-shares/{shareId}/nonce' endpoint in each server.

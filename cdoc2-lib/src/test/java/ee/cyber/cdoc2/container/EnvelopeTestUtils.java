@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.container;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
-import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
@@ -58,7 +58,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
@@ -78,9 +77,9 @@ public final class EnvelopeTestUtils {
 
     /**
      * Replace payload inside cdoc2 container. Limitation is that container must be created with SecretKey and Label
-     * @param origCdocBytes  cdoc2 container
-     * @param preSharedKey   pre-shared key
-     * @param keyLabel       key label
+     * @param origCdocBytes cdoc2 container
+     * @param preSharedKey pre-shared key
+     * @param keyLabel key label
      * @param newCdocPayload payload from origCdocBytes will be replaced with encrypted newCdocPayload
      * @return new cdoc2 container where original payload was replaced with newCdocPayload
      * @throws IOException if an I/O error has occurred
@@ -256,7 +255,8 @@ public final class EnvelopeTestUtils {
     public static byte[] createContainerWithKeyShares(
         File payloadFile,
         byte[] payloadData,
-        SemanticIdentification semanticIdentification
+        SemanticIdentification semanticIdentification,
+        KeyShareClientFactory shareClientFactory
     ) throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -274,7 +274,7 @@ public final class EnvelopeTestUtils {
 
         byte[] cdocContainerBytes;
         Envelope senderEnvelope = Envelope.prepare(
-            List.of(encKeyMaterial), null, getKeySharesFactory()
+            List.of(encKeyMaterial), null, shareClientFactory
         );
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
@@ -317,16 +317,18 @@ public final class EnvelopeTestUtils {
 
         assertTrue(cdocContainerBytes.length > 0);
 
+        ExternalService clientFactory = getCapsulesClientFactory(capsulesClient);
         checkContainerDecrypt(cdocContainerBytes, outDir, keyMaterial,
-            List.of(payloadFileName), payloadFileName, payloadData, capsulesClient);
+            List.of(payloadFileName), payloadFileName, payloadData, clientFactory);
     }
 
     /**
      * Creates CDOC2 container in tempDir and encrypts/decrypts it with key shares.
      */
-    public static void testContainerWithKeyShares(
+    public static DecryptionData testContainerWithKeyShares(
         Path tempDir,
-        SemanticIdentification semanticIdentification
+        SemanticIdentification semanticIdentification,
+        KeyShareClientFactory shareClientFactory
     ) throws Exception {
 
         UUID uuid = UUID.randomUUID();
@@ -340,12 +342,19 @@ public final class EnvelopeTestUtils {
         byte[] cdocContainerBytes = createContainerWithKeyShares(
             payloadFile,
             payloadData.getBytes(StandardCharsets.UTF_8),
-            semanticIdentification
+            semanticIdentification,
+            shareClientFactory
         );
 
         assertTrue(cdocContainerBytes.length > 0);
 
-        // ToDo add checkContainerDecrypt() here after decryption implemention #3241
+        return new DecryptionData(
+            cdocContainerBytes,
+            outDir,
+            DecryptionKeyMaterial.fromAuthMeans(semanticIdentification),
+            payloadFileName,
+            payloadData
+        );
     }
 
     private static EncryptionKeyMaterial createEncryptionKeyMaterialForPublicKey(
@@ -371,11 +380,6 @@ public final class EnvelopeTestUtils {
         }
     }
 
-    private static KeyShareClientFactory getKeySharesFactory() throws GeneralSecurityException {
-        initKeySharesConfiguration();
-        return KeySharesClientHelper.createFactory();
-    }
-
     public static void checkContainerDecrypt(
         byte[] cdocBytes,
         Path outDir,
@@ -383,11 +387,9 @@ public final class EnvelopeTestUtils {
         List<String> expectedFilesExtracted,
         String payloadFileName,
         String expectedPayloadData,
-        KeyCapsuleClient capsulesClient
+        ExternalService clientFactory
     )  throws Exception {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
-            KeyCapsuleClientFactory clientFactory = getCapsulesClientFactory(capsulesClient);
-
             List<String> filesExtracted = Envelope.decrypt(bis, keyMaterial, outDir, clientFactory);
 
             assertEquals(expectedFilesExtracted, filesExtracted);
@@ -420,7 +422,7 @@ public final class EnvelopeTestUtils {
         @Nullable KeyCapsuleClient capsuleClient
     ) throws Exception {
 
-        KeyCapsuleClientFactory clientFactory = getCapsulesClientFactory(capsuleClient);
+        ExternalService clientFactory = getCapsulesClientFactory(capsuleClient);
         Envelope.reEncrypt(cdocIs, decryptionKeyMaterial, destCdoc, encryptionKeyMaterial,
             destDir, clientFactory);
     }
@@ -460,7 +462,7 @@ public final class EnvelopeTestUtils {
         return createPublicKeyLabelParams(label, null);
     }
 
-    private static KeyCapsuleClientFactory getCapsulesClientFactory(KeyCapsuleClient capsulesClient) {
+    public static KeyCapsuleClientFactory getCapsulesClientFactory(KeyCapsuleClient capsulesClient) {
         return (capsulesClient == null) ? null : serverId -> {
             Objects.requireNonNull(serverId);
             if (serverId.equals(capsulesClient.getServerIdentifier())) {
@@ -470,7 +472,6 @@ public final class EnvelopeTestUtils {
             log.warn("No KeyCapsulesClient for {}", serverId);
             return null;
         };
-
     }
 
     private static EncryptionKeyMaterial createEncryptionKeyMaterialAccordingToKeyLabelFormat(
@@ -489,6 +490,15 @@ public final class EnvelopeTestUtils {
                 secretKey, keyLabel
             );
         }
+    }
+
+    record DecryptionData(
+        byte[] cdocContainerBytes,
+        Path outDir,
+        DecryptionKeyMaterial decryptionKeyMaterial,
+        String payloadFileName,
+        String payloadData
+    ) {
     }
 
 }

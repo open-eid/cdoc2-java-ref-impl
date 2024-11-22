@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.KekTools;
@@ -72,7 +72,7 @@ public class PBKDF2Recipient extends Recipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
         throws GeneralSecurityException {
         if (keyMaterial instanceof PasswordDecryptionKeyMaterial pwKeyMaterial) {
             return KekTools.deriveKekForPasswordDerivedKey(this, pwKeyMaterial);
@@ -109,4 +109,5 @@ public class PBKDF2Recipient extends Recipient {
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serializePBKDF2Recipient(this, builder);
     }
+
 }

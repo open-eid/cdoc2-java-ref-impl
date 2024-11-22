@@ -6,6 +6,7 @@ import ee.cyber.cdoc2.crypto.EllipticCurve;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
+
 /**
  * Base class for ECC based recipients {@link EccPubKeyRecipient} and {@link EccServerKeyRecipient}.
  */

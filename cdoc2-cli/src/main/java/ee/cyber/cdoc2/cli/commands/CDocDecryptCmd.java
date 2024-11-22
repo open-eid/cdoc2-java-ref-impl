@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -8,17 +9,18 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.nio.file.InvalidPathException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 
 import java.util.concurrent.Callable;
 
 import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
@@ -44,6 +46,10 @@ public class CDocDecryptCmd implements Callable<Void> {
     @Option(names = {"-a", "--alias"},
             description = "Alias of the keystore entry to use for decrypting")
     private String keyAlias;
+
+    @Option(names = {"-r", "--recipient", "--receiver"},
+        paramLabel = "isikukood", description = "recipient id code (isikukood)")
+    private String identificationCode;
 
     @Option(names = {"-o", "--output"}, paramLabel = "DIR",
             description = "output destination | Default: current-directory")
@@ -74,7 +80,7 @@ public class CDocDecryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        KeyCapsuleClientFactory keyCapsulesClientFactory = null;
+        ExternalService keyCapsulesClientFactory = null;
         if (this.keyServerPropertiesFile != null) {
             keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
@@ -83,10 +89,8 @@ public class CDocDecryptCmd implements Callable<Void> {
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(
                 this.cdocFile,
-                this.exclusive.getLabeledPasswordParam(),
-                this.exclusive.getSecret(),
-                this.exclusive.getP12(),
-                this.exclusive.getPrivKeyFile()
+                this.exclusive,
+                this.identificationCode
             );
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
@@ -97,10 +101,18 @@ public class CDocDecryptCmd implements Callable<Void> {
             keyCapsulesClientFactory
         );
 
+        addKeySharesIfAny(cDocDecrypter);
+
         System.out.println("Decrypting " + this.cdocFile + " to " + this.outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();
         extractedFileNames.forEach(System.out::println);
         return null;
+    }
+
+    private void addKeySharesIfAny(CDocDecrypter cDocDecrypter) throws GeneralSecurityException {
+        if (this.exclusive.isWithSid() || this.exclusive.isWithMid()) {
+            cDocDecrypter.withKeyShares(initKeyShareClientFactory());
+        }
     }
 
 }

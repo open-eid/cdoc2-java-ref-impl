@@ -1,8 +1,9 @@
 package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KekTools;
@@ -21,9 +22,14 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
     private final String keyServerId;
     private final String transactionId;
 
-    public EccServerKeyRecipient(EllipticCurve eccCurve, ECPublicKey recipientPubKey,
-                                 String keyServerId, String transactionId, byte[] encryptedFmk,
-                                 String recipientPubKeyLabel) {
+    public EccServerKeyRecipient(
+        EllipticCurve eccCurve,
+        ECPublicKey recipientPubKey,
+        String keyServerId,
+        String transactionId,
+        byte[] encryptedFmk,
+        String recipientPubKeyLabel
+    ) {
         super(eccCurve, recipientPubKey, recipientPubKeyLabel, encryptedFmk);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
@@ -55,13 +61,14 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
         throws GeneralSecurityException, CDocException {
-        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial
+            && factory instanceof KeyCapsuleClientFactory keyCapsuleClientFactory) {
             return KekTools.deriveKekForEccServer(
                 this,
                 keyPairKeyMaterial,
-                factory
+                keyCapsuleClientFactory
             );
         }
 
@@ -70,9 +77,9 @@ public class EccServerKeyRecipient extends EccRecipient implements ServerRecipie
         );
     }
 
-
     @Override
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serialize(this, builder);
     }
+
 }

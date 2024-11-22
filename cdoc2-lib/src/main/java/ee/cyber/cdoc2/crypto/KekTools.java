@@ -1,12 +1,17 @@
 package ee.cyber.cdoc2.crypto;
 
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.KeySharesRecipient;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
@@ -24,6 +29,8 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -227,6 +234,67 @@ public final class KekTools {
     ) {
         if (!expectedKeyOrigin.equals(keyOrigin)) {
             throw new IllegalArgumentException(errorMsg);
+        }
+    }
+
+    /**
+     * Derive KEK from shares. Used for SID/MID.
+     * @param keySharesRecipient key shares recipient
+     * @param keyMaterial key share decryption key material
+     * @param keyShareClientFactory key share client factory
+     * @return bytes of KEK
+     * @throws GeneralSecurityException if key extraction has failed
+     */
+    public static byte[] deriveKekFromShares(
+        KeySharesRecipient keySharesRecipient,
+        KeyShareDecryptionKeyMaterial keyMaterial,
+        KeyShareClientFactory keyShareClientFactory
+    ) throws GeneralSecurityException {
+        validateKeyOrigin(
+            EncryptionKeyOrigin.KEY_SHARE,
+            keyMaterial.getKeyOrigin(),
+            "Expected key shares for KeySharesRecipient"
+        );
+
+        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
+        List<byte[]> listOfShares = new ArrayList<>();
+
+        for (KeyShareUri share : shares) {
+            listOfShares.add(extractSharesFromRecipient(keyShareClientFactory, share));
+        }
+
+        return Crypto.combineKek(
+            listOfShares,
+            keyShareClientFactory.getKeySharesConfiguration().getKeySharesServersMinNum()
+        );
+    }
+
+    private static byte[] extractSharesFromRecipient(
+        KeyShareClientFactory keyShareClientFactory,
+        KeyShareUri share
+    ) throws GeneralSecurityException {
+        KeySharesClient client
+            = keyShareClientFactory.getClientForServerUrl(share.serverBaseUrl());
+        try {
+            // ToDo server nonce will be used for authentication signature
+//            NonceResponse nonce = client.createKeyShareNonce(share.shareId());
+            Optional<KeyShare> keyShare = client.getKeyShare(share.shareId(), new byte[256]);
+            if (keyShare.isEmpty()) {
+                throw new GeneralSecurityException(
+                    String.format(
+                        "Failed to find share ID %s at server %s",
+                        share.shareId(),
+                        share.serverBaseUrl()
+                    )
+                );
+            }
+
+            return keyShare.get().getShare();
+//        } catch (ApiException | ExtApiException e) {
+        } catch (ExtApiException e) {
+            throw new GeneralSecurityException(
+                "Failed to derive key encryption key from shares", e
+            );
         }
     }
 

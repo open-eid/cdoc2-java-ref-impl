@@ -125,12 +125,12 @@ public final class Crypto {
 
     /**
      * Derive KEK from salt and secret. Used in symmetric key scenario only.
-     * @param label              Label identifying pre shared secret
+     * @param label Label identifying pre shared secret
      * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to
      *                           derive KEK. Min len of 32 bytes
-     * @param salt               salt minimum length of 32 bytes
-     * @param fmkEncMethod       fmk encryption method from {@link FMKEncryptionMethod#names}.
-     *                           Currently, only "XOR" is valid value
+     * @param salt salt minimum length of 32 bytes
+     * @param fmkEncMethod fmk encryption method from {@link FMKEncryptionMethod#names}.
+     *                     Currently, only "XOR" is valid value
      * @return SecretKey with derived KEK
      */
     public static SecretKey deriveKeyEncryptionKey(
@@ -172,7 +172,7 @@ public final class Crypto {
      * Create Symmetric Key from password and salt.
      * @param passwordChars password chars between parties (sender and recipient) used to create
      *                      a symmetric key. Min len of 32 bytes
-     * @param salt          generated salt
+     * @param salt generated salt
      * @return SecretKey with symmetric key
      * @throws GeneralSecurityException if key creation has failed
      */
@@ -270,9 +270,9 @@ public final class Crypto {
 
     /**
      * Derive KEK for EC scenarios
-     * @param ecKeyPair        key pair
-     * @param otherPublicKey   public key
-     * @param keyLen           key length
+     * @param ecKeyPair key pair
+     * @param otherPublicKey public key
+     * @param keyLen key length
      * @param isEncryptionMode if encryption mode enabled or not
      * @return bytes of derived KEK
      * @throws GeneralSecurityException if key creation has failed
@@ -301,7 +301,7 @@ public final class Crypto {
 
     /**
      * Calculate HMAC
-     * @param hhk  HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
+     * @param hhk HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
      * @param data input – data in bytes. For CDOC2 this is header FlatBuffers bytes
      * @return the MAC result
      * @throws NoSuchAlgorithmException if no Provider supports a MacSpi implementation for the specified algorithm

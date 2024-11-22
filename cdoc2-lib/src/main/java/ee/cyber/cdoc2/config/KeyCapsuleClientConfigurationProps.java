@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.config;
 
+import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -16,7 +18,6 @@ import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 import ee.cyber.cdoc2.util.Resources;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
-import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 
 
@@ -132,7 +133,7 @@ public record KeyCapsuleClientConfigurationProps(
      * @throws ConfigurationLoadingException if failed to load key trust store
      * @return client key store or null if not defined in properties
      */
-    @javax.annotation.Nullable
+    @Nullable
     private static KeyStore loadClientKeyStore(Properties p)
         throws ConfigurationLoadingException {
 

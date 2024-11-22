@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.KekTools;
@@ -22,8 +23,13 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     private final String keyServerId;
     private final String transactionId;
 
-    public RSAServerKeyRecipient(RSAPublicKey recipient, String keyServerId, String transactionId,
-            byte[] encryptedFmk, String recipientLabel) {
+    public RSAServerKeyRecipient(
+        RSAPublicKey recipient,
+        String keyServerId,
+        String transactionId,
+        byte[] encryptedFmk,
+        String recipientLabel
+    ) {
         super(recipient, encryptedFmk, recipientLabel);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
@@ -54,13 +60,14 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
         throws GeneralSecurityException, CDocException {
-        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial
+            && factory instanceof KeyCapsuleClientFactory keyCapsuleClientFactory) {
             return KekTools.deriveKekForRsaServer(
                 this,
                 keyPairKeyMaterial,
-                factory
+                keyCapsuleClientFactory
             );
         }
 

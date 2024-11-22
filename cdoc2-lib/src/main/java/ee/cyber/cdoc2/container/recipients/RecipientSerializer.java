@@ -30,7 +30,6 @@ public final class RecipientSerializer {
     private RecipientSerializer() { }
 
     public static int serialize(EccServerKeyRecipient eccServerRecipient, FlatBufferBuilder builder) {
-
         int recipientPubKeyOffset
             = builder.createByteVector(eccServerRecipient.getRecipientPubKeyTlsEncoded());
 
@@ -66,7 +65,6 @@ public final class RecipientSerializer {
     }
 
     public static int serialize(EccPubKeyRecipient eccRecipient, FlatBufferBuilder builder) {
-
         int recipientPubKeyOffset = builder.createByteVector(eccRecipient.getRecipientPubKeyTlsEncoded());
         int senderPubKeyOffset = builder.createByteVector(eccRecipient.getSenderPubKeyTlsEncoded());
         int eccPubKeyOffset = ECCPublicKeyCapsule.createECCPublicKeyCapsule(builder,
@@ -91,8 +89,6 @@ public final class RecipientSerializer {
     }
 
     public static int serialize(RSAServerKeyRecipient rsaServerRecipient, FlatBufferBuilder builder) {
-
-
         byte[] rsaPubKeyDer = RsaUtils.encodeRsaPubKey(rsaServerRecipient.getRecipientPubKey());
         int recipientPubKeyOffset = builder.createByteVector(rsaPubKeyDer);
 
@@ -125,7 +121,6 @@ public final class RecipientSerializer {
     }
 
     public static int serialize(RSAPubKeyRecipient rsaRecipient, FlatBufferBuilder builder) {
-
         int recipientPubKeyOffset = builder.createByteVector(
                 RsaUtils.encodeRsaPubKey(rsaRecipient.getRecipientPubKey()));
         int encKekOffset = builder.createByteVector(rsaRecipient.getEncryptedKek());
@@ -247,16 +242,14 @@ public final class RecipientSerializer {
         int encFmkOffset,
         byte fmkEncryptionMethod
     ) {
-        RecipientRecord.startRecipientRecord(builder);
-        RecipientRecord.addCapsuleType(builder, capsuleType);
-        RecipientRecord.addCapsule(builder, capsuleOffset);
-
-        RecipientRecord.addKeyLabel(builder, keyLabelOffset);
-
-        RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
-        RecipientRecord.addFmkEncryptionMethod(builder, fmkEncryptionMethod);
-
-        return RecipientRecord.endRecipientRecord(builder);
+        return RecipientRecord.createRecipientRecord(
+            builder,
+            capsuleType,
+            capsuleOffset,
+            keyLabelOffset,
+            encFmkOffset,
+            fmkEncryptionMethod
+        );
     }
 
     /**

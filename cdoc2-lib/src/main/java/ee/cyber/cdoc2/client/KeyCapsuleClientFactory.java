@@ -3,7 +3,7 @@ package ee.cyber.cdoc2.client;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 
 
-public interface KeyCapsuleClientFactory {
+public interface KeyCapsuleClientFactory extends ExternalService {
     /**
      * Get Key server client
      * @param serverId unique server identifier

@@ -3,6 +3,7 @@ package ee.cyber.cdoc2.container.recipients;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
 
+
 /**
  * Base class for RSAPubKeyRecipient and RSAServerKeyRecipient
  */
@@ -37,4 +38,5 @@ public abstract class RSARecipient extends Recipient implements PublicKeyRecipie
     public int hashCode() {
         return Objects.hash(super.hashCode(), recipientPubKey);
     }
+
 }
