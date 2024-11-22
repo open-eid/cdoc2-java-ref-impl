@@ -74,6 +74,20 @@ class KeySharesClientTest {
     }
 
     @Test
+    void shouldCreateAndGetSameKeyShare() throws ExtApiException {
+        KeyShare keyShare = getKeyShare();
+
+        when(client.storeKeyShare(any())).thenReturn(SHARE_ID);
+        String shareId = client.storeKeyShare(keyShare);
+
+        when(client.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare));
+        Optional<KeyShare> createdKeyShare = client.getKeyShare(shareId, AUTH_TICKET);
+
+        assertTrue(createdKeyShare.isPresent());
+        assertEquals(keyShare, createdKeyShare.get());
+    }
+
+    @Test
     void shouldCreateKeyShareNonce() throws ApiException {
         byte[] nonce = "nonce".getBytes(StandardCharsets.UTF_8);
 
@@ -135,8 +149,8 @@ class KeySharesClientTest {
 
     private KeyShare getKeyShare() {
         KeyShare keyShare = new KeyShare();
-        keyShare.setShare("share".getBytes(StandardCharsets.UTF_8));
-        keyShare.setRecipient("recipient");
+        keyShare.setShare(new byte[32]);
+        keyShare.setRecipient("etsi/PNOEE-38001085718");
 
         return keyShare;
     }

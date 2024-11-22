@@ -5,6 +5,7 @@ import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import picocli.CommandLine;
@@ -21,12 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocReEncrypter;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
@@ -95,13 +95,12 @@ public class CDocReEncryptCmd implements Callable<Void> {
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(
             this.cdocFile,
-            this.exclusive.getLabeledPasswordParam(),
-            this.exclusive.getSecret(),
-            this.exclusive.getP12(),
-            this.exclusive.getPrivKeyFile()
+            this.exclusive,
+            // ToDo add identificationCode for SID re-encryption
+            null
         );
 
-        KeyCapsuleClientFactory keyCapsulesClientFactory = null;
+        ExternalService keyCapsulesClientFactory = null;
 
         if (this.keyServerPropertiesFile != null) {
             keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);

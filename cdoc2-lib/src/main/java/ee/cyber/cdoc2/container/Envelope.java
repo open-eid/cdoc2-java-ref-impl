@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
@@ -9,7 +10,6 @@ import ee.cyber.cdoc2.container.recipients.RecipientFactory;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.ChaChaCipher;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -115,7 +115,7 @@ public final class Envelope {
     public static Envelope prepare(
         List<EncryptionKeyMaterial> recipients,
         @Nullable KeyCapsuleClient capsuleClient,
-        @Nullable KeyShareClientFactory keyShareClientFactory
+        @Nullable ExternalService keyShareClientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
@@ -241,9 +241,9 @@ public final class Envelope {
      * @param destReEncryptedCdoc [out] reEncrypted CDOC will be written into destReEncryptedCdoc
      * @param reEncryptionKeyMaterial reEncrypted CDOC will be encrypted with reEncryptionKeyMaterial.
      *                               Only password and symmetric key are supported for re-encryption
-     * @param capsulesClientFac configured key servers clients factory used download decryption
-     *                          key material. Not needed (null) when decryptionKeyMaterial is not in
-     *                          key server.
+     * @param clientFactory configured key servers clients factory used download decryption
+     *                      key material. Not needed (null) when decryptionKeyMaterial is not in
+     *                      key capsule or key shares servers.
      * @param destDir directory where re-encrypted CDOC will be written. Must exist and be writeable.
      *                Used to check available disk space. Null when destReEncryptedCdoc is not file
      *                based.
@@ -257,7 +257,7 @@ public final class Envelope {
         OutputStream destReEncryptedCdoc,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
         @Nullable Path destDir,
-        @Nullable KeyCapsuleClientFactory capsulesClientFac
+        @Nullable ExternalService clientFactory
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("reEncrypt");
@@ -276,10 +276,12 @@ public final class Envelope {
         try (CipherOutputStream cipherOs = newContainer.prepareContainerForPayload(destReEncryptedCdoc);
             TarArchiveOutputStream transferToOs = Tar.createPosixTarZArchiveOutputStream(cipherOs)) {
 
-            processContainer(cdocInputStream,
+            processContainer(
+                cdocInputStream,
                 decryptionKeyMaterial,
                 new TranferToDelegate(transferToOs, destDir),
-                capsulesClientFac);
+                clientFactory
+            );
         }
     }
 
@@ -318,7 +320,7 @@ public final class Envelope {
      * @param cdocInputStream contains CDOC2 container
      * @param keyMaterial decryption key material
      * @param tarProcessingDelegate how to process tar (output could be extranct, transferto or list)
-     * @param capsulesClientFac configured key servers clients factory for decryption
+     * @param clientFactory configured key servers clients factory for decryption
      * @return list of files decrypted and written into outputDir, when extract = true
      *          or list of extractable files found from CDOC2 container when extract = false
      * @throws GeneralSecurityException if security/crypto error has occurred
@@ -330,7 +332,7 @@ public final class Envelope {
         InputStream cdocInputStream,
         DecryptionKeyMaterial keyMaterial,
         TarEntryProcessingDelegate tarProcessingDelegate,
-        @Nullable KeyCapsuleClientFactory capsulesClientFac
+        @Nullable ExternalService clientFactory
     ) throws GeneralSecurityException, IOException, CDocException {
 
         CountingInputStream containerIs = new CountingInputStream(cdocInputStream);
@@ -341,7 +343,7 @@ public final class Envelope {
 
         for (Recipient recipient : recipients) {
             if (recipient.getRecipientId().equals(keyMaterial.getRecipientId())) {
-                byte[] kek = recipient.deriveKek(keyMaterial, capsulesClientFac);
+                byte[] kek = recipient.deriveKek(keyMaterial, clientFactory);
                 byte[] fmk = decryptRecipientFmk(recipient, kek);
 
                 SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
@@ -518,7 +520,7 @@ public final class Envelope {
      * @param cdocInputStream contains CDOC2 container
      * @param recipientKeyMaterial decryption key material
      * @param outputDir output directory where decrypted files are decrypted
-     * @param keyServerClientFac configured key servers clients factory.
+     * @param clientFactory configured key servers clients factory
      * @return list of files decrypted and written into outputDir
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error has occurred
@@ -529,7 +531,7 @@ public final class Envelope {
         InputStream cdocInputStream,
         DecryptionKeyMaterial recipientKeyMaterial,
         Path outputDir,
-        @Nullable KeyCapsuleClientFactory keyServerClientFac
+        @Nullable ExternalService clientFactory
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("decrypt");
@@ -537,7 +539,7 @@ public final class Envelope {
             cdocInputStream,
             recipientKeyMaterial,
             new ExtractDelegate(outputDir, null),
-            keyServerClientFac
+            clientFactory
         ).stream()
             .map(ArchiveEntry::getName)
             .toList();
@@ -549,7 +551,7 @@ public final class Envelope {
      * @param recipientKeyMaterial decryption key material
      * @param outputDir output directory where decrypted files are decrypted
      * @param filesToExtract if not null, extract specified files otherwise all files.
-     * @param keyServerClientFac configured key servers client factory.
+     * @param clientFactory configured key servers client factory
      * @return list of files decrypted and written into outputDir
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error has occurred
@@ -561,7 +563,7 @@ public final class Envelope {
         DecryptionKeyMaterial recipientKeyMaterial,
         Path outputDir,
         @Nullable List<String> filesToExtract,
-        @Nullable KeyCapsuleClientFactory keyServerClientFac
+        @Nullable ExternalService clientFactory
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("decrypt");
@@ -569,7 +571,7 @@ public final class Envelope {
             cdocInputStream,
             recipientKeyMaterial,
             new ExtractDelegate(outputDir, filesToExtract),
-            keyServerClientFac
+            clientFactory
         ).stream()
             .map(ArchiveEntry::getName)
             .toList();
@@ -579,22 +581,24 @@ public final class Envelope {
      * List ArchiveEntries in CDOC
      * @param cdocInputStream contains CDOC2 container
      * @param recipientKeyMaterial decryption key material
-     * @param keyServerClientFac configured key servers client factory.
+     * @param clientFactory configured key servers client factory
      * @return List of ArchiveEntry decrypted from CDOC
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error occurs
      * @throws CDocException if encryption/decryption error has occurred
      */
-    public static List<ArchiveEntry> list(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
-                                          @Nullable KeyCapsuleClientFactory keyServerClientFac)
-        throws GeneralSecurityException, IOException, CDocException {
+    public static List<ArchiveEntry> list(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial recipientKeyMaterial,
+        @Nullable ExternalService clientFactory
+    ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("list");
         return processContainer(
             cdocInputStream,
             recipientKeyMaterial,
             new ListDelegate(),
-            keyServerClientFac
+            clientFactory
         );
     }
 

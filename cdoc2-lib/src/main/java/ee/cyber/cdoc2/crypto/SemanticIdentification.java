@@ -71,7 +71,7 @@ public class SemanticIdentification {
      * @param semanticIdentification Semantic identification string
      * @return ETSI identifier in plain text
      */
-    public static String extractEtsiIdentifier(String semanticIdentification) {
+    private static String extractEtsiIdentifier(String semanticIdentification) {
         String identifier = semanticIdentification.substring(
             semanticIdentification.indexOf(ETSI_IDENTIFIER_SEPARATOR) + 1,
             semanticIdentification.lastIndexOf(ETSI_IDENTIFIER_SEPARATOR)

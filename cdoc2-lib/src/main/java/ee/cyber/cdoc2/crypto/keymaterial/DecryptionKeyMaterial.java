@@ -50,7 +50,9 @@ public interface DecryptionKeyMaterial {
         return new KeyPairDecryptionKeyMaterial(recipientKeyPair);
     }
 
-    static DecryptionKeyMaterial fromAuthMeans(SemanticIdentification semanticIdentifier) {
+    static DecryptionKeyMaterial fromAuthMeans(
+        SemanticIdentification semanticIdentifier
+    ) {
         return new KeyShareDecryptionKeyMaterial(semanticIdentifier);
     }
 

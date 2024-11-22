@@ -2,11 +2,15 @@ package ee.cyber.cdoc2;
 
 import jakarta.annotation.Nullable;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
+import ee.cyber.cdoc2.config.Cdoc2Configuration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
+import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
+import ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationImpl;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.ECKeys;
@@ -58,7 +62,7 @@ public class CDocBuilder {
     private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
     @Nullable
-    private KeyShareClientFactory keyShareClientFactory;
+    private ExternalService keyShareClientFactory;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
         this.payloadFiles = files;
@@ -85,7 +89,7 @@ public class CDocBuilder {
         return this;
     }
 
-    public CDocBuilder withKeyShares(KeyShareClientFactory clientFactory) {
+    public CDocBuilder withKeyShares(ExternalService clientFactory) {
         this.keyShareClientFactory = clientFactory;
         return this;
     }
@@ -139,17 +143,26 @@ public class CDocBuilder {
         if (serverProperties == null) {
             return Envelope.prepare(recipients, null, keyShareClientFactory);
         } else {
+            KeyCapsuleClientConfiguration capsuleClientConfig
+                = initializeCapsuleConfiguration(serverProperties);
             // for encryption, do not init mTLS client as this might require smart-card
-           KeyCapsuleClient keyCapsuleClient = KeyCapsuleClientImpl.create(serverProperties, false);
+           KeyCapsuleClient keyCapsuleClient
+               = KeyCapsuleClientImpl.create(capsuleClientConfig, false);
            if (null != keyCapsuleExpiryDuration) {
                keyCapsuleClient.setExpiryDuration(keyCapsuleExpiryDuration);
            }
            return Envelope.prepare(
-                recipients,
-                keyCapsuleClient,
+               recipients,
+               keyCapsuleClient,
                keyShareClientFactory
             );
         }
+    }
+
+    private static KeyCapsuleClientConfiguration initializeCapsuleConfiguration(Properties p) {
+        Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
+        CDoc2ConfigurationProvider.init(configuration);
+        return configuration.keyCapsuleClientConfiguration();
     }
 
     private void handleFileEncryptionError(Exception ex, File outputCDocFile) {

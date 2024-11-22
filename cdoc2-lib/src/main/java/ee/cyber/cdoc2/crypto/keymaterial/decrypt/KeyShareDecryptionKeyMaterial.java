@@ -8,8 +8,8 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 /**
  * Represents key material required for decryption with the key derived from key shares.
  * Current object doesn't contain a key, but only data for further KEK derivation.
- * @param semanticIdentifier Identifiers for
- *                           {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
+ * @param semanticIdentifier identifier for
+ *                          {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
  */
 public record KeyShareDecryptionKeyMaterial(
     SemanticIdentification semanticIdentifier
@@ -17,7 +17,7 @@ public record KeyShareDecryptionKeyMaterial(
 
     @Override
     public Object getRecipientId() {
-        return semanticIdentifier.getIdentifier();
+        return semanticIdentifier.getEtsiIdentifier();
     }
 
     @Override

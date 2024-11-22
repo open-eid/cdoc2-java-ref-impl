@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
@@ -9,6 +9,7 @@ import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
+
 
 /**
  * RSA-OAEP recipient using RSAPublicKey. POJO of flatbuffers
@@ -18,9 +19,12 @@ public class RSAPubKeyRecipient extends RSARecipient {
 
     private final byte[] encryptedKek;
 
-    public RSAPubKeyRecipient(RSAPublicKey recipient,
-                              byte[] encryptedKek,
-                              byte[] encryptedFmk, String recipientLabel) {
+    public RSAPubKeyRecipient(
+        RSAPublicKey recipient,
+        byte[] encryptedKek,
+        byte[] encryptedFmk,
+        String recipientLabel
+    ) {
         super(recipient, encryptedFmk, recipientLabel);
         this.encryptedKek = encryptedKek;
     }
@@ -46,7 +50,7 @@ public class RSAPubKeyRecipient extends RSARecipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
         throws GeneralSecurityException {
         if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
             return KekTools.deriveKekForRsa(this, keyPairKeyMaterial);
@@ -61,4 +65,5 @@ public class RSAPubKeyRecipient extends RSARecipient {
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serialize(this, builder);
     }
+
 }

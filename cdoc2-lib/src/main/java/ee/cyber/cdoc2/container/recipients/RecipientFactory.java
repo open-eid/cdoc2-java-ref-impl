@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.container.recipients;
 
 import at.favre.lib.hkdf.HKDF;
 
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.EcCapsuleClient;
 import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
 import ee.cyber.cdoc2.client.ExtApiException;
@@ -75,7 +76,7 @@ public final class RecipientFactory {
         byte[] fmk,
         List<EncryptionKeyMaterial> recipientKeys,
         @Nullable KeyCapsuleClient serverClient,
-        @Nullable KeyShareClientFactory keyShareClientFactory
+        @Nullable ExternalService keyShareClientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(fmk);
@@ -91,7 +92,11 @@ public final class RecipientFactory {
         List<Recipient> result = new ArrayList<>(recipientKeys.size());
         for (EncryptionKeyMaterial encKeyMaterial : recipientKeys) {
             addRecipientsByKeyOrigin(
-                result, serverClient, keyShareClientFactory, fmk, encKeyMaterial
+                result,
+                serverClient,
+                (KeyShareClientFactory) keyShareClientFactory,
+                fmk,
+                encKeyMaterial
             );
         }
 
@@ -455,6 +460,7 @@ public final class RecipientFactory {
         return new KeySharesRecipient(
             encryptedFmk,
             formattedKeyLabel,
+            plainEtsiIdentifier,
             shares,
             salt
         );

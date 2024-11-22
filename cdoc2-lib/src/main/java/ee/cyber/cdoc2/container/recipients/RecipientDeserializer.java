@@ -5,12 +5,14 @@ import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.UnknownFlatBufferTypeException;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
+import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import ee.cyber.cdoc2.fbs.recipients.ECCPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.EccKeyDetails;
 import ee.cyber.cdoc2.fbs.recipients.KeyDetailsUnion;
 import ee.cyber.cdoc2.fbs.recipients.KeyServerCapsule;
+import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.RsaKeyDetails;
@@ -21,9 +23,12 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
+
 
 /**
  * Deserialize Recipient from flatbuffers RecipientRecord
@@ -69,14 +74,17 @@ public final class RecipientDeserializer {
         } else if (r.capsuleType() == recipients_PBKDF2Capsule) {
 
             return deserializePBKDF2Recipient(r, encryptedFmkBytes, keyLabel);
+        } else if (r.capsuleType() == recipients_KeySharesCapsule) {
+
+            return deserializeSharesRecipient(r, encryptedFmkBytes, keyLabel);
         } else {
             throw new UnknownFlatBufferTypeException("Unknown recipient type " + r.capsuleType());
         }
     }
 
     private static SymmetricKeyRecipient deserializeSymmetricKeyRecipient(
-        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel)
-        throws CDocParseException {
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException {
 
         SymmetricKeyCapsule symmetricKeyCapsule = (SymmetricKeyCapsule) r.capsule(new SymmetricKeyCapsule());
         if (symmetricKeyCapsule == null) {
@@ -89,8 +97,8 @@ public final class RecipientDeserializer {
     }
 
     private static PBKDF2Recipient deserializePBKDF2Recipient(
-        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel)
-        throws CDocParseException {
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException {
 
         PBKDF2Capsule pbkdf2Capsule = (PBKDF2Capsule) r.capsule(new PBKDF2Capsule());
         if (pbkdf2Capsule == null) {
@@ -113,9 +121,40 @@ public final class RecipientDeserializer {
         );
     }
 
+    private static KeySharesRecipient deserializeSharesRecipient(
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException {
+
+        KeySharesCapsule sharesCapsule = (KeySharesCapsule) r.capsule(new KeySharesCapsule());
+        
+        if (sharesCapsule == null) {
+            throw new CDocParseException("error parsing KeySharesCapsule");
+        }
+
+        int sharesLength = sharesCapsule.sharesLength();
+        List<KeyShareUri> keyShares = new ArrayList<>(sharesLength);
+        for (int shareOffset = 0; shareOffset < sharesLength; shareOffset++) {
+            String baseUrl = sharesCapsule.shares(shareOffset).serverBaseUrl();
+            String shareId = sharesCapsule.shares(shareOffset).shareId();
+            keyShares.add(new KeyShareUri(baseUrl, shareId));
+        }
+
+        ByteBuffer saltBuf = sharesCapsule.saltAsByteBuffer();
+        byte[] salt
+            = Arrays.copyOfRange(saltBuf.array(), saltBuf.position(), saltBuf.limit());
+
+        return new KeySharesRecipient(
+            encryptedFmkBytes,
+            keyLabel,
+            sharesCapsule.recipientId(),
+            keyShares,
+            salt
+        );
+    }
+
     private static Recipient deserializeServerRecipient(
-        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel)
-        throws CDocParseException, GeneralSecurityException {
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException, GeneralSecurityException {
 
         KeyServerCapsule serverCapsule = (KeyServerCapsule) r.capsule(new KeyServerCapsule());
         if (serverCapsule == null) {
@@ -171,7 +210,9 @@ public final class RecipientDeserializer {
     }
 
     private static RSAPubKeyRecipient deserializeRsaPubKeyRecipient(
-        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel) throws CDocParseException {
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException {
+
         RSAPublicKeyCapsule rsaPublicKeyCapsule = (RSAPublicKeyCapsule) r.capsule(new RSAPublicKeyCapsule());
         if (rsaPublicKeyCapsule == null) {
             throw new CDocParseException("error parsing RSAPublicKeyCapsule");
@@ -203,8 +244,8 @@ public final class RecipientDeserializer {
     }
 
     private static  EccPubKeyRecipient deserializeEccPubKeyRecipient(
-        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel)
-        throws CDocParseException, GeneralSecurityException {
+        RecipientRecord r, byte[] encryptedFmkBytes, String keyLabel
+    ) throws CDocParseException, GeneralSecurityException {
 
         ECCPublicKeyCapsule eccPublicKeyCapsule = (ECCPublicKeyCapsule) r.capsule(new ECCPublicKeyCapsule());
         if (eccPublicKeyCapsule == null) {
@@ -224,4 +265,5 @@ public final class RecipientDeserializer {
             throw new CDocParseException("illegal EC pub key encoding", illegalArgumentException);
         }
     }
+
 }

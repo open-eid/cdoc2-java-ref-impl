@@ -1,10 +1,7 @@
 package ee.cyber.cdoc2.client;
 
 import ee.cyber.cdoc2.client.api.ApiException;
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
-import ee.cyber.cdoc2.config.Cdoc2Configuration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
-import ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationImpl;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.model.Capsule;
@@ -17,7 +14,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,13 +57,14 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return new KeyCapsuleClientImpl(serverIdentifier, postClient, getClient, null);
     }
 
-    public static KeyCapsuleClient create(Properties p) throws GeneralSecurityException {
-        return create(p, true);
+    public static KeyCapsuleClient create(KeyCapsuleClientConfiguration config)
+        throws GeneralSecurityException {
+        return create(config, true);
     }
 
     /**
-     * Create KeyCapsulesClient from properties file
-     * @param p properties
+     * Create KeyCapsulesClient from configuration file
+     * @param config key capsule client configuration
      * @param initMutualTlsClient if false then mutual TLS (get-server) client is not initialized.
      *            Useful, when client is only used for creating KeyCapsules (encryption). Initializing mTLS client may
      *            require special hardware (smart-card or crypto token) and/or interaction with the user.
@@ -78,10 +75,10 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
      * @throws GeneralSecurityException if client key store loading or client initialization has
      *                                  failed
      */
-    public static KeyCapsuleClient create(Properties p, boolean initMutualTlsClient)
-        throws GeneralSecurityException {
-        KeyCapsuleClientConfiguration config = initializeConfiguration(p);
-
+    public static KeyCapsuleClient create(
+        KeyCapsuleClientConfiguration config,
+        boolean initMutualTlsClient
+    ) throws GeneralSecurityException {
         String serverId = config.getClientServerId();
 
         var builder = Cdoc2KeyCapsuleApiClient.builder();
@@ -109,10 +106,10 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
         return new KeyCapsuleClientImpl(serverId, postClient, getClient, clientKeyStore);
     }
 
-    public static KeyCapsuleClientFactory createFactory(Properties p)
+    public static KeyCapsuleClientFactory createFactory(KeyCapsuleClientConfiguration config)
         throws GeneralSecurityException {
 
-        return (KeyCapsuleClientFactory) create(p);
+        return (KeyCapsuleClientFactory) create(config);
     }
 
     @Override
@@ -132,13 +129,6 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             handleOpenApiException(e);
         }
         return result;
-    }
-
-    // can be moved outside cdoc2-lib if required
-    private static KeyCapsuleClientConfiguration initializeConfiguration(Properties p) {
-        Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
-        CDoc2ConfigurationProvider.init(configuration);
-        return CDoc2ConfigurationProvider.getConfiguration().keyCapsuleClientConfiguration();
     }
 
     private String createCapsule(Capsule capsule) throws ApiException {

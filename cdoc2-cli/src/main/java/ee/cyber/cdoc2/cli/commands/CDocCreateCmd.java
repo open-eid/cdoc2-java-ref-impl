@@ -3,7 +3,6 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
-import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
@@ -30,7 +29,7 @@ import java.util.concurrent.Callable;
 import javax.naming.NamingException;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.loadKeySharesConfiguration;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
 
 
 //S106 - Standard outputs should not be used directly to log anything
@@ -194,9 +193,7 @@ public class CDocCreateCmd implements Callable<Void> {
     ) throws GeneralSecurityException, NamingException {
 
         if (this.recipient.withSid || this.recipient.withMid) {
-            cDocBuilder.withKeyShares(
-                KeySharesClientHelper.createFactory(loadKeySharesConfiguration())
-            );
+            cDocBuilder.withKeyShares(initKeyShareClientFactory());
         }
 
         List<EncryptionKeyMaterial> etsiRecipients = EncryptionKeyMaterial.etsiBuilder()

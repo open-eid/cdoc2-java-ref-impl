@@ -1,6 +1,8 @@
 package ee.cyber.cdoc2;
 
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import jakarta.annotation.Nullable;
+
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -25,7 +27,8 @@ public class CDocDecrypter {
     private File destinationDirectory;
     private File cDocFile;
     private List<String> filesToExtract;
-    private KeyCapsuleClientFactory keyServerClientFactory;
+    @Nullable
+    private ExternalService clientFactory;
 
     @SuppressWarnings("checkstyle:HiddenField")
     public CDocDecrypter withRecipient(KeyPair recipientKeyPair) {
@@ -57,8 +60,17 @@ public class CDocDecrypter {
         return this;
     }
 
-    public CDocDecrypter withKeyServers(KeyCapsuleClientFactory clientFactory) {
-        this.keyServerClientFactory = clientFactory;
+    public CDocDecrypter withKeyServers(ExternalService capsuleClientFactory) {
+        if (null != capsuleClientFactory) {
+            this.clientFactory = capsuleClientFactory;
+        }
+        return this;
+    }
+
+    public CDocDecrypter withKeyShares(ExternalService sharesClientFactory) {
+        if (null != sharesClientFactory) {
+            this.clientFactory = sharesClientFactory;
+        }
         return this;
     }
 
@@ -68,10 +80,10 @@ public class CDocDecrypter {
         try {
             if ((filesToExtract == null) || (filesToExtract.isEmpty())) {
                 return Envelope.decrypt(cDocInputStream, recipientKeyMaterial, destinationDirectory.toPath(),
-                        keyServerClientFactory);
+                        clientFactory);
             } else {
                 return Envelope.decrypt(cDocInputStream, recipientKeyMaterial, destinationDirectory.toPath(),
-                        filesToExtract, keyServerClientFactory);
+                        filesToExtract, clientFactory);
             }
         } catch (GeneralSecurityException | CDocParseException ex) {
             throw logDecryptionErrorAndThrow(ex);
@@ -85,7 +97,7 @@ public class CDocDecrypter {
     public List<ArchiveEntry> list() throws IOException, CDocException, CDocValidationException {
         validate(false);
         try {
-            return Envelope.list(cDocInputStream, recipientKeyMaterial, keyServerClientFactory);
+            return Envelope.list(cDocInputStream, recipientKeyMaterial, clientFactory);
         } catch (GeneralSecurityException | CDocParseException ex) {
             throw logDecryptionErrorAndThrow(ex);
         }

@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
 import ee.cyber.cdoc2.config.Cdoc2Configuration;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfigurationImpl;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
@@ -34,12 +35,14 @@ public final class ClientConfigurationUtil {
         return configuration.smartIdClientConfiguration();
     }
 
-    public static void initKeySharesConfiguration() throws ConfigurationLoadingException {
+    public static KeySharesConfiguration initKeySharesConfiguration() throws ConfigurationLoadingException {
         Properties properties = loadProperties(
             CLASSPATH + "key_shares-test.properties"
         );
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
         CDoc2ConfigurationProvider.init(configuration);
+
+        return configuration.keySharesConfiguration();
     }
 
 }

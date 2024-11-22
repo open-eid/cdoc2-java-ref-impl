@@ -2,7 +2,7 @@ package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import java.io.File;
 import java.nio.file.InvalidPathException;
@@ -18,8 +18,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
 
@@ -64,7 +64,7 @@ public class CDocListCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        KeyCapsuleClientFactory keyCapsulesClientFactory = null;
+        ExternalService keyCapsulesClientFactory = null;
         if (keyServerPropertiesFile != null) {
             keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
         }
@@ -73,10 +73,9 @@ public class CDocListCmd implements Callable<Void> {
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(
                 this.cdocFile,
-                this.exclusive.getLabeledPasswordParam(),
-                this.exclusive.getSecret(),
-                this.exclusive.getP12(),
-                this.exclusive.getPrivKeyFile()
+                this.exclusive,
+                // ToDo add identificationCode for SID decryption key material
+                null
                 );
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
