@@ -25,25 +25,31 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
  * Key capsule client configuration properties.
  *
  * @param clientServerId number of key shares servers
- * @param clientKeyStore key shares servers URL-s
- * @param keyStoreProtectionParameter key shares servers URL-s
  * @param clientServerConnectTimeout client trust store password
  * @param clientServerReadTimeout client trust store password
  * @param clientServerDebug client trust store password
  * @param clientServerBaseUrlGet client trust store password
  * @param clientServerBaseUrlPost client trust store password
  * @param clientTrustStore client trust store password
+ * @param clientKeyStoreType client key store type
+ * @param clientKeyStoreFile client key store file path
+ * @param clientKeyStorePassword client key store password
+ * @param clientKeyStorePwdPrompt client key store password prompt
+ * @param pkcs11LibraryPath PKCS11 library path
  */
 public record KeyCapsuleClientConfigurationProps(
     String clientServerId,
-    KeyStore clientKeyStore,
-    KeyStore.ProtectionParameter keyStoreProtectionParameter,
     Integer clientServerConnectTimeout,
     Integer clientServerReadTimeout,
     Boolean clientServerDebug,
     String clientServerBaseUrlGet,
     String clientServerBaseUrlPost,
-    KeyStore clientTrustStore
+    KeyStore clientTrustStore,
+    String clientKeyStoreType,
+    String clientKeyStoreFile,
+    String clientKeyStorePassword,
+    String clientKeyStorePwdPrompt,
+    String pkcs11LibraryPath
 ) implements KeyCapsuleClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(KeyCapsuleClientConfigurationProps.class);
@@ -53,11 +59,10 @@ public record KeyCapsuleClientConfigurationProps(
 
     public static KeyCapsuleClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
-
         log.debug("Loading configuration for Key Capsule client.");
+
         var clientServerId = properties.getProperty(CLIENT_SERVER_ID);
-        var clientKeyStore = loadClientKeyStore(properties);
-        var keyStoreProtectionParameter = loadClientKeyStoreProtectionParameter(properties);
+
         int clientServerConnectTimeout = ConfigurationPropertyUtil.getInteger(
             log,
             properties,
@@ -75,16 +80,25 @@ public record KeyCapsuleClientConfigurationProps(
 
         var clientTrustStore = loadTrustKeyStore(properties);
 
+        var clientKeyStoreType = properties.getProperty(CLIENT_STORE_TYPE, null);
+        var clientKeyStoreFile = properties.getProperty(CLIENT_STORE);
+        var clientKeyStorePassword = properties.getProperty(CLIENT_STORE_PWD);
+        var clientKeyStorePwdPrompt = properties.getProperty(CLIENT_STORE_PWD_PROMPT);
+        var pkcs11LibraryPath = properties.getProperty(PKCS11_LIBRARY_PROPERTY, null);
+
         return new KeyCapsuleClientConfigurationProps(
             clientServerId,
-            clientKeyStore,
-            keyStoreProtectionParameter,
             clientServerConnectTimeout,
             clientServerReadTimeout,
             clientServerDebug,
             clientServerBaseUrlGet,
             clientServerBaseUrlPost,
-            clientTrustStore
+            clientTrustStore,
+            clientKeyStoreType,
+            clientKeyStoreFile,
+            clientKeyStorePassword,
+            clientKeyStorePwdPrompt,
+            pkcs11LibraryPath
         );
     }
 
@@ -129,37 +143,36 @@ public record KeyCapsuleClientConfigurationProps(
     }
 
     /**
-     * @param p properties to load the key store
      * @throws ConfigurationLoadingException if failed to load key trust store
      * @return client key store or null if not defined in properties
      */
     @Nullable
-    private static KeyStore loadClientKeyStore(Properties p)
-        throws ConfigurationLoadingException {
-
+    private KeyStore loadClientKeyStore() throws ConfigurationLoadingException {
         KeyStore clientKeyStore;
-        String type = p.getProperty(CLIENT_STORE_TYPE, null);
 
-        if (null == type) {
+        if (null == this.clientKeyStoreType) {
             return null;
         }
 
-        if ("PKCS12".equalsIgnoreCase(type)) {
-            String clientStoreFile = p.getProperty(CLIENT_STORE);
-            String passwd = p.getProperty(CLIENT_STORE_PWD);
-            clientKeyStore = loadClientTrustKeyStore(clientStoreFile, type, passwd);
-        } else if ("PKCS11".equalsIgnoreCase(type)) {
-            clientKeyStore = loadPkcs11KeyStore(p);
+        if ("PKCS12".equalsIgnoreCase(this.clientKeyStoreType)) {
+            clientKeyStore = loadClientTrustKeyStore(
+                this.clientKeyStoreFile, this.clientKeyStoreType, this.clientKeyStorePassword
+            );
+        } else if ("PKCS11".equalsIgnoreCase(this.clientKeyStoreType)) {
+            clientKeyStore = loadPkcs11KeyStore();
         } else {
-            throw new IllegalArgumentException(CLIENT_STORE_TYPE + " " + type + " not supported");
+            throw new IllegalArgumentException(
+                CLIENT_STORE_TYPE + " " + this.clientKeyStoreType + " not supported"
+            );
         }
 
         return clientKeyStore;
     }
 
-    private static KeyStore loadPkcs11KeyStore(Properties p) {
-        String openScLibPath = loadPkcs11LibPath(p);
-        KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParameter(p);
+    private KeyStore loadPkcs11KeyStore() {
+        String openScLibPath = loadPkcs11LibPath();
+        KeyStore.ProtectionParameter protectionParameter
+            = loadClientKeyStoreProtectionParameter();
         try {
             // default slot 0 - Isikutuvastus
             return Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
@@ -171,27 +184,23 @@ public record KeyCapsuleClientConfigurationProps(
     /**
      * If "pkcs11-library" property is set in properties or System properties, return value specified.
      * If both specify a value then use one from System properties.
-     * @param p properties provided
      * @return "pkcs11-library" value specified in properties or null if not property not present
      */
-    private static String loadPkcs11LibPath(Properties p) {
+    private String loadPkcs11LibPath() {
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
-        return System.getProperty(PKCS11_LIBRARY_PROPERTY,
-            p.getProperty(PKCS11_LIBRARY_PROPERTY, null));
+        return System.getProperty(PKCS11_LIBRARY_PROPERTY, this.pkcs11LibraryPath);
     }
 
-    private static KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter(Properties  p) {
-        String prompt = p.getProperty(CLIENT_STORE_PWD_PROMPT);
-        if (prompt != null) {
+    private KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter() {
+        if (this.clientKeyStorePwdPrompt != null) {
             log.debug("Using interactive client KS protection param");
-            return Pkcs11Tools.getKeyStoreProtectionHandler(prompt + ":");
+            return Pkcs11Tools.getKeyStoreProtectionHandler(this.clientKeyStorePwdPrompt + ":");
         }
 
-        String pw = p.getProperty(CLIENT_STORE_PWD);
-        if (pw != null) {
+        if (this.clientKeyStorePassword != null) {
             log.debug("Using password for client KS");
-            return new KeyStore.PasswordProtection(pw.toCharArray());
+            return new KeyStore.PasswordProtection(this.clientKeyStorePassword.toCharArray());
         }
 
         return null;
@@ -204,12 +213,12 @@ public record KeyCapsuleClientConfigurationProps(
 
     @Override
     public KeyStore getClientKeyStore() {
-        return clientKeyStore;
+        return loadClientKeyStore();
     }
 
     @Override
     public KeyStore.ProtectionParameter getKeyStoreProtectionParameter() {
-        return keyStoreProtectionParameter;
+        return loadClientKeyStoreProtectionParameter();
     }
 
     @Override
