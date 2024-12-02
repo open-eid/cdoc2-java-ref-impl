@@ -36,14 +36,14 @@ public class CDocReEncrypter {
     private final EncryptionKeyMaterial reEncryptionKeyMaterial;
 
     @Nullable
-    private final ExternalService keyServerClientFactory;
+    private ExternalService serverClientFactory;
 
     public CDocReEncrypter(
         File cDocFile,
         DecryptionKeyMaterial decryptionKeyMaterial,
         File destCdocFile,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
-        @Nullable ExternalService keyCapsulesClientFactory
+        @Nullable ExternalService externalService
     ) {
         Objects.nonNull(cDocFile);
         Objects.nonNull(decryptionKeyMaterial);
@@ -54,7 +54,11 @@ public class CDocReEncrypter {
         this.decryptionKeyMaterial = decryptionKeyMaterial;
         this.destCdocFile = destCdocFile;
         this.reEncryptionKeyMaterial = reEncryptionKeyMaterial;
-        this.keyServerClientFactory = keyCapsulesClientFactory;
+        this.serverClientFactory = externalService;
+    }
+
+    public void addKeyShareClientFactory(ExternalService keyShareClientFactory) {
+        serverClientFactory = keyShareClientFactory;
     }
 
     public void reEncryptCDocContainer()
@@ -73,7 +77,7 @@ public class CDocReEncrypter {
                 destCdocOs,
                 this.reEncryptionKeyMaterial,
                 destDir,
-                this.keyServerClientFactory
+                this.serverClientFactory
             );
         } catch (Exception ex) {
             log.info("Exception, removing {}", destCdocFile);
