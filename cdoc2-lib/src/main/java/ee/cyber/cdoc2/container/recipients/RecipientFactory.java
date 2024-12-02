@@ -78,12 +78,9 @@ public final class RecipientFactory {
         @Nullable KeyCapsuleClient serverClient,
         @Nullable ExternalService keyShareClientFactory
     ) throws GeneralSecurityException, ExtApiException {
-
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientKeys);
-        if (fmk.length != Crypto.FMK_LEN_BYTES) {
-            throw new IllegalArgumentException(INVALID_FMK_LEN);
-        }
+        checkFmkLength(fmk);
 
         if (recipientKeys.isEmpty()) {
             throw new IllegalArgumentException("At least one recipient required");
@@ -101,6 +98,12 @@ public final class RecipientFactory {
         }
 
         return result.toArray(new Recipient[0]);
+    }
+
+    private static void checkFmkLength(byte[] fileMasterKey) {
+        if (fileMasterKey.length != Crypto.FMK_LEN_BYTES) {
+            throw new IllegalArgumentException(INVALID_FMK_LEN);
+        }
     }
 
     private static void addRecipientsByKeyOrigin(
@@ -124,7 +127,6 @@ public final class RecipientFactory {
         } else {
             addSymmetricKeyRecipient(
                 recipients,
-                serverClient,
                 fileMasterKey,
                 encKeyMaterial
             );
@@ -192,13 +194,9 @@ public final class RecipientFactory {
 
     private static void addSymmetricKeyRecipient(
         List<Recipient> recipients,
-        KeyCapsuleClient serverClient,
         byte[] fileMasterKey,
         EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException {
-        if (serverClient != null) {
-            log.info("For symmetric key scenario, key server will not be used.");
-        }
 
         if (encKeyMaterial instanceof PasswordEncryptionKeyMaterial pbkdfKeyMaterial) {
             recipients.add(buildPBKDF2Recipient(

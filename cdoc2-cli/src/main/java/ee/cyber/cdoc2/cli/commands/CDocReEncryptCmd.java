@@ -13,6 +13,7 @@ import picocli.CommandLine;
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 
 import java.util.concurrent.Callable;
@@ -26,6 +27,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
@@ -109,6 +111,9 @@ public class CDocReEncryptCmd implements Callable<Void> {
             extractSymmetricKeyEncKeyMaterial(),
             keyCapsulesClientFactory
         );
+        // the order must be after assigning keyCapsulesClientFactory to override it
+        addKeySharesIfAny(cDocReEncrypter);
+
         cDocReEncrypter.reEncryptCDocContainer();
 
         log.info("Created {}", destCdocFile.getAbsolutePath());
@@ -143,6 +148,14 @@ public class CDocReEncryptCmd implements Callable<Void> {
                 + "initial document location");
         }
         return outDir.toFile();
+    }
+
+    private void addKeySharesIfAny(CDocReEncrypter cDocReEncrypter)
+        throws GeneralSecurityException {
+
+        if (this.exclusive.isWithSid() || this.exclusive.isWithMid()) {
+            cDocReEncrypter.addKeyShareClientFactory(initKeyShareClientFactory());
+        }
     }
 
 }

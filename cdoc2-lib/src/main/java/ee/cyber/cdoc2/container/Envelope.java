@@ -3,10 +3,10 @@ package ee.cyber.cdoc2.container;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 import ee.cyber.cdoc2.client.ExternalService;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc2.container.recipients.RecipientFactory;
+import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
@@ -50,7 +50,7 @@ public final class Envelope {
 
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
-    protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
+    static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 0x02;
     public static final int MIN_HEADER_LEN = 67; //SymmetricKeyCapsule without FBS overhead
 
@@ -100,14 +100,13 @@ public final class Envelope {
      * each recipient FMK is encrypted with generated key that single recipient can decrypt with
      * their private key.
      * @param recipients encryption key material either with public key or symmetric key and key
-     *                   label. After {@link #prepare(List, KeyCapsuleClient, KeyShareClientFactory)}
-     *                   has returned, it is safe to clean up secret key material (it will not be
-     *                   referenced anymore).
+     *                   label. After receiving returned value it is safe to clean up secret key
+     *                   material (it will not be referenced anymore).
      * @param capsuleClient if capsuleClient is provided then store generated ephemeral key
      *                      material in the server
-     * @param keyShareClientFactory key share client factory
+     * @param clientFactory external key server client factory
      * @return Envelope that has key material prepared and can be used for
-     *          {@link #encrypt(List, OutputStream) encryption}
+     *         {@link #encrypt(List, OutputStream) encryption}
      * @throws GeneralSecurityException if fmk generation has failed
      * @throws ExtApiException if communication with capsuleClient to store ephemeral key
      *                         material fails
@@ -115,14 +114,14 @@ public final class Envelope {
     public static Envelope prepare(
         List<EncryptionKeyMaterial> recipients,
         @Nullable KeyCapsuleClient capsuleClient,
-        @Nullable ExternalService keyShareClientFactory
+        @Nullable ExternalService clientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
 
         byte[] fmk = Crypto.generateFileMasterKey();
         return new Envelope(
-            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient, keyShareClientFactory),
+            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient, clientFactory),
             fmk
         );
     }
@@ -241,12 +240,12 @@ public final class Envelope {
      * @param destReEncryptedCdoc [out] reEncrypted CDOC will be written into destReEncryptedCdoc
      * @param reEncryptionKeyMaterial reEncrypted CDOC will be encrypted with reEncryptionKeyMaterial.
      *                               Only password and symmetric key are supported for re-encryption
-     * @param clientFactory configured key servers clients factory used download decryption
-     *                      key material. Not needed (null) when decryptionKeyMaterial is not in
-     *                      key capsule or key shares servers.
      * @param destDir directory where re-encrypted CDOC will be written. Must exist and be writeable.
      *                Used to check available disk space. Null when destReEncryptedCdoc is not file
      *                based.
+     * @param clientFactory configured key servers clients factory used download decryption
+     *                      key material. Not needed (null) when decryptionKeyMaterial is not in
+     *                      key capsule or key shares servers.
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error occurs
      * @throws CDocException if encryption/decryption error has occurred
@@ -262,15 +261,13 @@ public final class Envelope {
 
         log.trace("reEncrypt");
 
-        switch (reEncryptionKeyMaterial.getKeyOrigin()) {
-            case SECRET, PASSWORD:
-                break;
-            default:
-                // no technical reason not to support other key types (only password supported by long-term UC )
-                throw new CDocException("Only password and symmetric key are supported for re-encryption.");
+        EncryptionKeyOrigin keyOrigin = reEncryptionKeyMaterial.getKeyOrigin();
+        Objects.requireNonNull(keyOrigin);
+        if (keyOrigin != EncryptionKeyOrigin.SECRET && keyOrigin != EncryptionKeyOrigin.PASSWORD) {
+            // no technical reason not to support other key types (only password supported by long-term UC )
+            throw new CDocException("Only password and symmetric key are supported for re-encryption.");
         }
 
-        // ToDo set up Key Shares client factory for decryption when encrypted with smart ID. #4104
         Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null, null);
 
         try (CipherOutputStream cipherOs = newContainer.prepareContainerForPayload(destReEncryptedCdoc);
