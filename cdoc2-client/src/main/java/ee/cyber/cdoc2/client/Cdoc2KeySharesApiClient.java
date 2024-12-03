@@ -18,8 +18,6 @@ import static ee.cyber.cdoc2.client.ApiClientUtil.extractIdFromHeader;
 
 /**
  * Client for creating and getting CDOC2 key shares from key server.
- *  Provides Builder to initialize regular TLS from PKCS11 (smart-card) or PKCS12 (software) key
- *  stores.
  */
 public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
@@ -76,18 +74,21 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param shareId key share ID
-     * @param xAuthTicket Auth token
+     * @param xAuthTicket CDOC2 Auth token (SDJWT)
+     * @param xAuthCertificate PEM encoded certificate that signed the xAuthTicket
      * @return KeyShare key share
      * @throws ApiException if http response code is something else that 200
      */
-    public Optional<KeyShare> getKeyShare(String shareId, byte[] xAuthTicket) throws ApiException {
+    public Optional<KeyShare> getKeyShare(String shareId, String xAuthTicket, String xAuthCertificate)
+        throws ApiException {
+
         if (shareId == null) {
             throw new IllegalArgumentException("shareId cannot be null");
         }
 
         try {
             ApiResponse<KeyShare> response
-                = sharesApi.getKeyShareByShareIdWithHttpInfo(shareId, xAuthTicket);
+                = sharesApi.getKeyShareByShareIdWithHttpInfo(shareId, xAuthTicket, xAuthCertificate);
             return Optional.of(response.getData());
         } catch (ApiException ex) {
             log.error("Key share get request with share ID {} has failed with error code {}",

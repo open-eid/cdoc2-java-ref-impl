@@ -14,6 +14,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
@@ -34,8 +35,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.crypto.SecretKey;
+
+import ee.cyber.cdoc2.util.SIDAuthTokenCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static ee.cyber.cdoc2.crypto.SemanticIdentification.ETSI_IDENTIFIER_PREFIX;
 
 
 /**
@@ -259,8 +264,21 @@ public final class KekTools {
         List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
         List<byte[]> listOfShares = new ArrayList<>();
 
-        for (KeyShareUri share : shares) {
-            listOfShares.add(extractSharesFromRecipient(keyShareClientFactory, share));
+        //FIXME: write proper implementation with RM-4309, RM-4032, RM-4073
+        String semanticsIdentifier = String.valueOf(keySharesRecipient.getRecipientId()) //etsi/PNOEE-48010010101
+            .substring(ETSI_IDENTIFIER_PREFIX.length()); //PNOEE-48010010101
+        try {
+            SIDAuthTokenCreator tokenCreator = new SIDAuthTokenCreator(
+                semanticsIdentifier,
+                shares,
+                keyShareClientFactory,
+                SIDAuthTokenCreator.getDefaultSIDClient());
+
+            for (KeyShareUri share : shares) {
+                listOfShares.add(extractSharesFromRecipient(keyShareClientFactory, tokenCreator, share));
+            }
+        } catch (AuthSignatureCreationException asce) {
+            throw new GeneralSecurityException(asce);
         }
 
         return Crypto.combineKek(
@@ -271,14 +289,15 @@ public final class KekTools {
 
     private static byte[] extractSharesFromRecipient(
         KeyShareClientFactory keyShareClientFactory,
+        SIDAuthTokenCreator tokenCreator,
         KeyShareUri share
     ) throws GeneralSecurityException {
         KeySharesClient client
             = keyShareClientFactory.getClientForServerUrl(share.serverBaseUrl());
         try {
-            // ToDo server nonce will be used for authentication signature
-//            NonceResponse nonce = client.createKeyShareNonce(share.shareId());
-            Optional<KeyShare> keyShare = client.getKeyShare(share.shareId(), new byte[256]);
+            String authTicket = tokenCreator.getTokenForShareID(share.shareId());
+            Optional<KeyShare> keyShare = client.getKeyShare(share.shareId(), authTicket,
+                tokenCreator.getAuthenticatorCertPEM());
             if (keyShare.isEmpty()) {
                 throw new GeneralSecurityException(
                     String.format(
@@ -290,7 +309,6 @@ public final class KekTools {
             }
 
             return keyShare.get().getShare();
-//        } catch (ApiException | ExtApiException e) {
         } catch (ExtApiException e) {
             throw new GeneralSecurityException(
                 "Failed to derive key encryption key from shares", e

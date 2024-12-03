@@ -9,15 +9,26 @@ import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
+import ee.cyber.cdoc2.config.Cdoc2Configuration;
+import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
+import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
+
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
+import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
+
 
 /**
  * Class to create key-shares auth token
@@ -35,16 +46,20 @@ public class SIDAuthTokenCreator {
     X509Certificate authenticatorCert;
 
     /**
-     * Create signature for key shares auth token. <code>authenticator</code> AUTH key is used for signing.
-     * @param authenticator ETSI Natural Person Semantics Identifier as example
-     *                      "PNOEE-48010010101"
+     * Create signature for key shares auth token. <code>authenticator</code> AUTH key is used
+     * for signing.
+     * @param authenticator ETSI Natural Person Semantics Identifier as example "PNOEE-48010010101"
      * @param shareUris key share uris that are accessed
      * @param fac KeyShareClientFactory used to create key share nonces that are signed
+     * @param sidClient smartID client
+     * @throws AuthSignatureCreationException if signature creation fails
      */
-    public SIDAuthTokenCreator(String authenticator,
-                               List<KeyShareUri> shareUris,
-                               KeyShareClientFactory fac,
-                               SmartIdClient sidClient) throws AuthSignatureCreationException {
+    public SIDAuthTokenCreator(
+        String authenticator,
+        List<KeyShareUri> shareUris,
+        KeyShareClientFactory fac,
+        SmartIdClient sidClient
+    ) throws AuthSignatureCreationException {
 
         this.sharesClientFac = fac;
         this.jwsSigner = new SIDAuthJWSSigner(sidClient, new SemanticsIdentifier(authenticator));
@@ -78,13 +93,27 @@ public class SIDAuthTokenCreator {
     }
 
     /**
+     * Authenticator certificate that was used to sign the token as single line PEM
+     * @return base64 encoded PEM certificate
+     * @throws CertificateEncodingException if certificate encoding fails
+     */
+    public String getAuthenticatorCertPEM() throws CertificateEncodingException {
+
+        X509Certificate certificate = getAuthenticatorCert();
+        return (certificate == null) ? null
+            : "-----BEGIN CERTIFICATE-----"
+              + Base64.getEncoder().encodeToString(certificate.getEncoded())
+              + "-----END CERTIFICATE-----";
+    }
+
+    /**
      * Prepare data to be signed and sign the data with the SIDAuthJWSSigner.
-     * {@link SIDAuthJWSSigner#getSignerCertificate()} will get public certificate instance that was used for
-     * signing
+     * {@link SIDAuthJWSSigner#getSignerCertificate()} will get public certificate instance that
+     * was used for signing
      * @return signed AuthTokenCreator (data is signed)
-     * @throws ApiException
-     * @throws ParseException
-     * @throws JOSEException
+     * @throws ApiException if server nonce creation fails
+     * @throws ParseException if server nonce creation fails
+     * @throws JOSEException if server nonce creation fails
      */
     AuthTokenCreator prepare() throws ApiException, ParseException, JOSEException {
         List<ShareAccessData> audArray = new LinkedList<>();
@@ -108,22 +137,42 @@ public class SIDAuthTokenCreator {
     }
 
     /**
-     * Create nonce for shareId using keyShareClient that will be signed as part of SDJWT
-     * @param shareUri  shareId in server
+     * Create nonce for shareId using keyShareClient that will be signed as part of SDJWT.
+     * @param shareUri shareId in server
      * @param fac to get reference to KeyShareClient specific to shares server
      * @return nonce created for shareId by shares-server
-     * @throws ApiException
+     * @throws ApiException if server nonce creation fails
      */
     ShareAccessData createNonce(KeyShareUri shareUri, KeyShareClientFactory fac) throws ApiException {
 
         KeySharesClient shareClient = fac.getClientForServerUrl(shareUri.serverBaseUrl());
         NonceResponse nonceResponse = shareClient.createKeyShareNonce(shareUri.shareId());
-        byte[] nonceBytes = nonceResponse.getNonce();
-
-        //TODO: auth expect nonce as string, but generated client returns it as bytes[] - update OpenAPI
-        //see https://rm.ext.cyber.ee/redmine/issues/4211
-        String nonce = Base64.getEncoder().encodeToString(nonceBytes);
+        String nonce = nonceResponse.getNonce();
 
         return new ShareAccessData(shareUri.serverBaseUrl(), shareUri.shareId(), nonce);
     }
+
+    @Deprecated //FIXME: hack to get things compiling, fix with RM-4309 and create factory for
+                // smart-id client
+    public static SmartIdClient getDefaultSIDClient() {
+        return new SmartIdClient(loadSmartIdConfiguration());
+    }
+
+    //XXX: to be removed
+    private static SmartIdClientConfiguration loadSmartIdConfiguration()
+        throws ConfigurationLoadingException {
+
+        String propertiesFilePath = System.getProperty(
+            SMART_ID_PROPERTIES,
+            "config/localhost/smart-id/" + SMART_ID_PROPERTIES
+        );
+        if (null == propertiesFilePath) {
+            throw new ConfigurationLoadingException("Smart ID configuration property is missing");
+        }
+        Properties properties = loadProperties(propertiesFilePath);
+        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
+
+        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
+    }
+
 }

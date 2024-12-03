@@ -5,6 +5,7 @@ import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
@@ -79,12 +80,14 @@ import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
+import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -517,7 +520,8 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @Test
     void testKeySharesScenario(@TempDir Path tempDir) throws Exception {
-        SemanticIdentification keyLabel = SemanticIdentification.forSid("38001085718");
+        //SID demo env that authenticates automatically
+        SemanticIdentification keyLabel = SemanticIdentification.forSid("30303039914");
         setupKeyShareClientMocks();
 
         EnvelopeTestUtils.DecryptionData decryptionData
@@ -529,8 +533,18 @@ class EnvelopeTest implements TestLifecycleLogger {
         KeyShare keyShare1 = keyShareCaptor1.getValue();
         KeyShare keyShare2 = keyShareCaptor2.getValue();
 
-        when(mockKeySharesClient1.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare1));
-        when(mockKeySharesClient2.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare2));
+        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
+        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
+
+        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+
+        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+
+        //FIXME: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
+        // but current lib API doesn't allow to provide smart-id client, fix with RM-4309
+        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + "smartid/smart_id-test.properties");
 
         checkContainerDecrypt(
             decryptionData.cdocContainerBytes(),

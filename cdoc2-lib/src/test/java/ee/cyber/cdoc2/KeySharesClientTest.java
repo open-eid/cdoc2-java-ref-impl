@@ -2,6 +2,7 @@ package ee.cyber.cdoc2;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -36,8 +37,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class KeySharesClientTest {
 
-    private static final byte[] AUTH_TICKET = new byte[32];
+    //private static final byte[] AUTH_TICKET = new byte[32];
+    private static final String AUTH_TICKET = "";
+    private static final String CERT_PEM = "";
     private static final String SHARE_ID = "shareId";
+    private static final String NONCE = "nonce12345";
 
     @InjectMocks
     KeySharesClientImpl clientImpl;
@@ -66,8 +70,8 @@ class KeySharesClientTest {
     void shouldGetCreatedKeyShare() throws ExtApiException {
         KeyShare keyShare = getKeyShare();
 
-        when(client.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare));
-        Optional<KeyShare> createdKeyShare = client.getKeyShare(SHARE_ID, AUTH_TICKET);
+        when(client.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare));
+        Optional<KeyShare> createdKeyShare = client.getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
 
         assertTrue(createdKeyShare.isPresent());
         assertEquals(keyShare, createdKeyShare.get());
@@ -80,8 +84,8 @@ class KeySharesClientTest {
         when(client.storeKeyShare(any())).thenReturn(SHARE_ID);
         String shareId = client.storeKeyShare(keyShare);
 
-        when(client.getKeyShare(any(), any())).thenReturn(Optional.of(keyShare));
-        Optional<KeyShare> createdKeyShare = client.getKeyShare(shareId, AUTH_TICKET);
+        when(client.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare));
+        Optional<KeyShare> createdKeyShare = client.getKeyShare(shareId, AUTH_TICKET, CERT_PEM);
 
         assertTrue(createdKeyShare.isPresent());
         assertEquals(keyShare, createdKeyShare.get());
@@ -89,7 +93,8 @@ class KeySharesClientTest {
 
     @Test
     void shouldCreateKeyShareNonce() throws ApiException {
-        byte[] nonce = "nonce".getBytes(StandardCharsets.UTF_8);
+
+        String nonce = Base64.getUrlEncoder().encodeToString(NONCE.getBytes(StandardCharsets.UTF_8));
 
         NonceResponse nonceResponse = new NonceResponse();
         nonceResponse.setNonce(nonce);
@@ -119,9 +124,9 @@ class KeySharesClientTest {
 
     @Test
     void shouldInvokeApiWhenGetKeyShare() throws ApiException, ExtApiException {
-        clientImpl.getKeyShare(SHARE_ID, AUTH_TICKET);
+        clientImpl.getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
 
-        verify(apiClient, times(1)).getKeyShare(SHARE_ID, AUTH_TICKET);
+        verify(apiClient, times(1)).getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
     }
 
     @Test
