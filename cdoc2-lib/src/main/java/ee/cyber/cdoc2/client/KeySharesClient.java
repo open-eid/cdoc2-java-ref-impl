@@ -31,8 +31,10 @@ public interface KeySharesClient extends ServerClient {
      * Get key share by share ID.
      * @param shareId key share ID
      * @param authTicket server authentication ticket
+     * @param authTicketSignerCert authentication ticket signer certificate in PEM format
      * @return KeyShare key share
      */
-    Optional<KeyShare> getKeyShare(String shareId, byte[] authTicket) throws ExtApiException;
+    Optional<KeyShare> getKeyShare(String shareId, String authTicket, String authTicketSignerCert)
+        throws ExtApiException;
 
 }

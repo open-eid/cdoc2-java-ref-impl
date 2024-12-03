@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -57,15 +58,15 @@ public class AuthTokenCreatorTest {
     @Mock
     KeySharesClient mockKeySharesClient2;
 
-    public static final String SERVER1 = "https://cdoc2-css.ria.ee:443";
+    public static final String SERVER1 = "https://localhost:8443";
     public static final String SERVER2 = "https://cdoc2-css.smit.ee:443/css";
 
-    public static final String SHARE_ID1 = "9EE90F2D-D946-4D54-9C3D-F4C68F7FFAE3";
+    public static final String SHARE_ID1 = "ff0102030405060708090a0b0c0e0dff";
     public static final String SHARE_ID2 = "5BAE4603-C33C-4425-B301-125F2ACF9B1E";
 
-    public static final String NONCE01 = Base64.getEncoder().encodeToString(
-        "01".getBytes(StandardCharsets.UTF_8));
-    public static final String NONCE02 = Base64.getEncoder().encodeToString(
+    public static final String NONCE01 = Base64.getUrlEncoder().withoutPadding().encodeToString(
+        HexFormat.of().parseHex("000102030405060708090a0b0c0e0dff"));
+    public static final String NONCE02 = Base64.getUrlEncoder().withoutPadding().encodeToString(
         "02".getBytes(StandardCharsets.UTF_8));
 
     //demo env 30303039914 that automatically authenticates successfully
@@ -82,10 +83,10 @@ public class AuthTokenCreatorTest {
         when(mockKeySharesClient2.getServerIdentifier()).thenReturn(SERVER2);
 
         NonceResponse nonce1 = new NonceResponse();
-        nonce1.setNonce(Base64.getDecoder().decode(NONCE01));
+        nonce1.setNonce(NONCE01);
 
         NonceResponse nonce2 = new NonceResponse();
-        nonce2.setNonce(Base64.getDecoder().decode(NONCE02));
+        nonce2.setNonce(NONCE02);
 
         try {
             when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);

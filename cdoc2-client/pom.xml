@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>SID-1.6.0-SNAPSHOT</version>
+    <version>SID-1.6.1-SNAPSHOT</version>
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
@@ -21,7 +21,7 @@
 
         <!--info.version from cdoc2-openapi/*-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
-        <cdoc2-key-shares-openapi.version>1.0.0-draft</cdoc2-key-shares-openapi.version>
+        <cdoc2-key-shares-openapi.version>1.0.1-draft</cdoc2-key-shares-openapi.version>
     </properties>
 
     <dependencies>

@@ -8,7 +8,7 @@ import ee.sk.smartid.rest.dao.SemanticsIdentifier;
  */
 public class SemanticIdentification {
 
-    private static final String ETSI_IDENTIFIER_PREFIX = "etsi/";
+    public static final String ETSI_IDENTIFIER_PREFIX = "etsi/";
     private static final String ETSI_IDENTIFIER_SEPARATOR = "'";
 
     private final String identifier;

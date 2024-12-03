@@ -26,11 +26,10 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-client</artifactId>
-            <version>SID-1.6.0-SNAPSHOT</version>
+            <version>SID-1.6.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <!--TODO: package name will change -->
             <groupId>ee.cyber.cdoc2.auth</groupId>
             <artifactId>cdoc2-key-shares-auth</artifactId>
             <version>0.1.1-SNAPSHOT</version>
