@@ -65,6 +65,12 @@
                                         <Main-Class>ee.cyber.cdoc2.cli.CDocCli</Main-Class>
                                     </manifestEntries>
                                 </transformer>
+                                <!--
+                                without ServicesResourceTransformer smart-id client will fail runtime with
+                                org.glassfish.jersey.message.internal.MessageBodyProviderNotFoundException
+                                -->
+                                <!-- https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                             </transformers>
                             <artifactSet>
                                 <excludes>

@@ -18,7 +18,7 @@ setup() {
 }
 
 
-mkdir -p $TEST_RESULTS_DIR
+mkdir -p "$TEST_RESULTS_DIR"
 
 
 #bats run doesn't support alias
@@ -30,7 +30,7 @@ run_alias() {
 }
 
 @test "Starting..." {
-  echo "# Preparing tests...">&3
+  echo "# Preparing capsule-server tests...">&3
 }
 
 @test "Testing directory is initialized" {
@@ -40,29 +40,22 @@ run_alias() {
 }
 
 @test "CDOC2 version is found" {
-  run echo $CDOC2_VER
+  run echo "$CDOC2_VER"
   echo "# $CDOC2_VER">&3
   # Support also versions with 'SID-' prefix
   assert_output --regexp '^[A-Za-z0-9_-]*[0-9]+\.[0-9]+\.[0-9].*$'
 }
 
-# Why we have BATS_HOME variable?
 @test "preparing: assert BATS_HOME value exists" {
   run ${BATS_HOME}
   echo "# BATS_HOME=$BATS_HOME">&3
   assert_output --partial '/test/bats/target'
 }
 
-# Why we have BATS_HOME variable?
 @test "preparing: assert bats helpers are installed" {
-  run ${BATS_HOME}/bats-core
+  run "${BATS_HOME}"/bats-core
   assert_output --partial '/test/bats/target/bats-core'
 }
-
-#@test "preparing: assert alias bats value exists" {
-#  run alias bats
-#  assert_output --partial '/bats-core/bin/bats'
-#}
 
 @test "preparing: assert TEST_VECTORS package exists" {
   run ${TEST_VECTORS}
@@ -84,42 +77,42 @@ run_alias() {
   assert_output --partial '/config'
 }
 
-@test "preparing: Waiting server to start" {
+@test "preparing: Waiting capsule-server to start" {
   timeout 15s bash -c 'until curl -k --silent --show-error --connect-timeout 1 https://localhost:18443/actuator/health|grep UP; do echo "# Checking ...">&3; sleep 1;done'
 }
 
-@test "server-test1: successfully encrypt CDOC2 container with server capsule and send capsule to server, then use GET server to decrypt" {
+@test "capsule-server-test1: successfully encrypt CDOC2 container with server capsule and send capsule to server, then use GET server to decrypt" {
   local cdoc_file="ec_simple_to_server.cdoc"
   echo "# Crypt and send capsule to PUT server for file ${cdoc_file}">&3
   run run_alias cdoc-cli \
-          create --server=$TESTING_DIR/config/localhost/localhost_pkcs12.properties \
-          -f $TEST_RESULTS_DIR/$cdoc_file \
-          -p $TESTING_DIR/keys/cdoc2client_pub.key $FILE_FOR_ENCRYPTION
+          create --server="$TESTING_DIR"/config/localhost/localhost_pkcs12.properties \
+          -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -p "$TESTING_DIR"/keys/cdoc2client_pub.key "$FILE_FOR_ENCRYPTION"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully using GET server
   echo "# Capsule sent to PUT server">&3
   echo "# Using GET server to decrypt file ${cdoc_file}">&3
   run run_alias cdoc-cli \
-          decrypt --server=$TESTING_DIR/config/localhost/localhost_pkcs12.properties \
-          -f $TEST_RESULTS_DIR/$cdoc_file \
-           -k $TESTING_DIR/keys/cdoc2client_priv.key \
-          -o $TEST_RESULTS_DIR
+          decrypt --server="$TESTING_DIR"/config/localhost/localhost_pkcs12.properties \
+          -f "$TEST_RESULTS_DIR"/$cdoc_file \
+           -k "$TESTING_DIR"/keys/cdoc2client_priv.key \
+          -o "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting $TEST_RESULTS_DIR/$cdoc_file"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
-@test "All server tests were executed." {
-  echo "All server tests were executed."
+@test "All capsule-server tests were executed." {
+  echo "All capsule-server tests were executed."
 }
 
-assertSuccessfulExitCode() {
+assertSuccessfulExecution() {
   successfulExitCode=0
   assert_success
   assert_equal $status $successfulExitCode
@@ -128,21 +121,27 @@ assertSuccessfulExitCode() {
 assertSuccessfulDecryption() {
   input_filename=$(basename "$FILE_FOR_ENCRYPTION")
   output_filename=$(basename "$DECRYPTED_FILE")
-  assert_equal $output_filename $input_filename
+  assert_equal "$output_filename" "$input_filename"
+  if [ "$output_filename" == "$input_filename" ]; then
+    echo "# File successfully decrypted.">&3
+  fi
 
-  rm -f $DECRYPTED_FILE
+  rm -f "$DECRYPTED_FILE"
 }
 
 assertFailure() {
   failureExitCode=1
   assert_equal $status $failureExitCode
+  if [ $status == $failureExitCode ]; then
+    echo "# Execution has failed as expected.">&3
+  fi
 }
 
 removeEncryptedCdoc() {
-  rm -f $CDOC2_CONTAINER
+  rm -f "$CDOC2_CONTAINER"
 }
 
 # removes created temporary files within testing
 teardown_file() {
-  rm -d $TEST_RESULTS_DIR
+  rm -d "$TEST_RESULTS_DIR"
 }
