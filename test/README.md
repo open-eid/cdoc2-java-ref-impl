@@ -45,10 +45,33 @@ All test vectors within testing will be created in the same temporary folder `/t
 results will be deleted after each test case execution automatically.
 
 
-### Running server scenario tests (experimental)
+### Running capsule server scenario tests (experimental)
 
 Create DB Docker image, follow https://github.com/open-eid/cdoc2-capsule-server/server-db/README.md
 
 Login to docker (ghcr.io) - [Authenticating with personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
-Run: `run-server-bats-tests.sh`
+Run `run-capsule-server-bats-tests.sh`:
+```bash
+cd bats
+./run-capsule-server-bats-tests.sh
+```
+
+### Running Smart-ID tests (experimental)
+
+To use pre-built images, login to docker (ghcr.io) - [Authenticating with personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
+
+Run `cdoc2_shares_server_tests.bats` tests with following command:
+```bash
+cd bats
+bash run-shares-server-bats-tests.sh
+```
+
+Alternatively build Docker images locally if the last repo state is required:
+
+* Check-out the repo [cdoc2-shares-server](https://github.com/open-eid/cdoc2-shares-server/)
+* Follow build instructions in https://github.com/open-eid/cdoc2-shares-server/ 
+* Build `cdoc2-shares-server` and `cdoc2-shares-server-liquibase` Docker images: 
+  `build-images.sh` 
+* Update test/bats/config/shares-server/.env with correct values
+* Run `run-shares-server-bats-tests.sh`

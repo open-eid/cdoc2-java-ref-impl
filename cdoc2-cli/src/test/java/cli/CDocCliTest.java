@@ -26,7 +26,6 @@ import picocli.CommandLine;
 
 import ee.cyber.cdoc2.cli.CDocCli;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_SERVERS_URLS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,7 +38,6 @@ class CDocCliTest {
     private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
     private static final String SECRET_OPTION
         = "--secret=label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=";
-    private static final String SMART_ID_OPTION = "-sid=38001085718";
 
     private static final int SUCCESSFUL_EXIT_CODE = 0;
     private static final int FAILURE_EXIT_CODE = 1;
@@ -118,15 +116,6 @@ class CDocCliTest {
     void testSuccessfulCreateDecryptDocWithSecret() throws IOException {
         encrypt(SECRET_OPTION);
         decrypt(SECRET_OPTION, SUCCESSFUL_EXIT_CODE);
-    }
-
-    @Test
-    @Disabled("Needs running servers on configured option" + KEY_SHARES_SERVERS_URLS
-        + "in key-shares.properties")
-    // ToDo remove when bats tests are ready #3238
-    void testSuccessfulCreateDocWithSmartId() throws IOException {
-        encryptWithKeyShares();
-        decryptWithKeyShares();
     }
 
     @Test
@@ -381,16 +370,6 @@ class CDocCliTest {
         executeEncryption(encryptArgs, cdocFile);
     }
 
-    private void encryptWithKeyShares() {
-        String[] encryptArgs = createEncryptArgsForKeyShares(SMART_ID_OPTION);
-        executeEncryption(encryptArgs, cdocFile);
-    }
-
-    private void decryptWithKeyShares() throws IOException {
-        String[] decryptArgs = createDecryptArgsForKeyShares(SMART_ID_OPTION);
-        executeDecryptionWithDefaultPath(decryptArgs, SUCCESSFUL_EXIT_CODE);
-    }
-
     private void encryptWithTwoKeys(String encryptionArgument1, String encryptionArgument2) {
         String[] encryptArgs = createEncryptArgs(encryptionArgument1, encryptionArgument2);
         executeEncryption(encryptArgs, cdocFile);
@@ -436,16 +415,6 @@ class CDocCliTest {
         };
     }
 
-    private String[] createEncryptArgsForKeyShares(String encryptionArgument) {
-        return new String[]{
-            "create",
-            encryptionArgument,
-            "-Dkey-shares.properties=config/localhost/key-shares.properties",
-            "--file=" + cdocFile,
-            cdocCliPath.resolve("README.md").toString()
-        };
-    }
-
     private String[] createDecryptArgs(String decryptionArgument1, String decryptionArgument2) {
         if (null == decryptionArgument2) {
             return new String[]{
@@ -460,16 +429,6 @@ class CDocCliTest {
             "--file=" + cdocFile,
             decryptionArgument1,
             decryptionArgument2,
-            "--output=" + outPath
-        };
-    }
-
-    private String[] createDecryptArgsForKeyShares(String decryptionArgument) {
-        return new String[]{
-            "decrypt",
-            "--file=" + cdocFile,
-            decryptionArgument,
-            "-Dkey-shares.properties=config/localhost/key-shares.properties",
             "--output=" + outPath
         };
     }

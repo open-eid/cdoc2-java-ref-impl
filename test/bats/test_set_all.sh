@@ -1,2 +1,3 @@
-source test_set_no_server.sh
-source test_set_server.sh
+source test_set_no_servers.sh
+source test_set_capsule_server.sh
+source test_set_shares_server.sh
