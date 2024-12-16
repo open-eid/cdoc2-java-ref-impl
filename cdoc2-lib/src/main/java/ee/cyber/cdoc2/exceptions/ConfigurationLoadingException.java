@@ -18,7 +18,7 @@ public class ConfigurationLoadingException extends RuntimeException {
     /**
      * Constructor with message and additional cause
      *
-     * @param msg   error message
+     * @param msg error message
      * @param cause original cause
      */
     public ConfigurationLoadingException(String msg, Throwable cause) {

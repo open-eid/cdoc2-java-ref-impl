@@ -1,5 +1,8 @@
 package ee.cyber.cdoc2.config;
 
+import ee.sk.mid.MidDisplayTextFormat;
+import ee.sk.mid.MidLanguage;
+
 import java.util.Properties;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
@@ -24,7 +27,14 @@ public interface MobileIdClientConfiguration {
 
     String getTrustStorePassword();
 
-    int getLongPollingTimeout();
+    int getLongPollingTimeoutSeconds();
 
     int getPollingSleepTimeoutSeconds();
+
+    String getDisplayText();
+
+    MidDisplayTextFormat getDisplayTextFormat();
+
+    MidLanguage getDisplayTextLanguage();
+
 }
