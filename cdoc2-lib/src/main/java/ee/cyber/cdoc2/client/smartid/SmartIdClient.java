@@ -35,9 +35,9 @@ public class SmartIdClient {
     /**
      * Authentication request to Smart ID client with ETSI semantics identifier.
      * @param semanticsIdentifier ETSI semantics identifier
-     * @param authenticationHash  Base64 encoded hash function output to be signed
-     * @param certificationLevel  Level of certificate requested, can either be
-     *                            {@code QUALIFIED} or {@code ADVANCED}
+     * @param authenticationHash Base64 encoded hash function output to be signed
+     * @param certificationLevel Level of certificate requested, can either be
+     *                           {@code QUALIFIED} or {@code ADVANCED}
      * @return SmartIdAuthenticationResponse object
      */
     public SmartIdAuthenticationResponse authenticate(

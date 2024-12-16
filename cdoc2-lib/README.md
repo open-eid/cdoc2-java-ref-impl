@@ -109,39 +109,94 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
 
 #### Initialize configuration for server scenarios:
 ```java
-  public KeyCapsuleClientFactory getKeyCapsulesClientFactory(String keyServerPropertiesFile) {
+  public KeyCapsuleClientFactory initKeyCapsuleClientFactory(String keyServerPropertiesFile) {
     Properties p = new Properties();
     p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
-    return KeyCapsuleClientImpl.createFactory(p);
+    
+    ExternalServiceImpl clientFactory = new ExternalServiceImpl();
+    Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
+    CDoc2ConfigurationProvider.initKeyCapsuleClientConfig(configuration);
+
+    KeyCapsuleClientConfiguration config = clientFactory.initKeyCapsuleClientFactory(
+        configuration.keyCapsuleClientConfiguration());
+    return KeyCapsuleClientImpl.createFactory(config);
   }
 ```
+
+Configuration is created from `localhost.properties` in `cdoc2-cli/config/localhost/`
+directory:
+* `cdoc2.client.server.id`
+* `cdoc2.client.server.base-url.post`
+* `cdoc2.client.server.base-url.get`
+* `cdoc2.client.server.debug`
+* `cdoc2.client.server.connect-timeout`
+* `cdoc2.client.server.read-timeout`
+* `cdoc2.client.ssl.trust-store.type`
+* `cdoc2.client.ssl.trust-store`
+* `cdoc2.client.ssl.trust-store-password`
+* `cdoc2.client.ssl.client-store.type`
+* `cdoc2.client.ssl.client-store-password.prompt`
+
 
 #### Initialize configuration for decryption with smart ID:
 ```java
   public void loadSmartIdConfiguration(String smartIdPropertiesFile) {
     Properties properties = loadProperties(smartIdPropertiesFile);
     Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.init(configuration);
+    CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
   }
 ```
+
+Configuration is created from `smart-id.properties` in `cdoc2-cli/config/localhost/smart-id` 
+directory:
+* `smartid.client.hostUrl`
+* `smartid.client.relyingPartyUuid`
+* `smartid.client.relyingPartyName`
+* `smartid.client.ssl.trust-store`
+* `smartid.client.ssl.trust-store-password`
+
 
 #### Initialize configuration for decryption with mobile ID:
 ```java
   public void loadMobileIdConfiguration(String mobileIdPropertiesFile) {
     Properties properties = loadProperties(mobileIdPropertiesFile);
     Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.init(configuration);
+    CDoc2ConfigurationProvider.initMobileIdClientConfig(configuration);
   }
 ```
+
+Configuration is created from `mobile-id.properties` in `cdoc2-cli/config/localhost/mobile-id`
+directory:
+* `mobileid.client.hostUrl`
+* `mobileid.client.relyingPartyUuid`
+* `mobileid.client.relyingPartyName`
+* `mobileid.client.ssl.trust-store`
+* `mobileid.client.ssl.trust-store.type`
+* `mobileid.client.ssl.trust-store-password`
+* `mobileid.client.long-polling-timeout-seconds`
+* `mobileid.client.polling-sleep-timeout-seconds`
+* `mobileid.client.display-text`
+* `mobileid.client.display-text-format`
+* `mobileid.client.display-text-language`
 
 #### Initialize configuration for decryption with key shares:
 ```java
   public void loadKeySharesConfiguration(String keySharesPropertiesFile) {
     Properties properties = loadProperties(keySharesPropertiesFile);
     Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.init(configuration);
+    CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
   }
 ```
+
+Configuration is created from `key-shares.properties` in `cdoc2-cli/config/localhost`
+directory:
+* `key-shares.servers.urls`
+* `key-shares.servers.min_num`
+* `key-shares.algorithm`
+* `cdoc2.key-shares.client.ssl.trust-store`
+* `cdoc2.key-shares.client.ssl.trust-store.type`
+* `cdoc2.key-shares.client.ssl.trust-store-password`
+
 
 Create `KeyShareClientFactory` for further usage:
 ```java

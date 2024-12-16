@@ -12,7 +12,7 @@ public class CdocSmartIdClientException extends Exception {
 
     /**
      * Constructor with message and additional cause
-     * @param msg   error message
+     * @param msg error message
      * @param cause original cause
      */
     public CdocSmartIdClientException(String msg, Throwable cause) {

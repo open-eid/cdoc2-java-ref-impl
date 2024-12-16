@@ -1,5 +1,8 @@
 package ee.cyber.cdoc2.config;
 
+import ee.sk.mid.MidDisplayTextFormat;
+import ee.sk.mid.MidLanguage;
+
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -23,6 +26,9 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param trustStorePassword client trust store password
  * @param longPollingTimeoutSeconds long polling timeout seconds
  * @param pollingSleepTimeoutSeconds polling sleep timeout seconds
+ * @param displayText display text
+ * @param displayTextFormat display text format
+ * @param language display text language
  */
 public record MobileIdClientConfigurationProps(
     String hostUrl,
@@ -32,11 +38,17 @@ public record MobileIdClientConfigurationProps(
     String trustStoreType,
     String trustStorePassword,
     int longPollingTimeoutSeconds,
-    int pollingSleepTimeoutSeconds
+    int pollingSleepTimeoutSeconds,
+    String displayText,
+    MidDisplayTextFormat displayTextFormat,
+    MidLanguage language
 ) implements MobileIdClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(MobileIdClientConfigurationProps.class);
 
+    private static final String DEFAULT_DISPLAY_TEXT = "Please confirm authentication";
+    private static final String DEFAULT_DISPLAY_TEXT_FORMAT = "GSM7";
+    private static final String DEFAULT_DISPLAY_TEXT_LANG = "ENG";
     private static final int DEFAULT_LONG_POLLING_TIMEOUT_SECONDS = 60;
     private static final int DEFAULT_POLLING_SLEEP_TIMEOUT_SECONDS = 3;
 
@@ -61,6 +73,15 @@ public record MobileIdClientConfigurationProps(
             properties,
             MOBILE_ID_CLIENT_POLLING_SLEEP_TIMEOUT_SEC
         ).orElse(DEFAULT_POLLING_SLEEP_TIMEOUT_SECONDS);
+        String displayText = properties.getProperty(
+            MOBILE_ID_CLIENT_DISPLAY_TEXT, DEFAULT_DISPLAY_TEXT
+        );
+        MidDisplayTextFormat displayTextFormat = MidDisplayTextFormat.valueOf(
+            properties.getProperty(MOBILE_ID_CLIENT_DISPLAY_TEXT_FORMAT, DEFAULT_DISPLAY_TEXT_FORMAT)
+        );
+        MidLanguage language = MidLanguage.valueOf(
+            properties.getProperty(MOBILE_ID_CLIENT_DISPLAY_TEXT_LANG, DEFAULT_DISPLAY_TEXT_LANG)
+        );
 
         return new MobileIdClientConfigurationProps(
             hostUrl,
@@ -70,7 +91,10 @@ public record MobileIdClientConfigurationProps(
             trustStoreType,
             trustStorePassword,
             longPollingTimeoutSeconds,
-            pollingSleepTimeoutSeconds
+            pollingSleepTimeoutSeconds,
+            displayText,
+            displayTextFormat,
+            language
         );
     }
 
@@ -105,13 +129,28 @@ public record MobileIdClientConfigurationProps(
     }
 
     @Override
-    public int getLongPollingTimeout() {
+    public int getLongPollingTimeoutSeconds() {
         return longPollingTimeoutSeconds;
     }
 
     @Override
     public int getPollingSleepTimeoutSeconds() {
         return pollingSleepTimeoutSeconds;
+    }
+
+    @Override
+    public String getDisplayText() {
+        return displayText;
+    }
+
+    @Override
+    public MidDisplayTextFormat getDisplayTextFormat() {
+        return displayTextFormat;
+    }
+
+    @Override
+    public MidLanguage getDisplayTextLanguage() {
+        return language;
     }
 
 }

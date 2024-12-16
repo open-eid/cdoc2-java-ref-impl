@@ -43,8 +43,6 @@ public final class Cdoc2ConfigurationProperties {
     public static final String KEY_SHARES_SERVERS_URLS = "key-shares.servers.urls";
     public static final String KEY_SHARES_SERVERS_MIN_NUM = "key-shares.servers.min_num";
     public static final String KEY_SHARES_ALGORITHM = "key-shares.algorithm";
-    public static final String KEY_SHARES_NUMBER_OF_SHARES = "key-shares.number_of_shares";
-    public static final String KEY_SHARES_MIN_NUMBER_OF_SHARES = "key-shares.min_number_of_shares";
     public static final String KEY_SHARES_CLIENT_TRUST_STORE
         = "cdoc2.key-shares.client.ssl.trust-store";
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_PWD
@@ -67,6 +65,12 @@ public final class Cdoc2ConfigurationProperties {
         = "mobileid.client.long-polling-timeout-seconds";
     public static final String MOBILE_ID_CLIENT_POLLING_SLEEP_TIMEOUT_SEC
         = "mobileid.client.polling-sleep-timeout-seconds";
+    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT
+        = "mobileid.client.display-text";
+    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT_FORMAT
+        = "mobileid.client.display-text-format";
+    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT_LANG
+        = "mobileid.client.display-text-language";
 
     /** If files overwrite is allowed */
     public static final String OVERWRITE_PROPERTY = "ee.cyber.cdoc2.overwrite";

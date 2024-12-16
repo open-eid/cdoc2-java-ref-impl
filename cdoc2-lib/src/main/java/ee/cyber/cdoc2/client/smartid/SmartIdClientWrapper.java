@@ -38,17 +38,17 @@ public class SmartIdClientWrapper {
 
     private static final String CERT_NOT_FOUND = "Smart ID trusted SSL certificates not found";
 
-    private final SmartIdClient smartIdClient;
+    private final SmartIdClient sidClient;
     private final SmartIdClientConfiguration smartIdClientConfig;
     private final AuthenticationResponseValidator authenticationResponseValidator;
 
     /**
      * Constructor for Smart-ID Client wrapper
-     * 2param conf Smart-ID client configuration
+     * @param conf Smart-ID client configuration
      */
     public SmartIdClientWrapper(SmartIdClientConfiguration conf) {
         this.smartIdClientConfig = conf;
-        this.smartIdClient = new SmartIdClient();
+        this.sidClient = new SmartIdClient();
         configureSmartIdClient();
         this.authenticationResponseValidator = new AuthenticationResponseValidator();
         setTrustedCertificatesToValidator(authenticationResponseValidator);
@@ -58,11 +58,11 @@ public class SmartIdClientWrapper {
      * Smart ID client configuration
      */
     private void configureSmartIdClient() throws ConfigurationLoadingException {
-        smartIdClient.setHostUrl(smartIdClientConfig.getHostUrl());
-        smartIdClient.setRelyingPartyUUID(smartIdClientConfig.getRelyingPartyUuid());
-        smartIdClient.setRelyingPartyName(smartIdClientConfig.getRelyingPartyName());
-        KeyStore trustedCerts = readTrustedCertificates();
-        smartIdClient.setTrustStore(trustedCerts);
+        sidClient.setHostUrl(smartIdClientConfig.getHostUrl());
+        sidClient.setRelyingPartyUUID(smartIdClientConfig.getRelyingPartyUuid());
+        sidClient.setRelyingPartyName(smartIdClientConfig.getRelyingPartyName());
+        KeyStore trustStore = readTrustedCertificates();
+        sidClient.setTrustStore(trustStore);
     }
 
     /**
@@ -83,9 +83,9 @@ public class SmartIdClientWrapper {
         SessionTimeoutException,
         DocumentUnusableException,
         ServerMaintenanceException,
-            CdocSmartIdClientException {
+        CdocSmartIdClientException {
 
-        SmartIdAuthenticationResponse authResponse = smartIdClient
+        SmartIdAuthenticationResponse authResponse = sidClient
             .createAuthentication()
             .withSemanticsIdentifier(semanticsIdentifier)
             .withAuthenticationHash(authenticationHash)
