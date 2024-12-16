@@ -16,6 +16,10 @@ public final class CDoc2ConfigurationProvider {
         return cdoc2Configuration.smartIdClientConfiguration();
     }
 
+    public static MobileIdClientConfiguration initMobileIdClientConfig(Cdoc2Configuration cdoc2Configuration) {
+        return cdoc2Configuration.mobileIdClientConfiguration();
+    }
+
     public static KeyCapsuleClientConfiguration initKeyCapsuleClientConfig(Cdoc2Configuration cdoc2Configuration) {
         return cdoc2Configuration.keyCapsuleClientConfiguration();
     }

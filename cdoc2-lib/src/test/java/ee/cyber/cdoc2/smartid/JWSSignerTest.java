@@ -32,6 +32,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.List;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,7 +90,7 @@ class JWSSignerTest {
     void testSignature() throws JOSEException, ParseException {
 
         // test again smartid demo env https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo
-        final String clTestProperties = CLASSPATH + "smartid/smart_id-test.properties";
+        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
 
         SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
             loadProperties(clTestProperties)

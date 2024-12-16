@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
@@ -99,7 +100,7 @@ public class AuthTokenCreatorTest {
     }
 
     SmartIdClient setupSIDClient() {
-        final String clTestProperties = CLASSPATH + "smartid/smart_id-test.properties";
+        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
 
         SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
             loadProperties(clTestProperties)

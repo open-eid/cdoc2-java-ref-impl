@@ -125,6 +125,15 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
   }
 ```
 
+#### Initialize configuration for decryption with mobile ID:
+```java
+  public void loadMobileIdConfiguration(String mobileIdPropertiesFile) {
+    Properties properties = loadProperties(mobileIdPropertiesFile);
+    Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
+    CDoc2ConfigurationProvider.init(configuration);
+  }
+```
+
 #### Initialize configuration for decryption with key shares:
 ```java
   public void loadKeySharesConfiguration(String keySharesPropertiesFile) {
@@ -138,6 +147,27 @@ Create `KeyShareClientFactory` for further usage:
 ```java
 KeyShareClientFactory factory = KeySharesClientImpl.createFactory();
 ```
+
+
+### Updating Smart ID or Mobile ID certificates in tests
+Integration tests check the validity of server's certificates and will fail after their expiration.
+When certificate has expired there is needed to replace it with new certificate in the trust store. 
+1. Obtain the new certificate from SK.
+2. Remove expired certificate from the trust store.
+
+   List all certificates in trust store and find an alias for expired one:
+   
+   `keytool -list -v -keystore smartid_demo_server_trusted_ssl_certs.jks -storepass passwd`
+   
+   Delete expired certificate:
+
+    `keytool -delete -noprompt -alias <EXPIRED_CERTIFICATE_ALIAS> -keystore smartid_demo_server_trusted_ssl_certs.jks 
+    -storepass passwd`
+
+3. Import new valid certificate into the trust store:
+   `keytool -import -trustcacerts -file <NEW_CERTIFICATE>.pem.crt -keystore 
+   smartid_demo_server_trusted_ssl_certs.jks -alias <NEW_CERTIFICATE_ALIAS> -storepass passwd`
+
 
 ### To create CDOC2 document with password:
 ```java

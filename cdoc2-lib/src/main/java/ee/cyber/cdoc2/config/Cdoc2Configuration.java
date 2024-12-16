@@ -12,6 +12,10 @@ public interface Cdoc2Configuration {
         return null;
     }
 
+    default MobileIdClientConfiguration mobileIdClientConfiguration() throws ConfigurationLoadingException {
+        return null;
+    }
+
     default KeySharesConfiguration keySharesConfiguration()
         throws ConfigurationLoadingException {
         return null;
