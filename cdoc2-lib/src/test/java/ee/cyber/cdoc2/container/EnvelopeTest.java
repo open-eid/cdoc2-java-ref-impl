@@ -74,6 +74,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
@@ -544,7 +545,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         //FIXME: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
         // but current lib API doesn't allow to provide smart-id client, fix with RM-4309
-        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + "smartid/smart_id-test.properties");
+        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH);
 
         checkContainerDecrypt(
             decryptionData.cdocContainerBytes(),

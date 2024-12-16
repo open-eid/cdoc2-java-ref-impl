@@ -18,7 +18,7 @@ class SmartIdConfigurationTest {
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
         SmartIdClientConfiguration smartIdClientConfiguration = getSmartIdConfiguration();
 
-       // assertEquals(HOST_URL, smartIdClientConfiguration.getHostUrl());
+        assertEquals(HOST_URL, smartIdClientConfiguration.getHostUrl());
         assertEquals(RELYING_PARTY_UUID, smartIdClientConfiguration.getRelyingPartyUuid());
         assertEquals(RELYING_PARTY_NAME, smartIdClientConfiguration.getRelyingPartyName());
     }

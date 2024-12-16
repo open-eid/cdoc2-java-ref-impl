@@ -138,7 +138,7 @@ for decryption):
 
 and/or
 
-`-Dsmart-id.properties=config/localhost/smart-id/smart-id.properties`
+`-Dsmart-id.properties=config/smart-id/smart-id.properties`
 
 
 ### Decryption

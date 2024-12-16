@@ -52,6 +52,22 @@ public final class Cdoc2ConfigurationProperties {
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_TYPE
         = "cdoc2.key-shares.client.ssl.trust-store.type";
 
+    public static final String MOBILE_ID_PROPERTIES = "mobile-id.properties";
+    public static final String MOBILE_ID_CLIENT_HOST_URL = "mobileid.client.hostUrl";
+    public static final String MOBILE_ID_CLIENT_RELYING_PARTY_UUID
+        = "mobileid.client.relyingPartyUuid";
+    public static final String MOBILE_ID_CLIENT_RELYING_PARTY_NAME
+        = "mobileid.client.relyingPartyName";
+    public static final String MOBILE_ID_CLIENT_TRUST_STORE = "mobileid.client.ssl.trust-store";
+    public static final String MOBILE_ID_CLIENT_TRUST_STORE_TYPE
+        = "mobileid.client.ssl.trust-store.type";
+    public static final String MOBILE_ID_CLIENT_TRUST_STORE_PWD
+        = "mobileid.client.ssl.trust-store-password";
+    public static final String MOBILE_ID_CLIENT_POLLING_TIMEOUT_SEC
+        = "mobileid.client.long-polling-timeout-seconds";
+    public static final String MOBILE_ID_CLIENT_POLLING_SLEEP_TIMEOUT_SEC
+        = "mobileid.client.polling-sleep-timeout-seconds";
+
     /** If files overwrite is allowed */
     public static final String OVERWRITE_PROPERTY = "ee.cyber.cdoc2.overwrite";
     // by default files overwrite is not allowed
