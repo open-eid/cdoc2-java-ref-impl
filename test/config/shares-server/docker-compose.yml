@@ -17,7 +17,7 @@ services:
 
   cdoc2-shares-server-liquibase:
     container_name: cdoc2-shares-server-liquibase-bats
-    image: ${SHARES_SERVER_LIQUIBASE_IMAGE}:${SHARES_SERVER_VERSION}
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server-liquibase:${SHARES_SERVER_VERSION}
     depends_on:
       cdoc2-shares-postgres:
         condition: service_started
@@ -30,7 +30,7 @@ services:
 
   shares-server:
     container_name: shares-server-bats
-    image: ${SHARES_SERVER_IMAGE}:${SHARES_SERVER_VERSION}
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server:${SHARES_SERVER_VERSION}
     ports:
       - "8443:8443"
       # monitoring
@@ -63,7 +63,7 @@ services:
   # second instance of shares-server, according to configured key-shares.properties in cdoc2-java-ref-impl repository
   shares-server-second:
     container_name: shares-server-second-bats
-    image: ${SHARES_SERVER_IMAGE}:${SHARES_SERVER_VERSION}
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server:${SHARES_SERVER_VERSION}
     ports:
       - "8442:8442"
       # monitoring

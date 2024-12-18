@@ -128,10 +128,7 @@ public class SIDAuthTokenCreator {
             .withSharesAccessData(audArray)
             .build();
 
-        tokenCreator.sign(jwsSigner,
-            jwsSigner.getSignerSemID().getIdentifier() // PNOEE-30303039914, used for JWT header.kid,
-                                                       // should match authenticator cert subjectDN->serialnumber
-        );
+        tokenCreator.sign(jwsSigner);
 
         return tokenCreator;
     }

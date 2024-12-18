@@ -1,24 +1,19 @@
 package ee.cyber.cdoc2.smartid;
 
-import com.nimbusds.jose.JOSEException;
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
-import ee.cyber.cdoc2.auth.VerificationException;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.client.smartid.SmartIdClientWrapper;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import ee.cyber.cdoc2.util.SIDAuthTokenCreator;
-import ee.cyber.cdoc2.util.SIDAuthCertData;
-import ee.cyber.cdoc2.util.SIDAuthJWSSigner;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,9 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
@@ -109,15 +105,19 @@ public class AuthTokenCreatorTest {
         return new SmartIdClient(sidConf);
     }
 
-    SIDAuthJWSSigner setupSIDSigner(SemanticsIdentifier semID) {
-        SmartIdClient sidClient = setupSIDClient();
-        return new SIDAuthJWSSigner(sidClient, semID);
+    KeyStore loadSIDTestTrustStore() {
+        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
+
+        SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
+            loadProperties(clTestProperties)
+        ).smartIdClientConfiguration();
+
+        return SmartIdClientWrapper.readTrustedCertificates(sidConf);
     }
 
     @Test
     @Tag("net") //requires external network to connect to SID demo server
-    void testCreateAuthToken() throws AuthSignatureCreationException, VerificationException,
-        ParseException, JOSEException {
+    void testCreateAuthToken() throws Exception {
 
         List<KeyShareUri> shares = List.of(
             new KeyShareUri(
@@ -142,22 +142,28 @@ public class AuthTokenCreatorTest {
         log.debug("token1: {}", token1);
         X509Certificate issCert = tokenCreator.getAuthenticatorCert();
 
-        //pub key for validating signature on sdjwt.org
-        //log.debug("pub key: {}", SIDAuthCertData.getRSAPublicKeyPkcs1Pem(issCert));
+        KeyStore sidTestTrustStore = loadSIDTestTrustStore();
+        AuthTokenVerifier authTokenVerifier = new AuthTokenVerifier(sidTestTrustStore, false);
 
-        Map<String, Object> verifiedClaims = AuthTokenVerifier.getVerifiedClaims(token1, issCert,
-            SIDAuthCertData::parseSemanticsIdentifier);
+        Map<String, Object> verifiedClaims = authTokenVerifier.getVerifiedClaims(token1, issCert);
 
         log.debug("claims {}", verifiedClaims);
 
         //verify issuer
         assertEquals("etsi/PNOEE-" + DEMO_ID_CODE, verifiedClaims.get("iss"));
 
-        // verified claims fields will change in next version
-        assertNotNull(verifiedClaims.get("sharedAccessDataPOJO"));
-        assertInstanceOf(ShareAccessData.class, verifiedClaims.get("sharedAccessDataPOJO"));
+        assertNotNull(verifiedClaims.get("aud"));
+        assertInstanceOf(List.class, verifiedClaims.get("aud"));
 
-        ShareAccessData data = (ShareAccessData) verifiedClaims.get("sharedAccessDataPOJO");
+        // JavaScript list are typeless, list can contain any type
+        List<?> audList = (List<?>)verifiedClaims.get("aud");
+
+        assertEquals(1, audList.size());
+
+        assertInstanceOf(String.class, audList.get(0));
+        String aud = (String)audList.get(0);
+
+        ShareAccessData data = ShareAccessData.fromURL(new URL(aud));
 
         assertEquals(SHARE_ID1, data.getShareId());
         assertEquals(NONCE01, data.getNonce());
