@@ -81,19 +81,6 @@ public class SIDAuthJWSSigner implements JWSSigner {
             throw new JOSEException("JWSAlgorithm " + header.getAlgorithm() + " not supported");
         }
 
-        // Currently "kid" is semantic identifier like PNOEE-30303039914
-        //TODO: "kid" format might change in future. It may contain addition info addition to semantics identifier
-        // #2776
-        // * keytype: auth vs sign (PIN1/PIN2)
-        // * baseURL for SID RP api service
-        // * RP api version?
-        // * SID vs MID
-        // * something else
-        // for example: https://sid.demo.sk.ee/smart-id-rp/v2/authentication/etsi/PNOEE-30303039914
-        if (!signerId.getIdentifier().equals(header.getKeyID())) {
-            throw new JOSEException("kid " + header.getKeyID() + " doesn't match " + signerId.getIdentifier());
-        }
-
         AuthenticationHash hash = calcHash(signingInput, toSIDHashType(header.getAlgorithm()));
 
         //TODO: RM-4086: add support to show SID verification code in UI

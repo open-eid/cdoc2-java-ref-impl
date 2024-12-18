@@ -48,21 +48,25 @@ public class SmartIdClientWrapper {
      */
     public SmartIdClientWrapper(SmartIdClientConfiguration conf) {
         this.smartIdClientConfig = conf;
-        this.sidClient = new SmartIdClient();
-        configureSmartIdClient();
-        this.authenticationResponseValidator = new AuthenticationResponseValidator();
-        setTrustedCertificatesToValidator(authenticationResponseValidator);
+        this.sidClient = configureSmartIdClient(conf);
+        this.authenticationResponseValidator = createTrustedCertificatesValidator();
     }
 
     /**
      * Smart ID client configuration
+     * @return SmartIdClient configured smart-id client
      */
-    private void configureSmartIdClient() throws ConfigurationLoadingException {
-        sidClient.setHostUrl(smartIdClientConfig.getHostUrl());
-        sidClient.setRelyingPartyUUID(smartIdClientConfig.getRelyingPartyUuid());
-        sidClient.setRelyingPartyName(smartIdClientConfig.getRelyingPartyName());
-        KeyStore trustStore = readTrustedCertificates();
-        sidClient.setTrustStore(trustStore);
+    private static SmartIdClient configureSmartIdClient(SmartIdClientConfiguration conf)
+        throws ConfigurationLoadingException {
+
+        SmartIdClient client = new SmartIdClient();
+        client.setHostUrl(conf.getHostUrl());
+        client.setRelyingPartyUUID(conf.getRelyingPartyUuid());
+        client.setRelyingPartyName(conf.getRelyingPartyName());
+        KeyStore trustedCerts = readTrustedCertificates(conf);
+        client.setTrustStore(trustedCerts);
+
+        return client;
     }
 
     /**
@@ -120,13 +124,16 @@ public class SmartIdClientWrapper {
 
     /**
      * Trusted certificates must be set up to {@link AuthenticationResponseValidator}.
-     * @param validator smart id client validation object
+     * @return AuthenticationResponseValidator smart id client validation object
      */
-    private void setTrustedCertificatesToValidator(AuthenticationResponseValidator validator)
+    private AuthenticationResponseValidator createTrustedCertificatesValidator()
         throws ConfigurationLoadingException {
+        AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
         for (X509Certificate cert : getTrustedCertificates()) {
             validator.addTrustedCACertificate(cert);
         }
+
+        return validator;
     }
 
     private List<X509Certificate> getTrustedCertificates() throws ConfigurationLoadingException {
@@ -150,12 +157,18 @@ public class SmartIdClientWrapper {
         }
     }
 
+    private KeyStore readTrustedCertificates() throws ConfigurationLoadingException {
+        return readTrustedCertificates(this.smartIdClientConfig);
+    }
+
     /**
      * Read trusted certificates for Smart ID client secure TLS transport
      */
-    private KeyStore readTrustedCertificates() throws ConfigurationLoadingException {
+    public static KeyStore readTrustedCertificates(SmartIdClientConfiguration smartIdClientConfig)
+        throws ConfigurationLoadingException {
+
         try (InputStream is = Resources.getResourceAsStream(
-            smartIdClientConfig.getTrustStore(), this.getClass().getClassLoader())
+            smartIdClientConfig.getTrustStore(), SmartIdClientWrapper.class.getClassLoader())
         ) {
             if (null == is) {
                 throw new ConfigurationLoadingException(CERT_NOT_FOUND);

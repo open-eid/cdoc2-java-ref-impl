@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
@@ -107,6 +109,9 @@ class ECKeysTest {
 
     @Test
     void testLoadEcPubKey() throws GeneralSecurityException, IOException {
+
+        Security.addProvider(new BouncyCastleProvider());
+
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
         String pubKeyPem = """
@@ -140,6 +145,7 @@ class ECKeysTest {
             + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
         PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
+        assertEquals("EC", publicKey.getAlgorithm());
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm()));
 
         ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
@@ -154,6 +160,11 @@ class ECKeysTest {
 
     @Test
     void testLoadEcKeyPairFromPem() throws GeneralSecurityException, IOException {
+
+        // adding BouncyCastle provider may break tests as BouncyCastle
+        // is using "ECDSA" algorithm name for "EC"
+        // see PemTools.loadKeyPair(String)
+        Security.addProvider(new BouncyCastleProvider());
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         String privKeyPem =
             """
