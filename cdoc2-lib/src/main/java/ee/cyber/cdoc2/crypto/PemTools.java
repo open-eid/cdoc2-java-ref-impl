@@ -264,13 +264,11 @@ public final class PemTools {
 
         var cert = loadCertificate(certIs);
         PublicKey publicKey = cert.getPublicKey();
-        String keyLabel = SkLdapUtil.getKeyLabel(cert);
+        SkLdapUtil.CertificateData certificateData = SkLdapUtil.getKeyLabel(cert);
 
         String certFingerprint = getCertFingerprint(cert);
 
-        SkLdapUtil.CertificateData certificateData = new SkLdapUtil.CertificateData();
         certificateData.setPublicKey(publicKey);
-        certificateData.setKeyLabel(keyLabel);
         certificateData.setFingerprint(certFingerprint);
 
         return certificateData;

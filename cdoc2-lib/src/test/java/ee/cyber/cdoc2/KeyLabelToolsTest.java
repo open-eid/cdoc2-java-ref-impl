@@ -228,7 +228,9 @@ class KeyLabelToolsTest {
     @Test
     void testEIdLabelParamsCreation() {
         KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-            "Common,Name,IdentityCode", BigInteger.valueOf(123456)
+            "Common,Name,IdentityCode",
+            BigInteger.valueOf(123456),
+            KeyLabelTools.KeyLabelType.CERT.getName()
         );
 
         assertEquals(

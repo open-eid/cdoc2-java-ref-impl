@@ -153,7 +153,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
     private void addKeySharesIfAny(CDocReEncrypter cDocReEncrypter)
         throws GeneralSecurityException {
 
-        if (this.exclusive.isWithSid() || this.exclusive.isWithMid()) {
+        if (null != this.exclusive && (this.exclusive.isWithSid() || this.exclusive.isWithMid())) {
             cDocReEncrypter.addKeyShareClientFactory(initKeyShareClientFactory());
         }
     }
