@@ -102,7 +102,7 @@ public class CDocDecryptCmd implements Callable<Void> {
     }
 
     private void addKeySharesIfAny(CDocDecrypter cDocDecrypter) throws GeneralSecurityException {
-        if (this.exclusive.isWithSid() || this.exclusive.isWithMid()) {
+        if (null != this.exclusive && (this.exclusive.isWithSid() || this.exclusive.isWithMid())) {
             cDocDecrypter.withKeyShares(initKeyShareClientFactory());
         }
     }

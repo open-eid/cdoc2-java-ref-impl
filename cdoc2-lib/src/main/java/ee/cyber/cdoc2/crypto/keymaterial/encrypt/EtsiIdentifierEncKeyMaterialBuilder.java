@@ -53,7 +53,7 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
                 .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
                 .map(cd -> {
                     KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-                        cd.getKeyLabel(), cd.getSerialNumber()
+                        cd.getKeyLabel(), cd.getSerialNumber(), cd.getKeyLabelType()
                     );
                     return EncryptionKeyMaterial.fromPublicKey(cd.getPublicKey(), keyLabelParams);
                 })
