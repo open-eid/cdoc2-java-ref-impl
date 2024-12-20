@@ -34,3 +34,26 @@ java -jar target/cdoc2-cli-*.jar create --server=config/ria-dev/ria-dev_pkcs12.p
 ```
 java -jar target/cdoc2-cli-*.jar decrypt --server=config/ria-dev/ria-dev_pkcs12.properties -p12 keys/cdoc2client.p12:passwd -f /tmp/ria_p12.cdoc -o /tmp
 ```
+
+### Encrypt for Smart-ID
+
+```
+java -jar target/cdoc2-cli-*.jar create \
+-Dkey-shares.properties=config/ria-dev/key-shares.properties \
+-Dsmart-id.properties=config/smart-id/smart-id.properties \
+--smart-id=30303039914 \
+-f /tmp/SID_30303039914.cdoc2 \
+README.md
+```
+
+### Decrypt with Smart-ID
+
+```
+java -jar target/cdoc2-cli-*.jar decrypt \
+-Dkey-shares.properties=config/ria-dev/key-shares.properties \
+-Dsmart-id.properties=config/smart-id/smart-id.properties \
+--smart-id=30303039914 \
+-f /tmp/SID_30303039914.cdoc2 \
+-o /tmp
+```
+
