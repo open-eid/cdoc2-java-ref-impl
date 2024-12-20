@@ -147,7 +147,7 @@ directory:
   }
 ```
 
-Configuration is created from `smart-id.properties` in `cdoc2-cli/config/localhost/smart-id` 
+Configuration is created from `smart-id.properties` in `cdoc2-cli/config/smart-id` 
 directory:
 * `smartid.client.hostUrl`
 * `smartid.client.relyingPartyUuid`
@@ -165,7 +165,7 @@ directory:
   }
 ```
 
-Configuration is created from `mobile-id.properties` in `cdoc2-cli/config/localhost/mobile-id`
+Configuration is created from `mobile-id.properties` in `cdoc2-cli/config/mobile-id`
 directory:
 * `mobileid.client.hostUrl`
 * `mobileid.client.relyingPartyUuid`

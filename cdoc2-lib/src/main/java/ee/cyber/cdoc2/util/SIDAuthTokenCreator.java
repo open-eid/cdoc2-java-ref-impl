@@ -161,7 +161,7 @@ public class SIDAuthTokenCreator {
 
         String propertiesFilePath = System.getProperty(
             SMART_ID_PROPERTIES,
-            "config/localhost/smart-id/" + SMART_ID_PROPERTIES
+            "config/smart-id/" + SMART_ID_PROPERTIES
         );
         if (null == propertiesFilePath) {
             throw new ConfigurationLoadingException("Smart ID configuration property is missing");
