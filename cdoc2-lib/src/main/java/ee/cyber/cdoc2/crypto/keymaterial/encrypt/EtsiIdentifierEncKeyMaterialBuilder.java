@@ -70,20 +70,7 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      * @return the list of EncryptionKeyMaterial
      */
     public EtsiIdentifierEncKeyMaterialBuilder forSid(String[] sidCodes) {
-        if (null != sidCodes) {
-            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(sidCodes)
-                .map(idCode -> {
-                    SemanticIdentification semanticIdentifier = SemanticIdentification.forSid(idCode);
-                    KeyLabelParams keyLabelParams
-                        = createKeySharesKeyLabelParams(semanticIdentifier.getIdentifier());
-
-                    return EncryptionKeyMaterial.fromAuthMeans(semanticIdentifier, keyLabelParams);
-                })
-                .toList();
-
-            recipients.addAll(keyMaterials);
-        }
-        return this;
+        return withKeyShares(sidCodes, SemanticIdentification.AuthenticationType.SID);
     }
 
     /**
@@ -92,11 +79,17 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      * @return the list of EncryptionKeyMaterial
      */
     public EtsiIdentifierEncKeyMaterialBuilder forMid(String[] midCodes) {
-        if (null != midCodes) {
-            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(midCodes)
+        return withKeyShares(midCodes, SemanticIdentification.AuthenticationType.MID);
+    }
+
+    private EtsiIdentifierEncKeyMaterialBuilder withKeyShares(
+        String[] idCodes, SemanticIdentification.AuthenticationType authType
+    ) {
+        if (null != idCodes) {
+            List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(idCodes)
                 .map(idCode -> {
-                    // ToDo add mobile number here
-                    SemanticIdentification semanticIdentifier = SemanticIdentification.forMid(idCode);
+                    SemanticIdentification semanticIdentifier = SemanticIdentification
+                        .forKeyShares(idCode, authType);
                     KeyLabelParams keyLabelParams
                         = createKeySharesKeyLabelParams(semanticIdentifier.getIdentifier());
 

@@ -23,6 +23,7 @@ import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
+import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
@@ -86,6 +87,7 @@ import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
@@ -431,6 +433,22 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
+    void testKeySharesSerializationWithSmartId(@TempDir Path tempDir) throws Exception {
+        SemanticIdentification keyLabel = SemanticIdentification
+            .forKeyShares("30303039914", SemanticIdentification.AuthenticationType.SID);
+
+        testKeySharesSerialization(tempDir, keyLabel);
+    }
+
+    @Test
+    void testKeySharesSerializationWithMobileId(@TempDir Path tempDir) throws Exception {
+        SemanticIdentification keyLabel = SemanticIdentification
+            .forKeyShares("51307149560", SemanticIdentification.AuthenticationType.MID);
+
+        testKeySharesSerialization(tempDir, keyLabel);
+    }
+
+    @Test
     void testECContainer(@TempDir Path tempDir) throws Exception {
         KeyPair bobKeyPair = createKeyPair();
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
@@ -520,9 +538,10 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
-    void testKeySharesScenario(@TempDir Path tempDir) throws Exception {
-        //SID demo env that authenticates automatically
-        SemanticIdentification keyLabel = SemanticIdentification.forSid("30303039914");
+    void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
+        // SID demo env that authenticates automatically
+        SemanticIdentification keyLabel = SemanticIdentification
+            .forKeyShares("30303039914", SemanticIdentification.AuthenticationType.SID);
         setupKeyShareClientMocks();
 
         EnvelopeTestUtils.DecryptionData decryptionData
@@ -1115,6 +1134,54 @@ class EnvelopeTest implements TestLifecycleLogger {
             "ee.cyber.cdoc2.key-label.machine-readable-format.enabled",
             String.valueOf(isFormatted)
         );
+    }
+
+    private void testKeySharesSerialization(
+        Path tempDir,
+        SemanticIdentification keyLabel
+    ) throws Exception {
+        setupKeyShareClientMocks();
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        Envelope envelope = Envelope.prepare(
+            List.of(EncryptionKeyMaterial.fromAuthMeans(
+                keyLabel, createKeySharesKeyLabelParams(keyLabel.getIdentifier()))
+            ),
+            null, shareClientFactory
+        );
+
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        envelope.encrypt(List.of(payloadFile), dst);
+
+        byte[] cdocBytes = dst.toByteArray();
+
+        assertTrue(cdocBytes.length > 0);
+
+        log.debug("available: {}", cdocBytes.length);
+
+        byte[] fbsBytes = Envelope.readFBSHeader(new ByteArrayInputStream(cdocBytes));
+        Header header = Envelope.deserializeFBSHeader(fbsBytes);
+
+        assertNotNull(header);
+        assertEquals(1, header.recipientsLength());
+
+        RecipientRecord recipient = header.recipients(0);
+
+        assertEquals(recipients_KeySharesCapsule, recipient.capsuleType());
+
+        KeySharesCapsule keySharesCapsule = (KeySharesCapsule) recipient.capsule(new KeySharesCapsule());
+        assertNotNull(keySharesCapsule);
+
+        ByteBuffer saltBuf = keySharesCapsule.saltAsByteBuffer();
+        assertNotNull(saltBuf);
     }
 
 }
