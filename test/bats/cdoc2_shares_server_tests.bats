@@ -154,6 +154,33 @@ run_alias() {
   assertFailure
 }
 
+@test "shares-server-test5: successfully encrypt and decrypt CDOC2 container with Smart-ID EID-Q certs" {
+  echo "# Encrypt file ${CDOC_FILE} with Smart-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id="40504040001"\
+          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$CDOC_FILE"
+
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id="40504040001" \
+          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          -o "$TEST_RESULTS_DIR"
+
+  assertSuccessfulExecution
+  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$CDOC_FILE"
+  assertSuccessfulDecryption
+
+  rm -f "$TEST_RESULTS_DIR"/$CDOC_FILE
+}
+
+
 @test "All shares-server tests were executed." {
   echo "All shares-server tests were executed."
 }
