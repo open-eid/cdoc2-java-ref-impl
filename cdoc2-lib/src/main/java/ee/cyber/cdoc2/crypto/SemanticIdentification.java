@@ -2,38 +2,27 @@ package ee.cyber.cdoc2.crypto;
 
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
+import static ee.cyber.cdoc2.util.IdCodeValidationUtil.getValidatedIdentityCode;
+
 
 /**
  * Identification for {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
  */
 public class SemanticIdentification {
 
+    private static final String COLON_SEPARATOR = ":";
     public static final String ETSI_IDENTIFIER_PREFIX = "etsi/";
     private static final String ETSI_IDENTIFIER_SEPARATOR = "'";
 
     private final String identifier;
 
     /**
-     * Identifiers for Smart ID.
+     * Identifiers for Smart ID or Mobile ID.
      * @param authType authentication method
      * @param etsiIdentifier for natural person identifier (ETSI identifier)
      */
     protected SemanticIdentification(AuthenticationType authType, SemanticsIdentifier etsiIdentifier) {
-        this.identifier = authType + ":" + etsiIdentifier;
-    }
-
-    /**
-     * Identifiers for Mobile ID.
-     * @param authType authentication method
-     * @param etsiIdentifier for natural person identifier (ETSI identifier)
-     * @param mobileNumber mobile number
-     */
-    protected SemanticIdentification(
-        AuthenticationType authType,
-        SemanticsIdentifier etsiIdentifier,
-        String mobileNumber
-    ) {
-        this.identifier = authType + ":" + etsiIdentifier + ":" + mobileNumber;
+        this.identifier = authType + COLON_SEPARATOR + etsiIdentifier;
     }
 
     public String getIdentifier() {
@@ -51,18 +40,12 @@ public class SemanticIdentification {
         SemanticsIdentifier semanticsIdentifier
             = new SemanticsIdentifier(extractEtsiIdentifier(semanticIdentification));
 
-        switch (authType) {
-            case SID -> {
-                return new SemanticIdentification(authType, semanticsIdentifier);
-            }
-            case MID -> {
-                // ToDo add mobile number here
-                return new SemanticIdentification(authType, semanticsIdentifier, "mobile_number");
-            }
-            default -> throw new IllegalStateException(
-                "Unexpected authentication type: " + authTypeString
-            );
+        if (authType == AuthenticationType.SID || authType == AuthenticationType.MID) {
+            return new SemanticIdentification(authType, semanticsIdentifier);
         }
+        throw new IllegalStateException(
+            "Unexpected authentication type: " + authTypeString
+        );
     }
 
     /**
@@ -98,28 +81,16 @@ public class SemanticIdentification {
     /**
      * Convert person identification code into semantic identifier format for Smart ID encryption
      * */
-    public static SemanticIdentification forSid(String identificationCode) {
+    public static SemanticIdentification forKeyShares(
+        String identificationCode, AuthenticationType authType
+    ) {
+        getValidatedIdentityCode(identificationCode);
         SemanticsIdentifier etsiIdentifier = new SemanticsIdentifier(
             SemanticsIdentifier.IdentityType.PNO,
             SemanticsIdentifier.CountryCode.EE,
             identificationCode
         );
-        return new SemanticIdentification(AuthenticationType.SID, etsiIdentifier);
-    }
-
-    /**
-     * Convert person identification code into semantic identifier format for Mobile ID encryption
-     * */
-    public static SemanticIdentification forMid(String identificationCode) {
-        SemanticsIdentifier etsiIdentifier = new SemanticsIdentifier(
-            SemanticsIdentifier.IdentityType.PNO,
-            SemanticsIdentifier.CountryCode.EE,
-            identificationCode
-        );
-        return new SemanticIdentification(
-            // ToDo add mobile number here
-            AuthenticationType.MID, etsiIdentifier, "mobile_number"
-        );
+        return new SemanticIdentification(authType, etsiIdentifier);
     }
 
 }

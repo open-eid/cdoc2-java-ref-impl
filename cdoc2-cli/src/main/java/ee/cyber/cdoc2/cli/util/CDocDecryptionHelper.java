@@ -120,7 +120,8 @@ public final class CDocDecryptionHelper {
     }
 
     private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode) {
-        SemanticIdentification semanticIdentifier = SemanticIdentification.forSid(idCode);
+        SemanticIdentification semanticIdentifier = SemanticIdentification
+            .forKeyShares(idCode, SemanticIdentification.AuthenticationType.SID);
 
         return DecryptionKeyMaterial.fromAuthMeans(semanticIdentifier);
     }

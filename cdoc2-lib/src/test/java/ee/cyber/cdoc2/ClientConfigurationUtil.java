@@ -18,6 +18,7 @@ import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 
 public final class ClientConfigurationUtil {
 
+    public static final String MOBILE_ID_PROPERTIES_PATH = "mobile-id/mobile_id-test.properties";
     public static final String SMART_ID_PROPERTIES_PATH = "smart-id/smart_id-test.properties";
 
     private ClientConfigurationUtil() { }
@@ -39,7 +40,7 @@ public final class ClientConfigurationUtil {
 
     public static MobileIdClientConfiguration getMobileIdConfiguration() throws ConfigurationLoadingException {
         Properties properties = loadProperties(
-            CLASSPATH + "mobile-id/mobile_id-test.properties"
+            CLASSPATH + MOBILE_ID_PROPERTIES_PATH
         );
         Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
 
