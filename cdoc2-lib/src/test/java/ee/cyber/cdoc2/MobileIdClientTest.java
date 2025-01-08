@@ -30,8 +30,8 @@ class MobileIdClientTest {
     private static final String OK_1_PHONE_NUMBER = "+37269930366";
 
     // OK for "TEST of EID-SK 2016" certificate
-    private static final String OK_2_IDENTITY_CODE = "51307149560";
-    private static final String OK_2_PHONE_NUMBER = "+37269930366";
+    private static final String OK_2_IDENTITY_CODE = "60001017869";
+    private static final String OK_2_PHONE_NUMBER = "+37268000769";
 
     private final MobileIdClient mobileIdClient;
 
