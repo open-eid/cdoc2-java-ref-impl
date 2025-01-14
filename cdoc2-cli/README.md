@@ -179,6 +179,11 @@ or with Smart-ID:
 java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc --output /tmp
 ```
 
+or with Mobile-ID:
+
+```
+java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 -f /tmp/mobileid.cdoc --output /tmp
+```
 
 ### Decrypting with server scenario
 Server must be running, see cdoc2-capsule-server/README.md for starting the server

@@ -1,23 +1,23 @@
 package ee.cyber.cdoc2.crypto.keymaterial.decrypt;
 
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
 
 /**
  * Represents key material required for decryption with the key derived from key shares.
  * Current object doesn't contain a key, but only data for further KEK derivation.
- * @param semanticIdentifier identifier for
+ * @param authIdentifier identifier for
  *                          {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
  */
 public record KeyShareDecryptionKeyMaterial(
-    SemanticIdentification semanticIdentifier
+    AuthenticationIdentifier authIdentifier
 ) implements DecryptionKeyMaterial {
 
     @Override
     public Object getRecipientId() {
-        return semanticIdentifier.getEtsiIdentifier();
+        return authIdentifier.getEtsiIdentifier();
     }
 
     @Override

@@ -19,6 +19,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.addKeySharesIfAny;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 
@@ -77,6 +78,8 @@ public class CDocListCmd implements Callable<Void> {
                 .withCDoc(cdocFile)
                 .withKeyServers(keyCapsulesClientFactory)
                 .withRecipient(decryptionKeyMaterial);
+
+        addKeySharesIfAny(cDocDecrypter, this.exclusive);
 
         System.out.println("Listing contents of " + cdocFile);
         List<ArchiveEntry> files = cDocDecrypter.list();

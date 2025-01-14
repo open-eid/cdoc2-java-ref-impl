@@ -3,6 +3,7 @@ package ee.cyber.cdoc2;
 import ee.sk.mid.MidAuthenticationHashToSign;
 import ee.sk.mid.MidAuthenticationIdentity;
 import ee.sk.mid.exception.MidDeliveryException;
+import ee.sk.mid.exception.MidInvalidPhoneNumberException;
 import ee.sk.mid.exception.MidInvalidUserConfigurationException;
 import ee.sk.mid.exception.MidNotMidClientException;
 import ee.sk.mid.exception.MidPhoneNotAvailableException;
@@ -63,7 +64,7 @@ class MobileIdClientTest {
     void failAuthenticationWithInvalidPhoneNrFormat() {
         String invalidPhoneNrFormat = OK_1_PHONE_NUMBER.substring(1);
         assertThrows(
-            IllegalArgumentException.class,
+            MidInvalidPhoneNumberException.class,
             () -> new MobileIdUserData(invalidPhoneNrFormat, OK_1_IDENTITY_CODE)
         );
     }

@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.util;
 
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+
 import com.nimbusds.jose.JOSEException;
 import ee.cyber.cdoc2.auth.AuthTokenCreator;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
@@ -16,7 +18,6 @@ import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -60,7 +61,6 @@ public class SIDAuthTokenCreator {
         KeyShareClientFactory fac,
         SmartIdClient sidClient
     ) throws AuthSignatureCreationException {
-
         this.sharesClientFac = fac;
         this.jwsSigner = new SIDAuthJWSSigner(sidClient, new SemanticsIdentifier(authenticator));
         this.authenticatorSemID = new EtsiIdentifier("etsi/" + authenticator);

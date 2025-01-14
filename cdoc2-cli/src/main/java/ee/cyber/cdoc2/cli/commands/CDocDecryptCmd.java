@@ -9,7 +9,6 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.nio.file.InvalidPathException;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.Callable;
 import ee.cyber.cdoc2.CDocDecrypter;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.addKeySharesIfAny;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
@@ -93,18 +92,12 @@ public class CDocDecryptCmd implements Callable<Void> {
             keyCapsulesClientFactory
         );
 
-        addKeySharesIfAny(cDocDecrypter);
+        addKeySharesIfAny(cDocDecrypter, this.exclusive);
 
         System.out.println("Decrypting " + this.cdocFile + " to " + this.outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();
         extractedFileNames.forEach(System.out::println);
         return null;
-    }
-
-    private void addKeySharesIfAny(CDocDecrypter cDocDecrypter) throws GeneralSecurityException {
-        if (null != this.exclusive && (this.exclusive.isWithSid() || this.exclusive.isWithMid())) {
-            cDocDecrypter.withKeyShares(initKeyShareClientFactory());
-        }
     }
 
 }

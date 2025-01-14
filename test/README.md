@@ -64,7 +64,6 @@ To use pre-built images, login to docker (ghcr.io) - [Authenticating with person
 Run `cdoc2_shares_server_tests.bats` tests with following command:
 ```bash
 cd bats
-source ../config/shares-server/export-env.sh ../config/shares-server/.env.cyber
 bash run-shares-server-bats-tests.sh
 ```
 

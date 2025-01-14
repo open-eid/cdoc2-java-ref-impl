@@ -445,8 +445,7 @@ public final class RecipientFactory {
 
         // plain ETSI Identifier is a value 'etsi/PNOEE-48010010101', extracted from the
         // semantics identifier
-        String plainEtsiIdentifier
-            = keyShareMaterial.semanticIdentifier().getEtsiIdentifier();
+        String plainEtsiIdentifier = keyShareMaterial.authIdentifier().getEtsiIdentifier();
         String info = "CDOC2kek" + fmkEncMethod + plainEtsiIdentifier;
         byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), Crypto.KEK_LEN_BYTES);
 

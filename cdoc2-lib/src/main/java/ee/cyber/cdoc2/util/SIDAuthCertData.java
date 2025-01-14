@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ee.cyber.cdoc2.crypto.KeyAlgorithm;
+
 
 /**
  * Methods for parsing Smart-ID certificate
@@ -136,7 +138,7 @@ public class SIDAuthCertData extends AuthenticationIdentity {
         Objects.requireNonNull(rsaCertificate);
 
         PublicKey publicKey = rsaCertificate.getPublicKey();
-        if (!"RSA".equals(publicKey.getAlgorithm())) {
+        if (!KeyAlgorithm.Algorithm.RSA.name().equals(publicKey.getAlgorithm())) {
             throw new IllegalArgumentException("cert doesn't contain RSA public key");
         }
 
