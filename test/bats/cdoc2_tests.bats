@@ -259,9 +259,7 @@ run_alias() {
   assertSuccessfulDecryption
 
   # remove new directory and all created files in it
-  rm -f "$new_directory"/$CDOC2_CONTAINER_NAME
-  rm -f "$new_directory"/README.md
-  rm -d "$new_directory"
+  rm -r "$new_directory"
 
   removeEncryptedCdoc
 }
@@ -570,12 +568,12 @@ EOF
 
 assertSuccessfulExecution() {
   successfulExitCode=0
-  if [ "$successfulExitCode" != 0 ]; then
-    rm -f "$CDOC2_CONTAINER"
-  fi
-
   assert_success
   assert_equal $status $successfulExitCode
+
+  if [ $status != $successfulExitCode ]; then
+    rm -f "$CDOC2_CONTAINER"
+  fi
 }
 
 assertSuccessfulDecryption() {
@@ -601,7 +599,7 @@ removeEncryptedCdoc() {
   rm -f "$CDOC2_CONTAINER"
 }
 
-# removes created temporary files within testing
+# removes temporary created directory with files within testing
 teardown_file() {
-  rm -d "$TEST_RESULTS_DIR"
+  rm -r "$TEST_RESULTS_DIR"
 }

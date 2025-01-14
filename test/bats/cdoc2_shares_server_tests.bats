@@ -18,14 +18,22 @@ setup() {
 }
 
 TEST_RESULTS_DIR=$TESTING_DIR/target/results
-
-
 mkdir -p "$TEST_RESULTS_DIR"
+
+# new directory for re-encrypted containers
+REENCRYPTION_DIRECTORY=$TEST_RESULTS_DIR/reencrypt
+mkdir -p "$REENCRYPTION_DIRECTORY"
+
 # demo user OK, TESTNUMBER - automatic confirmation
-ID_CODE=30303039914
+MID_ID_CODE=60001017869
+MID_PHONE_NR=+37268000769
+SID_ID_CODE=30303039914
+PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
 KEY_SHARES_PROPERTIES="$TESTING_DIR/shares-properties/key-shares.properties"
+MOBILE_ID_PROPERTIES="$TESTING_DIR/shares-properties/mobile_id-test.properties"
 SMART_ID_PROPERTIES="$TESTING_DIR/shares-properties/smart_id-test.properties"
-CDOC_FILE="smartid.cdoc"
+
+
 
 #bats run doesn't support alias
 #https://github.com/bats-core/bats-core/issues/259
@@ -78,108 +86,332 @@ run_alias() {
 }
 
 @test "shares-server-test1: successfully encrypt and decrypt CDOC2 container with Smart-ID" {
-  echo "# Encrypt file ${CDOC_FILE} with Smart-ID">&3
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Smart-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
           -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
-          --smart-id=$ID_CODE \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
           "$FILE_FOR_ENCRYPTION"
 
   assertSuccessfulExecution
-  assert_output --partial "Created $TEST_RESULTS_DIR/$CDOC_FILE"
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
 
   # ensure encrypted container can be decrypted successfully
   echo "# Encryption key has been shared between servers">&3
-  echo "# Requesting key shares from servers to decrypt file ${CDOC_FILE}">&3
+  echo "# Requesting key shares from servers to decrypt file ${cdocFile}">&3
   run run_alias cdoc-cli \
           decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
           -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
-          --smart-id=$ID_CODE \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
           -o "$TEST_RESULTS_DIR"
 
   assertSuccessfulExecution
-  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$CDOC_FILE"
+  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$cdocFile"
   assertSuccessfulDecryption
 
-  rm -f "$TEST_RESULTS_DIR"/$CDOC_FILE
+  rm -f "$TEST_RESULTS_DIR"/"$cdocFile"
 }
 
-@test "shares-server-test2: fail to decrypt CDOC2 container with wrong ID code" {
-  echo "# Encrypting file ${CDOC_FILE} with Smart-ID for ID code ${ID_CODE}">&3
-  run run_alias cdoc-cli \
-          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
-          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
-          --smart-id=$ID_CODE \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE\
-          "$FILE_FOR_ENCRYPTION"
-
-  assertSuccessfulExecution
-  assert_output --partial "Created $TEST_RESULTS_DIR/$CDOC_FILE"
-
-  echo "# File ${CDOC_FILE} decryption should fail for foreign ID code 47101010033">&3
-  run run_alias cdoc-cli \
-          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
-          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
-          --smart-id="47101010033" \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
-          -o "$TEST_RESULTS_DIR"
-
-  assertFailure
-
-  rm -f "$TEST_RESULTS_DIR"/$CDOC_FILE
-}
-
-@test "shares-server-test3: fail to encrypt CDOC2 container with missing key shares configuration" {
-  echo "# Encrypting file ${CDOC_FILE} with Smart-ID for ID code ${ID_CODE}">&3
-  run run_alias cdoc-cli \
-          create \
-          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
-          --smart-id=$ID_CODE \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
-          "$FILE_FOR_ENCRYPTION"
-
-  assertFailure
-}
-
-@test "shares-server-test4: fail to encrypt CDOC2 container with missing Smart-ID configuration" {
-  echo "# Encrypting file ${CDOC_FILE} with Smart-ID for ID code ${ID_CODE}">&3
-  run run_alias cdoc-cli \
-          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
-          --smart-id=$ID_CODE \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
-          "$FILE_FOR_ENCRYPTION"
-
-  assertFailure
-}
-
-@test "shares-server-test5: successfully encrypt and decrypt CDOC2 container with Smart-ID EID-Q certs" {
-  echo "# Encrypt file ${CDOC_FILE} with Smart-ID">&3
+@test "shares-server-test2: successfully encrypt and decrypt CDOC2 container with Smart-ID EID-Q certs" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Smart-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
           -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
           --smart-id="40504040001"\
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
           "$FILE_FOR_ENCRYPTION"
 
   assertSuccessfulExecution
-  assert_output --partial "Created $TEST_RESULTS_DIR/$CDOC_FILE"
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
 
   run run_alias cdoc-cli \
           decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
           -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
           --smart-id="40504040001" \
-          -f "$TEST_RESULTS_DIR"/$CDOC_FILE \
+          -f "$TEST_RESULTS_DIR"/$cdocFile \
           -o "$TEST_RESULTS_DIR"
 
   assertSuccessfulExecution
-  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$CDOC_FILE"
+  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$cdocFile "
   assertSuccessfulDecryption
 
-  rm -f "$TEST_RESULTS_DIR"/$CDOC_FILE
+  rm -f "$TEST_RESULTS_DIR"/"$cdocFile "
 }
 
+@test "shares-server-test3: fail to decrypt CDOC2 container with wrong ID code" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  echo "# File ${cdocFile} decryption should fail for foreign ID code 47101010033">&3
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id="47101010033" \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertFailure
+
+  rm -f "$TEST_RESULTS_DIR"/"$cdocFile"
+}
+
+@test "shares-server-test4: fail to encrypt CDOC2 container with missing key shares configuration" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
+  run run_alias cdoc-cli \
+          create \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertFailure
+}
+
+@test "shares-server-test5: fail to encrypt CDOC2 container with missing Smart-ID configuration" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="wrong file location or missing" \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertFailure
+}
+
+@test "shares-server-test6: fail to encrypt CDOC2 container with Smart-ID when ID code is invalid" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  invalidIdCode=01987654321
+  echo "# Encrypting file ${cdocFile} with Smart-ID for non-existing ID code ${invalidIdCode}">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=${invalidIdCode} \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertFailure
+}
+
+@test "shares-server-test7: fail to decrypt CDOC2 container with wrong authentication type" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Smart-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  echo "# Decrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$SID_ID_CODE \
+          -mid-phone=$MID_PHONE_NR \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertFailure
+}
+
+@test "shares-server-test8: successfully encrypt and decrypt CDOC2 container with Mobile-ID" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  # ensure encrypted container can be decrypted successfully
+  echo "# Encryption key has been shared between servers">&3
+  echo "# Requesting key shares from servers to decrypt file ${cdocFile}">&3
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -mid-phone=$MID_PHONE_NR \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertSuccessfulExecution
+  assert_output --partial "Decrypting $TEST_RESULTS_DIR/$cdocFile"
+  assertSuccessfulDecryption
+
+  rm -f "$TEST_RESULTS_DIR"/"$cdocFile"
+}
+
+@test "shares-server-test9: fail to decrypt CDOC2 container with Mobile-ID when phone number is missing" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertFailure
+}
+
+@test "shares-server-test10: fail to decrypt CDOC2 container with Mobile-ID when phone number format is invalid" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  invalidPhoneNr="12212345678"
+  echo "# Decrypt file ${cdocFile} with Mobile-ID with invalid phone number format ${invalidPhoneNr}">&3
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -mid-phone=${invalidPhoneNr} \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertFailure
+}
+
+@test "shares-server-test11: fail to encrypt CDOC2 container with Mobile-ID when ID code is invalid" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  invalidIdCode=01987654321
+  echo "# Encrypt file ${cdocFile} with Mobile-ID for non-existing ID code ${invalidIdCode}">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=${invalidIdCode} \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertFailure
+}
+
+@test "shares-server-test12: fail to decrypt CDOC2 container with wrong authentication type" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  echo "# Decrypt file ${cdocFile} with Smart-ID">&3
+  run run_alias cdoc-cli \
+          decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+          -o "$TEST_RESULTS_DIR"
+
+  assertFailure
+}
+
+@test "shares-server-test13: successfully re-encrypt CDOC2 container from Smart-ID container" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$SID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  echo "# Re-encrypting file ${cdocFile} from Smart-ID container">&3
+  run run_alias cdoc-cli \
+          re -f "$TEST_RESULTS_DIR"/"$cdocFile" --encpassword $PASSWORD_WITH_LABEL \
+          -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+          --smart-id=$SID_ID_CODE \
+          --output "$REENCRYPTION_DIRECTORY"
+
+  assertSuccessfulExecution
+
+  # ensure re-encrypted container can be decrypted successfully
+  echo "# Testing decryption of re-encrypted container ${cdocFile}">&3
+  run run_alias cdoc-cli decrypt -f "$REENCRYPTION_DIRECTORY"/"$cdocFile" -pw $PASSWORD_WITH_LABEL --output "$REENCRYPTION_DIRECTORY"
+  assertSuccessfulExecution
+  assert_output --partial "Decrypting $REENCRYPTION_DIRECTORY/$cdocFile"
+  assertSuccessfulDecryption
+}
+
+@test "shares-server-test14: successfully re-encrypt CDOC2 container from Mobile-ID container" {
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+  run run_alias cdoc-cli \
+          create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          --mobile-id=$MID_ID_CODE \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile"\
+          "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+  echo "# Re-encrypting file ${cdocFile} from Mobile-ID container">&3
+  run run_alias cdoc-cli \
+          re -f "$TEST_RESULTS_DIR"/"$cdocFile" --encpassword $PASSWORD_WITH_LABEL \
+          -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+          -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+          -mid=$MID_ID_CODE -mid-phone=$MID_PHONE_NR \
+          --output "$REENCRYPTION_DIRECTORY"
+
+  assertSuccessfulExecution
+
+  # ensure re-encrypted container can be decrypted successfully
+  echo "# Testing decryption of re-encrypted container ${cdocFile}">&3
+  run run_alias cdoc-cli decrypt -f "$REENCRYPTION_DIRECTORY"/"$cdocFile" -pw $PASSWORD_WITH_LABEL --output "$REENCRYPTION_DIRECTORY"
+  assertSuccessfulExecution
+  assert_output --partial "Decrypting $REENCRYPTION_DIRECTORY/$cdocFile"
+  assertSuccessfulDecryption
+}
 
 @test "All shares-server tests were executed." {
   echo "All shares-server tests were executed."
@@ -187,10 +419,6 @@ run_alias() {
 
 assertSuccessfulExecution() {
   successfulExitCode=0
-  if [ "$successfulExitCode" != 0 ]; then
-    rm -f "$TEST_RESULTS_DIR/$CDOC_FILE"
-  fi
-
   assert_success
   assert_equal $status $successfulExitCode
 }
@@ -198,10 +426,6 @@ assertSuccessfulExecution() {
 assertSuccessfulDecryption() {
   input_filename=$(basename "$FILE_FOR_ENCRYPTION")
   output_filename=$(basename "$DECRYPTED_FILE")
-
-  if [ "$status" != 0 ]; then
-    rm -f "$TEST_RESULTS_DIR/$CDOC_FILE"
-  fi
 
   assert_equal "$output_filename" "$input_filename"
   if [ "$output_filename" == "$input_filename" ]; then
@@ -214,16 +438,13 @@ assertSuccessfulDecryption() {
 assertFailure() {
   failureExitCode=1
   assert_equal $status $failureExitCode
-  if [ $status == $failureExitCode ]; then
+  if [ $status != 0 ]; then
     echo "# Execution has failed as expected.">&3
   fi
 }
 
-removeEncryptedCdoc() {
-  rm -f "$CDOC2_CONTAINER"
-}
-
-# removes created temporary files within testing
+# removes temporary created directory with files within testing
 teardown_file() {
-  rm -d "$TEST_RESULTS_DIR"
+  rm -r "$REENCRYPTION_DIRECTORY"
+  rm -r "$TEST_RESULTS_DIR"
 }

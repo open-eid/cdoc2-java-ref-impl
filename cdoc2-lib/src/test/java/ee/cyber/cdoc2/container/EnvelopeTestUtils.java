@@ -6,14 +6,13 @@ import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.CDocBuilder;
-import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.client.ExtApiException;
@@ -255,7 +254,7 @@ public final class EnvelopeTestUtils {
     public static byte[] createContainerWithKeyShares(
         File payloadFile,
         byte[] payloadData,
-        SemanticIdentification semanticIdentification,
+        AuthenticationIdentifier authIdentifier,
         KeyShareClientFactory shareClientFactory
     ) throws IOException, GeneralSecurityException, ExtApiException {
 
@@ -267,10 +266,10 @@ public final class EnvelopeTestUtils {
         files.add(payloadFile);
 
         KeyLabelParams keyLabelParams
-            = createKeySharesKeyLabelParams(semanticIdentification.getIdentifier());
+            = createKeySharesKeyLabelParams(authIdentifier.getIdentifier());
 
         EncryptionKeyMaterial encKeyMaterial
-            = EncryptionKeyMaterial.fromAuthMeans(semanticIdentification, keyLabelParams);
+            = EncryptionKeyMaterial.fromAuthMeans(authIdentifier, keyLabelParams);
 
         byte[] cdocContainerBytes;
         Envelope senderEnvelope = Envelope.prepare(
@@ -327,7 +326,8 @@ public final class EnvelopeTestUtils {
      */
     public static DecryptionData testContainerWithKeyShares(
         Path tempDir,
-        SemanticIdentification semanticIdentification,
+        AuthenticationIdentifier encryptAuthIdentifier,
+        AuthenticationIdentifier decryptAuthIdentifier,
         KeyShareClientFactory shareClientFactory
     ) throws Exception {
 
@@ -342,7 +342,7 @@ public final class EnvelopeTestUtils {
         byte[] cdocContainerBytes = createContainerWithKeyShares(
             payloadFile,
             payloadData.getBytes(StandardCharsets.UTF_8),
-            semanticIdentification,
+            encryptAuthIdentifier,
             shareClientFactory
         );
 
@@ -351,7 +351,7 @@ public final class EnvelopeTestUtils {
         return new DecryptionData(
             cdocContainerBytes,
             outDir,
-            DecryptionKeyMaterial.fromAuthMeans(semanticIdentification),
+            DecryptionKeyMaterial.fromAuthMeans(decryptAuthIdentifier),
             payloadFileName,
             payloadData
         );
@@ -397,20 +397,6 @@ public final class EnvelopeTestUtils {
 
             assertEquals(expectedPayloadData, Files.readString(payloadPath));
         }
-    }
-
-    public static void decryptReEncryptedContainer(
-        File cdocFile,
-        File outDir,
-        DecryptionKeyMaterial keyMaterial,
-        List<String> expectedFilesExtracted
-    )  throws Exception {
-        CDocDecrypter cDocDecrypter = new CDocDecrypter()
-            .withCDoc(cdocFile)
-            .withRecipient(keyMaterial)
-            .withFilesToExtract(expectedFilesExtracted)
-            .withDestinationDirectory(outDir);
-        cDocDecrypter.decrypt();
     }
 
     public static void reEncryptContainer(

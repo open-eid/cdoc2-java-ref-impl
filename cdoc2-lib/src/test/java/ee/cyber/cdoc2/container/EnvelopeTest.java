@@ -15,7 +15,7 @@ import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.RsaUtils;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
@@ -75,8 +75,10 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.MOBILE_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
@@ -87,6 +89,7 @@ import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
@@ -434,16 +437,20 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @Test
     void testKeySharesSerializationWithSmartId(@TempDir Path tempDir) throws Exception {
-        SemanticIdentification keyLabel = SemanticIdentification
-            .forKeyShares("30303039914", SemanticIdentification.AuthenticationType.SID);
+        AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("30303039914"),
+            AuthenticationIdentifier.AuthenticationType.SID
+        );
 
         testKeySharesSerialization(tempDir, keyLabel);
     }
 
     @Test
     void testKeySharesSerializationWithMobileId(@TempDir Path tempDir) throws Exception {
-        SemanticIdentification keyLabel = SemanticIdentification
-            .forKeyShares("51307149560", SemanticIdentification.AuthenticationType.MID);
+        AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("51307149560"),
+            AuthenticationIdentifier.AuthenticationType.MID
+        );
 
         testKeySharesSerialization(tempDir, keyLabel);
     }
@@ -540,31 +547,68 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
         // SID demo env that authenticates automatically
-        SemanticIdentification keyLabel = SemanticIdentification
-            .forKeyShares("30303039914", SemanticIdentification.AuthenticationType.SID);
         setupKeyShareClientMocks();
 
-        EnvelopeTestUtils.DecryptionData decryptionData
-            = testContainerWithKeyShares(tempDir, keyLabel, shareClientFactory);
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("30303039914"),
+            AuthenticationIdentifier.AuthenticationType.SID
+        );
 
+        EnvelopeTestUtils.DecryptionData decryptionData
+            = testContainerWithKeyShares(tempDir, authIdentifier, authIdentifier, shareClientFactory);
+
+        verifyMockedKeyShareClients();
+
+        //FIXME: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
+        // but current lib API doesn't allow to provide smart-id client, fix with RM-4309
+        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH);
+
+        checkContainerDecrypt(
+            decryptionData.cdocContainerBytes(),
+            decryptionData.outDir(),
+            decryptionData.decryptionKeyMaterial(),
+            List.of(decryptionData.payloadFileName()),
+            decryptionData.payloadFileName(),
+            decryptionData.payloadData(),
+            shareClientFactory
+        );
+    }
+
+    @Test
+    void testKeySharesScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        // MID demo env that authenticates automatically
+        setupKeyShareClientMocks();
+        AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("51307149560"),
+            AuthenticationIdentifier.AuthenticationType.MID
+        );
+        AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier("51307149560"),
+            "+37269930366"
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            encAuthIdentifier,
+            decryptAuthIdentifier,
+            shareClientFactory
+        );
+
+        // ToDo use verifyMockedKeyShareClients() i.o. below mocked calls after implementing MID
+        //  authentication. RM-4609
+//        verifyMockedKeyShareClients();
         verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
         verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
 
         KeyShare keyShare1 = keyShareCaptor1.getValue();
         KeyShare keyShare2 = keyShareCaptor2.getValue();
 
-        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
-        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
-
         when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
         when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
 
-        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
-        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
-
-        //FIXME: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
-        // but current lib API doesn't allow to provide smart-id client, fix with RM-4309
-        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH);
+        //FIXME: this will use real Mobile-id demo env. Instead mobile-id client should be mocked
+        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4309
+        System.setProperty(MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH);
 
         checkContainerDecrypt(
             decryptionData.cdocContainerBytes(),
@@ -635,6 +679,79 @@ class EnvelopeTest implements TestLifecycleLogger {
                 List.of(payloadTxtFileName),
                 payloadTxtFileName,
                 payloadData,
+                null
+            )
+        );
+    }
+
+    @Test
+    void testReEncryptionScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        // encrypt initial cdoc2 document
+        setupKeyShareClientMocks();
+        AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("60001017869"),
+            AuthenticationIdentifier.AuthenticationType.MID
+        );
+        AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier("60001017869"),
+            "+37268000769"
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            encAuthIdentifier,
+            decryptAuthIdentifier,
+            shareClientFactory
+        );
+
+        verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
+        verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
+
+        KeyShare keyShare1 = keyShareCaptor1.getValue();
+        KeyShare keyShare2 = keyShareCaptor2.getValue();
+
+        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+
+        //FIXME: this will use real Mobile-id demo env. Instead mobile-id client should be mocked
+        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4309
+        System.setProperty(MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH);
+
+        // run re-encryption flow
+        Path destinationDir = tempDir.resolve("out");
+        Files.createDirectories(destinationDir);
+
+        String outputCdocFileName = decryptionData.payloadFileName() + ".cdoc2";
+        File outputCDocFile = destinationDir.resolve(outputCdocFileName).toFile();
+
+        String password = "myPlainTextPassword";
+        String passwordKeyLabel = "testPBKDF2KeyFromPasswordSerialization";
+
+        EncryptionKeyMaterial reEncryptionKeyMaterial = EncryptionKeyMaterial
+            .fromPassword(password.toCharArray(), passwordKeyLabel);
+
+        try (ByteArrayInputStream cdocIs = new ByteArrayInputStream(decryptionData.cdocContainerBytes());
+             OutputStream outputCDocOs = new FileOutputStream(outputCDocFile)) {
+
+            Envelope.reEncrypt(
+                cdocIs,
+                decryptionData.decryptionKeyMaterial(),
+                outputCDocOs,
+                reEncryptionKeyMaterial,
+                destinationDir,
+                shareClientFactory
+            );
+        }
+
+        // ensure that re-encrypted container is decipherable
+        assertDoesNotThrow(
+            () -> checkContainerDecrypt(
+                Files.readAllBytes(outputCDocFile.toPath()),
+                destinationDir,
+                DecryptionKeyMaterial.fromPassword(password.toCharArray(), passwordKeyLabel),
+                List.of(decryptionData.payloadFileName()),
+                decryptionData.payloadFileName(),
+                decryptionData.payloadData(),
                 null
             )
         );
@@ -1138,7 +1255,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     private void testKeySharesSerialization(
         Path tempDir,
-        SemanticIdentification keyLabel
+        AuthenticationIdentifier authIdentifier
     ) throws Exception {
         setupKeyShareClientMocks();
 
@@ -1153,7 +1270,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromAuthMeans(
-                keyLabel, createKeySharesKeyLabelParams(keyLabel.getIdentifier()))
+                authIdentifier, createKeySharesKeyLabelParams(authIdentifier.getIdentifier()))
             ),
             null, shareClientFactory
         );
@@ -1182,6 +1299,23 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         ByteBuffer saltBuf = keySharesCapsule.saltAsByteBuffer();
         assertNotNull(saltBuf);
+    }
+
+    private void verifyMockedKeyShareClients() throws Exception {
+        verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
+        verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
+
+        KeyShare keyShare1 = keyShareCaptor1.getValue();
+        KeyShare keyShare2 = keyShareCaptor2.getValue();
+
+        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
+        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
+
+        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+
+        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
     }
 
 }

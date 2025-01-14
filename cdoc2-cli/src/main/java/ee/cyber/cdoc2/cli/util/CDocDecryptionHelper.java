@@ -18,7 +18,7 @@ import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
@@ -29,7 +29,12 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.loadMobileIdConfiguration;
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.loadSmartIdConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
+import static ee.sk.mid.MidInputUtil.getValidatedPhoneNumber;
 
 
 /**
@@ -111,6 +116,12 @@ public final class CDocDecryptionHelper {
             decryptionKm = getSidDecryptionKeyMaterial(decryptArguments.getSid());
         }
 
+        if (isWithMid && decryptionKm == null) {
+            decryptionKm = getMidDecryptionKeyMaterial(
+                decryptArguments.getMid(), decryptArguments.getMidPhone()
+            );
+        }
+
         // this must be final initialization
         if (decryptionKm == null)  {
             decryptionKm = getKeyPairDecryptionKeyMaterial(p12, privKeyFile);
@@ -120,10 +131,25 @@ public final class CDocDecryptionHelper {
     }
 
     private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode) {
-        SemanticIdentification semanticIdentifier = SemanticIdentification
-            .forKeyShares(idCode, SemanticIdentification.AuthenticationType.SID);
+        loadSmartIdConfiguration();
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
+        );
 
-        return DecryptionKeyMaterial.fromAuthMeans(semanticIdentifier);
+        return DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+    }
+
+    private static DecryptionKeyMaterial getMidDecryptionKeyMaterial(
+        String idCode,
+        String phoneNumber
+    ) {
+        loadMobileIdConfiguration();
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier(idCode),
+            getValidatedPhoneNumber(phoneNumber)
+        );
+
+        return DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
     }
 
     private static DecryptionKeyMaterial getPasswordDecryptionKeyMaterial(
@@ -236,6 +262,20 @@ public final class CDocDecryptionHelper {
         }
 
         return labeledPassword;
+    }
+
+    /**
+     * Create Key Shares configuration if decryption is arranged with Smart-ID or Mobile-ID.
+     * @param cDocDecrypter CDOC decrypter builder
+     * @param exclusiveArgs decryption exclusive CLI options
+     */
+    public static void addKeySharesIfAny(
+        CDocDecrypter cDocDecrypter,
+        DecryptionKeyExclusiveArgument exclusiveArgs
+    ) throws GeneralSecurityException {
+        if (null != exclusiveArgs && (exclusiveArgs.isWithSid() || exclusiveArgs.isWithMid())) {
+            cDocDecrypter.withKeyShares(initKeyShareClientFactory());
+        }
     }
 
     /**

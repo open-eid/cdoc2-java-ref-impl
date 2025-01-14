@@ -9,10 +9,11 @@ import javax.naming.NamingException;
 
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.util.SkLdapUtil;
 
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 
@@ -70,7 +71,7 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      * @return the list of EncryptionKeyMaterial
      */
     public EtsiIdentifierEncKeyMaterialBuilder forSid(String[] sidCodes) {
-        return withKeyShares(sidCodes, SemanticIdentification.AuthenticationType.SID);
+        return withKeyShares(sidCodes, AuthenticationIdentifier.AuthenticationType.SID);
     }
 
     /**
@@ -79,21 +80,21 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      * @return the list of EncryptionKeyMaterial
      */
     public EtsiIdentifierEncKeyMaterialBuilder forMid(String[] midCodes) {
-        return withKeyShares(midCodes, SemanticIdentification.AuthenticationType.MID);
+        return withKeyShares(midCodes, AuthenticationIdentifier.AuthenticationType.MID);
     }
 
     private EtsiIdentifierEncKeyMaterialBuilder withKeyShares(
-        String[] idCodes, SemanticIdentification.AuthenticationType authType
+        String[] idCodes, AuthenticationIdentifier.AuthenticationType authType
     ) {
         if (null != idCodes) {
             List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(idCodes)
                 .map(idCode -> {
-                    SemanticIdentification semanticIdentifier = SemanticIdentification
-                        .forKeyShares(idCode, authType);
+                    AuthenticationIdentifier authIdentifier = AuthenticationIdentifier
+                        .forKeyShares(createSemanticsIdentifier(idCode), authType);
                     KeyLabelParams keyLabelParams
-                        = createKeySharesKeyLabelParams(semanticIdentifier.getIdentifier());
+                        = createKeySharesKeyLabelParams(authIdentifier.getIdentifier());
 
-                    return EncryptionKeyMaterial.fromAuthMeans(semanticIdentifier, keyLabelParams);
+                    return EncryptionKeyMaterial.fromAuthMeans(authIdentifier, keyLabelParams);
                 })
                 .toList();
 

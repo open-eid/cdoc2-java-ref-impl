@@ -12,11 +12,13 @@ import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationImpl;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfigurationImpl;
+import ee.cyber.cdoc2.config.MobileIdClientConfigurationImpl;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.Resources;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 
@@ -72,12 +74,11 @@ public final class CDocCommonHelper {
         Properties properties = loadProperties(propertiesFilePath);
         Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
         CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
-        loadSmartIdConfiguration();
 
         return configuration.keySharesConfiguration();
     }
 
-    private static void loadSmartIdConfiguration() throws ConfigurationLoadingException {
+    static void loadSmartIdConfiguration() throws ConfigurationLoadingException {
         String propertiesFilePath = System.getProperty(
             SMART_ID_PROPERTIES,
             "config/smart-id/" + SMART_ID_PROPERTIES
@@ -89,6 +90,20 @@ public final class CDocCommonHelper {
         Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
 
         CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
+    }
+
+    static void loadMobileIdConfiguration() throws ConfigurationLoadingException {
+        String propertiesFilePath = System.getProperty(
+            MOBILE_ID_PROPERTIES,
+            "config/mobile-id/" + MOBILE_ID_PROPERTIES
+        );
+        if (null == propertiesFilePath) {
+            throw new ConfigurationLoadingException("Mobile ID configuration property is missing");
+        }
+        Properties properties = loadProperties(propertiesFilePath);
+        Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
+
+        CDoc2ConfigurationProvider.initMobileIdClientConfig(configuration);
     }
 
 }

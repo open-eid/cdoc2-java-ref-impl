@@ -40,7 +40,7 @@ import ee.cyber.cdoc2.util.SIDAuthTokenCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.crypto.SemanticIdentification.ETSI_IDENTIFIER_PREFIX;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.ETSI_IDENTIFIER_PREFIX;
 
 
 /**
@@ -260,23 +260,10 @@ public final class KekTools {
             keyMaterial.getKeyOrigin(),
             "Expected key shares for KeySharesRecipient"
         );
-
-        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
         List<byte[]> listOfShares = new ArrayList<>();
 
-        //FIXME: write proper implementation with RM-4309, RM-4032, RM-4073
-        String semanticsIdentifier = String.valueOf(keySharesRecipient.getRecipientId()) //etsi/PNOEE-48010010101
-            .substring(ETSI_IDENTIFIER_PREFIX.length()); //PNOEE-48010010101
         try {
-            SIDAuthTokenCreator tokenCreator = new SIDAuthTokenCreator(
-                semanticsIdentifier,
-                shares,
-                keyShareClientFactory,
-                SIDAuthTokenCreator.getDefaultSIDClient());
-
-            for (KeyShareUri share : shares) {
-                listOfShares.add(extractSharesFromRecipient(keyShareClientFactory, tokenCreator, share));
-            }
+            addKeyShares(listOfShares, keyMaterial, keySharesRecipient, keyShareClientFactory);
         } catch (AuthSignatureCreationException asce) {
             throw new GeneralSecurityException(asce);
         }
@@ -287,33 +274,114 @@ public final class KekTools {
         );
     }
 
-    private static byte[] extractSharesFromRecipient(
+    private static void addKeyShares(
+        List<byte[]> listOfShares,
+        KeyShareDecryptionKeyMaterial decryptKeyMaterial,
+        KeySharesRecipient keySharesRecipient,
+        KeyShareClientFactory keyShareClientFactory
+    ) throws GeneralSecurityException, AuthSignatureCreationException {
+
+        //FIXME: write proper implementation with RM-4309, RM-4032, RM-4073
+        String semanticsIdentifier = String.valueOf(keySharesRecipient.getRecipientId()) // etsi/PNOEE-48010010101
+            .substring(ETSI_IDENTIFIER_PREFIX.length()); // PNOEE-48010010101
+
+        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
+
+        AuthenticationIdentifier.AuthenticationType authType
+            = decryptKeyMaterial.authIdentifier().getAuthType();
+
+        switch (authType) {
+            case SID -> {
+                SIDAuthTokenCreator tokenCreator = new SIDAuthTokenCreator(
+                    semanticsIdentifier,
+                    shares,
+                    keyShareClientFactory,
+                    SIDAuthTokenCreator.getDefaultSIDClient());
+                for (KeyShareUri share : shares) {
+                    listOfShares.add(extractSharesFromSidRecipient(keyShareClientFactory, tokenCreator, share));
+                }
+            }
+            case MID -> {
+                // ToDo connect authentication here. RM-4609
+//                    MobileIdUserData userData = new MobileIdUserData(
+//                        decryptKeyMaterial.authIdentifier().getMobileNumber(),
+//                        decryptKeyMaterial.authIdentifier().getIdCode()
+//                    );
+//                    MobileIdClient.startAuthentication(userData);
+                for (KeyShareUri share : shares) {
+                    listOfShares.add(extractSharesFromMidRecipient(keyShareClientFactory, share));
+                }
+            }
+            default -> throw new IllegalStateException(
+                "Unexpected authentication type: " + authType
+            );
+        }
+    }
+
+    private static byte[] extractSharesFromSidRecipient(
         KeyShareClientFactory keyShareClientFactory,
         SIDAuthTokenCreator tokenCreator,
         KeyShareUri share
     ) throws GeneralSecurityException {
         KeySharesClient client
             = keyShareClientFactory.getClientForServerUrl(share.serverBaseUrl());
-        try {
-            String authTicket = tokenCreator.getTokenForShareID(share.shareId());
-            Optional<KeyShare> keyShare = client.getKeyShare(share.shareId(), authTicket,
-                tokenCreator.getAuthenticatorCertPEM());
-            if (keyShare.isEmpty()) {
-                throw new GeneralSecurityException(
-                    String.format(
-                        "Failed to find share ID %s at server %s",
-                        share.shareId(),
-                        share.serverBaseUrl()
-                    )
-                );
-            }
+        String authTicket = tokenCreator.getTokenForShareID(share.shareId());
+        String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
 
-            return keyShare.get().getShare();
+        return getKeyShare(share, client, authTicket, authenticatorCertPEM);
+    }
+
+    // ToDo add authentication token here. RM-4609
+    private static byte[] extractSharesFromMidRecipient(
+        KeyShareClientFactory keyShareClientFactory,
+//        MIDAuthTokenCreator tokenCreator
+        KeyShareUri share
+    ) throws GeneralSecurityException {
+        KeySharesClient client
+            = keyShareClientFactory.getClientForServerUrl(share.serverBaseUrl());
+//        String authTicket = tokenCreator.getTokenForShareID(share.shareId());
+//        String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
+
+        return getKeyShare(share, client, null, null);
+    }
+
+    private static byte[] getKeyShare(
+        KeyShareUri share,
+        KeySharesClient client,
+        String authTicket,
+        String authenticatorCertPEM
+    ) throws GeneralSecurityException {
+        try {
+            return requestKeyShare(share, client, authTicket, authenticatorCertPEM);
         } catch (ExtApiException e) {
             throw new GeneralSecurityException(
                 "Failed to derive key encryption key from shares", e
             );
         }
+    }
+
+    private static byte[] requestKeyShare(
+        KeyShareUri share,
+        KeySharesClient client,
+        String authTicket,
+        String authenticatorCertPEM
+    ) throws ExtApiException, GeneralSecurityException {
+        Optional<KeyShare> keyShare = client.getKeyShare(
+            share.shareId(),
+            authTicket,
+            authenticatorCertPEM
+        );
+        if (keyShare.isEmpty()) {
+            throw new GeneralSecurityException(
+                String.format(
+                    "Failed to find share ID %s at server %s",
+                    share.shareId(),
+                    share.serverBaseUrl()
+                )
+            );
+        }
+
+        return keyShare.get().getShare();
     }
 
 }

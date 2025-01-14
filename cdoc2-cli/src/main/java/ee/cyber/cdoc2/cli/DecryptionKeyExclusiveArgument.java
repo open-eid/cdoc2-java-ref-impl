@@ -41,9 +41,8 @@ public class DecryptionKeyExclusiveArgument {
         paramLabel = "SID", description = "ID code for smart-id decryption")
     private String sid;
 
-    @CommandLine.Option(names = {"-mid", "--mobile-id"},
-        paramLabel = "MID", description = "ID code for mobile-id decryption")
-    private String mid;
+    @CommandLine.ArgGroup(exclusive = false)
+    private MobileIdArguments midArguments;
 
     public File getPrivKeyFile() {
         return this.privKeyFile;
@@ -66,7 +65,7 @@ public class DecryptionKeyExclusiveArgument {
     }
 
     public boolean isWithMid() {
-        return this.mid != null;
+        return this.midArguments != null;
     }
 
     public String getSid() {
@@ -74,7 +73,17 @@ public class DecryptionKeyExclusiveArgument {
     }
 
     public String getMid() {
-        return this.mid;
+        if (isWithMid()) {
+            return this.midArguments.getMid();
+        }
+        return null;
+    }
+
+    public String getMidPhone() {
+        if (isWithMid()) {
+            return this.midArguments.getMidPhone();
+        }
+        return null;
     }
 
 }

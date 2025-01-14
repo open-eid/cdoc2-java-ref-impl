@@ -3,7 +3,7 @@ package ee.cyber.cdoc2.crypto.keymaterial;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
-import ee.cyber.cdoc2.crypto.SemanticIdentification;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EncryptionKeyMaterialCollectionBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EtsiIdentifierEncKeyMaterialBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.KeyShareEncryptionKeyMaterial;
@@ -145,18 +145,18 @@ public interface EncryptionKeyMaterial {
     }
 
     /**
-     * Create {@link KeyShareEncryptionKeyMaterial} from semantic identifier as a key label.
+     * Create {@link KeyShareEncryptionKeyMaterial} from authentication identifier as a key label.
      * KeyLabel is formatted into data format.
-     * @param semanticIdentifier identifier for
-     *                           {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
+     * @param authIdentifier identifier for
+     *                       {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
      * @param keyLabelParams key label data parameters
      * @return EncryptionKeyMaterial object
      */
     static EncryptionKeyMaterial fromAuthMeans(
-        SemanticIdentification semanticIdentifier,
+        AuthenticationIdentifier authIdentifier,
         KeyLabelParams keyLabelParams
     ) {
-        return new KeyShareEncryptionKeyMaterial(semanticIdentifier, formatKeyLabel(keyLabelParams));
+        return new KeyShareEncryptionKeyMaterial(authIdentifier, formatKeyLabel(keyLabelParams));
     }
 
     static EncryptionKeyMaterialCollectionBuilder collectionBuilder() {

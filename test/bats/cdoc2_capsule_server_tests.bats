@@ -141,7 +141,7 @@ removeEncryptedCdoc() {
   rm -f "$CDOC2_CONTAINER"
 }
 
-# removes created temporary files within testing
+# removes temporary created directory with files within testing
 teardown_file() {
-  rm -d "$TEST_RESULTS_DIR"
+  rm -r "$TEST_RESULTS_DIR"
 }
