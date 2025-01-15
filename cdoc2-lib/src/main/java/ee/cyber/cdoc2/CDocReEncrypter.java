@@ -11,12 +11,12 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
 
+import ee.cyber.cdoc2.services.Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +36,14 @@ public class CDocReEncrypter {
     private final EncryptionKeyMaterial reEncryptionKeyMaterial;
 
     @Nullable
-    private ExternalService serverClientFactory;
+    private Services services;
 
     public CDocReEncrypter(
         File cDocFile,
         DecryptionKeyMaterial decryptionKeyMaterial,
         File destCdocFile,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
-        @Nullable ExternalService externalService
+        @Nullable Services services
     ) {
         Objects.nonNull(cDocFile);
         Objects.nonNull(decryptionKeyMaterial);
@@ -54,12 +54,12 @@ public class CDocReEncrypter {
         this.decryptionKeyMaterial = decryptionKeyMaterial;
         this.destCdocFile = destCdocFile;
         this.reEncryptionKeyMaterial = reEncryptionKeyMaterial;
-        this.serverClientFactory = externalService;
+        this.services = services;
     }
 
-    public void addKeyShareClientFactory(ExternalService keyShareClientFactory) {
-        serverClientFactory = keyShareClientFactory;
-    }
+//    public void addKeyShareClientFactory(ExternalService keyShareClientFactory) {
+//        serverClientFactory = keyShareClientFactory;
+//    }
 
     public void reEncryptCDocContainer()
         throws IOException, CDocException, GeneralSecurityException {
@@ -77,7 +77,7 @@ public class CDocReEncrypter {
                 destCdocOs,
                 this.reEncryptionKeyMaterial,
                 destDir,
-                this.serverClientFactory
+                this.services
             );
         } catch (Exception ex) {
             log.info("Exception, removing {}", destCdocFile);

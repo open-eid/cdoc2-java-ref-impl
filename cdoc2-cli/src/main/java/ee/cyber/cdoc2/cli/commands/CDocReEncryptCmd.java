@@ -5,15 +5,14 @@ import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
 import java.util.Map;
 
 import java.util.concurrent.Callable;
@@ -26,11 +25,9 @@ import ee.cyber.cdoc2.CDocReEncrypter;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
-
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULES_PROPERTIES;
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -71,12 +68,12 @@ public class CDocReEncryptCmd implements Callable<Void> {
         description = "output destination")
     private File outputPath;
 
-    @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties"
-        // commented out until public key server is in live
-        //, arity = "0..1"
-        //,defaultValue = DEFAULT_SERVER_PROPERTIES
-    )
     private String keyServerPropertiesFile;
+    @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties")
+    private void setKeyServerPropertiesFile(String server) {
+        keyServerPropertiesFile = server;
+        System.setProperty(KEY_CAPSULES_PROPERTIES, keyServerPropertiesFile);
+    }
 
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
@@ -97,22 +94,14 @@ public class CDocReEncryptCmd implements Callable<Void> {
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
-        ExternalService keyCapsulesClientFactory = null;
-
-        if (this.keyServerPropertiesFile != null) {
-            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
-        }
-
         File destCdocFile = getDestinationFile();
         CDocReEncrypter cDocReEncrypter = new CDocReEncrypter(
             cdocFile,
             decryptionKeyMaterial,
             destCdocFile,
             extractSymmetricKeyEncKeyMaterial(),
-            keyCapsulesClientFactory
+            Cdoc2Services.initFromSystemProperties()
         );
-        // the order must be after assigning keyCapsulesClientFactory to override it
-        addKeySharesIfAny(cDocReEncrypter);
 
         cDocReEncrypter.reEncryptCDocContainer();
 
@@ -148,14 +137,6 @@ public class CDocReEncryptCmd implements Callable<Void> {
                 + "initial document location");
         }
         return outDir.toFile();
-    }
-
-    private void addKeySharesIfAny(CDocReEncrypter cDocReEncrypter)
-        throws GeneralSecurityException {
-
-        if (null != this.exclusive && (this.exclusive.isWithSid() || this.exclusive.isWithMid())) {
-            cDocReEncrypter.addKeyShareClientFactory(initKeyShareClientFactory());
-        }
     }
 
 }

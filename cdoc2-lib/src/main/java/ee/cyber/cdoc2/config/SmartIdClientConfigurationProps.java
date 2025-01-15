@@ -46,6 +46,7 @@ public record SmartIdClientConfigurationProps(
         );
     }
 
+
     @Override
     public String getHostUrl() {
         return hostUrl;

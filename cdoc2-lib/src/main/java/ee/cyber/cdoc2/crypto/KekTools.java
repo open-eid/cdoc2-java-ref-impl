@@ -3,6 +3,7 @@ package ee.cyber.cdoc2.crypto;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
@@ -36,6 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.crypto.SecretKey;
 
+import ee.cyber.cdoc2.services.Services;
 import ee.cyber.cdoc2.util.SIDAuthTokenCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,7 +198,7 @@ public final class KekTools {
             throw new CDocParseException("ServerId missing in record");
         }
 
-        if (capsulesClientFac == null || capsulesClientFac.getForId(serverId) == null) {
+        if (capsulesClientFac.getForId(serverId) == null) {
             log.error("Configuration not found for server {}", serverId);
             throw new CDocUserException(
                 UserErrorCode.SERVER_NOT_FOUND,
@@ -253,17 +255,24 @@ public final class KekTools {
     public static byte[] deriveKekFromShares(
         KeySharesRecipient keySharesRecipient,
         KeyShareDecryptionKeyMaterial keyMaterial,
-        KeyShareClientFactory keyShareClientFactory
-    ) throws GeneralSecurityException {
+        KeyShareClientFactory keyShareClientFactory,
+        Services services //XXX: for now its generic services, in future might be more specific type to use SID/MID
+    ) throws GeneralSecurityException, CDocException {
         validateKeyOrigin(
             EncryptionKeyOrigin.KEY_SHARE,
             keyMaterial.getKeyOrigin(),
             "Expected key shares for KeySharesRecipient"
         );
+
+        if (services == null || !services.hasService(SmartIdClient.class)) {
+            throw new CDocException("SmartIdClient not configured");
+        }
+
+        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
         List<byte[]> listOfShares = new ArrayList<>();
 
         try {
-            addKeyShares(listOfShares, keyMaterial, keySharesRecipient, keyShareClientFactory);
+            addKeyShares(listOfShares, keyMaterial, keySharesRecipient, keyShareClientFactory, services);
         } catch (AuthSignatureCreationException asce) {
             throw new GeneralSecurityException(asce);
         }
@@ -278,7 +287,8 @@ public final class KekTools {
         List<byte[]> listOfShares,
         KeyShareDecryptionKeyMaterial decryptKeyMaterial,
         KeySharesRecipient keySharesRecipient,
-        KeyShareClientFactory keyShareClientFactory
+        KeyShareClientFactory keyShareClientFactory,
+        Services services
     ) throws GeneralSecurityException, AuthSignatureCreationException {
 
         //FIXME: write proper implementation with RM-4309, RM-4032, RM-4073
@@ -296,7 +306,7 @@ public final class KekTools {
                     semanticsIdentifier,
                     shares,
                     keyShareClientFactory,
-                    SIDAuthTokenCreator.getDefaultSIDClient());
+                    services.get(SmartIdClient.class));
                 for (KeyShareUri share : shares) {
                     listOfShares.add(extractSharesFromSidRecipient(keyShareClientFactory, tokenCreator, share));
                 }

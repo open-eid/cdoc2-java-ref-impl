@@ -1,7 +1,6 @@
 package ee.cyber.cdoc2.config;
 
 import java.util.Properties;
-
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 
@@ -21,5 +20,4 @@ public interface SmartIdClientConfiguration {
     String getTrustStore();
 
     String getTrustStorePassword();
-
 }

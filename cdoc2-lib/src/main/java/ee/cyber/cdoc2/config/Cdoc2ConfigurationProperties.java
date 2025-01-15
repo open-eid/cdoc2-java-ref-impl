@@ -8,6 +8,8 @@ public final class Cdoc2ConfigurationProperties {
 
     private Cdoc2ConfigurationProperties() { }
 
+    /** Defines key-capsules server properties file location */
+    public static final String KEY_CAPSULES_PROPERTIES = "key-capsules.properties";
     public static final String CLIENT_SERVER_BASE_URL_GET = "cdoc2.client.server.base-url.get";
     public static final String CLIENT_SERVER_BASE_URL_POST = "cdoc2.client.server.base-url.post";
     public static final String CLIENT_SERVER_CONNECT_TIMEOUT = "cdoc2.client.server.connect-timeout";
@@ -39,6 +41,7 @@ public final class Cdoc2ConfigurationProperties {
     // enabled by default
     public static final boolean KEY_LABEL_FORMAT_ENABLED_DEFAULT = true;
 
+    /** Defines key-shares server properties file location */
     public static final String KEY_SHARES_PROPERTIES = "key-shares.properties";
     public static final String KEY_SHARES_SERVERS_URLS = "key-shares.servers.urls";
     public static final String KEY_SHARES_SERVERS_MIN_NUM = "key-shares.servers.min_num";
@@ -50,6 +53,7 @@ public final class Cdoc2ConfigurationProperties {
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_TYPE
         = "cdoc2.key-shares.client.ssl.trust-store.type";
 
+    /** Defines Mobile-ID client properties file location */
     public static final String MOBILE_ID_PROPERTIES = "mobile-id.properties";
     public static final String MOBILE_ID_CLIENT_HOST_URL = "mobileid.client.hostUrl";
     public static final String MOBILE_ID_CLIENT_RELYING_PARTY_UUID
@@ -85,6 +89,7 @@ public final class Cdoc2ConfigurationProperties {
     /** Provider name that provides KeyStore.PKCS11, usually SunPKCS11-...*/
     public static final String PKCS11_PROVIDER_SYSTEM_PROPERTY = "ee.cyber.cdoc2.pkcs11.name";
 
+    /** Defines Smart-ID client properties file location */
     public static final String SMART_ID_PROPERTIES = "smart-id.properties";
     public static final String SMART_ID_CLIENT_HOST_URL = "smartid.client.hostUrl";
     public static final String SMART_ID_CLIENT_RELYING_PARTY_UUID

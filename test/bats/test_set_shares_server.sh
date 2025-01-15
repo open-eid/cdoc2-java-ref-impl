@@ -17,7 +17,8 @@ source aliases_server.sh
 # run bats docker container when bats in docker needed
 
 # run only shares-server tests
-$BATS_HOME/bats-core/bin/bats cdoc2_shares_server_tests.bats
+echo BATS_OPTS=$BATS_OPTS
+$BATS_HOME/bats-core/bin/bats $BATS_OPTS cdoc2_shares_server_tests.bats
 
 # Clear config
 rm -rf config/

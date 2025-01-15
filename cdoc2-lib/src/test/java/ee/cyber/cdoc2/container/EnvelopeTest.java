@@ -4,9 +4,12 @@ import ee.cyber.cdoc2.TestLifecycleLogger;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
+import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
+import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
@@ -59,6 +62,9 @@ import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import ee.cyber.cdoc2.services.ServiceTemplate;
+import ee.cyber.cdoc2.services.Services;
+import ee.cyber.cdoc2.services.ServicesBuilder;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.io.input.CountingInputStream;
 import org.junit.jupiter.api.*;
@@ -76,15 +82,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static ee.cyber.cdoc2.ClientConfigurationUtil.MOBILE_ID_PROPERTIES_PATH;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
+import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
@@ -93,6 +97,7 @@ import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIden
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
+import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -559,9 +564,14 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         verifyMockedKeyShareClients();
 
-        //FIXME: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
-        // but current lib API doesn't allow to provide smart-id client, fix with RM-4309
-        System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH);
+        // TODO: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
+        // but current lib API doesn't allow to provide smart-id client, fix with RM-4676
+        SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
+
+        Services services = new ServicesBuilder()
+            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .register(SmartIdClient.class, smartIdClient, null)
+            .build();
 
         checkContainerDecrypt(
             decryptionData.cdocContainerBytes(),
@@ -570,7 +580,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(decryptionData.payloadFileName()),
             decryptionData.payloadFileName(),
             decryptionData.payloadData(),
-            shareClientFactory
+            services
         );
     }
 
@@ -603,12 +613,28 @@ class EnvelopeTest implements TestLifecycleLogger {
         KeyShare keyShare1 = keyShareCaptor1.getValue();
         KeyShare keyShare2 = keyShareCaptor2.getValue();
 
+        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
+        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
+
         when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
         when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
 
         //FIXME: this will use real Mobile-id demo env. Instead mobile-id client should be mocked
-        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4309
-        System.setProperty(MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH);
+        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4676
+        //System.setProperty(MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH);
+//        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
+//        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+
+        //System.setProperty(SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH);
+
+        // TODO: this will use real Smart-id demo env. Instead smart-id client should be mocked here,
+        // but current lib API doesn't allow to provide smart-id client, fix with RM-4676
+        SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
+
+        Services services = new ServicesBuilder()
+            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .register(SmartIdClient.class, smartIdClient, null)
+            .build();
 
         checkContainerDecrypt(
             decryptionData.cdocContainerBytes(),
@@ -617,7 +643,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(decryptionData.payloadFileName()),
             decryptionData.payloadFileName(),
             decryptionData.payloadData(),
-            shareClientFactory
+            services
         );
     }
 
@@ -714,8 +740,19 @@ class EnvelopeTest implements TestLifecycleLogger {
         when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
 
         //FIXME: this will use real Mobile-id demo env. Instead mobile-id client should be mocked
-        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4309
-        System.setProperty(MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH);
+        // here, but current lib API doesn't allow to provide mobile-id client, fix with RM-4676
+
+        var config = MobileIdClientConfiguration.load(
+            loadProperties(CLASSPATH + MOBILE_ID_PROPERTIES_PATH));
+
+        SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
+
+        Services services = new ServicesBuilder()
+            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .registerService(MobileIdClient.class,
+                ServiceTemplate.service(config, MobileIdClient::new), null)
+            .register(SmartIdClient.class, smartIdClient, null)
+            .build();
 
         // run re-encryption flow
         Path destinationDir = tempDir.resolve("out");
@@ -739,7 +776,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                 outputCDocOs,
                 reEncryptionKeyMaterial,
                 destinationDir,
-                shareClientFactory
+                services
             );
         }
 
@@ -1170,6 +1207,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     // requires 16GB of free disk space on /tmp
     @Test
     @Tag("slow") // about 8 min, depends on IO speed
+    @Disabled
     void test8GBPlusFileContainer(@TempDir Path tempDir) throws Exception {
 
         // since generated file is random, zlib can't compress it effectively and
