@@ -7,15 +7,16 @@ import java.util.Objects;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.KeyShareRecipientType;
 import ee.cyber.cdoc2.fbs.recipients.SharesScheme;
+import ee.cyber.cdoc2.services.Services;
 
 
 /**
@@ -80,15 +81,16 @@ public class KeySharesRecipient extends Recipient {
     @Override
     public byte[] deriveKek(
         DecryptionKeyMaterial keyMaterial,
-        ExternalService factory
-    ) throws GeneralSecurityException {
+        Services services
+    ) throws GeneralSecurityException, CDocException {
 
         if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial
-        && factory instanceof KeyShareClientFactory keyShareClientFactory) {
+        && services != null && services.hasService(KeyShareClientFactory.class)) {
             return KekTools.deriveKekFromShares(
                 this,
                 keyShareKeyMaterial,
-                keyShareClientFactory
+                services.get(KeyShareClientFactory.class),
+                services
             );
         }
 

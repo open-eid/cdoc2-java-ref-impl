@@ -1,8 +1,8 @@
 package ee.cyber.cdoc2;
 
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import jakarta.annotation.Nullable;
 
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
@@ -62,7 +62,7 @@ public class CDocBuilder {
     private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
     @Nullable
-    private ExternalService keyShareClientFactory;
+    private KeyShareClientFactory keyShareClientFactory;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
         this.payloadFiles = files;
@@ -89,7 +89,7 @@ public class CDocBuilder {
         return this;
     }
 
-    public CDocBuilder withKeyShares(ExternalService clientFactory) {
+    public CDocBuilder withKeyShares(KeyShareClientFactory clientFactory) {
         this.keyShareClientFactory = clientFactory;
         return this;
     }

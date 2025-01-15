@@ -11,25 +11,14 @@ import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
-import ee.cyber.cdoc2.config.Cdoc2Configuration;
-import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
-import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
-
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-
 
 /**
  * Class to create key-shares auth token
@@ -148,28 +137,4 @@ public class SIDAuthTokenCreator {
 
         return new ShareAccessData(shareUri.serverBaseUrl(), shareUri.shareId(), nonce);
     }
-
-    @Deprecated //FIXME: hack to get things compiling, fix with RM-4309 and create factory for
-                // smart-id client
-    public static SmartIdClient getDefaultSIDClient() {
-        return new SmartIdClient(loadSmartIdConfiguration());
-    }
-
-    //XXX: to be removed
-    private static SmartIdClientConfiguration loadSmartIdConfiguration()
-        throws ConfigurationLoadingException {
-
-        String propertiesFilePath = System.getProperty(
-            SMART_ID_PROPERTIES,
-            "config/smart-id/" + SMART_ID_PROPERTIES
-        );
-        if (null == propertiesFilePath) {
-            throw new ConfigurationLoadingException("Smart ID configuration property is missing");
-        }
-        Properties properties = loadProperties(propertiesFilePath);
-        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-
-        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
-    }
-
 }

@@ -11,7 +11,6 @@ import java.util.Objects;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
@@ -23,15 +22,13 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 
+import ee.cyber.cdoc2.services.Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.loadMobileIdConfiguration;
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.loadSmartIdConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.sk.mid.MidInputUtil.getValidatedPhoneNumber;
@@ -131,7 +128,6 @@ public final class CDocDecryptionHelper {
     }
 
     private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode) {
-        loadSmartIdConfiguration();
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
             createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
         );
@@ -143,7 +139,7 @@ public final class CDocDecryptionHelper {
         String idCode,
         String phoneNumber
     ) {
-        loadMobileIdConfiguration();
+
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
             createSemanticsIdentifier(idCode),
             getValidatedPhoneNumber(phoneNumber)
@@ -215,13 +211,13 @@ public final class CDocDecryptionHelper {
         String[] filesToExtract,
         File outputPath,
         DecryptionKeyMaterial decryptionKeyMaterial,
-        @Nullable ExternalService keyCapsulesClientFactory
+        @Nullable Services services
     ) throws IOException {
         return new CDocDecrypter()
             .withCDoc(cdocFile)
             .withRecipient(decryptionKeyMaterial)
             .withFilesToExtract(Arrays.asList(filesToExtract))
-            .withKeyServers(keyCapsulesClientFactory)
+            .withServices(services)
             .withDestinationDirectory(outputPath);
     }
 
@@ -262,20 +258,6 @@ public final class CDocDecryptionHelper {
         }
 
         return labeledPassword;
-    }
-
-    /**
-     * Create Key Shares configuration if decryption is arranged with Smart-ID or Mobile-ID.
-     * @param cDocDecrypter CDOC decrypter builder
-     * @param exclusiveArgs decryption exclusive CLI options
-     */
-    public static void addKeySharesIfAny(
-        CDocDecrypter cDocDecrypter,
-        DecryptionKeyExclusiveArgument exclusiveArgs
-    ) throws GeneralSecurityException {
-        if (null != exclusiveArgs && (exclusiveArgs.isWithSid() || exclusiveArgs.isWithMid())) {
-            cDocDecrypter.withKeyShares(initKeyShareClientFactory());
-        }
     }
 
     /**

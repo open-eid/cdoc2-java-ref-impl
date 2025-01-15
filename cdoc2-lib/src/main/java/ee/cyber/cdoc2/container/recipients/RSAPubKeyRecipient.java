@@ -1,11 +1,12 @@
 package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
+import ee.cyber.cdoc2.services.Services;
+
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
@@ -50,7 +51,7 @@ public class RSAPubKeyRecipient extends RSARecipient {
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, ExternalService factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, Services notUsed)
         throws GeneralSecurityException {
         if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
             return KekTools.deriveKekForRsa(this, keyPairKeyMaterial);

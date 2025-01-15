@@ -1,8 +1,8 @@
 package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -16,11 +16,10 @@ import java.util.concurrent.Callable;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getKeyCapsulesClientFactory;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.addKeySharesIfAny;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULES_PROPERTIES;
 
 
 //S106 Standard outputs should not be used directly to log anything
@@ -50,12 +49,13 @@ public class CDocDecryptCmd implements Callable<Void> {
             description = "output destination | Default: current-directory")
     private File outputPath = new File(".");
 
-    @Option(names = {"--server"}, paramLabel = "FILE.properties"
-            // commented out until public key server is in live
-            //, arity = "0..1"
-            //,defaultValue = DEFAULT_SERVER_PROPERTIES
-    )
     private String keyServerPropertiesFile;
+    @Option(names = {"--server"}, paramLabel = "FILE.properties")
+    private void setKeyServerPropertiesFile(String server) {
+        keyServerPropertiesFile = server;
+        System.setProperty(KEY_CAPSULES_PROPERTIES, keyServerPropertiesFile);
+    }
+
 
     @CommandLine.Parameters(description = "one or more files to decrypt", paramLabel = "fileToExtract")
     private String[] filesToExtract = new String[0];
@@ -75,11 +75,6 @@ public class CDocDecryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        ExternalService keyCapsulesClientFactory = null;
-        if (this.keyServerPropertiesFile != null) {
-            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
-        }
-
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
             : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
@@ -89,10 +84,8 @@ public class CDocDecryptCmd implements Callable<Void> {
             this.filesToExtract,
             this.outputPath,
             decryptionKeyMaterial,
-            keyCapsulesClientFactory
+            Cdoc2Services.initFromSystemProperties()
         );
-
-        addKeySharesIfAny(cDocDecrypter, this.exclusive);
 
         System.out.println("Decrypting " + this.cdocFile + " to " + this.outputPath.getAbsolutePath());
         List<String> extractedFileNames = cDocDecrypter.decrypt();

@@ -16,9 +16,10 @@ public final class PropertiesLoader {
     private PropertiesLoader() { }
 
     /**
-     * Gets loaded properties from resource file.
+     * Loads properties from classpath or file path
      *
-     * @param propertiesFilePath property file location path
+     * @param propertiesFilePath propertiesFilePath starts with classpath: then loads resource from classpath otherwise
+     *                           reads from file
      * @throws ConfigurationLoadingException if failed to load properties from resource file
      */
     public static Properties loadProperties(String propertiesFilePath)

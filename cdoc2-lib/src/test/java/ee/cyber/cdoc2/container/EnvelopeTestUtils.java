@@ -1,6 +1,5 @@
 package ee.cyber.cdoc2.container;
 
-import ee.cyber.cdoc2.client.ExternalService;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
@@ -24,6 +23,8 @@ import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
+import ee.cyber.cdoc2.services.Services;
+import ee.cyber.cdoc2.services.ServicesBuilder;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
@@ -316,9 +317,14 @@ public final class EnvelopeTestUtils {
 
         assertTrue(cdocContainerBytes.length > 0);
 
-        ExternalService clientFactory = getCapsulesClientFactory(capsulesClient);
+        ServicesBuilder servicesBuilder = new ServicesBuilder();
+
+        if (capsulesClient != null) {
+            servicesBuilder.register(KeyCapsuleClientFactory.class, getCapsulesClientFactory(capsulesClient), null);
+        }
+
         checkContainerDecrypt(cdocContainerBytes, outDir, keyMaterial,
-            List.of(payloadFileName), payloadFileName, payloadData, clientFactory);
+            List.of(payloadFileName), payloadFileName, payloadData, servicesBuilder.build());
     }
 
     /**
@@ -387,10 +393,10 @@ public final class EnvelopeTestUtils {
         List<String> expectedFilesExtracted,
         String payloadFileName,
         String expectedPayloadData,
-        ExternalService clientFactory
+        Services services
     )  throws Exception {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocBytes)) {
-            List<String> filesExtracted = Envelope.decrypt(bis, keyMaterial, outDir, clientFactory);
+            List<String> filesExtracted = Envelope.decrypt(bis, keyMaterial, outDir, services);
 
             assertEquals(expectedFilesExtracted, filesExtracted);
             Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
@@ -408,9 +414,12 @@ public final class EnvelopeTestUtils {
         @Nullable KeyCapsuleClient capsuleClient
     ) throws Exception {
 
-        ExternalService clientFactory = getCapsulesClientFactory(capsuleClient);
+        ServicesBuilder sb = new ServicesBuilder();
+        if (capsuleClient != null) {
+            sb.register(KeyCapsuleClientFactory.class, getCapsulesClientFactory(capsuleClient), null);
+        }
         Envelope.reEncrypt(cdocIs, decryptionKeyMaterial, destCdoc, encryptionKeyMaterial,
-            destDir, clientFactory);
+            destDir, sb.build());
     }
 
     public static void createContainerUsingCDocBuilder(
