@@ -1,8 +1,8 @@
 package ee.cyber.cdoc2.client.mobileid;
 
-import ee.sk.mid.MidAuthenticationHashToSign;
-import ee.sk.mid.MidAuthenticationIdentity;
+import ee.sk.mid.MidAuthentication;
 import ee.sk.mid.MidClient;
+import ee.sk.mid.MidHashToSign;
 import ee.sk.mid.rest.dao.request.MidAuthenticationRequest;
 
 import java.io.IOException;
@@ -45,18 +45,19 @@ public class MobileIdClient {
     }
 
     /**
-     * Authentication request to Mobile ID client.
+     * Authentication request to Mobile ID client. Returns raw MidAuthentication that contains MidSignature and signing
+     * Certificate
      * @param userData user request data
      * @param authenticationHash Base64 encoded hash function output to be signed
-     * @return MidAuthenticationIdentity object
+     * @return MidAuthentication object that contains MidSignature and Certificate
      */
-    public MidAuthenticationIdentity startAuthentication(
+    public MidAuthentication startAuthentication(
         MobileIdUserData userData,
-        MidAuthenticationHashToSign authenticationHash
+        MidHashToSign authenticationHash
     ) throws CdocMobileIdClientException {
 
         // ToDo display verification code and text to the user in RM-4086
-        String verificationCode = authenticationHash.calculateVerificationCode();
+        //String verificationCode = authenticationHash.calculateVerificationCode();
 
         MidAuthenticationRequest request = MidAuthenticationRequest.newBuilder()
             .withPhoneNumber(userData.phoneNumber())
@@ -89,7 +90,7 @@ public class MobileIdClient {
     /**
      * Read trusted certificates for Mobile ID client secure TLS transport
      */
-    private KeyStore readTrustedCertificates() throws ConfigurationLoadingException {
+    public KeyStore readTrustedCertificates() throws ConfigurationLoadingException {
         try (InputStream is = Resources.getResourceAsStream(
             mobileIdClientConfig.getTrustStore(), this.getClass().getClassLoader())
         ) {

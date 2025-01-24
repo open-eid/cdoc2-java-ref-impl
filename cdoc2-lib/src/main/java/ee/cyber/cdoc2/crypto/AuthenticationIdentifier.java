@@ -180,4 +180,12 @@ public class AuthenticationIdentifier {
         );
     }
 
+    /**
+     * Smart-ID and Mobile-ID interaction parameters.
+     * @param document document to be decrypted, will be displayed to user when user PIN is required
+     */
+    public record SidMidInteractionParams(
+        String document
+    ) {
+    }
 }

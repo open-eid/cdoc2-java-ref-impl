@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.util;
+package ee.cyber.cdoc2.crypto.jwt;
 
 import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.AuthenticationResponseValidator;
