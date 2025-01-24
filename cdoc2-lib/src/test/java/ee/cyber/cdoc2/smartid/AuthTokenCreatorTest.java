@@ -1,11 +1,13 @@
 package ee.cyber.cdoc2.smartid;
 
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.api.ApiException;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.client.smartid.SmartIdClientWrapper;
@@ -13,7 +15,13 @@ import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.util.SIDAuthTokenCreator;
+import ee.cyber.cdoc2.mobileid.MIDAuthJWSSignerTest;
+import ee.cyber.cdoc2.mobileid.MIDTestData;
+import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +34,7 @@ import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+import static ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData.getRSAPublicKeyPkcs1Pem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -115,9 +124,41 @@ public class AuthTokenCreatorTest {
         return SmartIdClientWrapper.readTrustedCertificates(sidConf);
     }
 
+
     @Test
     @Tag("net") //requires external network to connect to SID demo server
-    void testCreateAuthToken() throws Exception {
+    void testCreateAuthTokenWithSID() throws Exception {
+
+        SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier("PNOEE-" + DEMO_ID_CODE);
+        IdentityJWSSigner idJwsSigner = new SIDAuthJWSSigner(setupSIDClient(), semanticsIdentifier);
+
+        testCreateAuthToken(idJwsSigner, loadSIDTestTrustStore());
+
+        //for validating at sdjwt.org
+        log.debug("RSA PKCS#1 {}", getRSAPublicKeyPkcs1Pem(idJwsSigner.getSignerCertificate()));
+    }
+
+    @Test
+    @Tag("net") //requires external network to connect to SID demo server
+    void testCreateAuthTokenWithMID() throws Exception {
+
+        String phoneNumber = MIDTestData.OK_1_PHONE_NUMBER;
+        String identityCode = MIDTestData.OK_1_IDENTITY_CODE;
+
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
+
+        MobileIdClient demoEnvClient = MIDTestData.getDemoEnvClient();
+
+        IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(demoEnvClient, etsiIdentifier, phoneNumber);
+
+        testCreateAuthToken(idJwsSigner, demoEnvClient.readTrustedCertificates());
+
+        //for validating at sdjwt.org
+        log.debug("EC jwk {}", MIDAuthJWSSignerTest.getECPublicKeyJWK(idJwsSigner.getSignerCertificate()));
+
+    }
+
+    void testCreateAuthToken(IdentityJWSSigner idJwsSigner, KeyStore trustStore) throws Exception {
 
         List<KeyShareUri> shares = List.of(
             new KeyShareUri(
@@ -130,27 +171,22 @@ public class AuthTokenCreatorTest {
             )
         );
 
-        SIDAuthTokenCreator tokenCreator = new SIDAuthTokenCreator(
-            "PNOEE-" + DEMO_ID_CODE,
-            shares,
-            setupMockSharesClientFac(),
-            setupSIDClient()
-            );
+        SidMidAuthTokenCreator tokenCreator =
+            new SidMidAuthTokenCreator(idJwsSigner, shares, setupMockSharesClientFac());
 
         String token1 = tokenCreator.getTokenForShareID(SHARE_ID1);
 
         log.debug("token1: {}", token1);
         X509Certificate issCert = tokenCreator.getAuthenticatorCert();
 
-        KeyStore sidTestTrustStore = loadSIDTestTrustStore();
-        AuthTokenVerifier authTokenVerifier = new AuthTokenVerifier(sidTestTrustStore, false);
+        AuthTokenVerifier authTokenVerifier = new AuthTokenVerifier(trustStore, false);
 
         Map<String, Object> verifiedClaims = authTokenVerifier.getVerifiedClaims(token1, issCert);
 
         log.debug("claims {}", verifiedClaims);
 
         //verify issuer
-        assertEquals("etsi/PNOEE-" + DEMO_ID_CODE, verifiedClaims.get("iss"));
+        assertEquals(idJwsSigner.getSignerIdentifier().toString(), verifiedClaims.get("iss"));
 
         assertNotNull(verifiedClaims.get("aud"));
         assertInstanceOf(List.class, verifiedClaims.get("aud"));

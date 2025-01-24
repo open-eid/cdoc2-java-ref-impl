@@ -1,11 +1,11 @@
-package ee.cyber.cdoc2.util;
+package ee.cyber.cdoc2.crypto.jwt;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jca.JCAContext;
 import com.nimbusds.jose.util.Base64URL;
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 import ee.sk.smartid.AuthenticationHash;
@@ -23,10 +23,10 @@ import java.util.Set;
 
 
 /**
- * JWSSigner that signs and verifies using Smart-ID authentication key/certificate
+ * JWSSigner that implements signing using Smart-ID authentication key/certificate
  * @see <a href="https://github.com/SK-EID/smart-id-documentation">SID RP API</a>
  */
-public class SIDAuthJWSSigner implements JWSSigner {
+public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
     public static final String CERT_LEVEL_QUALIFIED = "QUALIFIED";
 
@@ -100,6 +100,11 @@ public class SIDAuthJWSSigner implements JWSSigner {
         } catch (CdocSmartIdClientException e) {
             throw new JOSEException(e);
         }
+    }
+
+    @Override
+    public EtsiIdentifier getSignerIdentifier() {
+        return new EtsiIdentifier(EtsiIdentifier.PREFIX + signerId.getIdentifier());
     }
 
     /**

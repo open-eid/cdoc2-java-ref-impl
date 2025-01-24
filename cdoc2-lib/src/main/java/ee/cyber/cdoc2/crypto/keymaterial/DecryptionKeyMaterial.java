@@ -18,9 +18,13 @@ public interface DecryptionKeyMaterial {
 
     /**
      * Uniquely identifies the recipient. This data is used to find recipients key material from parsed CDOC header
-     * * For EC, this is EC pub key.
-     * * For RSA, this is RSA pub key
-     * * For SymmetricKey, this is keyLabel
+     * <ul>
+     * <li> For EC, this is EC pub key.
+     * <li> For RSA, this is RSA pub key
+     * <li> For SymmetricKey, this is keyLabel
+     * <li> For Authentication means, this string {identifier-type}/{identifier}.
+     *      For SID/MID this in format 'etsi/{SemanticesIdentifier}' e.g. etsi/PNOEE-48010010101
+     * </ul>
      * @return Object that uniquely identifies Recipient
      */
     Object getRecipientId();

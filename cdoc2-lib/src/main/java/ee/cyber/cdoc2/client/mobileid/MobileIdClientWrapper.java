@@ -1,11 +1,10 @@
 package ee.cyber.cdoc2.client.mobileid;
 
 import ee.sk.mid.MidAuthentication;
-import ee.sk.mid.MidAuthenticationHashToSign;
-import ee.sk.mid.MidAuthenticationIdentity;
 import ee.sk.mid.MidAuthenticationResponseValidator;
 import ee.sk.mid.MidAuthenticationResult;
 import ee.sk.mid.MidClient;
+import ee.sk.mid.MidHashToSign;
 import ee.sk.mid.exception.MidDeliveryException;
 import ee.sk.mid.exception.MidInternalErrorException;
 import ee.sk.mid.exception.MidInvalidUserConfigurationException;
@@ -24,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import ee.cyber.cdoc2.exceptions.CdocMobileIdClientException;
-
 
 /**
  * Mobile-ID Client wrapper
@@ -47,12 +45,12 @@ public class MobileIdClientWrapper {
      * Authentication request to {@code /authentication}
      * @param request MID authentication request
      * @param authenticationHash Base64 encoded hash function output to be signed
-     * @return MidAuthenticationIdentity object
+     * @return MidAuthentication object that contains MidSignature and Certificate
      * @throws CdocMobileIdClientException if authentication fails
      */
-    public MidAuthenticationIdentity authenticate(
+    public MidAuthentication authenticate(
         MidAuthenticationRequest request,
-        MidAuthenticationHashToSign authenticationHash
+        MidHashToSign authenticationHash
     ) throws CdocMobileIdClientException {
 
         try {
@@ -63,15 +61,18 @@ public class MobileIdClientWrapper {
                 .getSessionStatusPoller()
                 .fetchFinalAuthenticationSessionStatus(authResponse.getSessionID());
 
-            MidAuthentication authentication = midClient.createMobileIdAuthentication(
-                sessionStatus, authenticationHash
-            );
+            MidAuthentication midAuthentication
+                = midClient.createMobileIdAuthentication(sessionStatus, authenticationHash);
 
-            if (authentication.getResult().equals("OK")) {
-                return validateAuthenticationAndReturnIdentity(authentication);
+            //Other responses beside "OK" https://github.com/SK-EID/MID?tab=readme-ov-file#338-session-end-result-codes
+            if (midAuthentication.getResult().equals("OK")) {
+                validateAuthenticationAndReturnIdentity(midAuthentication); // throws CdocMobileIdClientException
+                return midAuthentication;
             }
 
-            throw new CdocMobileIdClientException("Mobile ID authentication session has failed");
+            throw new CdocMobileIdClientException("Mobile ID authentication session has failed with "
+                + midAuthentication.getResult());
+
         } catch (MidUserCancellationException
                  | MidNotMidClientException
                  | MidSessionTimeoutException
@@ -86,14 +87,14 @@ public class MobileIdClientWrapper {
         }
     }
 
-    public MidAuthenticationIdentity validateAuthenticationAndReturnIdentity(
+    public void validateAuthenticationAndReturnIdentity(
         MidAuthentication authentication
     ) throws CdocMobileIdClientException {
 
         MidAuthenticationResult authResult = responseValidator.validate(authentication);
         List<String> authErrors = authResult.getErrors();
         if (authResult.isValid() && authErrors.isEmpty()) {
-            return authResult.getAuthenticationIdentity();
+            return;
         }
 
         throw new CdocMobileIdClientException(

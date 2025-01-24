@@ -329,7 +329,7 @@ public final class Envelope {
         InputStream cdocInputStream,
         DecryptionKeyMaterial keyMaterial,
         TarEntryProcessingDelegate tarProcessingDelegate,
-        @Nullable Services services
+        Services services
     ) throws GeneralSecurityException, IOException, CDocException {
 
         CountingInputStream containerIs = new CountingInputStream(cdocInputStream);

@@ -7,6 +7,12 @@
 
     <!-- silence smartid false positive exception logging, when validating signature -->
     <logger name="ee.sk.smartid.AuthenticationResponseValidator" level="INFO" />
+
+    <!-- silence MidAuthenticationResponseValidator, prints out all certificates trustStore -->
+    <!-- if trustStore has several certificates, then prints WARN with exception trace for
+         all certificates that are not issuer of checked certificate -->
+    <logger name="ee.sk.mid.MidAuthenticationResponseValidator" level="ERROR" />
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>

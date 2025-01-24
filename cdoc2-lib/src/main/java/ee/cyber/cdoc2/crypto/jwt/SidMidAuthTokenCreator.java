@@ -1,16 +1,12 @@
-package ee.cyber.cdoc2.util;
-
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+package ee.cyber.cdoc2.crypto.jwt;
 
 import com.nimbusds.jose.JOSEException;
 import ee.cyber.cdoc2.auth.AuthTokenCreator;
-import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
-import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import java.security.cert.CertificateEncodingException;
@@ -23,46 +19,45 @@ import java.util.List;
 /**
  * Class to create key-shares auth token
  */
-public class SIDAuthTokenCreator {
+public class SidMidAuthTokenCreator {
 
     KeyShareClientFactory sharesClientFac;
-    SIDAuthJWSSigner jwsSigner;
+    IdentityJWSSigner idJwsSigner;
 
-    // used for "iss" field in JWT body
-    EtsiIdentifier authenticatorSemID; // as etsi/PNOEE-48010010101
     List<KeyShareUri> shareUris;
 
     AuthTokenCreator authTokenCreator;
     X509Certificate authenticatorCert;
 
     /**
-     * Create signature for key shares auth token. <code>authenticator</code> AUTH key is used
-     * for signing.
-     * @param authenticator ETSI Natural Person Semantics Identifier as example "PNOEE-48010010101"
+     * Create signature for key shares auth token. Uses {@link IdentityJWSSigner} to create
+     * signature using Smart-ID ({@link SIDAuthJWSSigner})
+     * or Mobile-ID ({@link MIDAuthJWSSigner}) REST APIs
+     * @param idJwsSigner {@link IdentityJWSSigner} that implements signing either
+     *                                                                   with Smart-ID or Mobile-ID
      * @param shareUris key share uris that are accessed
      * @param fac KeyShareClientFactory used to create key share nonces that are signed
-     * @param sidClient smartID client
      * @throws AuthSignatureCreationException if signature creation fails
      */
-    public SIDAuthTokenCreator(
-        String authenticator,
+    public SidMidAuthTokenCreator(
+        IdentityJWSSigner idJwsSigner,
         List<KeyShareUri> shareUris,
-        KeyShareClientFactory fac,
-        SmartIdClient sidClient
-    ) throws AuthSignatureCreationException {
+        KeyShareClientFactory fac
+    )  throws AuthSignatureCreationException {
+
         this.sharesClientFac = fac;
-        this.jwsSigner = new SIDAuthJWSSigner(sidClient, new SemanticsIdentifier(authenticator));
-        this.authenticatorSemID = new EtsiIdentifier("etsi/" + authenticator);
+        this.idJwsSigner = idJwsSigner;
         this.shareUris = shareUris;
 
         try {
             this.authTokenCreator = prepare();
-            this.authenticatorCert = jwsSigner.getSignerCertificate();
+            this.authenticatorCert = idJwsSigner.getSignerCertificate();
         } catch (ApiException | JOSEException | ParseException ex) {
             throw new AuthSignatureCreationException(ex);
         }
     }
 
+    /**
     /**
      * Create token (sdjwt) for share id
      * @param shareID shareId from signed shareAccessData
@@ -113,11 +108,11 @@ public class SIDAuthTokenCreator {
         }
 
         AuthTokenCreator tokenCreator = AuthTokenCreator.builder()
-            .withEtsiIdentifier(authenticatorSemID)
+            .withEtsiIdentifier(idJwsSigner.getSignerIdentifier())
             .withSharesAccessData(audArray)
             .build();
 
-        tokenCreator.sign(jwsSigner);
+        tokenCreator.sign(idJwsSigner);
 
         return tokenCreator;
     }

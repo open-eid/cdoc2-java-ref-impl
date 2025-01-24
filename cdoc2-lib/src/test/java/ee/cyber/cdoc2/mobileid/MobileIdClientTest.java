@@ -1,7 +1,10 @@
-package ee.cyber.cdoc2;
+package ee.cyber.cdoc2.mobileid;
 
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.auth.SIDCertificateUtil;
+import ee.cyber.cdoc2.crypto.PemTools;
+import ee.sk.mid.MidAuthentication;
 import ee.sk.mid.MidAuthenticationHashToSign;
-import ee.sk.mid.MidAuthenticationIdentity;
 import ee.sk.mid.exception.MidDeliveryException;
 import ee.sk.mid.exception.MidInvalidPhoneNumberException;
 import ee.sk.mid.exception.MidInvalidUserConfigurationException;
@@ -10,12 +13,17 @@ import ee.sk.mid.exception.MidPhoneNotAvailableException;
 import ee.sk.mid.exception.MidSessionTimeoutException;
 import ee.sk.mid.exception.MidUserCancellationException;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdUserData;
 import ee.cyber.cdoc2.exceptions.CdocMobileIdClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 
 import static ee.cyber.cdoc2.ClientConfigurationUtil.getMobileIdConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,14 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MobileIdClientTest {
 
-    // OK for "TEST of SK ID Solutions EID-Q 2021E" certificate
-    private static final String OK_1_IDENTITY_CODE = "51307149560";
-    private static final String OK_1_PHONE_NUMBER = "+37269930366";
-
-    // OK for "TEST of EID-SK 2016" certificate
-    private static final String OK_2_IDENTITY_CODE = "60001017869";
-    private static final String OK_2_PHONE_NUMBER = "+37268000769";
-
     private final MobileIdClient mobileIdClient;
 
     MobileIdClientTest() throws ConfigurationLoadingException {
@@ -41,43 +41,69 @@ class MobileIdClientTest {
     }
 
     @Test
-    void successfullyAuthenticateUser1() throws Exception {
-        MobileIdUserData requestData = new MobileIdUserData(OK_1_PHONE_NUMBER, OK_1_IDENTITY_CODE);
+    void shouldParseMobileIdCert() throws Exception {
+        X509Certificate midCert = PemTools.loadCertificate(
+            new ByteArrayInputStream(MIDTestData.OK_1_CERT_PEM.getBytes(StandardCharsets.UTF_8)));
+        String semanticsIdentifier = SIDCertificateUtil.getSemanticsIdentifier(midCert);
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(EtsiIdentifier.PREFIX + semanticsIdentifier);
 
-        MidAuthenticationIdentity result = authenticate(requestData);
-
-        assertNotNull(result);
-        assertEquals(OK_1_IDENTITY_CODE, result.getIdentityCode());
+        assertEquals(MIDTestData.OK_1_IDENTITY_CODE, etsiIdentifier.getIdentifier());
     }
 
+
+    @Tag("net")
+    @Test
+    void successfullyAuthenticateUser1() throws Exception {
+        MobileIdUserData requestData = new MobileIdUserData(MIDTestData.OK_1_PHONE_NUMBER,
+            MIDTestData.OK_1_IDENTITY_CODE);
+
+        MidAuthentication result = authenticate(requestData);
+
+        String semanticsIdentifier = SIDCertificateUtil.getSemanticsIdentifier(result.getCertificate());
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(EtsiIdentifier.PREFIX + semanticsIdentifier);
+
+
+        assertNotNull(result);
+        assertEquals(MIDTestData.OK_1_IDENTITY_CODE, etsiIdentifier.getIdentifier());
+    }
+
+    @Tag("net")
     @Test
     void successfullyAuthenticateUser2() throws Exception {
-        MobileIdUserData requestData = new MobileIdUserData(OK_2_PHONE_NUMBER, OK_2_IDENTITY_CODE);
+        MobileIdUserData requestData = new MobileIdUserData(MIDTestData.OK_2_PHONE_NUMBER,
+            MIDTestData.OK_2_IDENTITY_CODE);
 
-        MidAuthenticationIdentity result = authenticate(requestData);
+        MidAuthentication result = authenticate(requestData);
+
+        String semanticsIdentifier = SIDCertificateUtil.getSemanticsIdentifier(result.getCertificate());
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(EtsiIdentifier.PREFIX + semanticsIdentifier);
 
         assertNotNull(result);
-        assertEquals(OK_2_IDENTITY_CODE, result.getIdentityCode());
+        assertEquals(MIDTestData.OK_2_IDENTITY_CODE, etsiIdentifier.getIdentifier());
     }
 
+
+    @Tag("net")
     @Test
     void failAuthenticationWithInvalidPhoneNrFormat() {
-        String invalidPhoneNrFormat = OK_1_PHONE_NUMBER.substring(1);
+        String invalidPhoneNrFormat = MIDTestData.OK_1_PHONE_NUMBER.substring(1);
         assertThrows(
             MidInvalidPhoneNumberException.class,
-            () -> new MobileIdUserData(invalidPhoneNrFormat, OK_1_IDENTITY_CODE)
+            () -> new MobileIdUserData(invalidPhoneNrFormat, MIDTestData.OK_1_IDENTITY_CODE)
         );
     }
 
+    @Tag("net")
     @Test
     void failAuthenticationWithInvalidIdentityNumber() {
-        String invalidIdNumber = OK_1_IDENTITY_CODE + "1";
+        String invalidIdNumber = MIDTestData.OK_1_IDENTITY_CODE + "1";
         assertThrows(
             IllegalArgumentException.class,
-            () -> new MobileIdUserData(OK_1_PHONE_NUMBER, invalidIdNumber)
+            () -> new MobileIdUserData(MIDTestData.OK_1_PHONE_NUMBER, invalidIdNumber)
         );
     }
 
+    @Tag("net")
     @Test
     void failAuthenticationOfNonExistingUser() {
         MobileIdUserData requestData = new MobileIdUserData("+37200000266", "60001019939");
@@ -129,7 +155,7 @@ class MobileIdClientTest {
         assertEquals(MidSessionTimeoutException.class, exception.getCause().getClass());
     }
 
-    private MidAuthenticationIdentity authenticate(MobileIdUserData requestData)
+    private MidAuthentication authenticate(MobileIdUserData requestData)
         throws CdocMobileIdClientException {
 
         MidAuthenticationHashToSign authenticationHash

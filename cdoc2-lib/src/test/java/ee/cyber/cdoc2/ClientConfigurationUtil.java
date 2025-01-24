@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2;
 
+import java.util.Map;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
@@ -12,6 +13,8 @@ import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 
@@ -20,6 +23,16 @@ public final class ClientConfigurationUtil {
 
     public static final String MOBILE_ID_PROPERTIES_PATH = "mobile-id/mobile_id-test.properties";
     public static final String SMART_ID_PROPERTIES_PATH = "smart-id/smart_id-test.properties";
+
+    // contains demo env properties used in tests
+    // "smart-id.properties"="classpath:smart-id/smart_id-test.properties"
+    public static final Properties DEMO_ENV_PROPERTIES = Map.of(
+            SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH,
+            MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH)
+        .entrySet().stream()
+        .collect(Properties::new,
+            (props, entry) -> props.setProperty(entry.getKey(), entry.getValue()),
+            Map::putAll);
 
     private ClientConfigurationUtil() { }
 
