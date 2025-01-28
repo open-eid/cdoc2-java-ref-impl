@@ -20,7 +20,7 @@ public final class PasswordValidationUtil {
 
     private static final String PW_REQUIREMENTS = "Password length should be between "
         + PW_MIN_LENGTH + " and " + PW_MAX_LENGTH
-        + ", should contain at least one upper case or one lower case character";
+        + ", should contain at least one upper case and one lower case character";
 
     private PasswordValidationUtil() { }
 

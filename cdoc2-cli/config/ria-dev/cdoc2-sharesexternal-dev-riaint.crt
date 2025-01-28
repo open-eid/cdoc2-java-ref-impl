@@ -1,0 +1,70 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            6d:82:b1:e9:44:2f:27:e6:be:13:e6:3b:86:37:6e:11:6a:9d:a0:76
+        Signature Algorithm: ecdsa-with-SHA384
+        Issuer: C = EE, O = Information System Authority, CN = RIA ECC Issuing CA G3
+        Validity
+            Not Before: Nov 15 11:10:33 2024 GMT
+            Not After : Nov 15 11:10:32 2025 GMT
+        Subject: C = EE, ST = Harju County, L = Tallinn, O = Information System Authority, CN = cdoc2-sharesexternal.dev.riaint.ee
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:f7:13:23:92:d6:1d:98:6c:64:c5:e0:89:17:f3:
+                    cc:d4:01:f6:ed:bc:9a:f0:b9:48:25:e9:a3:60:ff:
+                    1e:d8:0a:6e:cb:ef:c8:64:25:26:64:ca:20:9a:7f:
+                    32:d5:13:52:4c:f0:57:c8:71:e0:2d:4c:b9:4a:8f:
+                    8b:97:46:17:15:7f:4e:86:9c:26:a0:53:72:ea:f1:
+                    04:57:62:99:33:19:76:f2:6b:8f:72:a3:0a:e8:e8:
+                    e5:99:a9:ae:f7:7f:df
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Authority Key Identifier: 
+                0C:A6:DD:D3:41:20:AF:B7:E6:BB:13:15:88:82:14:37:39:16:07:44
+            Authority Information Access: 
+                CA Issuers - URI:https://certs.ria.ee/ria_ecc_issuing_ca_g3.crt
+                OCSP - URI:http://ocsp.riaint.ee
+            X509v3 Subject Alternative Name: 
+                DNS:cdoc2-sharesexternal.dev.riaint.ee, DNS:cdoc2-sharesexternal-01.dev.riaint.ee, DNS:cdoc2-sharesexternal-02.dev.riaint.ee
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication, TLS Web Server Authentication
+            X509v3 Subject Key Identifier: 
+                5B:B6:A3:6F:74:4A:B5:20:09:13:F8:2D:BB:89:28:5A:1D:31:92:1E
+            X509v3 Key Usage: critical
+                Digital Signature
+    Signature Algorithm: ecdsa-with-SHA384
+    Signature Value:
+        30:65:02:30:4c:5c:78:4f:9c:2f:82:bf:ba:28:8f:20:44:29:
+        b3:40:b4:0d:ea:9a:9b:11:b8:d4:d2:1e:e9:5f:39:d8:57:3a:
+        b2:10:01:0d:74:c0:63:d0:e5:aa:d9:e1:22:d7:79:de:02:31:
+        00:fc:cc:28:b0:a1:d7:35:9e:e7:e4:66:05:1a:63:9d:4d:d6:
+        45:d8:e7:3f:92:17:2c:b9:24:e7:32:5c:2e:e8:12:a4:3f:3d:
+        c8:d1:30:ca:b8:00:30:a8:bd:4d:7f:8d:a0
+-----BEGIN CERTIFICATE-----
+MIIDjTCCAxOgAwIBAgIUbYKx6UQvJ+a+E+Y7hjduEWqdoHYwCgYIKoZIzj0EAwMw
+VDELMAkGA1UEBhMCRUUxJTAjBgNVBAoMHEluZm9ybWF0aW9uIFN5c3RlbSBBdXRo
+b3JpdHkxHjAcBgNVBAMMFVJJQSBFQ0MgSXNzdWluZyBDQSBHMzAeFw0yNDExMTUx
+MTEwMzNaFw0yNTExMTUxMTEwMzJaMIGKMQswCQYDVQQGEwJFRTEVMBMGA1UECAwM
+SGFyanUgQ291bnR5MRAwDgYDVQQHDAdUYWxsaW5uMSUwIwYDVQQKDBxJbmZvcm1h
+dGlvbiBTeXN0ZW0gQXV0aG9yaXR5MSswKQYDVQQDDCJjZG9jMi1zaGFyZXNleHRl
+cm5hbC5kZXYucmlhaW50LmVlMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE9xMjktYd
+mGxkxeCJF/PM1AH27bya8LlIJemjYP8e2Apuy+/IZCUmZMogmn8y1RNSTPBXyHHg
+LUy5So+Ll0YXFX9OhpwmoFNy6vEEV2KZMxl28muPcqMK6Ojlmamu93/fo4IBbTCC
+AWkwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBQMpt3TQSCvt+a7ExWIghQ3ORYH
+RDBtBggrBgEFBQcBAQRhMF8wOgYIKwYBBQUHMAKGLmh0dHBzOi8vY2VydHMucmlh
+LmVlL3JpYV9lY2NfaXNzdWluZ19jYV9nMy5jcnQwIQYIKwYBBQUHMAGGFWh0dHA6
+Ly9vY3NwLnJpYWludC5lZTB7BgNVHREEdDBygiJjZG9jMi1zaGFyZXNleHRlcm5h
+bC5kZXYucmlhaW50LmVlgiVjZG9jMi1zaGFyZXNleHRlcm5hbC0wMS5kZXYucmlh
+aW50LmVlgiVjZG9jMi1zaGFyZXNleHRlcm5hbC0wMi5kZXYucmlhaW50LmVlMB0G
+A1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDATAdBgNVHQ4EFgQUW7ajb3RKtSAJ
+E/gtu4koWh0xkh4wDgYDVR0PAQH/BAQDAgeAMAoGCCqGSM49BAMDA2gAMGUCMExc
+eE+cL4K/uiiPIEQps0C0DeqamxG41NIe6V852Fc6shABDXTAY9DlqtnhItd53gIx
+APzMKLCh1zWe5+RmBRpjnU3WRdjnP5IXLLkk5zJcLugSpD89yNEwyrgAMKi9TX+N
+oA==
+-----END CERTIFICATE-----
