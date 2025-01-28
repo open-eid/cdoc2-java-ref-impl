@@ -34,7 +34,6 @@ MOBILE_ID_PROPERTIES="$TESTING_DIR/shares-properties/mobile_id-test.properties"
 SMART_ID_PROPERTIES="$TESTING_DIR/shares-properties/smart_id-test.properties"
 
 
-
 #bats run doesn't support alias
 #https://github.com/bats-core/bats-core/issues/259
 run_alias() {
@@ -234,7 +233,6 @@ run_alias() {
 }
 
 @test "shares-server-test8: successfully encrypt and decrypt CDOC2 container with Mobile-ID" {
-  skip "Mobile-ID not fully implemented, skipping"
   cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
@@ -381,10 +379,11 @@ run_alias() {
   assertSuccessfulExecution
   assert_output --partial "Decrypting $REENCRYPTION_DIRECTORY/$cdocFile"
   assertSuccessfulDecryption
+
+  rm -f "$REENCRYPTION_DIRECTORY"/README.md
 }
 
 @test "shares-server-test14: successfully re-encrypt CDOC2 container from Mobile-ID container" {
-  skip "Mobile-ID not fully implemented, skipping"
   cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
@@ -413,6 +412,8 @@ run_alias() {
   assertSuccessfulExecution
   assert_output --partial "Decrypting $REENCRYPTION_DIRECTORY/$cdocFile"
   assertSuccessfulDecryption
+
+  rm -f "$REENCRYPTION_DIRECTORY"/README.md
 }
 
 @test "All shares-server tests were executed." {
