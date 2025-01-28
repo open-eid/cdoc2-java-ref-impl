@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 
+
 /**
  * Class to create key-shares auth token
  */
@@ -57,7 +58,6 @@ public class SidMidAuthTokenCreator {
         }
     }
 
-    /**
     /**
      * Create token (sdjwt) for share id
      * @param shareID shareId from signed shareAccessData
@@ -132,4 +132,5 @@ public class SidMidAuthTokenCreator {
 
         return new ShareAccessData(shareUri.serverBaseUrl(), shareUri.shareId(), nonce);
     }
+
 }

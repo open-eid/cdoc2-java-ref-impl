@@ -42,9 +42,6 @@ public class MIDAuthJWSSignerTest {
         String phoneNumber = MIDTestData.OK_1_PHONE_NUMBER;
         String identityCode = MIDTestData.OK_1_IDENTITY_CODE;
 
-//        String phoneNumber = MIDTestData.OK_2_PHONE_NUMBER;
-//        String identityCode = MIDTestData.OK_2_IDENTITY_CODE;
-
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
 
         MIDAuthJWSSigner midJWSSigner = new MIDAuthJWSSigner(mobileIdClient, etsiIdentifier, phoneNumber);

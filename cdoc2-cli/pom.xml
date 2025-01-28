@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>cdoc2-cli</artifactId>
-    <version>SID-1.5.1</version>
+    <version>SID-1.5.2</version>
     <description>Command line utility to create/process CDOC2 files</description>
 
     <properties>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-lib</artifactId>
-            <version>SID-2.1.0-SNAPSHOT</version>
+            <version>SID-2.1.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
