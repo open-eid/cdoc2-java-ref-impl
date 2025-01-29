@@ -43,12 +43,6 @@
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-lib</artifactId>
             <version>SID-2.1.1-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
