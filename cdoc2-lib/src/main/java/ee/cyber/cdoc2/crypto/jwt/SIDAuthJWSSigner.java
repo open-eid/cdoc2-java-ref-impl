@@ -35,16 +35,18 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
     private final JCAContext jcaContext = new JCAContext();
 
     private final SmartIdClient sidClient;
-    private final SemanticsIdentifier signerId;
+    private final EtsiIdentifier signerId;
+
+    private @Nullable InteractionParams interactionParams = null;
 
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
 
     /**
-     * Initialize JWSSigner for signer (format "PNOEE-37807156011") using pre-initialized SmartIdClient
+     * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized SmartIdClient
      * @param sidClient pre-initialized SmartIdClient to use for signing
      * @param signer PNOEE-37807156011
      */
-    public SIDAuthJWSSigner(final SmartIdClient sidClient, final SemanticsIdentifier signer) {
+    public SIDAuthJWSSigner(EtsiIdentifier signer, SmartIdClient sidClient) {
         Objects.requireNonNull(sidClient);
         Objects.requireNonNull(signer);
 
@@ -52,8 +54,16 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
         this.signerId = signer;
     }
 
-    public SemanticsIdentifier getSignerSemID() {
-        return this.signerId;
+    /**
+     * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized SmartIdClient
+     * @param sidClient pre-initialized SmartIdClient to use for signing
+     * @param signer Signer identifier in format etsi/PNOEE-37807156011
+     * @param params InteractionParams to drive SID interaction or to get verification code. {@code null} when user is
+     *               not interested in verification code or default interaction behaviour is ok.
+     */
+    public SIDAuthJWSSigner(EtsiIdentifier signer, SmartIdClient sidClient, @Nullable InteractionParams params) {
+        this(signer, sidClient);
+        this.interactionParams = params;
     }
 
     /**
@@ -62,7 +72,6 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
      * @param header       The JSON Web Signature (JWS) header. Must
      *                     specify a supported JWS algorithm and must not
      *                     be {@code null}.
-     *                     "kid" value must be same as {@code signerId.getIdentifier}
      * @param signingInput The input to sign. Must not be {@code null}.
      * @return The resulting signature part (third part) of the JWS object.
      * @throws JOSEException If the JWS algorithm is not supported, if a
@@ -83,15 +92,21 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
         AuthenticationHash hash = calcHash(signingInput, toSIDHashType(header.getAlgorithm()));
 
-        //TODO: RM-4086: add support to show SID verification code in UI
-        //until proper interface exists, use System.out
-        System.out.println("Verification code: " + hash.calculateVerificationCode());
+        if (interactionParams != null) {
+            AuthEvent authEvent = new AuthEvent(this, hash.calculateVerificationCode(),
+                interactionParams.getDocument());
+            interactionParams.notifyAuthListeners(authEvent);
+        } else {
+            log.debug("Verification code: {}", hash.calculateVerificationCode());
+        }
 
+        SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(signerId.getSemanticsIdentifier());
         try {
             SmartIdAuthenticationResponse resp = sidClient.authenticate(
-                signerId,
+                semanticsIdentifier,
                 hash,
-                CERT_LEVEL_QUALIFIED
+                CERT_LEVEL_QUALIFIED,
+                interactionParams
             );
 
             this.signerCertificate = resp.getCertificate();
@@ -104,7 +119,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
     @Override
     public EtsiIdentifier getSignerIdentifier() {
-        return new EtsiIdentifier(EtsiIdentifier.PREFIX + signerId.getIdentifier());
+        return signerId;
     }
 
     /**

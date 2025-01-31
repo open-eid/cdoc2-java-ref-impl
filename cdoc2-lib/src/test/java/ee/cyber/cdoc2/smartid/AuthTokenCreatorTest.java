@@ -21,7 +21,6 @@ import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -129,8 +128,8 @@ public class AuthTokenCreatorTest {
     @Tag("net") //requires external network to connect to SID demo server
     void testCreateAuthTokenWithSID() throws Exception {
 
-        SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier("PNOEE-" + DEMO_ID_CODE);
-        IdentityJWSSigner idJwsSigner = new SIDAuthJWSSigner(setupSIDClient(), semanticsIdentifier);
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + DEMO_ID_CODE);
+        IdentityJWSSigner idJwsSigner = new SIDAuthJWSSigner(etsiIdentifier, setupSIDClient());
 
         testCreateAuthToken(idJwsSigner, loadSIDTestTrustStore());
 
@@ -149,7 +148,7 @@ public class AuthTokenCreatorTest {
 
         MobileIdClient demoEnvClient = MIDTestData.getDemoEnvClient();
 
-        IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(demoEnvClient, etsiIdentifier, phoneNumber);
+        IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(etsiIdentifier, phoneNumber, demoEnvClient, null);
 
         testCreateAuthToken(idJwsSigner, demoEnvClient.readTrustedCertificates());
 

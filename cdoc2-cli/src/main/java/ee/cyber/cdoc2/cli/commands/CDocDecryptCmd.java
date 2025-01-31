@@ -56,7 +56,6 @@ public class CDocDecryptCmd implements Callable<Void> {
         System.setProperty(KEY_CAPSULES_PROPERTIES, keyServerPropertiesFile);
     }
 
-
     @CommandLine.Parameters(description = "one or more files to decrypt", paramLabel = "fileToExtract")
     private String[] filesToExtract = new String[0];
 

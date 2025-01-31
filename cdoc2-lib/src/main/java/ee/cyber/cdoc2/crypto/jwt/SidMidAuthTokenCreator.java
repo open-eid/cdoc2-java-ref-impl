@@ -18,7 +18,7 @@ import java.util.List;
 
 
 /**
- * Class to create key-shares auth token
+ * Class to create key-shares auth token (sd-jwt) with MID/SID.
  */
 public class SidMidAuthTokenCreator {
 

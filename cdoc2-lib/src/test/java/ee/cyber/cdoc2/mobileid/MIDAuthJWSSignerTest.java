@@ -12,6 +12,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jose.jwk.ECKey;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import org.junit.jupiter.api.Tag;
@@ -43,8 +44,17 @@ public class MIDAuthJWSSignerTest {
         String identityCode = MIDTestData.OK_1_IDENTITY_CODE;
 
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
+        final String[] verificationCode = {null};
+        InteractionParams interactionParams = InteractionParams
+            .displayTextAndVCCForDocument("JWSSignerTest::testSignature")
+            .addAuthListener(e -> {
+                verificationCode[0] = e.getVerificationCode();
+                log.debug("Verification code: {}", verificationCode[0]);
+            });
 
-        MIDAuthJWSSigner midJWSSigner = new MIDAuthJWSSigner(mobileIdClient, etsiIdentifier, phoneNumber);
+
+        MIDAuthJWSSigner midJWSSigner
+            = new MIDAuthJWSSigner(etsiIdentifier, phoneNumber, mobileIdClient, interactionParams);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
             .audience(List.of(AUD))
@@ -58,6 +68,9 @@ public class MIDAuthJWSSignerTest {
             claimsSet);
 
         signedJWT.sign(midJWSSigner); //calls JWSSigner.sign(JWSHeader, byte[])
+
+        // callback for interactionParams was called
+        assertNotNull(verificationCode[0]);
 
         X509Certificate signerCert = midJWSSigner.getSignerCertificate();
         assertNotNull(signerCert);

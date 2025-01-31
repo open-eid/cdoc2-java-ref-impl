@@ -139,17 +139,17 @@ public record MobileIdClientConfigurationProps(
     }
 
     @Override
-    public String getDisplayText() {
+    public String getDefaultDisplayText() {
         return displayText;
     }
 
     @Override
-    public MidDisplayTextFormat getDisplayTextFormat() {
+    public MidDisplayTextFormat getDefaultDisplayTextFormat() {
         return displayTextFormat;
     }
 
     @Override
-    public MidLanguage getDisplayTextLanguage() {
+    public MidLanguage getDefaultDisplayTextLanguage() {
         return language;
     }
 

@@ -20,7 +20,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +28,8 @@ import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 import ee.cyber.cdoc2.util.Resources;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Smart-ID Client
@@ -42,6 +42,7 @@ public class SmartIdClientWrapper {
     private final SmartIdClientConfiguration smartIdClientConfig;
     private final AuthenticationResponseValidator authenticationResponseValidator;
 
+    private static final Logger log = LoggerFactory.getLogger(SmartIdClientWrapper.class);
     /**
      * Constructor for Smart-ID Client wrapper
      * @param conf Smart-ID client configuration
@@ -75,12 +76,14 @@ public class SmartIdClientWrapper {
      * @param authenticationHash  Base64 encoded hash function output to be signed
      * @param certificationLevel  Level of certificate requested, can either be
      *                            {@code QUALIFIED} or {@code ADVANCED}
+     * @param interactions interaction parameters used to drive Smart-ID UI
      * @return SmartIdAuthenticationResponse object
      */
     public SmartIdAuthenticationResponse authenticate(
         SemanticsIdentifier semanticsIdentifier,
         AuthenticationHash authenticationHash,
-        String certificationLevel
+        String certificationLevel,
+        List<Interaction> interactions
     ) throws UserAccountNotFoundException,
         UserRefusedException,
         UserSelectedWrongVerificationCodeException,
@@ -94,10 +97,7 @@ public class SmartIdClientWrapper {
             .withSemanticsIdentifier(semanticsIdentifier)
             .withAuthenticationHash(authenticationHash)
             .withCertificateLevel(certificationLevel)
-            // Smart-ID app will display verification code to the user and user must insert PIN1
-            .withAllowedInteractionsOrder(
-                Collections.singletonList(Interaction.displayTextAndPIN("Log in to self-service?"))
-            )
+            .withAllowedInteractionsOrder(interactions)
             // Commented out as EIDPRX fails request parsing when this property is present
             //.withShareMdClientIpAddress(true)
             .authenticate();
@@ -106,6 +106,7 @@ public class SmartIdClientWrapper {
 
         return authResponse;
     }
+
 
     public AuthenticationIdentity validateResponse(
         SmartIdAuthenticationResponse authResponse

@@ -18,6 +18,8 @@ import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParamsConfigurable;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
@@ -110,12 +112,12 @@ public final class CDocDecryptionHelper {
         }
 
         if (isWithSid && decryptionKm == null) {
-            decryptionKm = getSidDecryptionKeyMaterial(decryptArguments.getSid());
+            decryptionKm = getSidDecryptionKeyMaterial(decryptArguments.getSid(), cdocFile);
         }
 
         if (isWithMid && decryptionKm == null) {
             decryptionKm = getMidDecryptionKeyMaterial(
-                decryptArguments.getMid(), decryptArguments.getMidPhone()
+                decryptArguments.getMid(), decryptArguments.getMidPhone(), cdocFile
             );
         }
 
@@ -127,17 +129,28 @@ public final class CDocDecryptionHelper {
         return decryptionKm;
     }
 
-    private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode) {
+    private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode, File cdocFile) {
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
             createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
         );
 
-        return DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        addInteractionParameters(cdocFile, dkm);
+        return dkm;
+
     }
 
+    /**
+     *
+     * @param idCode estonian national identity code
+     * @param phoneNumber user phone number international format +372...
+     * @param cdocFile cdoc2 file decrypted
+     * @return
+     */
     private static DecryptionKeyMaterial getMidDecryptionKeyMaterial(
         String idCode,
-        String phoneNumber
+        String phoneNumber,
+        File cdocFile
     ) {
 
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
@@ -145,7 +158,20 @@ public final class CDocDecryptionHelper {
             getValidatedPhoneNumber(phoneNumber)
         );
 
-        return DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        addInteractionParameters(cdocFile, dkm);
+        return dkm;
+    }
+
+    private static void addInteractionParameters(File cdocFile, DecryptionKeyMaterial dkm) {
+        if (dkm instanceof InteractionParamsConfigurable paramsConfigurable) {
+
+            InteractionParams interactionParams = (cdocFile == null)
+                ? InteractionParams.displayTextAndPin()
+                : InteractionParams.displayTextAndVCCForDocument(cdocFile.toPath().getFileName().toString());
+            interactionParams.addAuthListener(e -> System.out.println("Verification code:" + e.getVerificationCode()));
+            paramsConfigurable.init(interactionParams);
+        }
     }
 
     private static DecryptionKeyMaterial getPasswordDecryptionKeyMaterial(

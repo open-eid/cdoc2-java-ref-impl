@@ -1,8 +1,11 @@
 package ee.cyber.cdoc2.client.mobileid;
 
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.sk.mid.MidAuthentication;
 import ee.sk.mid.MidClient;
+import ee.sk.mid.MidDisplayTextFormat;
 import ee.sk.mid.MidHashToSign;
+import ee.sk.mid.MidLanguage;
 import ee.sk.mid.rest.dao.request.MidAuthenticationRequest;
 
 import java.io.IOException;
@@ -12,6 +15,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +34,11 @@ public class MobileIdClient {
 
     private static final String CERT_NOT_FOUND = "Mobile ID trusted SSL certificates not found";
 
-    private final MobileIdClientWrapper mobileIdClientWrapper;
+    // protected to allow overriding MobileIdClient to allow more control over interaction
+    protected final MobileIdClientWrapper mobileIdClientWrapper;
 
-    private final MobileIdClientConfiguration mobileIdClientConfig;
+    // protected to allow overriding MobileIdClient to allow more control over interaction
+    protected final MobileIdClientConfiguration mobileIdClientConfig;
 
     /**
      * Constructor for Mobile-ID Client
@@ -42,6 +48,12 @@ public class MobileIdClient {
         this.mobileIdClientConfig = conf;
         MidClient midClient = configureMobileIdClient();
         this.mobileIdClientWrapper = new MobileIdClientWrapper(midClient);
+
+    }
+
+    protected MobileIdClient(MobileIdClientConfiguration conf, MobileIdClientWrapper wrapper) {
+        this.mobileIdClientConfig = conf;
+        this.mobileIdClientWrapper = wrapper;
     }
 
     /**
@@ -49,26 +61,79 @@ public class MobileIdClient {
      * Certificate
      * @param userData user request data
      * @param authenticationHash Base64 encoded hash function output to be signed
+     * @param interactionParams Optional  parameters to drive user interaction and to get verification code.
+     *                          {@code null} when not in use
      * @return MidAuthentication object that contains MidSignature and Certificate
      */
     public MidAuthentication startAuthentication(
         MobileIdUserData userData,
-        MidHashToSign authenticationHash
+        MidHashToSign authenticationHash,
+        @Nullable InteractionParams interactionParams
     ) throws CdocMobileIdClientException {
-
-        // ToDo display verification code and text to the user in RM-4086
-        //String verificationCode = authenticationHash.calculateVerificationCode();
 
         MidAuthenticationRequest request = MidAuthenticationRequest.newBuilder()
             .withPhoneNumber(userData.phoneNumber())
             .withNationalIdentityNumber(userData.identityCode())
             .withHashToSign(authenticationHash)
-            .withLanguage(mobileIdClientConfig.getDisplayTextLanguage())
-            .withDisplayText(mobileIdClientConfig.getDisplayText())
-            .withDisplayTextFormat(mobileIdClientConfig.getDisplayTextFormat())
+            .withLanguage(getLanguage(interactionParams))
+            .withDisplayText(getDisplayText(interactionParams))
+            .withDisplayTextFormat(getEncoding(interactionParams))
             .build();
 
         return mobileIdClientWrapper.authenticate(request, authenticationHash);
+    }
+
+    /**
+     * Get MID language from interactionParams if defined, otherwise get default value from configuration
+     */
+    protected MidLanguage getLanguage(@Nullable InteractionParams interactionParams) {
+        MidLanguage lang = mobileIdClientConfig.getDefaultDisplayTextLanguage();
+        if (interactionParams != null) {
+            String iLang = interactionParams.getLanguage();
+            if (iLang != null) {
+                try {
+                    lang = MidLanguage.valueOf(iLang);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Illegal MidLanguage value, using {}", lang, e);
+                }
+            }
+        }
+        return lang;
+    }
+
+    /**
+     * Get MidDisplayTextFormat from interactionParams if defined, otherwise get default value from configuration
+     */
+    protected MidDisplayTextFormat getEncoding(@Nullable InteractionParams interactionParams) {
+        MidDisplayTextFormat enc = mobileIdClientConfig.getDefaultDisplayTextFormat();
+        if (interactionParams != null) {
+            String iEnc = interactionParams.getEncoding();
+            if (iEnc != null) {
+                try {
+                    enc = MidDisplayTextFormat.valueOf(iEnc);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Illegal MidDisplayTextFormat value, using {}", enc, e);
+                }
+            }
+        }
+
+        return enc;
+    }
+
+    /** Get displayText from interactionParams if defined, otherwise get default value from configuration */
+    protected String getDisplayText(@Nullable InteractionParams interactionParams) {
+
+        // Mobile-ID doesn't support interactionType and text length is limited to 100 bytes -
+        // 50 chars for UCS2 and 100 chars for GSM7
+        // https://github.com/SK-EID/MID?tab=readme-ov-file#323-request-parameters
+
+        String textAndPIN = mobileIdClientConfig.getDefaultDisplayText();
+        if (interactionParams != null) {
+                textAndPIN = (getEncoding(interactionParams) == MidDisplayTextFormat.GSM7)
+                    ? interactionParams.getDisplayText(100) // GSM7
+                    : interactionParams.getDisplayText(50); // UCS2
+        }
+        return textAndPIN;
     }
 
     /**
