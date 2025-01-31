@@ -45,7 +45,6 @@ import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -324,10 +323,9 @@ public final class KekTools {
     ) throws CDocException, AuthSignatureCreationException {
 
         AuthenticationIdentifier.AuthenticationType authType =
-            decryptKeyMaterial.authIdentifier().getAuthType();
-        SemanticsIdentifier semanticsIdentifier =
-            decryptKeyMaterial.authIdentifier().getSemanticsIdentifier();
-        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.authIdentifier().getEtsiIdentifier());
+            decryptKeyMaterial.getAuthIdentifier().getAuthType();
+
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
 
         switch (authType) {
             case SID -> {
@@ -336,7 +334,7 @@ public final class KekTools {
                 }
                 SmartIdClient sidClient = services.get(SmartIdClient.class);
                 return new SidMidAuthTokenCreator(
-                    new SIDAuthJWSSigner(sidClient, semanticsIdentifier),
+                    new SIDAuthJWSSigner(etsiIdentifier, sidClient, decryptKeyMaterial.getInteractionParams()),
                     shares,
                     keyShareClientFactory);
             }
@@ -345,8 +343,9 @@ public final class KekTools {
                     throw new CDocException("MobileIdClient not configured");
                 }
                 MobileIdClient midClient = services.get(MobileIdClient.class);
-                String mobileNumber = decryptKeyMaterial.authIdentifier().getMobileNumber();
-                IdentityJWSSigner jwsSigner = new MIDAuthJWSSigner(midClient, etsiIdentifier, mobileNumber);
+                String mobileNumber = decryptKeyMaterial.getAuthIdentifier().getMobileNumber();
+                IdentityJWSSigner jwsSigner = new MIDAuthJWSSigner(etsiIdentifier, mobileNumber,
+                    midClient, decryptKeyMaterial.getInteractionParams());
 
                 // constructor gets nonce for each share from shares-server and signs shareUris and their nonces
                 // with jwsSigner

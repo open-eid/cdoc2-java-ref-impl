@@ -57,7 +57,8 @@ public class SmartIdClientTest {
         SmartIdAuthenticationResponse authResponse = smartIdClient.authenticate(
             semanticsIdentifier,
             authenticationHash,
-            CERT_LEVEL_QUALIFIED
+            CERT_LEVEL_QUALIFIED,
+            null
         );
 
         assertNotNull(authResponse);
@@ -66,9 +67,6 @@ public class SmartIdClientTest {
         AuthenticationIdentity returnedIdentifier = smartIdClient.validateResponse(authResponse);
 
         assertEquals(IDENTITY_NUMBER, returnedIdentifier.getIdentityNumber());
-
-       // assertEquals("ddsfdsf", authResponse.getCertificate(), "Just to print cert out");
-        // assertEquals("yydrttt", authResponse.getSignatureValueInBase64(), "Just to print signature out");
     }
 
     @Test
@@ -86,7 +84,8 @@ public class SmartIdClientTest {
             () -> smartIdClient.authenticate(
                 semanticsIdentifier,
                 authenticationHash,
-                CERT_LEVEL_QUALIFIED
+                CERT_LEVEL_QUALIFIED,
+                null
             )
         );
     }

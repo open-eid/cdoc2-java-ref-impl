@@ -31,10 +31,11 @@ public interface MobileIdClientConfiguration {
 
     int getPollingSleepTimeoutSeconds();
 
-    String getDisplayText();
+    /** Default display text, can be overwritten with InteractionParams*/
+    String getDefaultDisplayText();
 
-    MidDisplayTextFormat getDisplayTextFormat();
+    MidDisplayTextFormat getDefaultDisplayTextFormat();
 
-    MidLanguage getDisplayTextLanguage();
+    MidLanguage getDefaultDisplayTextLanguage();
 
 }

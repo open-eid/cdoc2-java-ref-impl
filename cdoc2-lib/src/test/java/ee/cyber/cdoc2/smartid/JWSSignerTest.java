@@ -11,13 +11,14 @@ import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.PemTools;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -96,36 +97,44 @@ class JWSSignerTest {
             loadProperties(clTestProperties)
         ).smartIdClientConfiguration();
 
-        SemanticsIdentifier signerId = new SemanticsIdentifier(
-            SemanticsIdentifier.IdentityType.PNO,
-            SemanticsIdentifier.CountryCode.EE,
-            IDENTITY_NUMBER
-        );
 
+        EtsiIdentifier signerId = new EtsiIdentifier("etsi/PNOEE-" + IDENTITY_NUMBER);
         SmartIdClient sidClient = new SmartIdClient(sidConf);
 
-        SIDAuthJWSSigner sidJWSSigner = new SIDAuthJWSSigner(sidClient, signerId);
+        final String[] verificationCode = {null};
+
+        InteractionParams interactionParams = InteractionParams
+            .displayTextAndVCCForDocument("JWSSignerTest::testSignature")
+            .addAuthListener(e -> {
+                verificationCode[0] = e.getVerificationCode();
+                log.debug("Verification code: {}", verificationCode[0]);
+            });
+
+        SIDAuthJWSSigner sidJWSSigner = new SIDAuthJWSSigner(signerId, sidClient, interactionParams);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
             .audience(List.of(AUD))
-            .issuer("etsi/" + signerId.getIdentifier())
+            .issuer(signerId.toString()) // "etsi/PNOEE-37807156011"
             .build();
 
         // normally signing certificate is included in header as "x5c" or "x5u", but as SID cert is not available,
         // before successful authentication, then specify "kid" that doesn't have format specified
         SignedJWT signedJWT = new SignedJWT(
             new JWSHeader.Builder(JWSAlgorithm.RS256)
-                .keyID(signerId.getIdentifier()) // "PNOEE-37807156011", may change in future
+                .keyID(signerId.getSemanticsIdentifier()) // "PNOEE-37807156011"
                 .build(),
             claimsSet);
 
         signedJWT.sign(sidJWSSigner);
+
+        assertNotNull(verificationCode[0]);
 
         X509Certificate signerCert = sidJWSSigner.getSignerCertificate();
 
         assertNotNull(signerCert);
 
         String jwtStr = signedJWT.serialize();
+
         log.debug("JWT: {}", jwtStr);
         log.debug("Signer cert PEM: {}", X509CertUtils.toPEMString(signerCert));
         log.debug("pub key: {}", SIDAuthCertData.getRSAPublicKeyPkcs1Pem(signerCert));
@@ -139,7 +148,10 @@ class JWSSignerTest {
 
         SIDAuthCertData certData = SIDAuthCertData.parse(signerCert);
 
-        assertEquals(signerId.getIdentifier(), certData.getSemanticsIdentifier());
+        assertEquals(signerId.getSemanticsIdentifier(), certData.getSemanticsIdentifier());
+
+        // authEvent was fired and verificationCode set
+        assertNotNull(verificationCode[0]);
     }
 
     @Test

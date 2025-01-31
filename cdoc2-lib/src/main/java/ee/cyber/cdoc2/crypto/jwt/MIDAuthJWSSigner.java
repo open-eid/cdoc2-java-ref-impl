@@ -39,6 +39,8 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     private final EtsiIdentifier signerEtsiIdentifier;
     private final MobileIdUserData mobileIdUserData;
 
+    private final @Nullable InteractionParams interactionParams;
+
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
 
     /**
@@ -47,10 +49,12 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
      * @param midClient MobileIdClient to perform actual authentication sequence
      * @param signer signer identifier as etsi semantics identifier
      * @param phoneNumber signer phone number in international format e.g. "+3725551234"
+     * @param interactionParams  Optional parameters to drive user interaction. {@code null} if not used
      * @throws MidInvalidPhoneNumberException if phone number validation has failed
      * @throws MidInvalidNationalIdentityNumberException if ID code validation has failed
      */
-    public MIDAuthJWSSigner(MobileIdClient midClient, EtsiIdentifier signer, String phoneNumber) {
+    public MIDAuthJWSSigner(EtsiIdentifier signer, String phoneNumber, MobileIdClient midClient,
+                            @Nullable InteractionParams interactionParams) {
         Objects.requireNonNull(midClient);
         Objects.requireNonNull(signer);
         Objects.requireNonNull(phoneNumber);
@@ -58,6 +62,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         this.midClient = midClient;
         this.signerEtsiIdentifier = signer;
         this.mobileIdUserData = new MobileIdUserData(phoneNumber, signer.getIdentifier());
+        this.interactionParams = interactionParams;
     }
 
     @Override
@@ -73,11 +78,17 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
 
         MidAuthenticationHashToSign hash = calcHash(signingInput, toMIDHashType(jwsAlg));
 
-        log.debug("Verification code: {}", hash.calculateVerificationCode());
+        if (interactionParams != null) {
+            AuthEvent authEvent = new AuthEvent(this, hash.calculateVerificationCode(),
+                interactionParams.getDocument());
+            interactionParams.notifyAuthListeners(authEvent);
+        } else {
+            log.debug("Verification code: {}", hash.calculateVerificationCode());
+        }
 
         try {
             MidAuthentication result = midClient.startAuthentication(
-                mobileIdUserData, hash);
+                mobileIdUserData, hash, interactionParams);
             this.signerCertificate = result.getCertificate();
             return Base64URL.encode(result.getSignatureValue());
         } catch (CdocMobileIdClientException ex) {

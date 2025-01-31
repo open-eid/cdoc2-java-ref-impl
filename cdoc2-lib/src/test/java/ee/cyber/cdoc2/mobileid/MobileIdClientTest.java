@@ -2,9 +2,14 @@ package ee.cyber.cdoc2.mobileid;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.SIDCertificateUtil;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClientWrapper;
+import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
 import ee.cyber.cdoc2.crypto.PemTools;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.sk.mid.MidAuthentication;
 import ee.sk.mid.MidAuthenticationHashToSign;
+import ee.sk.mid.MidDisplayTextFormat;
+import ee.sk.mid.MidLanguage;
 import ee.sk.mid.exception.MidDeliveryException;
 import ee.sk.mid.exception.MidInvalidPhoneNumberException;
 import ee.sk.mid.exception.MidInvalidUserConfigurationException;
@@ -13,6 +18,7 @@ import ee.sk.mid.exception.MidPhoneNotAvailableException;
 import ee.sk.mid.exception.MidSessionTimeoutException;
 import ee.sk.mid.exception.MidUserCancellationException;
 
+import ee.sk.mid.rest.dao.request.MidAuthenticationRequest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +26,8 @@ import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdUserData;
 import ee.cyber.cdoc2.exceptions.CdocMobileIdClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 
 class MobileIdClientTest {
@@ -50,6 +60,56 @@ class MobileIdClientTest {
         assertEquals(MIDTestData.OK_1_IDENTITY_CODE, etsiIdentifier.getIdentifier());
     }
 
+    @Test
+    void shouldUseDefaultsForEmptyInteractionParams() throws Exception {
+
+        MobileIdClientConfiguration conf = getMobileIdConfiguration();
+
+        MidAuthenticationRequest value = testInteractionParams(null);
+
+        assertEquals(conf.getDefaultDisplayTextFormat(), value.getDisplayTextFormat());
+        assertEquals(conf.getDefaultDisplayTextLanguage(), value.getLanguage());
+        assertEquals(conf.getDefaultDisplayText(), value.getDisplayText());
+    }
+
+    @Test
+    void shouldUseValuesFromInteractionParams() throws Exception {
+
+        String displayText = "shouldUseValuesFromInteractionParams";
+        InteractionParams params = InteractionParams.displayTextAndPin(displayText);
+        params.setEncoding(MidDisplayTextFormat.UCS2.toString());
+        params.setLanguage(MidLanguage.EST.toString());
+
+        MidAuthenticationRequest value = testInteractionParams(params);
+
+        assertEquals(MidDisplayTextFormat.UCS2, value.getDisplayTextFormat());
+        assertEquals(MidLanguage.EST, value.getLanguage());
+        assertEquals(displayText, value.getDisplayText());
+    }
+
+    MidAuthenticationRequest testInteractionParams(InteractionParams params) throws Exception {
+
+        MobileIdClientWrapper mockMIDWrapper = Mockito.mock(MobileIdClientWrapper.class);
+        MobileIdClientConfiguration conf = getMobileIdConfiguration();
+        MobileIdClient midClient = new MobileIdClient(conf, mockMIDWrapper) { };
+
+        ArgumentCaptor<MidAuthenticationRequest> midReqCaptor = ArgumentCaptor.forClass(MidAuthenticationRequest.class);
+
+        MobileIdUserData mobileIdUserData = new MobileIdUserData(MIDTestData.OK_1_PHONE_NUMBER,
+            MIDTestData.OK_1_IDENTITY_CODE);
+        MidAuthenticationHashToSign authenticationHash
+            = MidAuthenticationHashToSign.generateRandomHashOfDefaultType();
+
+        midClient.startAuthentication(mobileIdUserData, authenticationHash, params);
+
+        verify(mockMIDWrapper).authenticate(midReqCaptor.capture(), any());
+
+        MidAuthenticationRequest value = midReqCaptor.getValue();
+
+        assertNotNull(value);
+
+        return value;
+    }
 
     @Tag("net")
     @Test
@@ -160,7 +220,7 @@ class MobileIdClientTest {
 
         MidAuthenticationHashToSign authenticationHash
             = MidAuthenticationHashToSign.generateRandomHashOfDefaultType();
-        return mobileIdClient.startAuthentication(requestData, authenticationHash);
+        return mobileIdClient.startAuthentication(requestData, authenticationHash, null);
     }
 
     private CdocMobileIdClientException assertAuthenticationFails(MobileIdUserData requestData) {
