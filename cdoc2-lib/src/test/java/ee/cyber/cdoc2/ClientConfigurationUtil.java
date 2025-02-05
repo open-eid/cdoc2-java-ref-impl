@@ -3,21 +3,16 @@ package ee.cyber.cdoc2;
 import java.util.Map;
 import java.util.Properties;
 
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
-import ee.cyber.cdoc2.config.Cdoc2Configuration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
-import ee.cyber.cdoc2.config.KeySharesConfigurationImpl;
 import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
-import ee.cyber.cdoc2.config.MobileIdClientConfigurationImpl;
+import ee.cyber.cdoc2.config.PropertiesLoader;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
-
 
 public final class ClientConfigurationUtil {
 
@@ -28,45 +23,40 @@ public final class ClientConfigurationUtil {
     // "smart-id.properties"="classpath:smart-id/smart_id-test.properties"
     public static final Properties DEMO_ENV_PROPERTIES = Map.of(
             SMART_ID_PROPERTIES, CLASSPATH + SMART_ID_PROPERTIES_PATH,
-            MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH)
+            MOBILE_ID_PROPERTIES, CLASSPATH + MOBILE_ID_PROPERTIES_PATH
+    )
         .entrySet().stream()
         .collect(Properties::new,
             (props, entry) -> props.setProperty(entry.getKey(), entry.getValue()),
             Map::putAll);
 
+    public static final Properties TEST_ENV_PROPERTIES = Map.of(
+        KEY_SHARES_PROPERTIES, CLASSPATH + "key_shares-test.properties"
+    )
+        .entrySet().stream()
+        .collect(Properties::new,
+            (props, entry) -> props.setProperty(entry.getKey(), entry.getValue()),
+            Map::putAll);
+
+
     private ClientConfigurationUtil() { }
 
-    public static SmartIdClientConfiguration getSmartIdConfiguration() throws ConfigurationLoadingException {
-        Properties properties = loadProperties(
-            CLASSPATH + SMART_ID_PROPERTIES_PATH
-        );
-        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
+    public static SmartIdClientConfiguration getSmartIdDemoEnvConfiguration() throws ConfigurationLoadingException {
 
-        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
+        return SmartIdClientConfiguration.load(PropertiesLoader.loadProperties(
+            DEMO_ENV_PROPERTIES.getProperty(SMART_ID_PROPERTIES)));
     }
 
-    public static SmartIdClientConfiguration registerFromProperties(Properties properties) {
-        Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-
-        return CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
+    public static MobileIdClientConfiguration getMobileIdDemoEnvConfiguration() throws ConfigurationLoadingException {
+        Properties properties = PropertiesLoader.loadProperties(
+            DEMO_ENV_PROPERTIES.getProperty(MOBILE_ID_PROPERTIES));
+        return MobileIdClientConfiguration.load(properties);
     }
 
-    public static MobileIdClientConfiguration getMobileIdConfiguration() throws ConfigurationLoadingException {
-        Properties properties = loadProperties(
-            CLASSPATH + MOBILE_ID_PROPERTIES_PATH
-        );
-        Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
-
-        return CDoc2ConfigurationProvider.initMobileIdClientConfig(configuration);
-    }
-
-    public static KeySharesConfiguration initKeySharesConfiguration() throws ConfigurationLoadingException {
-        Properties properties = loadProperties(
-            CLASSPATH + "key_shares-test.properties"
-        );
-        Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-
-        return CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
+    public static KeySharesConfiguration initKeySharesTestEnvConfiguration() throws ConfigurationLoadingException {
+        Properties properties = PropertiesLoader.loadProperties(
+            TEST_ENV_PROPERTIES.getProperty(KEY_SHARES_PROPERTIES));
+        return KeySharesConfiguration.load(properties);
     }
 
 }

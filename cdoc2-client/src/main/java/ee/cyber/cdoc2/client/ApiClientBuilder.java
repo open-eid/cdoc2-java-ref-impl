@@ -147,6 +147,7 @@ public abstract class ApiClientBuilder {
     }
 
     ee.cyber.cdoc2.client.api.ApiClient createApiClient() throws GeneralSecurityException {
+
         validate();
 
         final SSLContext finalSslContext = createSslContext();

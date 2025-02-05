@@ -80,7 +80,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
@@ -144,7 +144,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     void setupKeyShareClientMocks() throws Exception {
-        KeySharesConfiguration configuration = initKeySharesConfiguration();
+        KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();
         shareClientFactory = new KeySharesClientHelper(
             List.of(mockKeySharesClient1, mockKeySharesClient2),
             configuration

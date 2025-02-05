@@ -13,12 +13,11 @@ import com.nimbusds.jwt.SignedJWT;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
-import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -27,15 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.List;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.DEMO_ENV_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,18 +86,11 @@ class JWSSignerTest {
 
     @Tag("net")
     @Test
-    void testSignature() throws JOSEException, ParseException {
-
-        // test again smartid demo env https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo
-        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
-
-        SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
-            loadProperties(clTestProperties)
-        ).smartIdClientConfiguration();
-
+    void testSignature() throws JOSEException, ParseException, GeneralSecurityException {
 
         EtsiIdentifier signerId = new EtsiIdentifier("etsi/PNOEE-" + IDENTITY_NUMBER);
-        SmartIdClient sidClient = new SmartIdClient(sidConf);
+
+        SmartIdClient sidClient = Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(SmartIdClient.class);
 
         final String[] verificationCode = {null};
 

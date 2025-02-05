@@ -10,6 +10,7 @@ public class KeySharesClientBuilder extends ApiClientBuilder {
 
     /**
      * {@link Cdoc2KeySharesApiClient} builder
+     * @throws GeneralSecurityException when establishing TLS connection fails
      */
     public Cdoc2KeySharesApiClient build() throws GeneralSecurityException {
         ee.cyber.cdoc2.client.api.ApiClient apiClient = this.createApiClient();

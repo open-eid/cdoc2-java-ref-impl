@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.smartid;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
@@ -13,14 +14,15 @@ import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.client.smartid.SmartIdClientWrapper;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.exceptions.UnCheckedException;
 import ee.cyber.cdoc2.mobileid.MIDAuthJWSSignerTest;
 import ee.cyber.cdoc2.mobileid.MIDTestData;
 import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,10 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.DEMO_ENV_PROPERTIES;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData.getRSAPublicKeyPkcs1Pem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -42,6 +42,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
@@ -78,7 +79,7 @@ public class AuthTokenCreatorTest {
     private static final String DEMO_ID_CODE = "30303039914";
 
     KeyShareClientFactory setupMockSharesClientFac() {
-        KeySharesConfiguration configuration = initKeySharesConfiguration();
+        KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();
         sharesFac = new KeySharesClientHelper(
             List.of(mockKeySharesClient1, mockKeySharesClient2),
             configuration
@@ -104,22 +105,15 @@ public class AuthTokenCreatorTest {
     }
 
     SmartIdClient setupSIDClient() {
-        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
-
-        SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
-            loadProperties(clTestProperties)
-        ).smartIdClientConfiguration();
-
-        return new SmartIdClient(sidConf);
+        try {
+            return Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(SmartIdClient.class);
+        } catch (GeneralSecurityException e) {
+            throw new UnCheckedException(e); // Creating smart-id client should not throw GeneralSecurityException
+        }
     }
 
     KeyStore loadSIDTestTrustStore() {
-        final String clTestProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
-
-        SmartIdClientConfiguration sidConf = new SmartIdClientConfigurationImpl(
-            loadProperties(clTestProperties)
-        ).smartIdClientConfiguration();
-
+        SmartIdClientConfiguration sidConf = ClientConfigurationUtil.getSmartIdDemoEnvConfiguration();
         return SmartIdClientWrapper.readTrustedCertificates(sidConf);
     }
 

@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.mobileid;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.SIDCertificateUtil;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClientWrapper;
@@ -33,7 +34,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getMobileIdConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,13 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
-
 class MobileIdClientTest {
 
     private final MobileIdClient mobileIdClient;
 
     MobileIdClientTest() throws ConfigurationLoadingException {
-        this.mobileIdClient = new MobileIdClient(getMobileIdConfiguration());
+        this.mobileIdClient = new MobileIdClient(ClientConfigurationUtil.getMobileIdDemoEnvConfiguration());
     }
 
     @Test
@@ -63,10 +62,9 @@ class MobileIdClientTest {
     @Test
     void shouldUseDefaultsForEmptyInteractionParams() throws Exception {
 
-        MobileIdClientConfiguration conf = getMobileIdConfiguration();
+        MobileIdClientConfiguration conf = ClientConfigurationUtil.getMobileIdDemoEnvConfiguration();
 
         MidAuthenticationRequest value = testInteractionParams(null);
-
         assertEquals(conf.getDefaultDisplayTextFormat(), value.getDisplayTextFormat());
         assertEquals(conf.getDefaultDisplayTextLanguage(), value.getLanguage());
         assertEquals(conf.getDefaultDisplayText(), value.getDisplayText());
@@ -90,7 +88,7 @@ class MobileIdClientTest {
     MidAuthenticationRequest testInteractionParams(InteractionParams params) throws Exception {
 
         MobileIdClientWrapper mockMIDWrapper = Mockito.mock(MobileIdClientWrapper.class);
-        MobileIdClientConfiguration conf = getMobileIdConfiguration();
+        MobileIdClientConfiguration conf = ClientConfigurationUtil.getMobileIdDemoEnvConfiguration();
         MobileIdClient midClient = new MobileIdClient(conf, mockMIDWrapper) { };
 
         ArgumentCaptor<MidAuthenticationRequest> midReqCaptor = ArgumentCaptor.forClass(MidAuthenticationRequest.class);

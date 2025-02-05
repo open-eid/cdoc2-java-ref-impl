@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.smartid;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfigurationImpl;
 import ee.sk.smartid.AuthenticationHash;
 import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.SmartIdAuthenticationResponse;
@@ -14,10 +14,7 @@ import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.exceptions.CdocSmartIdClientException;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.SMART_ID_PROPERTIES_PATH;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getSmartIdConfiguration;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getSmartIdDemoEnvConfiguration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -30,16 +27,12 @@ public class SmartIdClientTest {
 
     private final SmartIdClient smartIdClient;
 
-    public static final String demoEnvProperties = CLASSPATH + SMART_ID_PROPERTIES_PATH;
-
     SmartIdClientTest() throws ConfigurationLoadingException {
-        this.smartIdClient = new SmartIdClient(getSmartIdConfiguration());
+        this.smartIdClient = new SmartIdClient(getSmartIdDemoEnvConfiguration());
     }
 
     public static SmartIdClientConfiguration getDemoEnvConfiguration() throws ConfigurationLoadingException {
-        return new SmartIdClientConfigurationImpl(
-            loadProperties(demoEnvProperties)
-        ).smartIdClientConfiguration();
+        return ClientConfigurationUtil.getSmartIdDemoEnvConfiguration();
     }
 
     @Tag("net")

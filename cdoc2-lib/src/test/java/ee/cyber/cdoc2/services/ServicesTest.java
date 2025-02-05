@@ -34,23 +34,15 @@ class ServicesTest {
     }
 
     @Test
-    void testServicesRegisterService() throws Exception {
-
-//        ServiceConfiguration<SmartIdClient, SmartIdClientConfiguration> conf =
-//            new SIDServiceConfiguration(getDemoEnvConfiguration());
+    void testServicesRegisterService() {
 
         SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
 
         Service<SmartIdClient, SmartIdClientConfiguration> sidService =
             ServiceTemplate.service(sidConf, SmartIdClient::new);
 
-        ThrowingFunction<KeySharesConfiguration, KeyShareClientFactory> keyShareClientFactoryFunc =
-            config -> KeySharesClientHelper.createFactory(config);
-
-        var f = suppressEx(keyShareClientFactoryFunc);
-
         Service<KeyShareClientFactory, KeySharesConfiguration> keySharesFactoryService =
-            ServiceTemplate.service(ClientConfigurationUtil.initKeySharesConfiguration(),
+            ServiceTemplate.service(ClientConfigurationUtil.initKeySharesTestEnvConfiguration(),
                 suppressEx(config -> KeySharesClientHelper.createFactory(config)));
 
         Services services = new ServicesBuilder()
