@@ -1,10 +1,10 @@
 package ee.cyber.cdoc2.config;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getMobileIdConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -16,7 +16,9 @@ class MobileIdConfigurationTest {
 
     @Test
     void loadMobileIdConfigurationProperties() throws ConfigurationLoadingException {
-        MobileIdClientConfiguration mobileIdClientConfiguration = getMobileIdConfiguration();
+
+        MobileIdClientConfiguration mobileIdClientConfiguration =
+            ClientConfigurationUtil.getMobileIdDemoEnvConfiguration();
 
         assertEquals(HOST_URL, mobileIdClientConfiguration.getHostUrl());
         assertEquals(RELYING_PARTY_UUID, mobileIdClientConfiguration.getRelyingPartyUuid());

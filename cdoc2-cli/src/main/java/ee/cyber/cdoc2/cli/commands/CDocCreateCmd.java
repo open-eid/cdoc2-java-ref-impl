@@ -3,12 +3,14 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
 import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -29,8 +31,6 @@ import java.util.concurrent.Callable;
 import javax.naming.NamingException;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.initKeyShareClientFactory;
-
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -194,7 +194,9 @@ public class CDocCreateCmd implements Callable<Void> {
     ) throws GeneralSecurityException, NamingException {
 
         if (isWithSid() || isWithMid()) {
-            cDocBuilder.withKeyShares(initKeyShareClientFactory());
+            KeyShareClientFactory keyShareClientFactory =
+                Cdoc2Services.initFromSystemProperties().get(KeyShareClientFactory.class);
+            cDocBuilder.withKeyShares(keyShareClientFactory);
         }
 
         List<EncryptionKeyMaterial> etsiRecipients = EncryptionKeyMaterial.etsiBuilder()

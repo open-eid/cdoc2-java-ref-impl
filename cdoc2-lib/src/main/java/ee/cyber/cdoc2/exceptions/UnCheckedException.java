@@ -7,7 +7,13 @@ public class UnCheckedException extends RuntimeException {
     public UnCheckedException(Throwable cause) {
         super(cause);
     }
+
     public UnCheckedException(String message) {
         super(message);
     }
+
+    public UnCheckedException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }

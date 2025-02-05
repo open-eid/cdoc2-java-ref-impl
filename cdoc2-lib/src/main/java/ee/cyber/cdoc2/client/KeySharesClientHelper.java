@@ -45,7 +45,6 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
 
     @Override
     public Collection<KeySharesClient> getClients() {
-        // ToDo remove the collection of clients when multi servers are implemented
         return clients;
     }
 
@@ -74,8 +73,6 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
     ) throws GeneralSecurityException {
 
         Set<String> servers = configuration.getKeySharesServersUrls();
-        // ToDo create multithreading for servers here i.o. for loop. Create client instances with
-        //  own server URL
         Collection<KeySharesClient> keyShareClients = new LinkedList<>();
         for (String server : servers) {
             keyShareClients.add(KeySharesClientImpl.create(server, configuration));

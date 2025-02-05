@@ -23,7 +23,7 @@ import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,7 +37,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class KeySharesClientTest {
 
-    //private static final byte[] AUTH_TICKET = new byte[32];
     private static final String AUTH_TICKET = "";
     private static final String CERT_PEM = "";
     private static final String SHARE_ID = "shareId";
@@ -132,7 +131,7 @@ class KeySharesClientTest {
     @Test
     void shouldFindRequiredKeyShareClient() throws GeneralSecurityException {
         KeyShareClientFactory factory
-            = KeySharesClientHelper.createFactory(initKeySharesConfiguration());
+            = KeySharesClientHelper.createFactory(initKeySharesTestEnvConfiguration());
         Collection<KeySharesClient> clients = factory.getClients();
         for (KeySharesClient ksClient : clients) {
             String serverUrl = ksClient.getServerIdentifier();
@@ -145,7 +144,7 @@ class KeySharesClientTest {
     @Test
     void shouldFailToGetKeyShareClientWithWrongServerIdentifier() throws GeneralSecurityException {
         KeyShareClientFactory factory
-            = KeySharesClientHelper.createFactory(initKeySharesConfiguration());
+            = KeySharesClientHelper.createFactory(initKeySharesTestEnvConfiguration());
 
         assertThrows(CDocUserException.class, () ->
             factory.getClientForServerUrl("wrong_server_identifier")

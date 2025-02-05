@@ -10,10 +10,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.TEST_ENV_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesConfiguration;
-import static ee.cyber.cdoc2.config.PropertiesLoader.loadProperties;
-import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,7 +24,7 @@ class KeySharesConfigurationTest {
 
     @Test
     void loadClientConfigurationProperties() throws ConfigurationLoadingException {
-        KeySharesConfiguration config = initKeySharesConfiguration();
+        KeySharesConfiguration config = initKeySharesTestEnvConfiguration();
         assertTrue(config.getKeySharesServersNum() > 0);
         assertEquals(
             Set.of("https://localhost:8442", "https://localhost:8443"),
@@ -66,17 +65,13 @@ class KeySharesConfigurationTest {
     }
 
     private Properties getProperties() throws ConfigurationLoadingException {
-        return loadProperties(
-            CLASSPATH + "key_shares-test.properties"
-        );
+        return PropertiesLoader.loadProperties(TEST_ENV_PROPERTIES.getProperty(KEY_SHARES_PROPERTIES));
     }
 
     private KeySharesConfiguration initConfiguration(Properties properties)
         throws ConfigurationLoadingException {
 
-        Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-
-        return CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
+        return KeySharesConfiguration.load(properties);
     }
 
     private void assertThrowsConfigurationLoadingException(Executable validation) {

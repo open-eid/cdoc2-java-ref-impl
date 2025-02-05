@@ -6,11 +6,8 @@ import jakarta.annotation.Nullable;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc2.config.CDoc2ConfigurationProvider;
-import ee.cyber.cdoc2.config.Cdoc2Configuration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
-import ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationImpl;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.ECKeys;
@@ -144,7 +141,7 @@ public class CDocBuilder {
             return Envelope.prepare(recipients, null, keyShareClientFactory);
         } else {
             KeyCapsuleClientConfiguration capsuleClientConfig
-                = initializeCapsuleConfiguration(serverProperties);
+                = KeyCapsuleClientConfiguration.load(serverProperties);
             // for encryption, do not init mTLS client as this might require smart-card
            KeyCapsuleClient keyCapsuleClient
                = KeyCapsuleClientImpl.create(capsuleClientConfig, false);
@@ -157,12 +154,6 @@ public class CDocBuilder {
                keyShareClientFactory
             );
         }
-    }
-
-    private static KeyCapsuleClientConfiguration initializeCapsuleConfiguration(Properties p) {
-        Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
-        CDoc2ConfigurationProvider.initKeyCapsuleClientConfig(configuration);
-        return configuration.keyCapsuleClientConfiguration();
     }
 
     private void handleFileEncryptionError(Exception ex, File outputCDocFile) {

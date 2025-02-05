@@ -1,14 +1,9 @@
 package ee.cyber.cdoc2.mobileid;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
-import ee.cyber.cdoc2.config.PropertiesLoader;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-
-import java.util.Properties;
-
-import static ee.cyber.cdoc2.ClientConfigurationUtil.DEMO_ENV_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 
 public final class MIDTestData {
 
@@ -44,15 +39,8 @@ public final class MIDTestData {
 
     }
 
-    public static MobileIdClientConfiguration getDemoEnvConfiguration() throws ConfigurationLoadingException {
-        Properties demoEnvProperties = PropertiesLoader.loadProperties(
-            DEMO_ENV_PROPERTIES.getProperty(MOBILE_ID_PROPERTIES));
-
-        return MobileIdClientConfiguration.load(demoEnvProperties);
-    }
-
     public static MobileIdClient getDemoEnvClient() throws ConfigurationLoadingException {
-        MobileIdClientConfiguration demoEnvConfiguration = getDemoEnvConfiguration();
+        MobileIdClientConfiguration demoEnvConfiguration = ClientConfigurationUtil.getMobileIdDemoEnvConfiguration();
         return new MobileIdClient(demoEnvConfiguration);
     }
 }
