@@ -87,11 +87,11 @@ import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.createKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
@@ -438,22 +438,26 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @Test
     void testKeySharesSerializationWithSmartId(@TempDir Path tempDir) throws Exception {
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.SID;
         AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
-            createSemanticsIdentifier("30303039914"),
-            AuthenticationIdentifier.AuthenticationType.SID
+            createSemanticsIdentifier("30303039914"), authType
+
         );
 
-        testKeySharesSerialization(tempDir, keyLabel);
+        testKeySharesSerialization(tempDir, keyLabel, authType, "30303039914");
     }
 
     @Test
     void testKeySharesSerializationWithMobileId(@TempDir Path tempDir) throws Exception {
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.MID;
         AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
-            createSemanticsIdentifier("51307149560"),
-            AuthenticationIdentifier.AuthenticationType.MID
+            createSemanticsIdentifier("51307149560"), authType
+
         );
 
-        testKeySharesSerialization(tempDir, keyLabel);
+        testKeySharesSerialization(tempDir, keyLabel, authType, "51307149560");
     }
 
     @Test
@@ -550,13 +554,22 @@ class EnvelopeTest implements TestLifecycleLogger {
         // SID demo env that authenticates automatically
         setupKeyShareClientMocks();
 
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.SID;
+        String idCode = "30303039914";
+
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
-            createSemanticsIdentifier("30303039914"),
-            AuthenticationIdentifier.AuthenticationType.SID
+            createSemanticsIdentifier(idCode), authType
         );
 
-        EnvelopeTestUtils.DecryptionData decryptionData
-            = testContainerWithKeyShares(tempDir, authIdentifier, authIdentifier, shareClientFactory);
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            authIdentifier,
+            authIdentifier,
+            shareClientFactory,
+            authType,
+            idCode
+        );
 
         verifyMockedKeyShareClients();
 
@@ -582,12 +595,13 @@ class EnvelopeTest implements TestLifecycleLogger {
     void testKeySharesScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
         // MID demo env that authenticates automatically
         setupKeyShareClientMocks();
+        String idCode = "51307149560";
         AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
-            createSemanticsIdentifier("51307149560"),
+            createSemanticsIdentifier(idCode),
             AuthenticationIdentifier.AuthenticationType.MID
         );
         AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
-            createSemanticsIdentifier("51307149560"),
+            createSemanticsIdentifier(idCode),
             "+37269930366"
         );
 
@@ -595,7 +609,9 @@ class EnvelopeTest implements TestLifecycleLogger {
             tempDir,
             encAuthIdentifier,
             decryptAuthIdentifier,
-            shareClientFactory
+            shareClientFactory,
+            AuthenticationIdentifier.AuthenticationType.MID,
+            idCode
         );
 
         verifyMockedKeyShareClients();
@@ -686,12 +702,13 @@ class EnvelopeTest implements TestLifecycleLogger {
     void testReEncryptionScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
         // encrypt initial cdoc2 document
         setupKeyShareClientMocks();
+        String idCode = "60001017869";
         AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
-            createSemanticsIdentifier("60001017869"),
+            createSemanticsIdentifier(idCode),
             AuthenticationIdentifier.AuthenticationType.MID
         );
         AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
-            createSemanticsIdentifier("60001017869"),
+            createSemanticsIdentifier(idCode),
             "+37268000769"
         );
 
@@ -699,7 +716,9 @@ class EnvelopeTest implements TestLifecycleLogger {
             tempDir,
             encAuthIdentifier,
             decryptAuthIdentifier,
-            shareClientFactory
+            shareClientFactory,
+            AuthenticationIdentifier.AuthenticationType.MID,
+            idCode
         );
 
         verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
@@ -1265,7 +1284,9 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     private void testKeySharesSerialization(
         Path tempDir,
-        AuthenticationIdentifier authIdentifier
+        AuthenticationIdentifier authIdentifier,
+        AuthenticationIdentifier.AuthenticationType authType,
+        String idCode
     ) throws Exception {
         setupKeyShareClientMocks();
 
@@ -1280,7 +1301,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromAuthMeans(
-                authIdentifier, createKeySharesKeyLabelParams(authIdentifier.getIdentifier()))
+                authIdentifier, createKeyLabelParams(idCode, authType))
             ),
             null, shareClientFactory
         );

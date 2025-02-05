@@ -131,7 +131,7 @@ run_alias() {
           decrypt -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
           -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
           --smart-id="40504040001" \
-          -f "$TEST_RESULTS_DIR"/$cdocFile \
+          -f "$TEST_RESULTS_DIR"/"$cdocFile" \
           -o "$TEST_RESULTS_DIR"
 
   assertSuccessfulExecution
@@ -414,6 +414,58 @@ run_alias() {
   assertSuccessfulDecryption
 
   rm -f "$REENCRYPTION_DIRECTORY"/README.md
+}
+
+@test "shares-server-test15: assert encrypted CDOC2 with Smart ID displays formatted key label" {
+    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+    echo "# Encrypt file ${cdocFile} with Smart-ID">&3
+    run run_alias cdoc-cli \
+            create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+            -Dsmart-id.properties="$SMART_ID_PROPERTIES" \
+            --smart-id=$SID_ID_CODE \
+            -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+            "$FILE_FOR_ENCRYPTION"
+
+    assertSuccessfulExecution
+    assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+    echo "# Requesting info for ${cdocFile}">&3
+    run run_alias cdoc-cli info -f "$TEST_RESULTS_DIR"/"$cdocFile"
+
+   local expected_output_info="Smart-ID/Mobile-ID: SN:etsi/PNOEE-$SID_ID_CODE, TYPE:auth, V:1 "
+   echo "# $expected_output_info">&3
+   assert_output --partial "Smart-ID"
+   assert_output --partial "V:1"
+   assert_output --partial "SN:etsi/PNOEE-$SID_ID_CODE"
+   assert_output --partial "TYPE:auth"
+
+   rm -f "$TEST_RESULTS_DIR"/"$cdocFile"
+}
+
+@test "shares-server-test16: assert encrypted CDOC2 with Mobile ID displays formatted key label" {
+    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+    echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
+    run run_alias cdoc-cli \
+            create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
+            -Dmobile-id.properties="$MOBILE_ID_PROPERTIES" \
+            --mobile-id=$MID_ID_CODE \
+            -f "$TEST_RESULTS_DIR"/"$cdocFile" \
+            "$FILE_FOR_ENCRYPTION"
+
+    assertSuccessfulExecution
+    assert_output --partial "Created $TEST_RESULTS_DIR/$cdocFile"
+
+    echo "# Requesting info for ${cdocFile}">&3
+    run run_alias cdoc-cli info -f "$TEST_RESULTS_DIR"/"$cdocFile"
+
+    local expected_output_info="Smart-ID/Mobile-ID: SN:etsi/PNOEE-$MID_ID_CODE, TYPE:auth, V:1 "
+    echo "# $expected_output_info">&3
+    assert_output --partial "Mobile-ID"
+    assert_output --partial "V:1"
+    assert_output --partial "SN:etsi/PNOEE-$MID_ID_CODE"
+    assert_output --partial "TYPE:auth"
+
+    rm -f "$TEST_RESULTS_DIR"/"$cdocFile"
 }
 
 @test "All shares-server tests were executed." {

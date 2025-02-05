@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.container;
 
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+
 import ee.cyber.cdoc2.client.KeyShareClientFactory;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
@@ -59,6 +61,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
@@ -256,7 +259,9 @@ public final class EnvelopeTestUtils {
         File payloadFile,
         byte[] payloadData,
         AuthenticationIdentifier authIdentifier,
-        KeyShareClientFactory shareClientFactory
+        KeyShareClientFactory shareClientFactory,
+        AuthenticationIdentifier.AuthenticationType authType,
+        String idCode
     ) throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -266,8 +271,7 @@ public final class EnvelopeTestUtils {
         List<File> files = new LinkedList<>();
         files.add(payloadFile);
 
-        KeyLabelParams keyLabelParams
-            = createKeySharesKeyLabelParams(authIdentifier.getIdentifier());
+        KeyLabelParams keyLabelParams = createKeyLabelParams(idCode, authType);
 
         EncryptionKeyMaterial encKeyMaterial
             = EncryptionKeyMaterial.fromAuthMeans(authIdentifier, keyLabelParams);
@@ -334,7 +338,9 @@ public final class EnvelopeTestUtils {
         Path tempDir,
         AuthenticationIdentifier encryptAuthIdentifier,
         AuthenticationIdentifier decryptAuthIdentifier,
-        KeyShareClientFactory shareClientFactory
+        KeyShareClientFactory shareClientFactory,
+        AuthenticationIdentifier.AuthenticationType authType,
+        String idCode
     ) throws Exception {
 
         UUID uuid = UUID.randomUUID();
@@ -349,7 +355,9 @@ public final class EnvelopeTestUtils {
             payloadFile,
             payloadData.getBytes(StandardCharsets.UTF_8),
             encryptAuthIdentifier,
-            shareClientFactory
+            shareClientFactory,
+            authType,
+            idCode
         );
 
         assertTrue(cdocContainerBytes.length > 0);
@@ -494,6 +502,17 @@ public final class EnvelopeTestUtils {
         String payloadFileName,
         String payloadData
     ) {
+    }
+
+    static KeyLabelParams createKeyLabelParams(
+        String idCode,
+        AuthenticationIdentifier.AuthenticationType type
+    ) {
+        SemanticsIdentifier semanticsIdentifier = createSemanticsIdentifier(idCode);
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier
+            .forKeyShares(semanticsIdentifier, type);
+
+        return createKeySharesKeyLabelParams(authIdentifier.getEtsiIdentifier());
     }
 
 }
