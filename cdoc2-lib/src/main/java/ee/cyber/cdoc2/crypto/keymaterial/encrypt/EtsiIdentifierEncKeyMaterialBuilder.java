@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -89,10 +91,12 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
         if (null != idCodes) {
             List<EncryptionKeyMaterial> keyMaterials = Arrays.stream(idCodes)
                 .map(idCode -> {
+                    SemanticsIdentifier semanticsIdentifier = createSemanticsIdentifier(idCode);
                     AuthenticationIdentifier authIdentifier = AuthenticationIdentifier
-                        .forKeyShares(createSemanticsIdentifier(idCode), authType);
-                    KeyLabelParams keyLabelParams
-                        = createKeySharesKeyLabelParams(authIdentifier.getIdentifier());
+                        .forKeyShares(semanticsIdentifier, authType);
+                    KeyLabelParams keyLabelParams = createKeySharesKeyLabelParams(
+                        authIdentifier.getEtsiIdentifier()
+                    );
 
                     return EncryptionKeyMaterial.fromAuthMeans(authIdentifier, keyLabelParams);
                 })

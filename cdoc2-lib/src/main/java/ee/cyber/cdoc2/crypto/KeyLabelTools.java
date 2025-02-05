@@ -245,14 +245,15 @@ public final class KeyLabelTools {
 
     /**
      * Create key label parameters of key shares for data section of formatted key label.
-     * @param keyLabel key label as (National) personal number
+     * @param etsiIdentifier ETSI identifier in format 'etsi/PNOEE-30303039914'
      * @return KeyLabelParams key label parameters required for data section
      */
-    public static KeyLabelParams createKeySharesKeyLabelParams(String keyLabel) {
+    public static KeyLabelParams createKeySharesKeyLabelParams(String etsiIdentifier) {
         KeyLabelParams keyLabelParams = createKeyLabelCommonParams(
-            EncryptionKeyOrigin.KEY_SHARE, KeyLabelTools.KeyLabelDataVersion.V_2
+            EncryptionKeyOrigin.KEY_SHARE, KeyLabelTools.KeyLabelDataVersion.V_1
         );
-        keyLabelParams.addParam(KeyLabelDataFields.PNO.name(), keyLabel);
+
+        keyLabelParams.addParam(KeyLabelDataFields.SN.name(), etsiIdentifier);
 
         return keyLabelParams;
     }
@@ -326,7 +327,7 @@ public final class KeyLabelTools {
     ) {
         switch (keyLabelType) {
             case AUTH -> {
-                return keyLabelParams.get(KeyLabelDataFields.PNO.name());
+                return keyLabelParams.get(KeyLabelDataFields.SN.name());
             }
             case PW, SECRET -> {
                 return keyLabelParams.get(KeyLabelDataFields.LABEL.name());
@@ -438,7 +439,7 @@ public final class KeyLabelTools {
         FIRST_NAME,
         LABEL,
         LAST_NAME,
-        PNO, // for Smart id & Mobile id
+        SN, // for Smart id & Mobile id
         SERIAL_NUMBER,
         TYPE,
         V

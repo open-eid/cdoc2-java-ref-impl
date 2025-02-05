@@ -23,14 +23,6 @@ public class AuthenticationIdentifier {
 
     /**
      * Identifiers for Smart ID or Mobile ID.
-     * @param authIdentifier authentication identifier string
-     */
-    public AuthenticationIdentifier(String authIdentifier) {
-        this.identifier = authIdentifier;
-    }
-
-    /**
-     * Identifiers for Smart ID or Mobile ID.
      * @param authType authentication method
      * @param etsiIdentifier for natural person identifier (ETSI identifier)
      */
@@ -49,7 +41,11 @@ public class AuthenticationIdentifier {
         SemanticsIdentifier etsiIdentifier,
         String mobileNumber
     ) {
-        this.identifier = authType + ":" + etsiIdentifier.getIdentifier() + ":" + mobileNumber;
+        this.identifier = authType
+            + COLON_SEPARATOR
+            + etsiIdentifier.getIdentifier()
+            + COLON_SEPARATOR
+            + mobileNumber;
     }
 
     public String getIdentifier() {
