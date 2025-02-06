@@ -57,7 +57,7 @@ cd bats
 ./run-capsule-server-bats-tests.sh
 ```
 
-### Running Smart-ID tests (experimental)
+### Running Smart-ID/Mobile-ID tests (experimental)
 
 To use pre-built images, login to docker (ghcr.io) - [Authenticating with personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
