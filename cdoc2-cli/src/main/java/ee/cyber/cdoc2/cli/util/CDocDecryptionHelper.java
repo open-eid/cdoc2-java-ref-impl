@@ -155,10 +155,10 @@ public final class CDocDecryptionHelper {
     }
 
     public static KeyCapsuleClientFactory getKeyCapsulesClientFactory(
-        String keyServerPropertiesFile
-    ) throws GeneralSecurityException, IOException {
+        String keyServerPropertiesFile,
+        Integer slot) throws GeneralSecurityException, IOException {
         Properties p = CDocCommonHelper.getServerProperties(keyServerPropertiesFile);
-
+        p.setProperty("pkcs11.slot", slot.toString());
         return KeyCapsuleClientImpl.createFactory(p);
     }
 
