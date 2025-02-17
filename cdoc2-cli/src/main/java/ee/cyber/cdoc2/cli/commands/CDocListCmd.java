@@ -66,7 +66,7 @@ public class CDocListCmd implements Callable<Void> {
 
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
         if (keyServerPropertiesFile != null) {
-            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
+            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile, slot);
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)

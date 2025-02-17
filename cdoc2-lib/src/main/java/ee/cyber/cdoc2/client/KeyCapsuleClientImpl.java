@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,8 +175,9 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             String openScLibPath = loadPkcs11LibPath(p);
             KeyStore.ProtectionParameter protectionParameter = loadClientKeyStoreProtectionParameter(p);
 
-            // default slot 0 - Isikutuvastus
-            clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
+            String slotProperty = p.getProperty("pkcs11.slot");
+            Integer slot = NumberUtils.isCreatable(slotProperty) ? Integer.parseInt(slotProperty) : 0;
+            clientKeyStore = Pkcs11Tools.initPKCS11KeysStore(openScLibPath, slot, protectionParameter);
         } else {
             throw new IllegalArgumentException("cdoc2.client.ssl.client-store.type " + type + " not supported");
         }

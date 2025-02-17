@@ -104,7 +104,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
         KeyCapsuleClientFactory keyCapsulesClientFactory = null;
 
         if (this.keyServerPropertiesFile != null) {
-            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile);
+            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile, slot);
         }
 
         File destCdocFile = getDestinationFile();
