@@ -21,49 +21,39 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 
 
 /**
- * Class for creating collection of EncryptionKeyMaterial for ETSI identifiers.
+ * Class for creating collection of EncryptionKeyMaterial from Estonian ID codes. Will use SK LDAP to download
+ * certificates.
+ * This class is Estonian ID and SK ID solutions specific. Use to create EncryptionKeyMaterial from Estonian ID codes or
+ * use as an example to download from custom identity/certificate provider.
+ *
+ * @see <a href="https://et.wikipedia.org/wiki/Isikukood">Isikukood</a>
  */
-public class EtsiIdentifierEncKeyMaterialBuilder {
+public class EstEncKeyMaterialBuilder {
 
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
 
-    private String[] identificationCodes;
-
     /**
-     * Create EncryptionKeyMaterial, extracted from ETSI identifier.
-     * @param idCodes identification codes
+     * Download certificate from SK LDAP server and create PublicKeyEncryptionKeyMaterial from it.
+     * @param identificationCodes Estonian national personal identifier (isikukood)
      * @return the list of EncryptionKeyMaterial
      */
-    public EtsiIdentifierEncKeyMaterialBuilder fromEtsiIdentifier(String[] idCodes) {
-        this.identificationCodes = idCodes;
-        return this;
-    }
-
-    /**
-     * Create EncryptionKeyMaterial from publicKey, extracted from identity codes, and keyLabel
-     * data params. To decrypt CDOC, recipient must have the private key part of the public key.
-     * RSA and EC public keys are supported by CDOC.
-     * @param forEId true if encryption is arranging with ID card
-     * @return the list of EncryptionKeyMaterial
-     */
-    public EtsiIdentifierEncKeyMaterialBuilder forEId(boolean forEId)
+    public EstEncKeyMaterialBuilder fromCertDirectory(String[] identificationCodes)
         throws CertificateException, NamingException {
 
-        if (forEId) {
-            List<SkLdapUtil.CertificateData> certData
-                = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
-            List<EncryptionKeyMaterial> keyMaterials = certData.stream()
-                .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
-                .map(cd -> {
-                    KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-                        cd.getKeyLabel(), cd.getSerialNumber(), cd.getKeyLabelType()
-                    );
-                    return EncryptionKeyMaterial.fromPublicKey(cd.getPublicKey(), keyLabelParams);
-                })
-                .toList();
+        List<SkLdapUtil.CertificateData> certData
+            = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
+        List<EncryptionKeyMaterial> keyMaterials = certData.stream()
+            .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
+            .map(cd -> {
+                KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
+                    cd.getKeyLabel(), cd.getSerialNumber(), cd.getKeyLabelType()
+                );
+                return EncryptionKeyMaterial.fromPublicKey(cd.getPublicKey(), keyLabelParams);
+            })
+            .toList();
 
-            recipients.addAll(keyMaterials);
-        }
+        recipients.addAll(keyMaterials);
+
         return this;
     }
 
@@ -72,20 +62,38 @@ public class EtsiIdentifierEncKeyMaterialBuilder {
      * @param sidCodes natural ID codes
      * @return the list of EncryptionKeyMaterial
      */
-    public EtsiIdentifierEncKeyMaterialBuilder forSid(String[] sidCodes) {
+    public EstEncKeyMaterialBuilder forSid(String[] sidCodes) {
         return withKeyShares(sidCodes, AuthenticationIdentifier.AuthenticationType.SID);
     }
 
     /**
      * Create EncryptionKeyMaterial with Mobile ID, extracted from ETSI identifier.
-     * @param midCodes natural ID codes
+     * @param midCodes Estonian natural person ID codes. Example `48010010101`, internally converted to
+     *                 SemanticsIdentifier (`PNOEE-48010010101`)
      * @return the list of EncryptionKeyMaterial
      */
-    public EtsiIdentifierEncKeyMaterialBuilder forMid(String[] midCodes) {
+    public EstEncKeyMaterialBuilder forMid(String[] midCodes) {
         return withKeyShares(midCodes, AuthenticationIdentifier.AuthenticationType.MID);
     }
 
-    private EtsiIdentifierEncKeyMaterialBuilder withKeyShares(
+    /**
+     * Creates KeyShareEncryptionMaterial form Estonian Natural Person identity code (isikukood).
+     * @param identityCodes Estonian natural person ID codes. Example `48010010101`, internally converted to
+     *                      SemanticsIdentifier (`PNOEE-48010010101`)
+     * @return
+     */
+    public EstEncKeyMaterialBuilder forAuthMeans(String[] identityCodes) {
+        return forSid(identityCodes); //there is no difference between MID/SID when encrypting.
+    }
+
+    /**
+     *
+     * @param idCodes Estonian natural ID codes. Example `48010010101`, internally converted to
+     *                SemanticsIdentifier (`PNOEE-48010010101`)
+     * @param authType
+     * @return
+     */
+    private EstEncKeyMaterialBuilder withKeyShares(
         String[] idCodes, AuthenticationIdentifier.AuthenticationType authType
     ) {
         if (null != idCodes) {

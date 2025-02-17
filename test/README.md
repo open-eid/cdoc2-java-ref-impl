@@ -59,6 +59,9 @@ cd bats
 
 ### Running Smart-ID/Mobile-ID tests (experimental)
 
+Smart-ID/Mobile-ID tests will use [SK demo environment for Smart-ID](https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo) 
+and [SK demo environment for Mobile-ID](https://github.com/SK-EID/MID/wiki/Environment-technical-parameters#demo-parameters) 
+
 To use pre-built images, login to docker (ghcr.io) - [Authenticating with personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
 Run `cdoc2_shares_server_tests.bats` tests with following command:
@@ -73,5 +76,5 @@ Alternatively build Docker images locally if the last repo state is required:
 * Follow build instructions in https://github.com/open-eid/cdoc2-shares-server/ 
 * Build `cdoc2-shares-server` and `cdoc2-shares-server-liquibase` Docker images: 
   `build-images.sh` 
-* Update test/bats/config/shares-server/.env with correct values
-* Run `run-shares-server-bats-tests.sh`
+* Verify that values in `test/bats/config/shares-server/.env.local` are correct
+* Run `source config/shares-server/export-env.sh config/shares-server/.env.local && cd bats;bash run-shares-server-bats-tests.sh`

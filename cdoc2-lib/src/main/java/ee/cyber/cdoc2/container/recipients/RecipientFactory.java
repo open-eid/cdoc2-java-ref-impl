@@ -6,7 +6,7 @@ import ee.cyber.cdoc2.client.EcCapsuleClient;
 import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
@@ -66,7 +66,7 @@ public final class RecipientFactory {
      * @param recipientKeys recipients key material used to derive KEK
      * @param serverClient if server client is provided, then key material for deriving KEK or encrypted KEK is stored
      *                     in key server
-     * @param keyShareClientFactory key share client factory
+     * @param keySharesClientFactory key shares client factory
      * @return Recipients list created from provided key material
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws ExtApiException if communication with key server failed
@@ -75,7 +75,7 @@ public final class RecipientFactory {
         byte[] fmk,
         List<EncryptionKeyMaterial> recipientKeys,
         @Nullable KeyCapsuleClient serverClient,
-        @Nullable KeyShareClientFactory keyShareClientFactory
+        @Nullable KeySharesClientFactory keySharesClientFactory
     ) throws GeneralSecurityException, ExtApiException {
         Objects.requireNonNull(fmk);
         Objects.requireNonNull(recipientKeys);
@@ -90,7 +90,7 @@ public final class RecipientFactory {
             addRecipientsByKeyOrigin(
                 result,
                 serverClient,
-                keyShareClientFactory,
+                keySharesClientFactory,
                 fmk,
                 encKeyMaterial
             );
@@ -108,7 +108,7 @@ public final class RecipientFactory {
     private static void addRecipientsByKeyOrigin(
         List<Recipient> recipients,
         KeyCapsuleClient serverClient,
-        @Nullable KeyShareClientFactory keyShareClientFactory,
+        @Nullable KeySharesClientFactory keySharesClientFactory,
         byte[] fileMasterKey,
         EncryptionKeyMaterial encKeyMaterial
     ) throws GeneralSecurityException, ExtApiException {
@@ -119,7 +119,7 @@ public final class RecipientFactory {
             );
         } else if (encKeyMaterial instanceof KeyShareEncryptionKeyMaterial keyShareKeyMaterial) {
             recipients.add(buildKeySharesRecipient(
-                keyShareClientFactory,
+                keySharesClientFactory,
                 fileMasterKey,
                 keyShareKeyMaterial
             ));
@@ -416,18 +416,18 @@ public final class RecipientFactory {
 
     /**
      * Derive KEK from preSharedKey and keyLabel and encrypt fileMasterKey with derived KEK
-     * @param keyShareClientFactory key shares client factory
+     * @param keySharesClientFactory key shares client factory
      * @param fileMasterKey fileMasterKey to be encrypted
      * @param keyShareMaterial key share encryption key material
      * @return KeySharesRecipient that can be serialized into FBS {@link KeySharesCapsule}
      */
     public static KeySharesRecipient buildKeySharesRecipient(
-        @Nullable KeyShareClientFactory keyShareClientFactory,
+        @Nullable KeySharesClientFactory keySharesClientFactory,
         byte[] fileMasterKey,
         KeyShareEncryptionKeyMaterial keyShareMaterial
     ) throws GeneralSecurityException, ExtApiException {
 
-        if (null == keyShareClientFactory) {
+        if (null == keySharesClientFactory) {
             log.error("Failed to create Key share recipient. Key share clients are not created");
             throw new GeneralSecurityException("Key share clients are missing");
         }
@@ -450,7 +450,7 @@ public final class RecipientFactory {
 
         byte[] encryptedFmk = Crypto.xor(fileMasterKey, kek);
 
-        List<KeyShareUri> shares = createKeyShares(kek, plainEtsiIdentifier, keyShareClientFactory);
+        List<KeyShareUri> shares = createKeyShares(kek, plainEtsiIdentifier, keySharesClientFactory);
         String formattedKeyLabel = keyShareMaterial.keyLabel();
 
         return new KeySharesRecipient(
@@ -465,10 +465,10 @@ public final class RecipientFactory {
     private static List<KeyShareUri> createKeyShares(
         byte[] keyEncryptionKey,
         String keyLabel,
-        KeyShareClientFactory keyShareClientFactory
+        KeySharesClientFactory keySharesClientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
-        List<KeySharesClient> clients = keyShareClientFactory.getClients().stream().toList();
+        List<KeySharesClient> clients = keySharesClientFactory.getClients().stream().toList();
         List<byte[]> splitShares = Crypto.splitKek(
             keyEncryptionKey,
             clients.size()

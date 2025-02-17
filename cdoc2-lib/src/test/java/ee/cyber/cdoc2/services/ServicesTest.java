@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.services;
 
 import ee.cyber.cdoc2.ClientConfigurationUtil;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
@@ -41,19 +41,19 @@ class ServicesTest {
         Service<SmartIdClient, SmartIdClientConfiguration> sidService =
             ServiceTemplate.service(sidConf, SmartIdClient::new);
 
-        Service<KeyShareClientFactory, KeySharesConfiguration> keySharesFactoryService =
+        Service<KeySharesClientFactory, KeySharesConfiguration> keySharesFactoryService =
             ServiceTemplate.service(ClientConfigurationUtil.initKeySharesTestEnvConfiguration(),
                 suppressEx(config -> KeySharesClientHelper.createFactory(config)));
 
         Services services = new ServicesBuilder()
             .registerService(SmartIdClient.class, sidService, null)
-            .registerService(KeyShareClientFactory.class, keySharesFactoryService, null)
+            .registerService(KeySharesClientFactory.class, keySharesFactoryService, null)
             .build();
         SmartIdClient client = services.get(SmartIdClient.class); //throws IllegalArgumentException if not found
 
         // if no exception, we have a client. Keep linters happy
         assertNotNull(client);
-        assertNotNull(services.get(KeyShareClientFactory.class));
+        assertNotNull(services.get(KeySharesClientFactory.class));
     }
 
     @Test

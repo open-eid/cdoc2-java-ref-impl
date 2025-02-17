@@ -5,7 +5,6 @@ import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EncryptionKeyMaterialCollectionBuilder;
-import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EtsiIdentifierEncKeyMaterialBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.KeyShareEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PasswordEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
@@ -162,9 +161,4 @@ public interface EncryptionKeyMaterial {
     static EncryptionKeyMaterialCollectionBuilder collectionBuilder() {
         return new EncryptionKeyMaterialCollectionBuilder();
     }
-
-    static EtsiIdentifierEncKeyMaterialBuilder etsiBuilder() {
-        return new EtsiIdentifierEncKeyMaterialBuilder();
-    }
-
 }

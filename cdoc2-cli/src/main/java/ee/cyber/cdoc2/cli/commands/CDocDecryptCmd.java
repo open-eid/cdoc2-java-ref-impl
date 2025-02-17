@@ -19,7 +19,7 @@ import ee.cyber.cdoc2.CDocDecrypter;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULES_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 
 
 //S106 Standard outputs should not be used directly to log anything
@@ -53,7 +53,7 @@ public class CDocDecryptCmd implements Callable<Void> {
     @Option(names = {"--server"}, paramLabel = "FILE.properties")
     private void setKeyServerPropertiesFile(String server) {
         keyServerPropertiesFile = server;
-        System.setProperty(KEY_CAPSULES_PROPERTIES, keyServerPropertiesFile);
+        System.setProperty(KEY_CAPSULE_PROPERTIES, keyServerPropertiesFile);
     }
 
     @CommandLine.Parameters(description = "one or more files to decrypt", paramLabel = "fileToExtract")

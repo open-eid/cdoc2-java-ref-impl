@@ -1,1 +1,1 @@
-This directory contains orphan documents. Will be moved to CDOC2 docs repository or removed.
+Documentation moved to https://open-eid.github.io/CDOC2

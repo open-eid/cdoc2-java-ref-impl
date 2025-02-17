@@ -14,7 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
 import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.KeySharesClientImpl;
@@ -130,7 +130,7 @@ class KeySharesClientTest {
 
     @Test
     void shouldFindRequiredKeyShareClient() throws GeneralSecurityException {
-        KeyShareClientFactory factory
+        KeySharesClientFactory factory
             = KeySharesClientHelper.createFactory(initKeySharesTestEnvConfiguration());
         Collection<KeySharesClient> clients = factory.getClients();
         for (KeySharesClient ksClient : clients) {
@@ -143,7 +143,7 @@ class KeySharesClientTest {
 
     @Test
     void shouldFailToGetKeyShareClientWithWrongServerIdentifier() throws GeneralSecurityException {
-        KeyShareClientFactory factory
+        KeySharesClientFactory factory
             = KeySharesClientHelper.createFactory(initKeySharesTestEnvConfiguration());
 
         assertThrows(CDocUserException.class, () ->

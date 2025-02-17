@@ -27,7 +27,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULES_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -72,7 +72,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
     @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties")
     private void setKeyServerPropertiesFile(String server) {
         keyServerPropertiesFile = server;
-        System.setProperty(KEY_CAPSULES_PROPERTIES, keyServerPropertiesFile);
+        System.setProperty(KEY_CAPSULE_PROPERTIES, keyServerPropertiesFile);
     }
 
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
