@@ -2,7 +2,7 @@ package ee.cyber.cdoc2.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc2.container.recipients.RecipientFactory;
@@ -115,7 +115,7 @@ public final class Envelope {
     public static Envelope prepare(
         List<EncryptionKeyMaterial> recipients,
         @Nullable KeyCapsuleClient capsuleClient,
-        @Nullable KeyShareClientFactory clientFactory
+        @Nullable KeySharesClientFactory clientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
@@ -284,7 +284,7 @@ public final class Envelope {
 
     /**
      * Write CDOC header, HMAC to os and initialize cipher output stream for encryption.
-     * Will use cekKey  created {@link Envelope#prepare(List, KeyCapsuleClient, KeyShareClientFactory)}
+     * Will use cekKey  created {@link Envelope#prepare(List, KeyCapsuleClient, KeySharesClientFactory)}
      * @param os OutputStream to write CDOC2 container
      * @return CipherOutputStream constructed from CEK and os.
      *         Ready to write (encrypt) data. {@link CipherOutputStream#close()} must be called by caller.

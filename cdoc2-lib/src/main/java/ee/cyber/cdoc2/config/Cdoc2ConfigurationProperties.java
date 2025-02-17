@@ -8,8 +8,14 @@ public final class Cdoc2ConfigurationProperties {
 
     private Cdoc2ConfigurationProperties() { }
 
-    /** Defines key-capsules server properties file location */
-    public static final String KEY_CAPSULES_PROPERTIES = "key-capsules.properties";
+    /** Defines key-capsules server properties file location and initializes mTLS, initialize KeyCapsuleClientFactory
+     * may ask for PIN, when private key is on smart-card
+     */
+    public static final String KEY_CAPSULE_PROPERTIES = "key-capsule.properties";
+
+    /** Initialize KeyCapsuleClient only that doesn't require mTLS */
+    public static final String KEY_CAPSULE_POST_PROPERTIES = "key-capsule-post.properties";
+
     public static final String CLIENT_SERVER_BASE_URL_GET = "cdoc2.client.server.base-url.get";
     public static final String CLIENT_SERVER_BASE_URL_POST = "cdoc2.client.server.base-url.post";
     public static final String CLIENT_SERVER_CONNECT_TIMEOUT = "cdoc2.client.server.connect-timeout";
@@ -41,7 +47,10 @@ public final class Cdoc2ConfigurationProperties {
     // enabled by default
     public static final boolean KEY_LABEL_FORMAT_ENABLED_DEFAULT = true;
 
-    /** Defines key-shares server properties file location */
+    /**
+     * Defines key-shares server properties file location. Used for auth based (Smart-ID/Mobile-ID)
+     * encryption/decryption
+     **/
     public static final String KEY_SHARES_PROPERTIES = "key-shares.properties";
     public static final String KEY_SHARES_SERVERS_URLS = "key-shares.servers.urls";
     public static final String KEY_SHARES_SERVERS_MIN_NUM = "key-shares.servers.min_num";

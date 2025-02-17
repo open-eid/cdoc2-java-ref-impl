@@ -139,7 +139,7 @@ Similar to Symmetric Key scenario, but symmetric key is derived from password an
 cdoc2-java-ref-impl does not provide solution for securely storing the password, but most password managers
 can do that.
 
-### CDOC2 with symmetric key from/to N-of-N shares
+### CDOC2 with symmetric key from/to N-of-N shares (Smart-ID/Mobile-ID)
 
 1. Sender knows recipient id-code and assumes that recipient might have Smart-ID or Mobile-ID account.   
    _Note:_ No way to check if recipient has existing Smart-ID or Mobile-ID account.
@@ -164,38 +164,51 @@ can do that.
         return shares;
     }
    ```
-5. Sender uploads each `share` and recipient `etsi_identifier` to each CDOC2 server
+5. Sender uploads each `share` and recipient `etsi_identifier` to each CDOC2 shares server
    (each CDOC2 server will receive a different share). CDOC2 servers are configured in client configuration.
    Sender gets `shareID` for each share. [^1] FBS and OAS
-6. Sender [derives content encryption key](https://github.com/open-eid/cdoc2-java-ref-impl/blob/4fa3028298e7f1ea5414e3215dbfd8b0e9b49409/cdoc20-lib/src/main/java/ee/cyber/cdoc20/crypto/Crypto.java#L100) (CEK) `HKDF_Expand(FMK,"CDOC20cek")`and hmac key (HHK) `HKDF_Expand(FMK,"CDOC20hmac")` from FMK using HKDF expand algorithm.
-7. Sender encrypts FMK with KEK (xor) and gets encrypted_FMK
-8. Sender adds `encrypted FMK`, `key_label` and `server:shareId` pairs into CDOC2 header. [FBS]
-   (https://gitlab.ext.cyber.ee/cdoc2/cdoc20_java/-/blob/RM-55885/cdoc2-schema/src/main/fbs/recipients.fbs#L70)
-9. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDoc
+6. Sender [derives content encryption key](https://github.com/open-eid/cdoc2-java-ref-impl/blob/4fa3028298e7f1ea5414e3215dbfd8b0e9b49409/cdoc20-lib/src/main/java/ee/cyber/cdoc20/crypto/Crypto.java#L100) (CEK) `HKDF_Expand(FMK,"CDOC20cek")`and hmac key 
+   (HHK) `HKDF_Expand(FMK,"CDOC20hmac")` from FMK using HKDF expand algorithm.
+7. Sender encrypts FMK with KEK (xor) and gets `encrypted_FMK`
+8. Sender adds `encrypted FMK`  and [KeySharesCapsule](https://github.com/open-eid/cdoc2-java-ref-impl/blob/a2dbe6711d88d2442e23d4ca80494f285f4d00cd/cdoc2-schema/src/main/fbs/recipients.fbs#L92) 
+   containing recipient_id `etsi_identifier` with list of `server:shareId` into CDOC2 header. 
+9. Sender calculates header hmac using hmac key (HHK) and adds calculated hmac to CDOC2
 10. Sender encrypts content with CEK (ChaCha20-Poly1305 with AAD)
 11. Sender sends CDOC2 document to Recipient
-12. Recipient will choose Smart-ID decryption method (if he/she has Smart-ID account) and 
-    enter/choose his/her id-code. (TODO: for mobile-id, user needs to enter mobile phone connected to his id-code)
-13. Recipient searches CDOC header for Smart-ID record with entered id-code.
-14. Recipient loops over secret shares and for each `server:shareId` asks `nonce` from server.
-    Uses '/key-shares/{shareId}/nonce' endpoint in each server.
+12. Recipient will choose Smart-ID or Mobile-ID decryption method (depending on what auth means he owns) and 
+    enters/chooses his/her identity code.  
+    For Mobile-ID, user needs to enter mobile phone number additionally to identity code.
+13. Recipient finds `KeySharesCapsule` record from CDOC2 header where `recipient_id` matches 
+    recipients entered identity code.   
+14. Recipient [prepares](https://open-eid.github.io/CDOC2/2.0-Draft/03_system_architecture/ch05_ID_authentication_protocol/#overview-of-the-generic-authentication-protocol) 
+    auth token by creating `nonce` for each share in [shares](https://github.com/open-eid/cdoc2-java-ref-impl/blob/a2dbe6711d88d2442e23d4ca80494f285f4d00cd/cdoc2-schema/src/main/fbs/recipients.fbs#L93). 
+    `nonce` is created by using [`/key-shares/{shareId}/nonce`](https://github.com/open-eid/cdoc2-openapi/blob/55a0b02adae0d8c61f2589a47555a93e4cf31971/cdoc2-key-shares-openapi.yaml#L105)
+    endpoint in each `cdoc2-shares-server`.
+15. Recipient finishes creation of auth token by signing it with supported auth means (currently Smart-ID/Mobile-ID authentication certificate).
+16. Recipient downloads all `share` objects by presenting [auth token](https://github.com/open-eid/cdoc2-auth?tab=readme-ov-file#cdoc2auth-tokenv1-examples) 
+    and certificate using '/key-shares/{shareId}' [endpoint](https://github.com/open-eid/cdoc2-openapi/blob/55a0b02adae0d8c61f2589a47555a93e4cf31971/cdoc2-key-shares-openapi.yaml#L32).
+17. Recipient [combines](https://github.com/open-eid/cdoc2-java-ref-impl/blob/a2dbe6711d88d2442e23d4ca80494f285f4d00cd/cdoc2-lib/src/main/java/ee/cyber/cdoc2/crypto/Crypto.java#L376) 
+    downloaded `share` [objects](https://github.com/open-eid/cdoc2-openapi/blob/55a0b02adae0d8c61f2589a47555a93e4cf31971/cdoc2-key-shares-openapi.yaml#L144) into `KEK`
+18. *Follow steps from ECDH scenario 13-15*
 
 
 ## Structure
-[![CDOC2 Dependencies](./cdoc2-docs/arch/images/cdoc2-deps.png)](https://viewer.diagrams.net/?tags=%7B%7D&highlight=0000ff&edit=_blank&layers=1&nav=1&title=CDOC2%20deps#R3VjbcpswEP0aPybDpWDnMb4knY7bycQzbZ03BTagVCAiCxvn6yuZxYjBdpOpEzx%2Bsvbs6sI5q11wzx0lxa0gWfydh8B6jhUWPXfccxzb8x31o5F1iQz8fglEgoYYVAMz%2BgoIWojmNIRFI1ByziTNmmDA0xQC2cCIEHzVDHvirLlrRiLc0aqBWUAYtMJ%2B0VDGiNqWEf4VaBTj1gMPHQmpghFYxCTkKwNyJz13JDiX5SgpRsA0eRUv5bybPd7twQSk8i0TnucvM7h6%2BnMzvh4%2B59l1dHPPLmwfDyfX1RNDqAhAkwsZ84inhE1qdCh4noagl7WUVcdMOc8UaCvwGaRco5okl1xBsUwYeqGg8rcxnuulLj20xgWuvDHWaKTcOMJmZnlyfdy9jCC04LkIMOoh96h1%2B230egdT9%2BVe%2Fnj8mV9gkkoiIpAH4rytbirhgScgxVrNE8CIpMvmOQhmXrSNq8VRA9TnPVoNutTKuvSvDLnsg2IpAcS6nNX3KntuOut5G2u%2FynrdOxBUcQgCoz5W%2BZ3k%2B5%2Bk%2FKFDLgnLcSdGH1vJoApMpocJD%2FON9oTRKFUAgyf1aMNFRgKaRtONNXYsIyJQvGl2h0sQkqrqd40OqbNkuIqphJmarpdfqULfTJG97OvVoDCgNoGVt4%2FPiG3CxaK5MmpuVXJjo9xW1fbolLstynuOzzSNIV2qYaSHPIOUZLTyqI0M51nrsyW%2BM4G8lkCLIIaEnBXtbofXYncP%2BtJFDzpW79%2F5SO4be7%2FTZe9vl6OA0VNL9VZe7xBkf6pb%2F8r0q09N9P5pJLrxJuW8603qiDfEe%2BMNcbu8ITv6AQiVkWd1SZzmJbH9rvuBv6su6Yc5K9b7p0a77XZRnYxa5P%2FvV532H%2Bez7lBennbJsr2OVWyIaL9bxA5azAe9hCmz%2FiNu4zP%2BznQnfwE%3D)
+[![CDOC2 Dependencies](./cdoc2-docs/img/deps.drawio.png)](https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1#R%3Cmxfile%3E%3Cdiagram%20id%3D%22cR2MIER7KRh0lRtEKnlR%22%20name%3D%22Page-1%22%3E3VjbcpswEP0aP9rDJRD86EucTifteOKZtOmbAjIoEYgIYZt8fSUjgriY0DQNHT9ZOtpdSWcvWjMyF%2BHhmoI4%2BEY8iEeG5h1G5nJkGLplG%2FxHIFmOOLaTAz5FnhQqgQ16gRLUJJoiDyYVQUYIZiiugi6JIuiyCgYoJfuq2Jbg6q4x8OWOWglsXIBhQ%2BwH8lggUV1TxL9A5Adya8eSCyEohCWQBMAjewUyr0bmghLC8lF4WEAsyCt4yfVWJ1ZfD0ZhxPooPN4%2Fb%2BB0%2B7RazuaPaTzzV7d4rNvycCwrbgw9ToCcEsoC4pMI4KsSnVOSRh4UZjU%2BK2VuCIk5qHPwETKWSW%2BClBEOBSzEchUeEPupjO%2BFqYklZ8uDtHycZHISEeUIR80mAZKThKTUlbf5lVpIu%2F66eFnDG%2FP5ln1%2FuEvHMiYZoD5kHXJWLicYUTaQ9F5DEkJGMy5AIQYM7aohA2Tk%2Ba9ypXP4QPrnT3zlDOkrbWJPFXfpnc7iHqGZqiXmQm2sTTSnAErd4%2By0p4XtNaSI8wipqlMHPzQkWp1gDxUSXafeAZzKnTB6aEQJrzyxGIbES49BATDyIw5guOV3nScxcFHk3xxnS0NTJFxOpGB3voOUIV4WZ3KBifCZ7wPE4IarC%2FN7%2FgJUY%2BekO4Q1eOgksFi9lHeU74cpq%2BleKcZFLQ6UOlyU4Q%2Bn3GxQPjJsLGj00I4PfTEkMYxAjIoVvpGyeNb%2BMbShHWQ1HJS4AQzBWdFuXmiDpUX743QxxOP0zqag9QZmz6bA%2BK%2BagmY5cjE6r1B%2FM9Knnxnodhvh4nbnxHm9quvG4PXFHKK%2BqH2spfaxZdfau4dt61eV5vpSba4n2kV3f93SEL%2B%2F8tk9K5%2F50ZVPqq4JEvlTBF894%2FVpLajyC0mtWly9HqNXqG3Q3Rbs3ZWz1FY0A8H64ellXGRLmeE8MIKzyu96%2B6Drn5jfraS3tdX1fI%2B8mfiiIwjEIEmQW%2BWlmu1t3xj6%2Fmk9nel6M9X%2F%2FR%2FRrih9MxkVj1odDv3bnDVqr7TTL2ebhi5rhsyaoZyYdyQ%2Fn5Yf23Lx8pOlefUb%3C%2Fdiagram%3E%3C%2Fmxfile%3E)
 
 - cdoc2-schema      - flatbuffers schemas and code generation
 - cdoc2-lib         - CDOC2 creation and processing library
-- cdoc2-client      - client for communicating with [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)
+- cdoc2-client      - Code generation for `cdoc2-capsule-server` and `cdoc2-shares-server` clients
 - cdoc2-cli         - Command line utility to create/process CDOC2 files
 - test              - Sample CDOC2 containers (with script to create and decrypt them) 
-                      and automated tests for CLI
-- cdoc2-example-app - Example, how to use cdoc2-java-ref-impl and cdoc4j together
+                      and automated end-to-end (bats) tests for CLI 
+- cdoc2-example-app - Example, how to use `cdoc2-java-ref-impl` and `cdoc4j` together
 
 Other CDOC2 repositories:
 - https://github.com/open-eid/cdoc2-openapi CDOC2 OpenAPI specifications
-- https://github.com/open-eid/cdoc2-capsule-server CDOC2 Capsule Server
-- https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server
+- https://github.com/open-eid/cdoc2-capsule-server CDOC2 Capsule Server (server scenarios with id-card)
+- https://github.com/open-eid/cdoc2-shares-server CDOC2 Shares Server (encryption/decryption Smart-ID/Mobile-ID scenarios)
+- https://github.com/open-eid/cdoc2-auth CDOC2 auth token implementation (used for Smart-ID/Mobile-ID scenarios)
+- https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server and CDOC2 Shares Server
 
 ## Using
 
@@ -208,12 +221,13 @@ Refer [cdoc2-lib/README.md](cdoc2-lib/README.md) and see [cdoc2-example-app](cdo
 ## Maven dependencies
 
 Depends on:
-https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for client stub generation
+- https://github.com/open-eid/cdoc2-openapi OpenAPI specifications for client stub generation
+- https://github.com/open-eid/cdoc2-auth CDOC2 auth token used by Smart-ID/Mobile-ID scenario
 
 Configure github package repo access
 https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-with-a-personal-access-token
 
-Add repository url to `<profile>` section of your PC local file `.m2/settings.xml` for using cdoc2 
+Add repository url to `<profile>` section of your PC local file `~/.m2/settings.xml` for using cdoc2 
 dependencies:
 ```xml
   <profile>
@@ -297,7 +311,7 @@ mvn test -Dtests=pkcs11 -Dcdoc2.pkcs11.conf-file=src/test/resources/pkcs11-test-
 
 By default, the pkcs11 configuration is read from the file `pkcs11-test-idcard.properties`.
 
-### Bats tests
+### Bats tests (end to end)
 
 Additional tests using [Bats](https://github.com/bats-core/bats-core) and `cdoc2-cli`. 
 Refer [test/README.md](test/README.md)

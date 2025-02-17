@@ -1,7 +1,8 @@
 package ee.cyber.cdoc2.container;
 
+import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.TestLifecycleLogger;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
@@ -23,6 +24,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EstEncKeyMaterialBuilder;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
@@ -50,6 +52,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,7 +137,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Captor
     ArgumentCaptor<KeyShare> keyShareCaptor2;
 
-    KeyShareClientFactory shareClientFactory;
+    KeySharesClientFactory sharesClientFactory;
 
     Capsule capsuleData;
 
@@ -145,7 +148,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     void setupKeyShareClientMocks() throws Exception {
         KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();
-        shareClientFactory = new KeySharesClientHelper(
+        sharesClientFactory = new KeySharesClientHelper(
             List.of(mockKeySharesClient1, mockKeySharesClient2),
             configuration
         );
@@ -157,6 +160,19 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         when(mockKeySharesClient1.storeKeyShare(any())).thenReturn("shareId1");
         when(mockKeySharesClient2.storeKeyShare(any())).thenReturn("shareId2");
+    }
+
+    Services getMockCdoc2Services() throws Exception {
+        setupKeyShareClientMocks();
+
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
+
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(KeyCapsuleClient.class, capsuleClientMock, null)
+            .build();
+        return services;
     }
 
     // Mainly flatbuffers and friends
@@ -566,9 +582,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             tempDir,
             authIdentifier,
             authIdentifier,
-            shareClientFactory,
-            authType,
-            idCode
+            sharesClientFactory
         );
 
         verifyMockedKeyShareClients();
@@ -576,7 +590,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         //TODO: RM-4756, mock SmartIdClient
         SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
         Services services = new ServicesBuilder()
-            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(SmartIdClient.class, smartIdClient, null)
             .build();
 
@@ -609,9 +623,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             tempDir,
             encAuthIdentifier,
             decryptAuthIdentifier,
-            shareClientFactory,
-            AuthenticationIdentifier.AuthenticationType.MID,
-            idCode
+            sharesClientFactory
         );
 
         verifyMockedKeyShareClients();
@@ -620,7 +632,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         MobileIdClient midClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
-            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(MobileIdClient.class, midClient, null)
             .build();
 
@@ -716,9 +728,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             tempDir,
             encAuthIdentifier,
             decryptAuthIdentifier,
-            shareClientFactory,
-            AuthenticationIdentifier.AuthenticationType.MID,
-            idCode
+            sharesClientFactory
         );
 
         verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
@@ -741,7 +751,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         MobileIdClient midClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
-            .register(KeyShareClientFactory.class, shareClientFactory, null)
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(MobileIdClient.class, midClient, null)
             .build();
 
@@ -918,6 +928,61 @@ class EnvelopeTest implements TestLifecycleLogger {
                 System.setProperty(OVERWRITE_PROPERTY, overwrite);
             }
         }
+    }
+
+    @Disabled("Needs real id-code") // replace idCode with id code present in SK LDAP
+    @Test
+    void testCdocBuilder(@TempDir Path tempDir) throws Exception {
+        //https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters
+        // #test-accounts-for-automated-testing
+        // fails as this is test id-code for Smart-ID and doesn't exist in SK LDAP
+        String idCode = "30303039914"; // replace with real id code present in SK LDAP
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        File cdocFile = tempDir.resolve("testCdocBuilder.cdoc").toFile();
+
+        List<EncryptionKeyMaterial> encKeyMaterial = new EstEncKeyMaterialBuilder()
+            // will download recipient certificate and add public key based recipient
+            .fromCertDirectory(new String[]{idCode})
+            // will create authentication based recipient
+            .forAuthMeans(new String[]{idCode})
+            .build();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        List<File> files = new LinkedList<>();
+        files.add(payloadFile);
+
+        CDocBuilder builder = new CDocBuilder()
+            .withPayloadFiles(files)
+            .withRecipients(encKeyMaterial)
+            .withServices(getMockCdoc2Services());
+
+        builder.buildToFile(cdocFile);
+
+
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
+
+        assertTrue(recipients.size() == 2);
+
+        String label0 = recipients.get(0).getRecipientKeyLabel();
+        assertTrue(label0.contains(idCode));
+        assertTrue(label0.contains("ID-card"));
+
+        assertEquals("etsi/PNOEE-" + idCode, recipients.get(1).getRecipientId());
+
+        String label1 = recipients.get(1).getRecipientKeyLabel().toUpperCase();
+        assertTrue(label1.contains("TYPE=AUTH"));
+        assertTrue(label1.contains(idCode));
+
     }
 
     // tar processing is ended after zero block has encountered. It is possible to add extra data after this and tar lib
@@ -1303,7 +1368,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(EncryptionKeyMaterial.fromAuthMeans(
                 authIdentifier, createKeyLabelParams(idCode, authType))
             ),
-            null, shareClientFactory
+            null, sharesClientFactory
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();

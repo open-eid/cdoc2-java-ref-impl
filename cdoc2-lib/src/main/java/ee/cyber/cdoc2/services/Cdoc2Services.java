@@ -1,8 +1,9 @@
 package ee.cyber.cdoc2.services;
 
+import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
@@ -18,7 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.security.GeneralSecurityException;
 import java.util.Properties;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULES_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
@@ -27,7 +29,8 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPER
  * Initialize Services from properties.
  * Checks if following properties are defined and initializes services accordingly:
  * <ul>
- *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULES_PROPERTIES}</li>
+ *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_PROPERTIES}</li>
+ *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_POST_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#KEY_SHARES_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#MOBILE_ID_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#SMART_ID_PROPERTIES}</li>
@@ -80,27 +83,38 @@ public final class Cdoc2Services {
 
     public Services init() throws GeneralSecurityException {
         ServicesBuilder services = new ServicesBuilder();
-        if (isPropertyDefined(SMART_ID_PROPERTIES)) {
-            log.info("Initializing Smart-ID client from {}",
-                propertiesLocations.getProperty(SMART_ID_PROPERTIES));
-            var config = SmartIdClientConfiguration.load(loadFromPropertyValue(SMART_ID_PROPERTIES));
-            services.registerService(SmartIdClient.class,
-                ServiceTemplate.service(config, SmartIdClient::new), null);
+
+        // capsule-server GET endpoint for decryption that requires mTLS and may need PIN to access
+        // private key on smart-card
+        if (isPropertyDefined(KEY_CAPSULE_PROPERTIES)) {
+            log.info("Initializing KeyCapsuleClientFactory from {}",
+                propertiesLocations.getProperty(KEY_CAPSULE_PROPERTIES));
+            var config = KeyCapsuleClientConfiguration.load(loadFromPropertyValue(KEY_CAPSULE_PROPERTIES));
+            services.register(KeyCapsuleClientFactory.class,
+                KeyCapsuleClientImpl.createFactory(config), null);
+
+            log.info("Initializing KeyCapsuleClient from {}",
+                propertiesLocations.getProperty(KEY_CAPSULE_PROPERTIES));
+            services.register(KeyCapsuleClient.class,
+                KeyCapsuleClientImpl.create(config, false), null);
         }
 
+        // capsule-server post endpoint for encryption that doesn't require mTLS, used for encryption only
+        if (isPropertyDefined(KEY_CAPSULE_POST_PROPERTIES)) {
+            log.info("Initializing KeyCapsuleClient from {}",
+                propertiesLocations.getProperty(KEY_CAPSULE_POST_PROPERTIES));
+            var config = KeyCapsuleClientConfiguration.load(loadFromPropertyValue(KEY_CAPSULE_POST_PROPERTIES));
+            services.register(KeyCapsuleClient.class,
+                KeyCapsuleClientImpl.create(config, false), null);
+        }
+
+        // shares-server required for authentication based encryption/decryption.
+        // Used for Smart-ID/Mobile-ID encryption/decryption
         if (isPropertyDefined(KEY_SHARES_PROPERTIES)) {
             log.info("Initializing KeyShareClientFactory from {}",
                 propertiesLocations.getProperty(KEY_SHARES_PROPERTIES));
             var config = KeySharesConfiguration.load(loadFromPropertyValue(KEY_SHARES_PROPERTIES));
-            services.register(KeyShareClientFactory.class, KeySharesClientHelper.createFactory(config), null);
-        }
-
-        if (isPropertyDefined(KEY_CAPSULES_PROPERTIES)) {
-            log.info("Initializing KeyCapsuleClientFactory from {}",
-                propertiesLocations.getProperty(KEY_CAPSULES_PROPERTIES));
-            var config = KeyCapsuleClientConfiguration.load(loadFromPropertyValue(KEY_CAPSULES_PROPERTIES));
-            services.register(KeyCapsuleClientFactory.class,
-                KeyCapsuleClientImpl.createFactory(config), null);
+            services.register(KeySharesClientFactory.class, KeySharesClientHelper.createFactory(config), null);
         }
 
         if (isPropertyDefined(MOBILE_ID_PROPERTIES)) {
@@ -108,6 +122,14 @@ public final class Cdoc2Services {
             var config = MobileIdClientConfiguration.load(loadFromPropertyValue(MOBILE_ID_PROPERTIES));
             services.registerService(MobileIdClient.class,
                 ServiceTemplate.service(config, MobileIdClient::new), null);
+        }
+
+        if (isPropertyDefined(SMART_ID_PROPERTIES)) {
+            log.info("Initializing Smart-ID client from {}",
+                propertiesLocations.getProperty(SMART_ID_PROPERTIES));
+            var config = SmartIdClientConfiguration.load(loadFromPropertyValue(SMART_ID_PROPERTIES));
+            services.registerService(SmartIdClient.class,
+                ServiceTemplate.service(config, SmartIdClient::new), null);
         }
 
         return services.build();

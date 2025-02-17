@@ -17,7 +17,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 /**
  * KeyShareClientFactory implementation class for creating and requesting key shares clients
  */
-public class KeySharesClientHelper implements KeyShareClientFactory {
+public class KeySharesClientHelper implements KeySharesClientFactory {
 
     private static final Logger log = LoggerFactory.getLogger(KeySharesClientHelper.class);
 
@@ -38,7 +38,7 @@ public class KeySharesClientHelper implements KeyShareClientFactory {
      * @return Key share client factory
      * @throws CDocUserException when the requested server is not found
      */
-    public static KeyShareClientFactory createFactory(KeySharesConfiguration configuration)
+    public static KeySharesClientFactory createFactory(KeySharesConfiguration configuration)
         throws GeneralSecurityException {
         return initKeySharesClientByServer(configuration);
     }

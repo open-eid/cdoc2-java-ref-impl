@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.crypto;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
@@ -252,14 +252,14 @@ public final class KekTools {
      * Derive KEK from shares. Used for SID/MID.
      * @param keySharesRecipient key shares recipient
      * @param keyMaterial key share decryption key material
-     * @param keyShareClientFactory key share client factory
+     * @param keySharesClientFactory key shares client factory
      * @return bytes of KEK
      * @throws GeneralSecurityException if key extraction has failed
      */
     public static byte[] deriveKekFromShares(
         KeySharesRecipient keySharesRecipient,
         KeyShareDecryptionKeyMaterial keyMaterial,
-        KeyShareClientFactory keyShareClientFactory,
+        KeySharesClientFactory keySharesClientFactory,
         Services services //XXX: for now its generic services, in future might be more specific type to use SID/MID
     ) throws GeneralSecurityException, CDocException {
 
@@ -272,11 +272,11 @@ public final class KekTools {
 
         try {
             List<byte[]> listOfShares =
-                fetchKeyShares(keyMaterial, keySharesRecipient, keyShareClientFactory, services);
+                fetchKeyShares(keyMaterial, keySharesRecipient, keySharesClientFactory, services);
 
             return Crypto.combineKek(
                 listOfShares,
-                keyShareClientFactory.getKeySharesConfiguration().getKeySharesServersMinNum()
+                keySharesClientFactory.getKeySharesConfiguration().getKeySharesServersMinNum()
             );
 
         } catch (AuthSignatureCreationException asce) {
@@ -288,7 +288,7 @@ public final class KekTools {
     private static List<byte[]> fetchKeyShares(
         KeyShareDecryptionKeyMaterial decryptKeyMaterial,
         KeySharesRecipient keySharesRecipient,
-        KeyShareClientFactory keyShareClientFactory,
+        KeySharesClientFactory keySharesClientFactory,
         Services services
     ) throws GeneralSecurityException, AuthSignatureCreationException, CDocException {
 
@@ -296,10 +296,10 @@ public final class KekTools {
         List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
 
         SidMidAuthTokenCreator tokenCreator =
-            signShareAccessTokens(shares, decryptKeyMaterial, keyShareClientFactory, services);
+            signShareAccessTokens(shares, decryptKeyMaterial, keySharesClientFactory, services);
 
         for (KeyShareUri share : shares) {
-            listOfShares.add(getKeyShare(share, keyShareClientFactory, tokenCreator));
+            listOfShares.add(getKeyShare(share, keySharesClientFactory, tokenCreator));
         }
         return listOfShares;
     }
@@ -308,7 +308,7 @@ public final class KekTools {
      * Ask nonce for each share, sign share with nonce using auth means
      * @param shares
      * @param decryptKeyMaterial
-     * @param keyShareClientFactory
+     * @param keySharesClientFactory
      * @param services
      * @return
      * @throws CDocException
@@ -317,7 +317,7 @@ public final class KekTools {
     private static SidMidAuthTokenCreator signShareAccessTokens(
         List<KeyShareUri> shares,
         KeyShareDecryptionKeyMaterial decryptKeyMaterial,
-        KeyShareClientFactory keyShareClientFactory,
+        KeySharesClientFactory keySharesClientFactory,
         Services services
 
     ) throws CDocException, AuthSignatureCreationException {
@@ -336,7 +336,7 @@ public final class KekTools {
                 return new SidMidAuthTokenCreator(
                     new SIDAuthJWSSigner(etsiIdentifier, sidClient, decryptKeyMaterial.getInteractionParams()),
                     shares,
-                    keyShareClientFactory);
+                    keySharesClientFactory);
             }
             case MID -> {
                 if (!services.hasService(MobileIdClient.class)) {
@@ -352,7 +352,7 @@ public final class KekTools {
                 return new SidMidAuthTokenCreator(
                     jwsSigner,
                     shares,
-                    keyShareClientFactory);
+                    keySharesClientFactory);
             }
             default -> throw new IllegalStateException(
                 "Unexpected authentication type: " + authType
@@ -361,7 +361,7 @@ public final class KekTools {
     }
 
     /**
-     * @param keyShareClientFactory
+     * @param keySharesClientFactory key shares client factory
      * @param tokenCreator signed authentication token
      * @param share share to fetch
      * @return
@@ -369,11 +369,11 @@ public final class KekTools {
      */
     private static byte[] getKeyShare(
         KeyShareUri share,
-        KeyShareClientFactory keyShareClientFactory,
+        KeySharesClientFactory keySharesClientFactory,
         SidMidAuthTokenCreator tokenCreator
     ) throws GeneralSecurityException {
         KeySharesClient client
-            = keyShareClientFactory.getClientForServerUrl(share.serverBaseUrl());
+            = keySharesClientFactory.getClientForServerUrl(share.serverBaseUrl());
         String authTicket = tokenCreator.getTokenForShareID(share.shareId());
         String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
 

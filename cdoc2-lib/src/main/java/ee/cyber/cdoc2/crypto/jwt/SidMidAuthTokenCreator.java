@@ -3,7 +3,7 @@ package ee.cyber.cdoc2.crypto.jwt;
 import com.nimbusds.jose.JOSEException;
 import ee.cyber.cdoc2.auth.AuthTokenCreator;
 import ee.cyber.cdoc2.auth.ShareAccessData;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class SidMidAuthTokenCreator {
 
-    KeyShareClientFactory sharesClientFac;
+    KeySharesClientFactory sharesClientFac;
     IdentityJWSSigner idJwsSigner;
 
     List<KeyShareUri> shareUris;
@@ -43,7 +43,7 @@ public class SidMidAuthTokenCreator {
     public SidMidAuthTokenCreator(
         IdentityJWSSigner idJwsSigner,
         List<KeyShareUri> shareUris,
-        KeyShareClientFactory fac
+        KeySharesClientFactory fac
     )  throws AuthSignatureCreationException {
 
         this.sharesClientFac = fac;
@@ -124,7 +124,7 @@ public class SidMidAuthTokenCreator {
      * @return nonce created for shareId by shares-server
      * @throws ApiException if server nonce creation fails
      */
-    ShareAccessData createNonce(KeyShareUri shareUri, KeyShareClientFactory fac) throws ApiException {
+    ShareAccessData createNonce(KeyShareUri shareUri, KeySharesClientFactory fac) throws ApiException {
 
         KeySharesClient shareClient = fac.getClientForServerUrl(shareUri.serverBaseUrl());
         NonceResponse nonceResponse = shareClient.createKeyShareNonce(shareUri.shareId());

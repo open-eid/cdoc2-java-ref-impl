@@ -10,7 +10,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 /**
  * Factory for requesting key shares clients {@link KeySharesClient}
  */
-public interface KeyShareClientFactory {
+public interface KeySharesClientFactory {
 
     /**
      * Get all defined Key share clients

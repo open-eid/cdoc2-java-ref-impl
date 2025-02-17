@@ -1,8 +1,6 @@
 package ee.cyber.cdoc2.container;
 
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
@@ -27,6 +25,7 @@ import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
 import ee.cyber.cdoc2.services.Services;
 import ee.cyber.cdoc2.services.ServicesBuilder;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
@@ -56,7 +55,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 
@@ -259,9 +257,7 @@ public final class EnvelopeTestUtils {
         File payloadFile,
         byte[] payloadData,
         AuthenticationIdentifier authIdentifier,
-        KeyShareClientFactory shareClientFactory,
-        AuthenticationIdentifier.AuthenticationType authType,
-        String idCode
+        KeySharesClientFactory sharesClientFactory
     ) throws IOException, GeneralSecurityException, ExtApiException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -271,14 +267,14 @@ public final class EnvelopeTestUtils {
         List<File> files = new LinkedList<>();
         files.add(payloadFile);
 
-        KeyLabelParams keyLabelParams = createKeyLabelParams(idCode, authType);
+        KeyLabelParams keyLabelParams = createKeyLabelParams(authIdentifier.getIdCode(), authIdentifier.getAuthType());
 
         EncryptionKeyMaterial encKeyMaterial
             = EncryptionKeyMaterial.fromAuthMeans(authIdentifier, keyLabelParams);
 
         byte[] cdocContainerBytes;
         Envelope senderEnvelope = Envelope.prepare(
-            List.of(encKeyMaterial), null, shareClientFactory
+            List.of(encKeyMaterial), null, sharesClientFactory
         );
         try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
             senderEnvelope.encrypt(files, dst);
@@ -338,9 +334,7 @@ public final class EnvelopeTestUtils {
         Path tempDir,
         AuthenticationIdentifier encryptAuthIdentifier,
         AuthenticationIdentifier decryptAuthIdentifier,
-        KeyShareClientFactory shareClientFactory,
-        AuthenticationIdentifier.AuthenticationType authType,
-        String idCode
+        KeySharesClientFactory sharesClientFactory
     ) throws Exception {
 
         UUID uuid = UUID.randomUUID();
@@ -355,9 +349,7 @@ public final class EnvelopeTestUtils {
             payloadFile,
             payloadData.getBytes(StandardCharsets.UTF_8),
             encryptAuthIdentifier,
-            shareClientFactory,
-            authType,
-            idCode
+            sharesClientFactory
         );
 
         assertTrue(cdocContainerBytes.length > 0);
@@ -436,7 +428,7 @@ public final class EnvelopeTestUtils {
         byte[] payloadData,
         EncryptionKeyMaterial encKeyMaterial,
         @Nullable List<File> additionalFiles,
-        @Nullable Properties serverProperties
+        Services services
     ) throws IOException, CDocException, CDocValidationException, ConfigurationLoadingException {
 
         try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
@@ -451,8 +443,8 @@ public final class EnvelopeTestUtils {
 
         CDocBuilder builder = new CDocBuilder()
             .withPayloadFiles(files)
-            .withRecipients(List.of(encKeyMaterial))
-            .withServerProperties(serverProperties);
+            .withRecipients(List.of(encKeyMaterial));
+            //.withServerProperties(serverProperties);
 
         builder.buildToFile(cdocFileToCreate);
     }

@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2;
 
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.services.Services;
 import jakarta.annotation.Nullable;
 
 import ee.cyber.cdoc2.client.ExtApiException;
@@ -59,7 +60,10 @@ public class CDocBuilder {
     private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
     @Nullable
-    private KeyShareClientFactory keyShareClientFactory;
+    private KeySharesClientFactory keySharesClientFactory;
+
+    @Nullable
+    KeyCapsuleClient keyCapsuleClient;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
         this.payloadFiles = files;
@@ -81,13 +85,44 @@ public class CDocBuilder {
         return this;
     }
 
-    public CDocBuilder withServerProperties(Properties p) {
+    /**
+     * @deprecated use {@link #withKeyCapsuleClient(KeyCapsuleClient)} or {@link #withServices(Services)} instead
+     */
+    @Deprecated
+    public CDocBuilder withServerProperties(Properties p) throws GeneralSecurityException {
         this.serverProperties = p;
+
+        KeyCapsuleClientConfiguration capsuleClientConfig =
+            KeyCapsuleClientConfiguration.load(serverProperties);
+        // for encryption, do not init mTLS client as this might require smart-card
+        return withKeyCapsuleClient(KeyCapsuleClientImpl.create(capsuleClientConfig, false));
+    }
+
+    public CDocBuilder withKeyCapsuleClient(KeyCapsuleClient capsuleClient) {
+        this.keyCapsuleClient = capsuleClient;
         return this;
     }
 
-    public CDocBuilder withKeyShares(KeyShareClientFactory clientFactory) {
-        this.keyShareClientFactory = clientFactory;
+    public CDocBuilder withKeyShares(KeySharesClientFactory clientFactory) {
+        this.keySharesClientFactory = clientFactory;
+        return this;
+    }
+
+    /**
+     * Initialize {@code KeySharesClientFactory} and/or {@code KeyCapsuleClient}
+     * from {@code services} when {@code KeySharesClientFactory.class} and/or
+     * {@code KeyCapsuleClient.class} is defined.
+     * @param services use services to initialize KeySharesClientFactory and KeyCapsuleClient
+     */
+    public CDocBuilder withServices(Services services) {
+        if (services.hasService(KeySharesClientFactory.class)) {
+            this.keySharesClientFactory = services.get(KeySharesClientFactory.class);
+        }
+
+        if (services.hasService(KeyCapsuleClient.class)) {
+            this.keyCapsuleClient = services.get(KeyCapsuleClient.class);
+        }
+
         return this;
     }
 
@@ -137,23 +172,14 @@ public class CDocBuilder {
     private Envelope prepareEnvelope()
         throws ExtApiException, GeneralSecurityException, ConfigurationLoadingException {
 
-        if (serverProperties == null) {
-            return Envelope.prepare(recipients, null, keyShareClientFactory);
-        } else {
-            KeyCapsuleClientConfiguration capsuleClientConfig
-                = KeyCapsuleClientConfiguration.load(serverProperties);
-            // for encryption, do not init mTLS client as this might require smart-card
-           KeyCapsuleClient keyCapsuleClient
-               = KeyCapsuleClientImpl.create(capsuleClientConfig, false);
-           if (null != keyCapsuleExpiryDuration) {
+           if ((keyCapsuleClient != null) && (keyCapsuleExpiryDuration != null)) {
                keyCapsuleClient.setExpiryDuration(keyCapsuleExpiryDuration);
            }
            return Envelope.prepare(
                recipients,
                keyCapsuleClient,
-               keyShareClientFactory
+               keySharesClientFactory
             );
-        }
     }
 
     private void handleFileEncryptionError(Exception ex, File outputCDocFile) {

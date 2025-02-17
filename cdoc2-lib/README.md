@@ -99,7 +99,7 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
 <dependency>
     <groupId>ee.cyber.cdoc2</groupId>
     <artifactId>cdoc2-lib</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
 </dependency>
 ```
 
@@ -108,103 +108,96 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
 ### Configure cdoc2-lib with properties
 
 #### Initialize configuration for server scenarios:
-```java
-  public KeyCapsuleClientFactory initKeyCapsuleClientFactory(String keyServerPropertiesFile) {
-    Properties p = new Properties();
-    p.load(Resources.getResourceAsStream(keyServerPropertiesFile));
-    
-    ExternalServiceImpl clientFactory = new ExternalServiceImpl();
-    Cdoc2Configuration configuration = new KeyCapsuleClientConfigurationImpl(p);
-    CDoc2ConfigurationProvider.initKeyCapsuleClientConfig(configuration);
 
-    KeyCapsuleClientConfiguration config = clientFactory.initKeyCapsuleClientFactory(
-        configuration.keyCapsuleClientConfiguration());
-    return KeyCapsuleClientImpl.createFactory(config);
-  }
+```java
+import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
+import ee.cyber.cdoc2.config.PropertiesLoader;
+
+public KeyCapsuleClientFactory initKeyCapsuleClientFactory(String keyServerPropertiesFile) {
+   KeyCapsuleClientConfiguration config = KeyCapsuleClientConfiguration.load(
+           PropertiesLoader.loadProperties(keyServerPropertiesFile));
+   return KeyCapsuleClientImpl.createFactory(config);
+}
 ```
 
-Configuration is created from `localhost.properties` in `cdoc2-cli/config/localhost/`
-directory:
-* `cdoc2.client.server.id`
-* `cdoc2.client.server.base-url.post`
-* `cdoc2.client.server.base-url.get`
-* `cdoc2.client.server.debug`
-* `cdoc2.client.server.connect-timeout`
-* `cdoc2.client.server.read-timeout`
-* `cdoc2.client.ssl.trust-store.type`
-* `cdoc2.client.ssl.trust-store`
-* `cdoc2.client.ssl.trust-store-password`
-* `cdoc2.client.ssl.client-store.type`
-* `cdoc2.client.ssl.client-store-password.prompt`
+Alternatively:
 
-
-#### Initialize configuration for decryption with smart ID:
 ```java
-  public void loadSmartIdConfiguration(String smartIdPropertiesFile) {
-    Properties properties = loadProperties(smartIdPropertiesFile);
-    Cdoc2Configuration configuration = new SmartIdClientConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.initSmartIdClientConfig(configuration);
-  }
+import ee.cyber.cdoc2.services.Cdoc2Services;
+
+// normally initialized through -D option to java process
+System.setProperty("key-capsule.properties", "classpath:localhost.properties");
+Services services = Cdoc2Services.initFromSystemProperties();
+KeyCapsuleClientFactory capsuleClientFactory = services.get(KeyCapsuleClientFactory.class);
 ```
 
-Configuration is created from `smart-id.properties` in `cdoc2-cli/config/smart-id` 
-directory:
-* `smartid.client.hostUrl`
-* `smartid.client.relyingPartyUuid`
-* `smartid.client.relyingPartyName`
-* `smartid.client.ssl.trust-store`
-* `smartid.client.ssl.trust-store-password`
+Or:
 
-
-#### Initialize configuration for decryption with mobile ID:
 ```java
-  public void loadMobileIdConfiguration(String mobileIdPropertiesFile) {
-    Properties properties = loadProperties(mobileIdPropertiesFile);
-    Cdoc2Configuration configuration = new MobileIdClientConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.initMobileIdClientConfig(configuration);
-  }
+import ee.cyber.cdoc2.services.Cdoc2Services;
+
+Properties p = new Properties().setProperty("key-capsule.properties", "classpath:localhost.properties");
+Services services = Cdoc2Services.initFromProperties(p);
+KeyCapsuleClientFactory capsuleClientFactory = services.get(KeyCapsuleClientFactory.class);
 ```
 
-Configuration is created from `mobile-id.properties` in `cdoc2-cli/config/mobile-id`
-directory:
-* `mobileid.client.hostUrl`
-* `mobileid.client.relyingPartyUuid`
-* `mobileid.client.relyingPartyName`
-* `mobileid.client.ssl.trust-store`
-* `mobileid.client.ssl.trust-store.type`
-* `mobileid.client.ssl.trust-store-password`
-* `mobileid.client.long-polling-timeout-seconds`
-* `mobileid.client.polling-sleep-timeout-seconds`
-* `mobileid.client.display-text`
-* `mobileid.client.display-text-format`
-* `mobileid.client.display-text-language`
+### Services configuration
 
-#### Initialize configuration for decryption with key shares:
-```java
-  public void loadKeySharesConfiguration(String keySharesPropertiesFile) {
-    Properties properties = loadProperties(keySharesPropertiesFile);
-    Cdoc2Configuration configuration = new KeySharesConfigurationImpl(properties);
-    CDoc2ConfigurationProvider.initKeyShareClientConfig(configuration);
-  }
+There are different "services" used by `cdoc2-lib`, most are configured through properties. For
+up to date of list all "services" and their configurations see `Cdoc2Services` class source code.
+
+Local "services" can be started by running `docker compose `
+
+#### KeyCapsuleClientFactory and KeyCapsuleClient: key-capsule.properties
+
+`KeyCapsuleClientFactory` and `KeyCapsuleClient` are used to connect to `cdoc2-capsule-server` that
+is used for encryption/decryption with server scenarios (id-card/smart-card).
+
+Difference is that `KeyCapsuleClient` is used for encryption, where mTLS is not required 
+and `KeyCapsuleClientFactory` is used for decryption, where mutual TLS is required. 
+
+They share configuration file - `key-capsule.properties`
+
+If only encryption functionality is wanted, then it may make sense initialize only `KeyCapsuleClient`, by defining 
+`key-capsule-post.properties` as initializing `KeyCapsuleClientFactory` may require PIN for smart-card.
+
+Example `KeyCapsuleClientFactory` configuration: [localhost/localhost.properties](../cdoc2-cli/config/localhost/localhost.properties)
+
+Local `cdoc2-capsule-server` can be started by running:
+```bash
+cd ../test/config/capsule-server
+docker compose up
 ```
 
-Configuration is created from `key-shares.properties` in `cdoc2-cli/config/localhost`
-directory:
-* `key-shares.servers.urls`
-* `key-shares.servers.min_num`
-* `key-shares.algorithm`
-* `cdoc2.key-shares.client.ssl.trust-store`
-* `cdoc2.key-shares.client.ssl.trust-store.type`
-* `cdoc2.key-shares.client.ssl.trust-store-password`
+#### KeySharesClientFactory: key-shares.properties
 
+`KeySharesClientFactory` is used for authentication based encryption/decryption (Smart-ID/Mobile-ID).
+It will connect to `cdoc2-shares-server` servers.
 
-Create `KeyShareClientFactory` for further usage:
-```java
-KeyShareClientFactory factory = KeySharesClientImpl.createFactory();
+Example configuration: [localhost/key-shares.properties](../cdoc2-cli/config/localhost/key-shares.properties)
+
+Local `cdoc2-shares-server` can be started by running:
+```bash
+cd ../test/config/shares-server
+docker compose up
 ```
 
+#### SmartIdClient: smart-id.properties
 
-### Updating Smart ID or Mobile ID certificates in tests
+Used when decrypting CDOC2 created for Smart-ID recipient
+
+[Smart-ID demo environment](https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo) configuration: 
+[smart-id.properties](../cdoc2-cli/config/smart-id/smart-id.properties)
+
+#### MobileIdClient: mobile-id.properties
+
+Used when decrypting CDOC2 created for Mobile-ID recipient
+
+[Mobile-ID demo environment](https://github.com/SK-EID/MID/wiki/Environment-technical-parameters#demo) 
+configuration: [smart-id.properties](../cdoc2-cli/config/mobile-id/mobile-id.properties)
+
+
+#### Updating Smart ID or Mobile ID certificates in tests
 Integration tests check the validity of server's certificates and will fail after their expiration.
 When certificate has expired there is needed to replace it with new certificate in the trust store. 
 1. Obtain the new certificate from SK.
@@ -256,6 +249,7 @@ When certificate has expired there is needed to replace it with new certificate 
 ```
 
 ### To create cdoc2 document for id-card:
+
 ```java
         File cdoc2FileToCreate = Paths.get("/tmp/second.cdoc2").toFile();
         String identificationCode = "3..."; // your id-code
@@ -270,13 +264,15 @@ When certificate has expired there is needed to replace it with new certificate 
 ```
 
 **Note**: this works only for end user id-cards. It doesn't work for test id-cards as test-id card
-certificates are not in [SK LDAP](https://github.com/SK-EID/LDAP/wiki/Knowledge-Base).
+certificates are not in [SK LDAP](https://github.com/SK-EID/LDAP/wiki/Knowledge-Base). 
+To use test id-card, extract certificate from id-card and encrypt with certificate. 
+There is no difference between real and test id-cards when decrypting.
 
 ### To decrypt with id-card you need a smart device and physical ID card:
 
 Using id-card requires that you have openSC PKCS11 drivers installed. These are usually installed
 by installing https://www.id.ee/en/article/install-id-software/ Before trying to decrypt CDOC2 files
-with `cdoc2-lib` verify that you can access id-card with
+with `cdoc2-lib` verify that you can access id-card with [DigiDoc4](https://github.com/open-eid/DigiDoc4-Client)
 
 ```java
         Path cdoc2FileToDecrypt = Paths.get("/tmp/second.cdoc2");
@@ -302,7 +298,7 @@ on setting up pcks11 on Ubuntu can be found in [pkcs11.README](https://github.co
 
 ## CDOC2 server scenario usage
 
-Most cdoc2 documents created by DigiDoc4 library will use [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)
+Most cdoc2 documents created by DigiDoc4 will use [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)
 
 ### Checking CDOC2 recipients
 
@@ -342,36 +338,69 @@ sender public key material and then needs to decrypt CDOC2 with private key. Eve
 in server gets compromised, it doesn't grant access to CDOC2 documents as final decryption is done
 with recipient private key (id-card).
 
+### Create CDOC2 document with key material stored in server and can be decrypted with id-card/Smart-ID/Mobile-ID
+
+Smart-ID/Mobile-ID do not support encryption/decryption directly. For each Smart-ID/Mobile-ID 
+recipient symmetric key is created and that key split into parts. Parts are uploaded to different 
+`cdoc2-shares-server` servers. Each `cdoc2-shares-server` is maintained by different organization (so compromising one 
+`cdoc2-shares-server` doesn't reveal decryption key). To decrypt CDOC2 created for Smart-ID/Mobile-ID,
+recipient needs to authenticate himself with supported auth means (Smart-ID/Mobile-ID) and download
+key parts
+
+```java
+   File cdoc2FileToCreate = Paths.get("/tmp/second3.cdoc2").toFile();
+   String identificationCode = "38001085718"; // Jõeorg, replace with real id-code that is present in SK LDAP
+   File[] payloadFiles = new File[]{};//add some files
+   
+   // normally initialized through -D option to java process
+   System.setProperty("key-capsule.properties","classpath:localhost.properties"); // from classpath
+   System.setProperty("key-shares.properties","config/key_shares-test.properties"); // from file system
+
+   // alternatively use Cdoc2Services.initFromProperties(Properties)
+   Services services = Cdoc2Services.initFromSystemProperties();
+   
+   List<EncryptionKeyMaterial> encKeyMaterial = new EstEncKeyMaterialBuilder()
+           .fromCertDirectory(new String[]{identificationCode}) // will download recipient certificate and add public key based recipient
+           .forAuthMeans(new String[]{identificationCode}) // will create authentication based recipient, that can be decrypted with SID/MID
+           .build();
+
+
+CDocBuilder builder = new CDocBuilder()
+           .withPayloadFiles(files)
+           .withRecipients(encKeyMaterial)
+           .withServices(services);
+   
+  builder.buildToFile(cdoc2FileToCreate);
+```
+
 ### Decrypting with key material from the server
 
 Similar to previous example, to decrypt cdoc2 with server recipient,
-[cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)client needs to be configured
-and easiest is to do it with existing properties, but `CdocDecrypter` has method `withKeyServers`
-that takes `KeyCapsuleClientFactory` as parameter:
-
+[cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)client needs to be configured.
 
 ```java
-    Path cdoc2FileToDecrypt = Paths.get("/tmp/second.cdoc2");
-    Path destDir = Paths.get("/tmp");
-    Integer slot = 0;
-    String alias = "Isikutuvastus";
-    
-    String keyServerPropertiesFile = "/path/to/cdoc2-cli/conf/id.properties";
-    Properties p = new Properties().load(
-        Resources.getResourceAsStream(keyServerPropertiesFile));
-    KeyCapsuleClientFactory keyCapsulesClient = KeyCapsuleClientImpl.createFactory(p);
-    
-    DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(
-        Pkcs11Tools.loadFromPKCS11Interactively(
-            "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
-            slot, 
-            alias
-        )
-    );
 
-    List<String> extractedFiles = new CDocDecrypter()
+
+Path cdoc2FileToDecrypt = Paths.get("/tmp/second.cdoc2");
+Path destDir = Paths.get("/tmp");
+Integer slot = 0;
+String alias = "Isikutuvastus";
+  
+System.setProperty("key-capsule.properties","classpath:localhost.properties");
+
+Services services = Cdoc2Services.initFromSystemProperties();
+
+DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(
+        Pkcs11Tools.loadFromPKCS11Interactively(
+                "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
+                slot,
+                alias
+        )
+);
+
+List<String> extractedFiles = new CDocDecrypter()
         .withCDoc(cdoc2FileToDecrypt.toFile())
-        .withKeyServers(keyCapsulesClient)
+        .withServices(services)
         .withRecipient(dkm)
         .withDestinationDirectory(destDir.toFile())
         .decrypt();
@@ -386,6 +415,65 @@ then pkcs11 library is looked for from [default locations](https://github.com/op
 
 Latest server configuration is available through https://id.eesti.ee/config.json
 
+### Decrypting with Smart-ID
+
+```java
+String idCode = "51307149560";
+
+SemanticsIdentifier semId = new SemanticsIdentifier(
+        SemanticsIdentifier.IdentityType.PNO,
+        SemanticsIdentifier.CountryCode.EE,
+        idCode
+        );
+
+AuthenticationIdentifier authId = 
+        new AuthenticationIdentifier(AuthenticationType.SID, semId);
+
+// normally initialized through -D option to java process
+System.setProperty("key-shares.properties","config/key_shares-test.properties");
+System.setProperty("smart-id.properties","classpath:smart-id/smart_id-test.properties"); 
+Services services = Cdoc2Services.initFromSystemProperties();
+
+DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(decryptAuthIdentifier);
+
+List<String> extractedFiles = new CDocDecrypter()
+        .withCDoc(cdoc2FileToDecrypt.toFile())
+        .withServices(services)
+        .withRecipient(dkm)
+        .withDestinationDirectory(destDir.toFile())
+        .decrypt();
+```
+
+
+### Decrypting with Mobile-ID
+
+```java
+String idCode = "51307149560";
+String phoneNumber = "+37269930366";
+
+SemanticsIdentifier semId = new SemanticsIdentifier(
+        SemanticsIdentifier.IdentityType.PNO,
+        SemanticsIdentifier.CountryCode.EE,
+        idCode
+        );
+
+AuthenticationIdentifier authId = 
+        new AuthenticationIdentifier(AuthenticationType.MID, semId, phoneNumber);
+
+// normally initialized through -D option to java process
+System.setProperty("key-shares.properties","config/key_shares-test.properties");
+System.setProperty("mobile-id.properties","classpath:mobile-id/mobile_id-test.properties"); 
+Services services = Cdoc2Services.initFromSystemProperties();
+
+DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(decryptAuthIdentifier);
+
+List<String> extractedFiles = new CDocDecrypter()
+        .withCDoc(cdoc2FileToDecrypt.toFile())
+        .withServices(services)
+        .withRecipient(dkm)
+        .withDestinationDirectory(destDir.toFile())
+        .decrypt();
+```
 
 ## Long-term crypto
 

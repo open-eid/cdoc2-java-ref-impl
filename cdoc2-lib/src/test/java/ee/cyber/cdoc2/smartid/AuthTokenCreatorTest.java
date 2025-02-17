@@ -4,7 +4,7 @@ import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.api.ApiException;
@@ -56,7 +56,7 @@ public class AuthTokenCreatorTest {
 
     private static final Logger log = LoggerFactory.getLogger(AuthTokenCreatorTest.class);
 
-    KeyShareClientFactory sharesFac;
+    KeySharesClientFactory sharesFac;
 
     @Mock
     KeySharesClient mockKeySharesClient1;
@@ -78,7 +78,7 @@ public class AuthTokenCreatorTest {
     //demo env 30303039914 that automatically authenticates successfully
     private static final String DEMO_ID_CODE = "30303039914";
 
-    KeyShareClientFactory setupMockSharesClientFac() {
+    KeySharesClientFactory setupMockSharesClientFac() {
         KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();
         sharesFac = new KeySharesClientHelper(
             List.of(mockKeySharesClient1, mockKeySharesClient2),

@@ -3,13 +3,14 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
-import ee.cyber.cdoc2.client.KeyShareClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
 import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EstEncKeyMaterialBuilder;
 import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import java.util.concurrent.Callable;
 import javax.naming.NamingException;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -90,6 +92,7 @@ public class CDocCreateCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
+    private String keyServerPropertiesFile;
     @Option(names = {"-S", "--server"},
         paramLabel = "FILE.properties",
         description = "key server connection properties file"
@@ -97,7 +100,11 @@ public class CDocCreateCmd implements Callable<Void> {
         //, arity = "0..1"
         //, fallbackValue = DEFAULT_SERVER_PROPERTIES
     )
-    private String keyServerPropertiesFile;
+    private void setKeyServerPropertiesFile(String server) {
+        keyServerPropertiesFile = server;
+        System.setProperty(KEY_CAPSULE_POST_PROPERTIES, keyServerPropertiesFile);
+    }
+
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     private File[] inputFiles;
@@ -150,7 +157,7 @@ public class CDocCreateCmd implements Callable<Void> {
             .fromX509Certificate(this.recipient.certs)
             .build();
 
-        addEtsiRecipientsIfAny(recipients, cDocBuilder);
+        addAuthRecipientsIfAny(recipients, cDocBuilder);
 
         cDocBuilder.withRecipients(recipients);
 
@@ -188,25 +195,21 @@ public class CDocCreateCmd implements Callable<Void> {
         }
     }
 
-    private void addEtsiRecipientsIfAny(
+    private void addAuthRecipientsIfAny(
         List<EncryptionKeyMaterial> recipients,
         CDocBuilder cDocBuilder
     ) throws GeneralSecurityException, NamingException {
 
         if (isWithSid() || isWithMid()) {
-            KeyShareClientFactory keyShareClientFactory =
-                Cdoc2Services.initFromSystemProperties().get(KeyShareClientFactory.class);
-            cDocBuilder.withKeyShares(keyShareClientFactory);
+            KeySharesClientFactory keySharesClientFactory =
+                Cdoc2Services.initFromSystemProperties().get(KeySharesClientFactory.class);
+            cDocBuilder.withKeyShares(keySharesClientFactory);
         }
 
-        List<EncryptionKeyMaterial> etsiRecipients = EncryptionKeyMaterial.etsiBuilder()
-            .fromEtsiIdentifier(this.recipient.identificationCodes)
+        List<EncryptionKeyMaterial> etsiRecipients = new EstEncKeyMaterialBuilder()
             // for eId fetch authentication certificates' public keys for natural person identity codes
-            .forEId(
-                null != this.recipient.identificationCodes
-                    && !isWithSid()
-                    && !isWithMid()
-            )
+            .fromCertDirectory(this.recipient.identificationCodes)
+            // for auth based split key shares
             .forSid(this.recipient.sidCodes)
             .forMid(this.recipient.midCodes)
             .build();
