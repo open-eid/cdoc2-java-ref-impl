@@ -1,6 +1,15 @@
 package ee.cyber.cdoc2.container;
 
+import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.TestLifecycleLogger;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.client.model.NonceResponse;
+import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
@@ -9,14 +18,16 @@ import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.RsaUtils;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EstEncKeyMaterialBuilder;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
+import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
@@ -41,6 +52,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +64,9 @@ import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import ee.cyber.cdoc2.mobileid.MIDTestData;
+import ee.cyber.cdoc2.services.Services;
+import ee.cyber.cdoc2.services.ServicesBuilder;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.io.input.CountingInputStream;
 import org.junit.jupiter.api.*;
@@ -60,20 +75,29 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
 import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
 import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
 import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.createKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
+import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
+import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,11 +125,54 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Mock
     KeyCapsuleClient capsuleClientMock;
 
+    @Mock
+    KeySharesClient mockKeySharesClient1;
+
+    @Mock
+    KeySharesClient mockKeySharesClient2;
+
+    @Captor
+    ArgumentCaptor<KeyShare> keyShareCaptor1;
+
+    @Captor
+    ArgumentCaptor<KeyShare> keyShareCaptor2;
+
+    KeySharesClientFactory sharesClientFactory;
+
     Capsule capsuleData;
 
     @BeforeAll
     static void init() {
         bobKeyLabelParams = getPublicKeyLabelParams("bobKeyPem");
+    }
+
+    void setupKeyShareClientMocks() throws Exception {
+        KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();
+        sharesClientFactory = new KeySharesClientHelper(
+            List.of(mockKeySharesClient1, mockKeySharesClient2),
+            configuration
+        );
+
+        List<String> keySharesServersUrls = configuration.getKeySharesServersUrls().stream().toList();
+        assertTrue(keySharesServersUrls.size() >= 2);
+        when(mockKeySharesClient1.getServerIdentifier()).thenReturn(keySharesServersUrls.get(0));
+        when(mockKeySharesClient2.getServerIdentifier()).thenReturn(keySharesServersUrls.get(1));
+
+        when(mockKeySharesClient1.storeKeyShare(any())).thenReturn("shareId1");
+        when(mockKeySharesClient2.storeKeyShare(any())).thenReturn("shareId2");
+    }
+
+    Services getMockCdoc2Services() throws Exception {
+        setupKeyShareClientMocks();
+
+        when(capsuleClientMock.getServerIdentifier()).thenReturn("mock");
+        when(capsuleClientMock.storeCapsule(any())).thenReturn("SD1234567890");
+
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(KeyCapsuleClient.class, capsuleClientMock, null)
+            .build();
+        return services;
     }
 
     // Mainly flatbuffers and friends
@@ -124,7 +191,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPublicKey(publicKey, bobKeyLabelParams)),
-            null
+            null, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -167,7 +234,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(EncryptionKeyMaterial.fromPublicKey(
                 publicKey, getPublicKeyLabelParams())
             ),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -221,7 +288,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPublicKey(recipientPubKey, bobKeyLabelParams)),
-            capsuleClientMock
+            capsuleClientMock, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -270,7 +337,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             List.of(EncryptionKeyMaterial.fromPublicKey(
                 publicKey, getPublicKeyLabelParams())
             ),
-            capsuleClientMock
+            capsuleClientMock, null
         );
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
         envelope.encrypt(List.of(payloadFile), dst);
@@ -310,7 +377,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         String keyLabel = "testSymmetricKeySerialization";
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromSecret(preSharedKey, keyLabel)),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -356,7 +423,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial
                 .fromPassword(password.toCharArray(), keyLabel)),
-            null
+            null, null
         );
 
         ByteArrayOutputStream dst = new ByteArrayOutputStream();
@@ -383,6 +450,30 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         ByteBuffer saltBuf = passwordKeyCapsule.saltAsByteBuffer();
         assertNotNull(saltBuf);
+    }
+
+    @Test
+    void testKeySharesSerializationWithSmartId(@TempDir Path tempDir) throws Exception {
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.SID;
+        AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("30303039914"), authType
+
+        );
+
+        testKeySharesSerialization(tempDir, keyLabel, authType, "30303039914");
+    }
+
+    @Test
+    void testKeySharesSerializationWithMobileId(@TempDir Path tempDir) throws Exception {
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.MID;
+        AuthenticationIdentifier keyLabel = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier("51307149560"), authType
+
+        );
+
+        testKeySharesSerialization(tempDir, keyLabel, authType, "51307149560");
     }
 
     @Test
@@ -475,6 +566,88 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
+    void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
+        // SID demo env that authenticates automatically
+        setupKeyShareClientMocks();
+
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.SID;
+        String idCode = "30303039914";
+
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode), authType
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            authIdentifier,
+            authIdentifier,
+            sharesClientFactory
+        );
+
+        verifyMockedKeyShareClients();
+
+        //TODO: RM-4756, mock SmartIdClient
+        SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(SmartIdClient.class, smartIdClient, null)
+            .build();
+
+        checkContainerDecrypt(
+            decryptionData.cdocContainerBytes(),
+            decryptionData.outDir(),
+            decryptionData.decryptionKeyMaterial(),
+            List.of(decryptionData.payloadFileName()),
+            decryptionData.payloadFileName(),
+            decryptionData.payloadData(),
+            services
+        );
+    }
+
+    @Test
+    void testKeySharesScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        // MID demo env that authenticates automatically
+        setupKeyShareClientMocks();
+        String idCode = "51307149560";
+        AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode),
+            AuthenticationIdentifier.AuthenticationType.MID
+        );
+        AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier(idCode),
+            "+37269930366"
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            encAuthIdentifier,
+            decryptAuthIdentifier,
+            sharesClientFactory
+        );
+
+        verifyMockedKeyShareClients();
+
+        //  TODO: RM-4756, mock MobileIdClient
+        MobileIdClient midClient = MIDTestData.getDemoEnvClient();
+
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(MobileIdClient.class, midClient, null)
+            .build();
+
+        checkContainerDecrypt(
+            decryptionData.cdocContainerBytes(),
+            decryptionData.outDir(),
+            decryptionData.decryptionKeyMaterial(),
+            List.of(decryptionData.payloadFileName()),
+            decryptionData.payloadFileName(),
+            decryptionData.payloadData(),
+            services
+        );
+    }
+
+    @Test
     void testReEncryptionScenario(@TempDir Path tempDir) throws Exception {
         // encrypt initial cdoc2 document
         UUID uuid = UUID.randomUUID();
@@ -525,13 +698,98 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         // ensure that re-encrypted container is decipherable
         assertDoesNotThrow(
-            () ->  EnvelopeTestUtils.checkContainerDecrypt(
+            () ->  checkContainerDecrypt(
                 Files.readAllBytes(outputCDocFile.toPath()),
                 destinationDir,
                 DecryptionKeyMaterial.fromPassword(password.toCharArray(), passwordKeyLabel),
                 List.of(payloadTxtFileName),
                 payloadTxtFileName,
                 payloadData,
+                null
+            )
+        );
+    }
+
+    @Test
+    void testReEncryptionScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        // encrypt initial cdoc2 document
+        setupKeyShareClientMocks();
+        String idCode = "60001017869";
+        AuthenticationIdentifier encAuthIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode),
+            AuthenticationIdentifier.AuthenticationType.MID
+        );
+        AuthenticationIdentifier decryptAuthIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier(idCode),
+            "+37268000769"
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            encAuthIdentifier,
+            decryptAuthIdentifier,
+            sharesClientFactory
+        );
+
+        verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
+        verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
+
+        KeyShare keyShare1 = keyShareCaptor1.getValue();
+        KeyShare keyShare2 = keyShareCaptor2.getValue();
+
+        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
+        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
+
+        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+
+
+        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+
+        //  TODO: RM-4756, mock MobileIdClient
+        MobileIdClient midClient = MIDTestData.getDemoEnvClient();
+
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(MobileIdClient.class, midClient, null)
+            .build();
+
+        // run re-encryption flow
+        Path destinationDir = tempDir.resolve("out");
+        Files.createDirectories(destinationDir);
+
+        String outputCdocFileName = decryptionData.payloadFileName() + ".cdoc2";
+        File outputCDocFile = destinationDir.resolve(outputCdocFileName).toFile();
+
+        String password = "myPlainTextPassword";
+        String passwordKeyLabel = "testPBKDF2KeyFromPasswordSerialization";
+
+        EncryptionKeyMaterial reEncryptionKeyMaterial = EncryptionKeyMaterial
+            .fromPassword(password.toCharArray(), passwordKeyLabel);
+
+        try (ByteArrayInputStream cdocIs = new ByteArrayInputStream(decryptionData.cdocContainerBytes());
+             OutputStream outputCDocOs = new FileOutputStream(outputCDocFile)) {
+
+            Envelope.reEncrypt(
+                cdocIs,
+                decryptionData.decryptionKeyMaterial(),
+                outputCDocOs,
+                reEncryptionKeyMaterial,
+                destinationDir,
+                services
+            );
+        }
+
+        // ensure that re-encrypted container is decipherable
+        assertDoesNotThrow(
+            () -> checkContainerDecrypt(
+                Files.readAllBytes(outputCDocFile.toPath()),
+                destinationDir,
+                DecryptionKeyMaterial.fromPassword(password.toCharArray(), passwordKeyLabel),
+                List.of(decryptionData.payloadFileName()),
+                decryptionData.payloadFileName(),
+                decryptionData.payloadData(),
                 null
             )
         );
@@ -616,7 +874,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         var ex = assertThrows(
             Exception.class,
-            () -> EnvelopeTestUtils.checkContainerDecrypt(cdocContainerBytes, outDir,
+            () -> checkContainerDecrypt(cdocContainerBytes, outDir,
                 DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
                 List.of(payloadFileName), payloadFileName, payloadData, null)
         );
@@ -655,8 +913,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         Files.createFile(cdocFile.toPath());
         assertTrue(cdocFile.exists());
 
-        String overwrite = System.getProperty(CDocConfiguration.OVERWRITE_PROPERTY);
-        System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, "true");
+        String overwrite = System.getProperty(OVERWRITE_PROPERTY);
+        System.setProperty(OVERWRITE_PROPERTY, "true");
         try {
             assertThrows(
                 Exception.class,
@@ -667,9 +925,64 @@ class EnvelopeTest implements TestLifecycleLogger {
             assertFalse(cdocFile.exists());
         } finally {
             if (overwrite != null) {
-                System.setProperty(CDocConfiguration.OVERWRITE_PROPERTY, overwrite);
+                System.setProperty(OVERWRITE_PROPERTY, overwrite);
             }
         }
+    }
+
+    @Disabled("Needs real id-code") // replace idCode with id code present in SK LDAP
+    @Test
+    void testCdocBuilder(@TempDir Path tempDir) throws Exception {
+        //https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters
+        // #test-accounts-for-automated-testing
+        // fails as this is test id-code for Smart-ID and doesn't exist in SK LDAP
+        String idCode = "30303039914"; // replace with real id code present in SK LDAP
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        File cdocFile = tempDir.resolve("testCdocBuilder.cdoc").toFile();
+
+        List<EncryptionKeyMaterial> encKeyMaterial = new EstEncKeyMaterialBuilder()
+            // will download recipient certificate and add public key based recipient
+            .fromCertDirectory(new String[]{idCode})
+            // will create authentication based recipient
+            .forAuthMeans(new String[]{idCode})
+            .build();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        List<File> files = new LinkedList<>();
+        files.add(payloadFile);
+
+        CDocBuilder builder = new CDocBuilder()
+            .withPayloadFiles(files)
+            .withRecipients(encKeyMaterial)
+            .withServices(getMockCdoc2Services());
+
+        builder.buildToFile(cdocFile);
+
+
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
+
+        assertTrue(recipients.size() == 2);
+
+        String label0 = recipients.get(0).getRecipientKeyLabel();
+        assertTrue(label0.contains(idCode));
+        assertTrue(label0.contains("ID-card"));
+
+        assertEquals("etsi/PNOEE-" + idCode, recipients.get(1).getRecipientId());
+
+        String label1 = recipients.get(1).getRecipientKeyLabel().toUpperCase();
+        assertTrue(label1.contains("TYPE=AUTH"));
+        assertTrue(label1.contains(idCode));
+
     }
 
     // tar processing is ended after zero block has encountered. It is possible to add extra data after this and tar lib
@@ -790,7 +1103,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         IOException ioex = assertThrows(IOException.class, () -> Envelope.decrypt(
             countingInputStream,
-            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null
+            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null, null
         ));
 
         assertEquals("Tar entry with illegal type found", ioex.getMessage());
@@ -801,8 +1114,6 @@ class EnvelopeTest implements TestLifecycleLogger {
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
 
-
-
         // MAC check exception is thrown instead of "Unexpected data after tar"
         byte[] wrongPoly1305MacCdoc = Arrays.copyOf(newCdocBytes, newCdocBytes.length);
         wrongPoly1305MacCdoc[wrongPoly1305MacCdoc.length - 1] = (byte) 0xff; //corrupt MAC
@@ -812,7 +1123,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         IOException ex = assertThrows(IOException.class, () -> Envelope.decrypt(
             wrongMacIs,
-            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null
+            DecryptionKeyMaterial.fromSecretKey(preSharedKey, keyLabel), outDir, null, null
         ));
 
         assertInstanceOf(AEADBadTagException.class, ex.getCause());
@@ -852,7 +1163,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         int singleKeyLen = Envelope.prepare(
                 List.of(EncryptionKeyMaterial
                     .fromPublicKey(bobPubKey, bobKeyLabelParams)),
-                null)
+                null, null)
             .serializeHeader().length;
         int twoKeyLen = Envelope.prepare(
                 List.of(
@@ -863,7 +1174,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                             ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
                             getPublicKeyLabelParams()
                         )
-                ), null
+                ), null, null
             )
             .serializeHeader().length;
 
@@ -899,7 +1210,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         log.debug("Generated {} EC keys in {}s", keyLabelMap.size(), end.getEpochSecond() - start.getEpochSecond());
 
         Instant prepareStart = Instant.now();
-        Envelope senderEnvelope = Envelope.prepare(recipients, null);
+        Envelope senderEnvelope = Envelope.prepare(recipients, null, null);
         Instant prepareEnd = Instant.now();
         log.debug("Prepared {} EC sender keys in {}s", keyLabelMap.size(),
             prepareEnd.getEpochSecond() - prepareStart.getEpochSecond());
@@ -919,7 +1230,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                 )
         );
 
-        Envelope prepare = Envelope.prepare(recipients, null);
+        Envelope prepare = Envelope.prepare(recipients, null, null);
         IllegalStateException exception =
             assertThrows(IllegalStateException.class, prepare::serializeHeader);
 
@@ -936,7 +1247,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
             try (ByteArrayInputStream bis = new ByteArrayInputStream(cdocContainerBytes)) {
                 List<String> filesExtracted = Envelope.decrypt(bis, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
-                    outDir, null);
+                    outDir, null, null);
 
                 assertEquals(List.of(payloadFileName), filesExtracted);
                 Path payloadPath = Path.of(outDir.toAbsolutePath().toString(), payloadFileName);
@@ -952,6 +1263,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     // requires 16GB of free disk space on /tmp
     @Test
     @Tag("slow") // about 8 min, depends on IO speed
+    @Disabled("requires 16GB of free disk space on /tmp and takes about ~8min to run")
     void test8GBPlusFileContainer(@TempDir Path tempDir) throws Exception {
 
         // since generated file is random, zlib can't compress it effectively and
@@ -1000,7 +1312,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         Envelope envelope = Envelope.prepare(
             List.of(EncryptionKeyMaterial.fromSecret(key, label)),
-            null
+            null, null
         );
 
         File bigDotCdoc = outDir.resolve("big.cdoc").toFile();
@@ -1033,6 +1345,73 @@ class EnvelopeTest implements TestLifecycleLogger {
             "ee.cyber.cdoc2.key-label.machine-readable-format.enabled",
             String.valueOf(isFormatted)
         );
+    }
+
+    private void testKeySharesSerialization(
+        Path tempDir,
+        AuthenticationIdentifier authIdentifier,
+        AuthenticationIdentifier.AuthenticationType authType,
+        String idCode
+    ) throws Exception {
+        setupKeyShareClientMocks();
+
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        try (FileOutputStream payloadFos = new FileOutputStream(payloadFile)) {
+            payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
+        }
+
+        Envelope envelope = Envelope.prepare(
+            List.of(EncryptionKeyMaterial.fromAuthMeans(
+                authIdentifier, createKeyLabelParams(idCode, authType))
+            ),
+            null, sharesClientFactory
+        );
+
+        ByteArrayOutputStream dst = new ByteArrayOutputStream();
+        envelope.encrypt(List.of(payloadFile), dst);
+
+        byte[] cdocBytes = dst.toByteArray();
+
+        assertTrue(cdocBytes.length > 0);
+
+        log.debug("available: {}", cdocBytes.length);
+
+        byte[] fbsBytes = Envelope.readFBSHeader(new ByteArrayInputStream(cdocBytes));
+        Header header = Envelope.deserializeFBSHeader(fbsBytes);
+
+        assertNotNull(header);
+        assertEquals(1, header.recipientsLength());
+
+        RecipientRecord recipient = header.recipients(0);
+
+        assertEquals(recipients_KeySharesCapsule, recipient.capsuleType());
+
+        KeySharesCapsule keySharesCapsule = (KeySharesCapsule) recipient.capsule(new KeySharesCapsule());
+        assertNotNull(keySharesCapsule);
+
+        ByteBuffer saltBuf = keySharesCapsule.saltAsByteBuffer();
+        assertNotNull(saltBuf);
+    }
+
+    private void verifyMockedKeyShareClients() throws Exception {
+        verify(mockKeySharesClient1).storeKeyShare(keyShareCaptor1.capture());
+        verify(mockKeySharesClient2).storeKeyShare(keyShareCaptor2.capture());
+
+        KeyShare keyShare1 = keyShareCaptor1.getValue();
+        KeyShare keyShare2 = keyShareCaptor2.getValue();
+
+        NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
+        NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
+
+        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+
+        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
     }
 
 }

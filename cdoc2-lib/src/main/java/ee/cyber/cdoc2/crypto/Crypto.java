@@ -17,6 +17,8 @@ import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.security.DrbgParameters.Capability.PR_AND_RESEED;
+
 
 public final class Crypto {
     private static final Logger log = LoggerFactory.getLogger(Crypto.class);
@@ -122,12 +125,12 @@ public final class Crypto {
 
     /**
      * Derive KEK from salt and secret. Used in symmetric key scenario only.
-     * @param label              Label identifying pre shared secret
+     * @param label Label identifying pre shared secret
      * @param preSharedSecretKey pre shared secret between parties (sender and recipient) used to
      *                           derive KEK. Min len of 32 bytes
-     * @param salt               salt minimum length of 32 bytes
-     * @param fmkEncMethod       fmk encryption method from {@link FMKEncryptionMethod#names}.
-     *                           Currently, only "XOR" is valid value
+     * @param salt salt minimum length of 32 bytes
+     * @param fmkEncMethod fmk encryption method from {@link FMKEncryptionMethod#names}.
+     *                     Currently, only "XOR" is valid value
      * @return SecretKey with derived KEK
      */
     public static SecretKey deriveKeyEncryptionKey(
@@ -160,7 +163,7 @@ public final class Crypto {
         byte[] kekPm = hkdf.extract(salt, preSharedSecretKey.getEncoded());
 
         String info = "CDOC20kek" + fmkEncMethod + label;
-        byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), FMK_LEN_BYTES);
+        byte[] kek = hkdf.expand(kekPm, info.getBytes(StandardCharsets.UTF_8), KEK_LEN_BYTES);
 
         return new SecretKeySpec(kek, FMKEncryptionMethod.name(FMKEncryptionMethod.XOR));
     }
@@ -169,7 +172,7 @@ public final class Crypto {
      * Create Symmetric Key from password and salt.
      * @param passwordChars password chars between parties (sender and recipient) used to create
      *                      a symmetric key. Min len of 32 bytes
-     * @param salt          generated salt
+     * @param salt generated salt
      * @return SecretKey with symmetric key
      * @throws GeneralSecurityException if key creation has failed
      */
@@ -267,9 +270,9 @@ public final class Crypto {
 
     /**
      * Derive KEK for EC scenarios
-     * @param ecKeyPair        key pair
-     * @param otherPublicKey   public key
-     * @param keyLen           key length
+     * @param ecKeyPair key pair
+     * @param otherPublicKey public key
+     * @param keyLen key length
      * @param isEncryptionMode if encryption mode enabled or not
      * @return bytes of derived KEK
      * @throws GeneralSecurityException if key creation has failed
@@ -298,7 +301,7 @@ public final class Crypto {
 
     /**
      * Calculate HMAC
-     * @param hhk  HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
+     * @param hhk HMAC header key. For CDOC2 {@link Crypto#deriveHeaderHmacKey(byte[])}
      * @param data input – data in bytes. For CDOC2 this is header FlatBuffers bytes
      * @return the MAC result
      * @throws NoSuchAlgorithmException if no Provider supports a MacSpi implementation for the specified algorithm
@@ -342,6 +345,44 @@ public final class Crypto {
         byte[] salt = new byte[MIN_SALT_LENGTH]; //spec: salt length should be 256bits
         getSecureRandom().nextBytes(salt);
         return salt;
+    }
+
+    /**
+     * Split KEK into N shares.
+     * @param kek KEK
+     * @param numOfShares number of shares for KEK splitting
+     * @return list of shares in bytes
+     */
+    public static List<byte[]> splitKek(byte[] kek, int numOfShares)
+        throws NoSuchAlgorithmException {
+
+        ArrayList<byte[]> shares = new ArrayList<>(numOfShares);
+        shares.add(kek);
+
+        for (int i = 1; i < numOfShares; i++) {
+            byte[] share = new byte[kek.length];
+            getSecureRandom().nextBytes(share);
+            shares.add(share);
+            shares.set(0, xor(shares.get(0), share));
+        }
+        return shares;
+    }
+
+    /**
+     * Combine N shares into KEK.
+     * @param shares list of shares in bytes
+     * @return bytes of combined KEK
+     */
+    public static byte[] combineKek(List<byte[]> shares, int minNumOfShares) {
+        if (shares.size() < minNumOfShares) {
+            throw new IllegalArgumentException("Miniumum num of shares is " + minNumOfShares);
+        }
+
+        byte[] kek = shares.get(0);
+        for (int i = 1; i < shares.size(); i++) {
+            kek = xor(kek, shares.get(i));
+        }
+        return kek;
     }
 
 }

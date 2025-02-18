@@ -1,10 +1,10 @@
 package ee.cyber.cdoc2.cli.util;
 
-
 import java.io.IOException;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.util.Resources;
+
 
 /**
  * Helper class for common usage.

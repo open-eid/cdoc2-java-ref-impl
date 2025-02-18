@@ -3,12 +3,15 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
 import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EstEncKeyMaterialBuilder;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,6 +20,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
 import java.io.File;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
@@ -25,8 +29,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
-import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
+import javax.naming.NamingException;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -58,7 +64,7 @@ public class CDocCreateCmd implements Callable<Void> {
         private File[] certs;
 
         @Option(names = {"-r", "--recipient", "--receiver"},
-            paramLabel = "isikukood", description = "recipient id code (isikukood)")
+            paramLabel = "isikukood", description = "recipient id codes (isikukood)")
         private String[] identificationCodes;
 
         @Option(names = {"-s", "--secret"}, paramLabel = "<label>:<secret>",
@@ -70,6 +76,14 @@ public class CDocCreateCmd implements Callable<Void> {
             converter = LabeledPasswordParamConverter.class,
             paramLabel = "<label>:<password>", description = CliConstants.PASSWORD_DESCRIPTION)
         private LabeledPasswordParam labeledPasswordParam;
+
+        @Option(names = {"-sid", "--smart-id"},
+            paramLabel = "SID", description = "ID codes for smart id encryption")
+        private String[] sidCodes;
+
+        @Option(names = {"-mid", "--mobile-id"},
+            paramLabel = "MID", description = "ID codes for mobile id encryption")
+        private String[] midCodes;
     }
 
     // allow -Dkey for setting System properties
@@ -78,6 +92,7 @@ public class CDocCreateCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
+    private String keyServerPropertiesFile;
     @Option(names = {"-S", "--server"},
         paramLabel = "FILE.properties",
         description = "key server connection properties file"
@@ -85,7 +100,11 @@ public class CDocCreateCmd implements Callable<Void> {
         //, arity = "0..1"
         //, fallbackValue = DEFAULT_SERVER_PROPERTIES
     )
-    private String keyServerPropertiesFile;
+    private void setKeyServerPropertiesFile(String server) {
+        keyServerPropertiesFile = server;
+        System.setProperty(KEY_CAPSULE_POST_PROPERTIES, keyServerPropertiesFile);
+    }
+
 
     @Parameters(paramLabel = "FILE", description = "one or more files to encrypt", arity = "1..*")
     private File[] inputFiles;
@@ -103,12 +122,16 @@ public class CDocCreateCmd implements Callable<Void> {
     public Void call() throws Exception {
 
         if (log.isDebugEnabled()) {
-            log.debug("create --file {} --pubkey {} --cert {} --secret {} --password {} {}",
+            log.debug("create --file={} --pubkey={} --cert={} --recipient={} --secret={} "
+                    + "--password={} --smart-id={} --mobile-id={} {}",
                 cdocFile,
                 Arrays.toString(recipient.pubKeys),
                 Arrays.toString(recipient.certs),
+                Arrays.toString(recipient.identificationCodes),
                 (recipient.labeledSecrets != null) ? "****" : null,
                 (recipient.labeledPasswordParam != null) ? "****" : null,
+                Arrays.toString(recipient.sidCodes),
+                Arrays.toString(recipient.midCodes),
                 Arrays.toString(inputFiles));
         }
 
@@ -132,9 +155,9 @@ public class CDocCreateCmd implements Callable<Void> {
             .fromSecrets(this.recipient.labeledSecrets)
             .fromPublicKey(this.recipient.pubKeys)
             .fromX509Certificate(this.recipient.certs)
-            // fetch authentication certificates' public keys for natural person identity codes
-            .fromEId(this.recipient.identificationCodes)
             .build();
+
+        addAuthRecipientsIfAny(recipients, cDocBuilder);
 
         cDocBuilder.withRecipients(recipients);
 
@@ -170,6 +193,36 @@ public class CDocCreateCmd implements Callable<Void> {
                 );
             }
         }
+    }
+
+    private void addAuthRecipientsIfAny(
+        List<EncryptionKeyMaterial> recipients,
+        CDocBuilder cDocBuilder
+    ) throws GeneralSecurityException, NamingException {
+
+        if (isWithSid() || isWithMid()) {
+            KeySharesClientFactory keySharesClientFactory =
+                Cdoc2Services.initFromSystemProperties().get(KeySharesClientFactory.class);
+            cDocBuilder.withKeyShares(keySharesClientFactory);
+        }
+
+        List<EncryptionKeyMaterial> etsiRecipients = new EstEncKeyMaterialBuilder()
+            // for eId fetch authentication certificates' public keys for natural person identity codes
+            .fromCertDirectory(this.recipient.identificationCodes)
+            // for auth based split key shares
+            .forSid(this.recipient.sidCodes)
+            .forMid(this.recipient.midCodes)
+            .build();
+
+        recipients.addAll(etsiRecipients);
+    }
+
+    private boolean isWithSid() {
+        return this.recipient.sidCodes != null;
+    }
+
+    private boolean isWithMid() {
+        return this.recipient.midCodes != null;
     }
 
 }

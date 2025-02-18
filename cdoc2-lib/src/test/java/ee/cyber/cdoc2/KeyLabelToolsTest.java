@@ -1,5 +1,8 @@
 package ee.cyber.cdoc2;
 
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
@@ -13,7 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static ee.cyber.cdoc2.CDocConfiguration.KEY_LABEL_FILE_NAME_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_LABEL_FILE_NAME_PROPERTY;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.convertKeyLabelParamsMapToString;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
@@ -233,7 +237,9 @@ class KeyLabelToolsTest {
     @Test
     void testEIdLabelParamsCreation() {
         KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-            "Common,Name,IdentityCode", BigInteger.valueOf(123456)
+            "Common,Name,IdentityCode",
+            BigInteger.valueOf(123456),
+            KeyLabelTools.KeyLabelType.CERT.getName()
         );
 
         assertEquals(
@@ -281,13 +287,17 @@ class KeyLabelToolsTest {
 
     @Test
     void testKeySharesKeyLabelParamsCreation() {
-        KeyLabelParams keyLabelParams = createKeySharesKeyLabelParams("keyLabel");
+        SemanticsIdentifier semanticsIdentifier = createSemanticsIdentifier("30303039914");
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier
+            .forKeyShares(semanticsIdentifier, AuthenticationIdentifier.AuthenticationType.SID);
+        KeyLabelParams keyLabelParams
+            = createKeySharesKeyLabelParams(authIdentifier.getEtsiIdentifier());
 
         assertEquals(
-            "keyLabel",
+            "etsi/PNOEE-30303039914",
             getDecodedKeyLabelParamValue(
                 keyLabelParams.keyLabelParams(),
-                KeyLabelTools.KeyLabelDataFields.PNO
+                KeyLabelTools.KeyLabelDataFields.SN
             )
         );
     }

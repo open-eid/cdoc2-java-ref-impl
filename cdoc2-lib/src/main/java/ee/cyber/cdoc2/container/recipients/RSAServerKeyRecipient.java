@@ -2,15 +2,20 @@ package ee.cyber.cdoc2.container.recipients;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
-import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.KekTools;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
 import ee.cyber.cdoc2.fbs.recipients.RsaKeyDetails;
+import ee.cyber.cdoc2.services.Services;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
+
 
 /**
  * RSA-OAEP recipient using RsaKeyDetails. POJO of flatbuffers
@@ -18,11 +23,17 @@ import java.util.Objects;
  */
 public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipient {
 
+    private static final Logger log = LoggerFactory.getLogger(RSAServerKeyRecipient.class);
     private final String keyServerId;
     private final String transactionId;
 
-    public RSAServerKeyRecipient(RSAPublicKey recipient, String keyServerId, String transactionId,
-            byte[] encryptedFmk, String recipientLabel) {
+    public RSAServerKeyRecipient(
+        RSAPublicKey recipient,
+        String keyServerId,
+        String transactionId,
+        byte[] encryptedFmk,
+        String recipientLabel
+    ) {
         super(recipient, encryptedFmk, recipientLabel);
         this.keyServerId = keyServerId;
         this.transactionId = transactionId;
@@ -53,13 +64,19 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     }
 
     @Override
-    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, KeyCapsuleClientFactory factory)
+    public byte[] deriveKek(DecryptionKeyMaterial keyMaterial, Services services)
         throws GeneralSecurityException, CDocException {
-        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial) {
+
+        if (services == null || !services.hasService(KeyCapsuleClientFactory.class)) {
+            log.warn("Key capsule client factory not configured");
+        }
+
+        if (keyMaterial instanceof KeyPairDecryptionKeyMaterial keyPairKeyMaterial
+            && services != null && services.hasService(KeyCapsuleClientFactory.class)) {
             return KekTools.deriveKekForRsaServer(
                 this,
                 keyPairKeyMaterial,
-                factory
+                services.get(KeyCapsuleClientFactory.class)
             );
         }
 
@@ -72,4 +89,5 @@ public class RSAServerKeyRecipient extends RSARecipient implements ServerRecipie
     public int serialize(FlatBufferBuilder builder) {
         return RecipientSerializer.serialize(this, builder);
     }
+
 }

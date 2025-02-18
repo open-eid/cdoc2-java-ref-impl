@@ -37,6 +37,13 @@ public class DecryptionKeyExclusiveArgument {
     // if option was not provided then labeledPasswordParam is null
     private LabeledPasswordParam labeledPasswordParam;
 
+    @CommandLine.Option(names = {"-sid", "--smart-id"},
+        paramLabel = "SID", description = "ID code for smart-id decryption")
+    private String sid;
+
+    @CommandLine.ArgGroup(exclusive = false)
+    private MobileIdArguments midArguments;
+
     public File getPrivKeyFile() {
         return this.privKeyFile;
     }
@@ -51,6 +58,32 @@ public class DecryptionKeyExclusiveArgument {
 
     public LabeledPasswordParam getLabeledPasswordParam() {
         return this.labeledPasswordParam;
+    }
+
+    public boolean isWithSid() {
+        return this.sid != null;
+    }
+
+    public boolean isWithMid() {
+        return this.midArguments != null;
+    }
+
+    public String getSid() {
+        return this.sid;
+    }
+
+    public String getMid() {
+        if (isWithMid()) {
+            return this.midArguments.getMid();
+        }
+        return null;
+    }
+
+    public String getMidPhone() {
+        if (isWithMid()) {
+            return this.midArguments.getMidPhone();
+        }
+        return null;
     }
 
 }

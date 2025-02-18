@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -79,6 +80,17 @@ public final class PemTools {
         SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(parsed);
 
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+
+        // BC provider incorrectly sets algorithm name to "ECDSA" for "EC" keys
+        if (X9ObjectIdentifiers.id_ecPublicKey.equals(publicKeyInfo.getAlgorithm().getAlgorithm())) {
+
+            // from BouncyCastle 1.80 its possible map algorithm name
+            // jcaPEMKeyConverter.setAlgorithmMapping(X9ObjectIdentifiers.id_ecPublicKey, "EC");
+            // https://github.com/bcgit/bc-java/issues/1829
+            // until BC 1.80 is released, force SunEC provider for EC keys
+            converter.setProvider("SunEC");
+        }
+
         return converter.getPublicKey(publicKeyInfo);
     }
 
@@ -114,10 +126,28 @@ public final class PemTools {
         Object parsed = new PEMParser(new StringReader(pem)).readObject();
         PEMKeyPair pemKeyPair = (PEMKeyPair) parsed;
 
-        PrivateKey privateKey = new JcaPEMKeyConverter().getPrivateKey(pemKeyPair.getPrivateKeyInfo());
+        // BouncyCastle Provider incorrectly sets algorithm name "ECDSA" for "EC" keys
+        // It's enough that some submodule calls Security.addProvider(new BouncyCastleProvider())
+        // and test begin to fail with "Unsupported algorithm: ECDSA"
+        // ( mid-rest-java-client calls Security.addProvider(new BouncyCastleProvider()) )
+        JcaPEMKeyConverter jcaPEMKeyConverter = new JcaPEMKeyConverter();
+        log.debug("PEM key algorithm: {}", pemKeyPair.getPrivateKeyInfo().getPrivateKeyAlgorithm().getAlgorithm());
+
+        // https://oid-rep.orange-labs.fr/get/1.2.840.10045.2.1
+        if (X9ObjectIdentifiers.id_ecPublicKey.equals(
+            pemKeyPair.getPrivateKeyInfo().getPrivateKeyAlgorithm().getAlgorithm())) { //1.2.840.10045.2.1
+
+            // from BouncyCastle 1.80 its possible map algorithm name
+            // jcaPEMKeyConverter.setAlgorithmMapping(X9ObjectIdentifiers.id_ecPublicKey, "EC");
+            // https://github.com/bcgit/bc-java/issues/1829
+            // until BC 1.80 is released, force SunEC provider for EC keys
+            jcaPEMKeyConverter.setProvider("SunEC");
+        }
+
+        PrivateKey privateKey = jcaPEMKeyConverter.getPrivateKey(pemKeyPair.getPrivateKeyInfo());
         PublicKey publicKey = pemKeyPair.getPublicKeyInfo() == null
             ? null
-            : new JcaPEMKeyConverter().getPublicKey(pemKeyPair.getPublicKeyInfo());
+            : jcaPEMKeyConverter.getPublicKey(pemKeyPair.getPublicKeyInfo());
 
         KeyPair keyPair = new KeyPair(publicKey, privateKey);
 
@@ -234,13 +264,11 @@ public final class PemTools {
 
         var cert = loadCertificate(certIs);
         PublicKey publicKey = cert.getPublicKey();
-        String keyLabel = SkLdapUtil.getKeyLabel(cert);
+        SkLdapUtil.CertificateData certificateData = SkLdapUtil.getKeyLabel(cert);
 
         String certFingerprint = getCertFingerprint(cert);
 
-        SkLdapUtil.CertificateData certificateData = new SkLdapUtil.CertificateData();
         certificateData.setPublicKey(publicKey);
-        certificateData.setKeyLabel(keyLabel);
         certificateData.setFingerprint(certFingerprint);
 
         return certificateData;

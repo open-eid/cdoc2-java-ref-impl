@@ -1,3 +1,7 @@
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: "tcp://docker:2375"
+
 stages:
   - test
   - coverage
@@ -6,6 +10,11 @@ stages:
 test:
   stage: test
   image: maven:3.8.8-eclipse-temurin-17
+#  services:
+#    - name: docker:25.0.3-dind
+#      alias: docker
+#  tags:
+#    - dind
   script:
     - mvn clean verify -s $MAVEN_SETTINGS -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
     - shopt -s globstar
@@ -14,6 +23,10 @@ test:
     - source install_bats.sh
     - source variables.sh 
     - $BATS_HOME/bats-core/bin/bats --gather-test-outputs-in target/reports -x --report-formatter junit --output target/ cdoc2_tests.bats
+# following will fail because docker-compose-plugin is not available from Jammy repository
+#    - apt-get update && apt-get install -y docker.io docker-compose-plugin
+#    - source ../config/shares-server/export-env.sh ../config/shares-server/.env.cyber
+#    - bash run-shares-server-bats-tests.sh
     - 'for file in target/reports/*; do echo "## $file ##" >> target/bats-test.log; cat "$file" >> target/bats-test.log; done'
   coverage: /Total \d+\.\d+ %/
   artifacts:
@@ -35,6 +48,58 @@ test:
     key: "$CI_COMMIT_REF_NAME"
     paths:
       - .m2/repository
+
+test_with_servers:
+  # this will fail as docker image is based on alpine linux and flatc installation fails
+  # use build from previous stage?
+  stage: test
+  image: docker:25.0.3
+  services:
+    - name: docker:25.0.3-dind
+      alias: docker
+  tags:
+    - dind
+  before_script:
+    # Install Java
+    - apk add --no-cache openjdk17
+    # Install Maven
+    - apk add --no-cache maven
+    # Verify installations
+    - java -version
+    - mvn -version
+    - docker compose version
+  script:
+    - mvn clean verify -s $MAVEN_SETTINGS -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+    - shopt -s globstar
+    - awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print "Total", 100*covered/instructions, "% covered" }' /builds/**/target/site/jacoco/jacoco.csv
+    - cd test/bats
+    - source install_bats.sh
+    - source variables.sh
+    - source ../config/shares-server/export-env.sh ../config/shares-server/.env.cyber
+    - BATS_OPTS="--gather-test-outputs-in target/reports -x --report-formatter junit --output target/" bash run-shares-server-bats-tests.sh
+    - 'for file in target/reports/*; do echo "## $file ##" >> target/bats-test.log; cat "$file" >> target/bats-test.log; done'
+  coverage: /Total \d+\.\d+ %/
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/target/surefire-reports/*.xml"
+        - "**/target/report.xml"
+    paths:
+      - "**/target/site/jacoco"
+      - "**/target/bats-test.log"
+  rules:
+# disabled for now
+#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#      when: on_success
+#    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+#      when: on_success
+    - when: never
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    paths:
+      - .m2/repository
+
 
 coverage:
   stage: coverage

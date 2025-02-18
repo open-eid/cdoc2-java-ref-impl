@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPrivateKey;
@@ -32,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@SuppressWarnings("squid:S6706")
+@SuppressWarnings("secrets:S6706")
 class ECKeysTest {
     private static final Logger log = LoggerFactory.getLogger(ECKeysTest.class);
 
@@ -69,7 +71,6 @@ class ECKeysTest {
 
     @Test
     void testLoadEcPrivKey() throws GeneralSecurityException, IOException {
-        @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
             """
                 -----BEGIN EC PRIVATE KEY-----
@@ -99,7 +100,7 @@ class ECKeysTest {
         //        ASN1 OID: secp384r1
         //        NIST CURVE: P-384
         String expectedSecretHex =
-                "61d54013f37d8d876657bdd73925b36fdc1704652624f747ac52448f1668365c4ba803b6af4bf91de07b471916d145b6";
+            "61d54013f37d8d876657bdd73925b36fdc1704652624f747ac52448f1668365c4ba803b6af4bf91de07b471916d145b6";
 
         ECPrivateKey key = ECKeys.loadECPrivateKey(privKeyPem);
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(key.getAlgorithm()));
@@ -108,9 +109,11 @@ class ECKeysTest {
 
     @Test
     void testLoadEcPubKey() throws GeneralSecurityException, IOException {
+
+        Security.addProvider(new BouncyCastleProvider());
+
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
         //openssl ec -in key.pem -pubout -out public.pem
-        @SuppressWarnings("checkstyle:OperatorWrap")
         String pubKeyPem = """
             -----BEGIN PUBLIC KEY-----
             MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEhEZdaw/m5tmqIrhonGPKG0ZHLPo7fJLO
@@ -138,10 +141,11 @@ class ECKeysTest {
 //        ASN1 OID: secp384r1
 //        NIST CURVE: P-384
         String expectedHex = "04"
-                + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
-                + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
+            + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
+            + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
         PublicKey publicKey = PemTools.loadPublicKey(pubKeyPem);
+        assertEquals("EC", publicKey.getAlgorithm());
         assertTrue(KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm()));
 
         ECPublicKey ecPublicKey = (ECPublicKey) publicKey;
@@ -156,8 +160,12 @@ class ECKeysTest {
 
     @Test
     void testLoadEcKeyPairFromPem() throws GeneralSecurityException, IOException {
+
+        // adding BouncyCastle provider may break tests as BouncyCastle
+        // is using "ECDSA" algorithm name for "EC"
+        // see PemTools.loadKeyPair(String)
+        Security.addProvider(new BouncyCastleProvider());
         //openssl ecparam -name secp384r1 -genkey -noout -out key.pem
-        @SuppressWarnings("checkstyle:OperatorWrap")
         String privKeyPem =
             """
                 -----BEGIN EC PRIVATE KEY-----
@@ -187,10 +195,10 @@ class ECKeysTest {
         //        ASN1 OID: secp384r1
         //        NIST CURVE: P-384
         String expectedSecretHex =
-                  "61d54013f37d8d876657bdd73925b36fdc1704652624f747ac52448f1668365c4ba803b6af4bf91de07b471916d145b6";
+            "61d54013f37d8d876657bdd73925b36fdc1704652624f747ac52448f1668365c4ba803b6af4bf91de07b471916d145b6";
         String expectedPubHex = "04"
-                + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
-                + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
+            + "84465d6b0fe6e6d9aa22b8689c63ca1b46472cfa3b7c92ce230b58c3fdffc443c29d158ac9f8ac2733a47cac85ea0e75"
+            + "272c91621773b30e9bbc4d48d53af75783340bfa7ebb4222ddc9ead313a7f9ba3217a17364641f0eda45ffdef003b830";
 
         KeyPair keyPair = PemTools.loadKeyPair(privKeyPem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
@@ -248,7 +256,6 @@ class ECKeysTest {
      */
     @Test
     void testLoadKeyPairFromPemShort() throws GeneralSecurityException, IOException {
-        @SuppressWarnings("checkstyle:OperatorWrap")
         final String pem = """
             -----BEGIN EC PRIVATE KEY-----
             MD4CAQEEMNLrqy74Rn1LO3dAuhBuqV6ucTqJXY/8/6DD1ESBkTy46XKKHVuZmy2K
@@ -276,11 +283,11 @@ class ECKeysTest {
 //        NIST CURVE: P-384
 
         final String expectedSecretHex =
-                  "d2ebab2ef8467d4b3b7740ba106ea95eae713a895d8ffcffa0c3d44481913cb8e9728a1d5b999b2d8aa52b2aaf881685";
+            "d2ebab2ef8467d4b3b7740ba106ea95eae713a895d8ffcffa0c3d44481913cb8e9728a1d5b999b2d8aa52b2aaf881685";
 
         String expectedPubHex = "04"
-                + "5476e48b6d12807b7f0cc98b928e69531336b7c6817942fd28a512556e6d7f219862f8a2b62afe83f98cfe9d1110fb16"
-                + "7c385d493b49082b8fbd26a17f4afb708849a7d0544bc48e186096304b57d8d2899b81dadc2b92604dee284b1a283b7b";
+            + "5476e48b6d12807b7f0cc98b928e69531336b7c6817942fd28a512556e6d7f219862f8a2b62afe83f98cfe9d1110fb16"
+            + "7c385d493b49082b8fbd26a17f4afb708849a7d0544bc48e186096304b57d8d2899b81dadc2b92604dee284b1a283b7b";
 
         KeyPair keyPair = PemTools.loadKeyPair(pem);
         ECPrivateKey ecPrivKey = (ECPrivateKey) keyPair.getPrivate();
@@ -302,7 +309,6 @@ class ECKeysTest {
     @Test
     void testLoadCertWithLabel() throws CertificateException {
 
-        @SuppressWarnings("checkstyle:OperatorWrap")
         final String igorCertificate =
             """
                 -----BEGIN CERTIFICATE-----

@@ -2,13 +2,14 @@ package ee.cyber.cdoc2.container;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.container.recipients.RecipientDeserializer;
 import ee.cyber.cdoc2.container.recipients.RecipientFactory;
-import ee.cyber.cdoc2.CDocException;
+import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
+import ee.cyber.cdoc2.exceptions.CDocException;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.ChaChaCipher;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -38,6 +39,7 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
 
+import ee.cyber.cdoc2.services.Services;
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -49,7 +51,7 @@ public final class Envelope {
 
     private static final Logger log = LoggerFactory.getLogger(Envelope.class);
 
-    protected static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
+    static final byte[] PRELUDE = {'C', 'D', 'O', 'C'};
     public static final byte VERSION = 0x02;
     public static final int MIN_HEADER_LEN = 67; //SymmetricKeyCapsule without FBS overhead
 
@@ -95,29 +97,32 @@ public final class Envelope {
     }
 
     /**
-     * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For each recipient FMK is
-     * encrypted with generated key that single recipient can decrypt with their private key.
-     * @param recipients encryption key material either with public key or symmetric key and key label. After
-     *          {@link #prepare(List, KeyCapsuleClient)} has returned, it is safe
-     *           to clean up secret key material (it will not be referenced
-     *          anymore).
-     *
-     * @param capsuleClient if capsuleClient is provided then store generated ephemeral key material in the server
+     * Prepare Envelope for encryption. For CDOC single file master key (FMK) is generated. For
+     * each recipient FMK is encrypted with generated key that single recipient can decrypt with
+     * their private key.
+     * @param recipients encryption key material either with public key or symmetric key and key
+     *                   label. After receiving returned value it is safe to clean up secret key
+     *                   material (it will not be referenced anymore).
+     * @param capsuleClient if capsuleClient is provided then store generated ephemeral key
+     *                      material in the server
+     * @param clientFactory key shares server client factory
      * @return Envelope that has key material prepared and can be used for
-     *          {@link #encrypt(List, OutputStream) encryption}
+     *         {@link #encrypt(List, OutputStream) encryption}
      * @throws GeneralSecurityException if fmk generation has failed
-     * @throws ExtApiException if communication with capsuleClient to store ephemeral key material fails
+     * @throws ExtApiException if communication with capsuleClient to store ephemeral key
+     *                         material fails
      */
     public static Envelope prepare(
         List<EncryptionKeyMaterial> recipients,
-        @Nullable KeyCapsuleClient capsuleClient
+        @Nullable KeyCapsuleClient capsuleClient,
+        @Nullable KeySharesClientFactory clientFactory
     ) throws GeneralSecurityException, ExtApiException {
 
         Objects.requireNonNull(recipients);
 
         byte[] fmk = Crypto.generateFileMasterKey();
         return new Envelope(
-            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient),
+            RecipientFactory.buildRecipients(fmk, recipients, capsuleClient, clientFactory),
             fmk
         );
     }
@@ -236,12 +241,11 @@ public final class Envelope {
      * @param destReEncryptedCdoc [out] reEncrypted CDOC will be written into destReEncryptedCdoc
      * @param reEncryptionKeyMaterial reEncrypted CDOC will be encrypted with reEncryptionKeyMaterial.
      *                               Only password and symmetric key are supported for re-encryption
-     * @param capsulesClientFac configured key servers clients factory used download decryption
-     *                          key material. Not needed (null) when decryptionKeyMaterial is not in
-     *                          key server.
      * @param destDir directory where re-encrypted CDOC will be written. Must exist and be writeable.
      *                Used to check available disk space. Null when destReEncryptedCdoc is not file
      *                based.
+     * @param services external services required for decryption.
+     *
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error occurs
      * @throws CDocException if encryption/decryption error has occurred
@@ -252,34 +256,35 @@ public final class Envelope {
         OutputStream destReEncryptedCdoc,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
         @Nullable Path destDir,
-        @Nullable KeyCapsuleClientFactory capsulesClientFac
+        @Nullable Services services
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("reEncrypt");
 
-        switch (reEncryptionKeyMaterial.getKeyOrigin()) {
-            case SECRET, PASSWORD:
-                break;
-            default:
-                // no technical reason not to support other key types (only password supported by long-term UC )
-                throw new CDocException("Only password and symmetric key are supported for re-encryption.");
+        EncryptionKeyOrigin keyOrigin = reEncryptionKeyMaterial.getKeyOrigin();
+        Objects.requireNonNull(keyOrigin);
+        if (keyOrigin != EncryptionKeyOrigin.SECRET && keyOrigin != EncryptionKeyOrigin.PASSWORD) {
+            // no technical reason not to support other key types (only password supported by long-term UC )
+            throw new CDocException("Only password and symmetric key are supported for re-encryption.");
         }
 
-        Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null);
+        Envelope newContainer = Envelope.prepare(List.of(reEncryptionKeyMaterial), null, null);
 
         try (CipherOutputStream cipherOs = newContainer.prepareContainerForPayload(destReEncryptedCdoc);
             TarArchiveOutputStream transferToOs = Tar.createPosixTarZArchiveOutputStream(cipherOs)) {
 
-            processContainer(cdocInputStream,
+            processContainer(
+                cdocInputStream,
                 decryptionKeyMaterial,
                 new TranferToDelegate(transferToOs, destDir),
-                capsulesClientFac);
+                services
+            );
         }
     }
 
     /**
      * Write CDOC header, HMAC to os and initialize cipher output stream for encryption.
-     * Will use cekKey  created {@link Envelope#prepare(List, KeyCapsuleClient)}
+     * Will use cekKey  created {@link Envelope#prepare(List, KeyCapsuleClient, KeySharesClientFactory)}
      * @param os OutputStream to write CDOC2 container
      * @return CipherOutputStream constructed from CEK and os.
      *         Ready to write (encrypt) data. {@link CipherOutputStream#close()} must be called by caller.
@@ -312,7 +317,7 @@ public final class Envelope {
      * @param cdocInputStream contains CDOC2 container
      * @param keyMaterial decryption key material
      * @param tarProcessingDelegate how to process tar (output could be extranct, transferto or list)
-     * @param capsulesClientFac configured key servers clients factory for decryption
+     * @param services configured key servers clients factory for decryption
      * @return list of files decrypted and written into outputDir, when extract = true
      *          or list of extractable files found from CDOC2 container when extract = false
      * @throws GeneralSecurityException if security/crypto error has occurred
@@ -324,7 +329,7 @@ public final class Envelope {
         InputStream cdocInputStream,
         DecryptionKeyMaterial keyMaterial,
         TarEntryProcessingDelegate tarProcessingDelegate,
-        @Nullable KeyCapsuleClientFactory capsulesClientFac
+        Services services
     ) throws GeneralSecurityException, IOException, CDocException {
 
         CountingInputStream containerIs = new CountingInputStream(cdocInputStream);
@@ -335,7 +340,7 @@ public final class Envelope {
 
         for (Recipient recipient : recipients) {
             if (recipient.getRecipientId().equals(keyMaterial.getRecipientId())) {
-                byte[] kek = recipient.deriveKek(keyMaterial, capsulesClientFac);
+                byte[] kek = recipient.deriveKek(keyMaterial, services);
                 byte[] fmk = decryptRecipientFmk(recipient, kek);
 
                 SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
@@ -512,7 +517,7 @@ public final class Envelope {
      * @param cdocInputStream contains CDOC2 container
      * @param recipientKeyMaterial decryption key material
      * @param outputDir output directory where decrypted files are decrypted
-     * @param keyServerClientFac configured key servers clients factory.
+     * @param services
      * @return list of files decrypted and written into outputDir
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error has occurred
@@ -523,7 +528,7 @@ public final class Envelope {
         InputStream cdocInputStream,
         DecryptionKeyMaterial recipientKeyMaterial,
         Path outputDir,
-        @Nullable KeyCapsuleClientFactory keyServerClientFac
+        @Nullable Services services
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("decrypt");
@@ -531,7 +536,7 @@ public final class Envelope {
             cdocInputStream,
             recipientKeyMaterial,
             new ExtractDelegate(outputDir, null),
-            keyServerClientFac
+            services
         ).stream()
             .map(ArchiveEntry::getName)
             .toList();
@@ -543,7 +548,7 @@ public final class Envelope {
      * @param recipientKeyMaterial decryption key material
      * @param outputDir output directory where decrypted files are decrypted
      * @param filesToExtract if not null, extract specified files otherwise all files.
-     * @param keyServerClientFac configured key servers client factory.
+     * @param services external services required for decryption ()
      * @return list of files decrypted and written into outputDir
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error has occurred
@@ -555,7 +560,7 @@ public final class Envelope {
         DecryptionKeyMaterial recipientKeyMaterial,
         Path outputDir,
         @Nullable List<String> filesToExtract,
-        @Nullable KeyCapsuleClientFactory keyServerClientFac
+        @Nullable Services services
     ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("decrypt");
@@ -563,7 +568,7 @@ public final class Envelope {
             cdocInputStream,
             recipientKeyMaterial,
             new ExtractDelegate(outputDir, filesToExtract),
-            keyServerClientFac
+            services
         ).stream()
             .map(ArchiveEntry::getName)
             .toList();
@@ -573,22 +578,24 @@ public final class Envelope {
      * List ArchiveEntries in CDOC
      * @param cdocInputStream contains CDOC2 container
      * @param recipientKeyMaterial decryption key material
-     * @param keyServerClientFac configured key servers client factory.
+     * @param services external interfaces required for decryption addition to recipientKeyMaterial
      * @return List of ArchiveEntry decrypted from CDOC
      * @throws GeneralSecurityException if security/crypto error has occurred
      * @throws IOException if an I/O error occurs
      * @throws CDocException if encryption/decryption error has occurred
      */
-    public static List<ArchiveEntry> list(InputStream cdocInputStream, DecryptionKeyMaterial recipientKeyMaterial,
-                                          @Nullable KeyCapsuleClientFactory keyServerClientFac)
-        throws GeneralSecurityException, IOException, CDocException {
+    public static List<ArchiveEntry> list(
+        InputStream cdocInputStream,
+        DecryptionKeyMaterial recipientKeyMaterial,
+        @Nullable Services services
+    ) throws GeneralSecurityException, IOException, CDocException {
 
         log.trace("list");
         return processContainer(
             cdocInputStream,
             recipientKeyMaterial,
             new ListDelegate(),
-            keyServerClientFac
+            services
         );
     }
 

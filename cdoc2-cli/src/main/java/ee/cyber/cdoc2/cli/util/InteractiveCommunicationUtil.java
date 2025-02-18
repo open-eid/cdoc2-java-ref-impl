@@ -8,7 +8,7 @@ import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.util.PasswordValidationUtil;
 
@@ -31,7 +31,7 @@ public final class InteractiveCommunicationUtil {
     /**
      * Ask password and label interactively.
      * @param verifyPw if true then password is asked twice and they must match
-     * @return FormattedOptionParts with password chars and label
+     * @return LabeledPassword with password chars and KeyLabel params
      * @throws CDocUserException if password wasn't entered
      * @throws IllegalArgumentException if entered passwords don't match
      */

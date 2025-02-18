@@ -31,13 +31,11 @@ class FbsHeaderTest {
         fmkBuf[2] = 'k';
         fmkBuf[fmkBuf.length - 1] = (byte)0xff;
 
-
         byte[] recipientPubKeyBuf = new byte[KEYLEN_BYTES];
         recipientPubKeyBuf[0] = 'r';
         recipientPubKeyBuf[1] = 'e';
         recipientPubKeyBuf[2] = 'c';
         recipientPubKeyBuf[recipientPubKeyBuf.length - 1] = (byte)0xfe;
-
 
         byte[] senderPubKeyBuf = new byte[KEYLEN_BYTES];
         senderPubKeyBuf[0] = 's';
@@ -58,14 +56,12 @@ class FbsHeaderTest {
         int keyServerOffset = builder.createString("keyserver");
         int transactionIdOffset = builder.createString("SD1234567890");
 
-
         int detailsOffset  = KeyServerCapsule.createKeyServerCapsule(builder,
             KeyDetailsUnion.EccKeyDetails,
             serverEccDetailsOffset,
             keyServerOffset,
             transactionIdOffset
         );
-
 
         int encFmkOffset = RecipientRecord.createEncryptedFmkVector(builder, fmkBuf);
 
@@ -79,7 +75,6 @@ class FbsHeaderTest {
 
         RecipientRecord.addEncryptedFmk(builder, encFmkOffset);
         RecipientRecord.addFmkEncryptionMethod(builder, FMKEncryptionMethod.XOR);
-
 
         // endRecipientRecord will return RecipientRecord offset value
         int[] recipients = new int[] {RecipientRecord.endRecipientRecord(builder)};
@@ -153,4 +148,5 @@ class FbsHeaderTest {
         Assertions.assertArrayEquals(fmkBuf, fmkBytes);
         Assertions.assertEquals(ByteBuffer.wrap(fmkBuf), byteBuffer.slice());
     }
+
 }

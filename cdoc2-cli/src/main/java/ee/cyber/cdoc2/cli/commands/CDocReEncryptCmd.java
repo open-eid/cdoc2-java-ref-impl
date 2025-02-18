@@ -7,6 +7,7 @@ import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -21,14 +22,12 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocReEncrypter;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getKeyCapsulesClientFactory;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
-
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 
 //S106 Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -69,12 +68,12 @@ public class CDocReEncryptCmd implements Callable<Void> {
         description = "output destination")
     private File outputPath;
 
-    @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties"
-        // commented out until public key server is in live
-        //, arity = "0..1"
-        //,defaultValue = DEFAULT_SERVER_PROPERTIES
-    )
     private String keyServerPropertiesFile;
+    @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties")
+    private void setKeyServerPropertiesFile(String server) {
+        keyServerPropertiesFile = server;
+        System.setProperty(KEY_CAPSULE_PROPERTIES, keyServerPropertiesFile);
+    }
 
     @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
@@ -93,19 +92,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
-            : getDecryptionKeyMaterial(
-            this.cdocFile,
-            this.exclusive.getLabeledPasswordParam(),
-            this.exclusive.getSecret(),
-            this.exclusive.getP12(),
-            this.exclusive.getPrivKeyFile()
-        );
-
-        KeyCapsuleClientFactory keyCapsulesClientFactory = null;
-
-        if (this.keyServerPropertiesFile != null) {
-            keyCapsulesClientFactory = getKeyCapsulesClientFactory(this.keyServerPropertiesFile, slot);
-        }
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         File destCdocFile = getDestinationFile();
         CDocReEncrypter cDocReEncrypter = new CDocReEncrypter(
@@ -113,8 +100,9 @@ public class CDocReEncryptCmd implements Callable<Void> {
             decryptionKeyMaterial,
             destCdocFile,
             extractSymmetricKeyEncKeyMaterial(),
-            keyCapsulesClientFactory
+            Cdoc2Services.initFromSystemProperties()
         );
+
         cDocReEncrypter.reEncryptCDocContainer();
 
         log.info("Created {}", destCdocFile.getAbsolutePath());

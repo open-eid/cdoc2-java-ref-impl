@@ -11,7 +11,6 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 
 /**
  * Represents key material required for decryption with symmetric key derived from password.
- *
  * @param password password chars
  * @param keyLabel key label
  */

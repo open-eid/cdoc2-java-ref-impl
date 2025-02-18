@@ -1,16 +1,25 @@
 package ee.cyber.cdoc2.crypto;
 
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.client.smartid.SmartIdClient;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.KeySharesRecipient;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
-import ee.cyber.cdoc2.CDocException;
-import ee.cyber.cdoc2.CDocUserException;
+import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.EcCapsuleClient;
 import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
@@ -24,11 +33,21 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import javax.crypto.SecretKey;
+
+import ee.cyber.cdoc2.services.Services;
+import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Functions for deriving KEK in different scenarios
@@ -183,7 +202,7 @@ public final class KekTools {
             throw new CDocParseException("ServerId missing in record");
         }
 
-        if (capsulesClientFac == null || capsulesClientFac.getForId(serverId) == null) {
+        if (capsulesClientFac.getForId(serverId) == null) {
             log.error("Configuration not found for server {}", serverId);
             throw new CDocUserException(
                 UserErrorCode.SERVER_NOT_FOUND,
@@ -227,6 +246,177 @@ public final class KekTools {
         if (!expectedKeyOrigin.equals(keyOrigin)) {
             throw new IllegalArgumentException(errorMsg);
         }
+    }
+
+    /**
+     * Derive KEK from shares. Used for SID/MID.
+     * @param keySharesRecipient key shares recipient
+     * @param keyMaterial key share decryption key material
+     * @param keySharesClientFactory key shares client factory
+     * @return bytes of KEK
+     * @throws GeneralSecurityException if key extraction has failed
+     */
+    public static byte[] deriveKekFromShares(
+        KeySharesRecipient keySharesRecipient,
+        KeyShareDecryptionKeyMaterial keyMaterial,
+        KeySharesClientFactory keySharesClientFactory,
+        Services services //XXX: for now its generic services, in future might be more specific type to use SID/MID
+    ) throws GeneralSecurityException, CDocException {
+
+        Objects.requireNonNull(services);
+        validateKeyOrigin(
+            EncryptionKeyOrigin.KEY_SHARE,
+            keyMaterial.getKeyOrigin(),
+            "Expected key shares for KeySharesRecipient"
+        );
+
+        try {
+            List<byte[]> listOfShares =
+                fetchKeyShares(keyMaterial, keySharesRecipient, keySharesClientFactory, services);
+
+            return Crypto.combineKek(
+                listOfShares,
+                keySharesClientFactory.getKeySharesConfiguration().getKeySharesServersMinNum()
+            );
+
+        } catch (AuthSignatureCreationException asce) {
+            throw new GeneralSecurityException(asce);
+        }
+
+    }
+
+    private static List<byte[]> fetchKeyShares(
+        KeyShareDecryptionKeyMaterial decryptKeyMaterial,
+        KeySharesRecipient keySharesRecipient,
+        KeySharesClientFactory keySharesClientFactory,
+        Services services
+    ) throws GeneralSecurityException, AuthSignatureCreationException, CDocException {
+
+        List<byte[]> listOfShares = new LinkedList<>();
+        List<KeyShareUri> shares = keySharesRecipient.getKeyShares();
+
+        SidMidAuthTokenCreator tokenCreator =
+            signShareAccessTokens(shares, decryptKeyMaterial, keySharesClientFactory, services);
+
+        for (KeyShareUri share : shares) {
+            listOfShares.add(getKeyShare(share, keySharesClientFactory, tokenCreator));
+        }
+        return listOfShares;
+    }
+
+    /**
+     * Ask nonce for each share, sign share with nonce using auth means
+     * @param shares
+     * @param decryptKeyMaterial
+     * @param keySharesClientFactory
+     * @param services
+     * @return
+     * @throws CDocException
+     * @throws AuthSignatureCreationException
+     */
+    private static SidMidAuthTokenCreator signShareAccessTokens(
+        List<KeyShareUri> shares,
+        KeyShareDecryptionKeyMaterial decryptKeyMaterial,
+        KeySharesClientFactory keySharesClientFactory,
+        Services services
+
+    ) throws CDocException, AuthSignatureCreationException {
+
+        AuthenticationIdentifier.AuthenticationType authType =
+            decryptKeyMaterial.getAuthIdentifier().getAuthType();
+
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
+
+        switch (authType) {
+            case SID -> {
+                if (!services.hasService(SmartIdClient.class)) {
+                    throw new CDocException("SmartIdClient not configured");
+                }
+                SmartIdClient sidClient = services.get(SmartIdClient.class);
+                return new SidMidAuthTokenCreator(
+                    new SIDAuthJWSSigner(etsiIdentifier, sidClient, decryptKeyMaterial.getInteractionParams()),
+                    shares,
+                    keySharesClientFactory);
+            }
+            case MID -> {
+                if (!services.hasService(MobileIdClient.class)) {
+                    throw new CDocException("MobileIdClient not configured");
+                }
+                MobileIdClient midClient = services.get(MobileIdClient.class);
+                String mobileNumber = decryptKeyMaterial.getAuthIdentifier().getMobileNumber();
+                IdentityJWSSigner jwsSigner = new MIDAuthJWSSigner(etsiIdentifier, mobileNumber,
+                    midClient, decryptKeyMaterial.getInteractionParams());
+
+                // constructor gets nonce for each share from shares-server and signs shareUris and their nonces
+                // with jwsSigner
+                return new SidMidAuthTokenCreator(
+                    jwsSigner,
+                    shares,
+                    keySharesClientFactory);
+            }
+            default -> throw new IllegalStateException(
+                "Unexpected authentication type: " + authType
+            );
+        }
+    }
+
+    /**
+     * @param keySharesClientFactory key shares client factory
+     * @param tokenCreator signed authentication token
+     * @param share share to fetch
+     * @return
+     * @throws GeneralSecurityException
+     */
+    private static byte[] getKeyShare(
+        KeyShareUri share,
+        KeySharesClientFactory keySharesClientFactory,
+        SidMidAuthTokenCreator tokenCreator
+    ) throws GeneralSecurityException {
+        KeySharesClient client
+            = keySharesClientFactory.getClientForServerUrl(share.serverBaseUrl());
+        String authTicket = tokenCreator.getTokenForShareID(share.shareId());
+        String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
+
+        return getKeyShare(share, client, authTicket, authenticatorCertPEM);
+    }
+
+    private static byte[] getKeyShare(
+        KeyShareUri share,
+        KeySharesClient client,
+        String authTicket,
+        String authenticatorCertPEM
+    ) throws GeneralSecurityException {
+        try {
+            return requestKeyShare(share, client, authTicket, authenticatorCertPEM);
+        } catch (ExtApiException e) {
+            throw new GeneralSecurityException(
+                "Failed to derive key encryption key from shares", e
+            );
+        }
+    }
+
+    private static byte[] requestKeyShare(
+        KeyShareUri share,
+        KeySharesClient client,
+        String authTicket,
+        String authenticatorCertPEM
+    ) throws ExtApiException, GeneralSecurityException {
+        Optional<KeyShare> keyShare = client.getKeyShare(
+            share.shareId(),
+            authTicket,
+            authenticatorCertPEM
+        );
+        if (keyShare.isEmpty()) {
+            throw new GeneralSecurityException(
+                String.format(
+                    "Failed to find share ID %s at server %s",
+                    share.shareId(),
+                    share.serverBaseUrl()
+                )
+            );
+        }
+
+        return keyShare.get().getShare();
     }
 
 }

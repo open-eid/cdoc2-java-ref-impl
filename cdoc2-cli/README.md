@@ -119,6 +119,50 @@ java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgx
 Key and label can be safely stored in a password manager.
 
 
+### Encryption with Smart ID
+
+```
+java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc README.md
+```
+
+Multiple ID codes are allowed to be sent for encryption:
+
+```
+java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 -f /tmp/smartid.cdoc README.md
+```
+
+Key shares or Smart-ID properties can be sent externally by adding following options (the same 
+for decryption):
+
+`-Dkey-shares.properties=config/localhost/key-shares.properties`
+
+and/or
+
+`-Dsmart-id.properties=config/smart-id/smart-id.properties`
+
+
+### Encryption with Mobile ID
+
+```
+java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid.cdoc README.md
+```
+
+Multiple ID codes are allowed to be sent for encryption:
+
+```
+java -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 -f /tmp/mobileid.cdoc README.md
+```
+
+Key shares or Mobile-ID properties can be sent externally by adding following options (the same
+for decryption):
+
+`-Dkey-shares.properties=config/localhost/key-shares.properties`
+
+and/or
+
+`-Dmobile-id.properties=config/mobile-id/mobile-id.properties`
+
+
 ### Decryption
 To decrypt:
 - CDOC2 file `/tmp/mydoc.cdoc`
@@ -127,6 +171,18 @@ To decrypt:
 
 ```
 java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
+```
+
+or with Smart-ID:
+
+```
+java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc --output /tmp
+```
+
+or with Mobile-ID:
+
+```
+java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 -f /tmp/mobileid.cdoc --output /tmp
 ```
 
 ### Decrypting with server scenario
@@ -205,8 +261,8 @@ java -jar target/cdoc2-cli-*.jar info -f /tmp/id.cdoc
 
 ### Encrypting for ID-card owner
 
-cdoc2-cli can download authentication certificate (Isikutuvastus PIN1) from SK LDAP directory 
-https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/
+cdoc2-cli can download authentication certificate (Isikutuvastus PIN1) from SK LDAP directory
+https://github.com/SK-EID/LDAP/wiki/Knowledge-Base
 
 To create cdoc for recipient with id code 37101010021 use:
 ```
@@ -368,3 +424,23 @@ default true
 
 Key label `<data>` field contains different parameters. File name is one of them. For security 
 purpose it can be hidden in configuration. File name is added by default.
+
+#### ee.cyber.key-shares.properties
+CLI option which indicates the path to key capsule client key-shares properties file.
+- ##### ee.cyber.key-shares.urls
+  Key shares servers URL-s, separated by comma `","`
+- ##### ee.cyber.key-shares.min_num
+  Minimum quantity of key shares servers
+- ##### ee.cyber.key-shares.algorithm
+  Key shares algorithm
+
+#### ee.cyber.smart-id.properties
+CLI option which indicates the path to smart-id properties file.
+- ##### ee.cyber.smartid.client.hostUrl
+  Smart ID client host URL
+- ##### ee.cyber.smartid.client.relyingPartyUuid
+  Smart ID client relying party UUID
+- ##### ee.cyber.smartid.client.relyingPartyName
+  Smart ID client relying party name
+- ##### ee.cyber.smartid.client.ssl.trust-store-password
+  Smart ID client SSL trust store password

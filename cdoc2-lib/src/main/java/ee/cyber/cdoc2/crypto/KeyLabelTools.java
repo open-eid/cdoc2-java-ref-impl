@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-import static ee.cyber.cdoc2.CDocConfiguration.isKeyLabelFileNameAllowedToBeAdded;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelFileNameAllowedToBeAdded;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.KeyLabelDataVersion.toNumbericString;
 
 
@@ -48,12 +48,25 @@ public final class KeyLabelTools {
     }
 
     /**
+     * Validates that key label is in machine-readable format.
+     * @param formattedKeyLabel formatted key label
+     * @throws IllegalStateException if key label is not in machine-readable format
+     */
+    public static void assertKeyLabelIsFormatted(String formattedKeyLabel) {
+        boolean isFormatted = isFormatted(formattedKeyLabel);
+        if (!isFormatted) {
+            throw new IllegalArgumentException(
+                "Key label '" + formattedKeyLabel + "' must be in machine-readable format: ");
+        }
+    }
+
+    /**
      * Validates key label format.
      * @param keyLabel encryption key label
      * @return Key Label in plain text
      */
     public static String getPlainKeyLabel(String keyLabel) {
-        if (keyLabelIsFormatted(keyLabel)) {
+        if (isFormatted(keyLabel)) {
             return extractKeyLabel(keyLabel);
         }
 
@@ -77,7 +90,7 @@ public final class KeyLabelTools {
      * @return map of Key Label parameters
      */
     public static Map<String, String> extractKeyLabelParams(String keyLabel) {
-        boolean isFormatted = keyLabelIsFormatted(keyLabel);
+        boolean isFormatted = isFormatted(keyLabel);
         if (!isFormatted) {
             return Map.of(KeyLabelDataFields.LABEL.name(), keyLabel);
         }
@@ -154,15 +167,28 @@ public final class KeyLabelTools {
     /**
      * Create eID key label parameters for data section of formatted key label.
      * @param keyLabel key label as common name from certificate
-     * @param serialNumber serial number from LDAP server
+     * @param serialNumber serial number from certificate
+     * @param keyLabelType key label type from certificate
      * @return KeyLabelParams key label parameters required for data section
      */
     public static KeyLabelParams createEIdKeyLabelParams(
-        String keyLabel, BigInteger serialNumber
+        String keyLabel, BigInteger serialNumber, String keyLabelType
     ) {
-        KeyLabelParams keyLabelParams = createKeyLabelCommonParams(
-            EncryptionKeyOrigin.ID_CARD, KeyLabelDataVersion.V_1
+        Map<String, String> keyLabelParamsMap = createKeyLabelParamsMap();
+        keyLabelParamsMap.put(
+            KeyLabelDataFields.V.name(),
+            urlEncodeValue(toNumbericString(KeyLabelDataVersion.V_1))
         );
+
+        KeyLabelType klType = KeyLabelType.ofType(keyLabelType);
+        keyLabelParamsMap.put(
+            KeyLabelDataFields.TYPE.name(),
+            urlEncodeValue(null != klType ? klType.getName() : "")
+        );
+
+        KeyLabelParams keyLabelParams
+            = new KeyLabelParams(EncryptionKeyOrigin.ID_CARD, keyLabelParamsMap);
+
         keyLabelParams.addParam(KeyLabelDataFields.CN.name(), keyLabel);
         keyLabelParams.addParam(KeyLabelDataFields.SERIAL_NUMBER.name(), String.valueOf(serialNumber));
 
@@ -219,14 +245,15 @@ public final class KeyLabelTools {
 
     /**
      * Create key label parameters of key shares for data section of formatted key label.
-     * @param keyLabel key label as (National) personal number
+     * @param etsiIdentifier ETSI identifier in format 'etsi/PNOEE-30303039914'
      * @return KeyLabelParams key label parameters required for data section
      */
-    public static KeyLabelParams createKeySharesKeyLabelParams(String keyLabel) {
+    public static KeyLabelParams createKeySharesKeyLabelParams(String etsiIdentifier) {
         KeyLabelParams keyLabelParams = createKeyLabelCommonParams(
-            EncryptionKeyOrigin.KEY_SHARE, KeyLabelTools.KeyLabelDataVersion.V_2
+            EncryptionKeyOrigin.KEY_SHARE, KeyLabelTools.KeyLabelDataVersion.V_1
         );
-        keyLabelParams.addParam(KeyLabelDataFields.PNO.name(), keyLabel);
+
+        keyLabelParams.addParam(KeyLabelDataFields.SN.name(), etsiIdentifier);
 
         return keyLabelParams;
     }
@@ -242,11 +269,15 @@ public final class KeyLabelTools {
             .collect(Collectors.joining(", "));
     }
 
+    private static Map<String, String> createKeyLabelParamsMap() {
+        return new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    }
+
     private static KeyLabelParams createKeyLabelCommonParams(
         EncryptionKeyOrigin encryptionKeyOrigin,
         KeyLabelTools.KeyLabelDataVersion version
     ) {
-        Map<String, String> keyLabelParams = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, String> keyLabelParams = createKeyLabelParamsMap();
         keyLabelParams.put(
             KeyLabelDataFields.V.name(),
             urlEncodeValue(toNumbericString(version))
@@ -254,7 +285,7 @@ public final class KeyLabelTools {
         KeyLabelType type = getKeyLabelType(encryptionKeyOrigin);
         keyLabelParams.put(
             KeyLabelDataFields.TYPE.name(),
-            urlEncodeValue(KeyLabelType.ofType(type))
+            urlEncodeValue(type.getName())
         );
 
         return new KeyLabelParams(encryptionKeyOrigin, keyLabelParams);
@@ -266,7 +297,7 @@ public final class KeyLabelTools {
                 return KeyLabelType.CERT;
             }
             case ID_CARD -> {
-                return KeyLabelType.ID_CARD;
+                return KeyLabelType.ID_CARD_DEFAULT;
             }
             case KEY_SHARE -> {
                 return KeyLabelType.AUTH;
@@ -296,7 +327,7 @@ public final class KeyLabelTools {
     ) {
         switch (keyLabelType) {
             case AUTH -> {
-                return keyLabelParams.get(KeyLabelDataFields.PNO.name());
+                return keyLabelParams.get(KeyLabelDataFields.SN.name());
             }
             case PW, SECRET -> {
                 return keyLabelParams.get(KeyLabelDataFields.LABEL.name());
@@ -345,10 +376,10 @@ public final class KeyLabelTools {
         return StringUtils.substringAfter(dataUrlScheme, ":");
     }
 
-    private static boolean keyLabelIsFormatted(Object keyLabel) {
-        return keyLabel.toString().contains(DATA);
-    }
-
+    /**
+     * Checks if key label is in machine-readable format or in plain text.
+     * @param keyLabel key label
+     */
     public static boolean isFormatted(String keyLabel) {
         if (keyLabel == null) {
             return false;
@@ -383,7 +414,7 @@ public final class KeyLabelTools {
     }
 
     private static Map<String, String> convertStringToKeyLabelParamsMap(String data) {
-        Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, String> result = createKeyLabelParamsMap();
         if (data.isBlank()) {
             return result;
         }
@@ -412,7 +443,7 @@ public final class KeyLabelTools {
         FIRST_NAME,
         LABEL,
         LAST_NAME,
-        PNO, // for Smart id & Mobile id
+        SN, // for Smart id & Mobile id
         SERIAL_NUMBER,
         TYPE,
         V
@@ -422,28 +453,43 @@ public final class KeyLabelTools {
      * Key label data types
      */
     public enum KeyLabelType {
-        AUTH,
-        CERT,
-        ID_CARD,
-        PUB_KEY,
-        PW,
-        SECRET;
+        AUTH("auth"),
+        CERT("cert"),
+        ID_CARD_DEFAULT("ID-card"),
+        ID_CARD_DIGI_ID("Digi-ID"),
+        ID_CARD_E_RESIDENT("Digi-ID E-RESIDENT"),
+        PUB_KEY("pub_key"),
+        PW("pw"),
+        SECRET("secret");
 
-        public static String ofType(KeyLabelType type) {
-            return type.name().toLowerCase(Locale.ROOT);
+        public final String typeName;
+
+        KeyLabelType(String name) {
+            this.typeName = name;
         }
 
-        public static KeyLabelType fromParams(String type) {
-            return KeyLabelType.getName(type);
+        public String getName() {
+            if (typeName.equals("ID-card")
+                || typeName.equals("Digi-ID")
+                || typeName.equals("Digi-ID E-RESIDENT")) {
+                return typeName;
+            }
+            return typeName.toLowerCase(Locale.ROOT);
         }
 
-        public static KeyLabelType getName(String keyLabelType) {
+        private static KeyLabelType fromParams(String type) {
+            return KeyLabelType.ofType(type);
+        }
+
+        private static KeyLabelType ofType(String keyLabelType) {
             for (var type : KeyLabelType.values()) {
-                if (null != keyLabelType && type.name().compareToIgnoreCase(keyLabelType) == 0) {
+                if (null != keyLabelType && type.getName().compareToIgnoreCase(keyLabelType) == 0) {
                     return type;
                 }
             }
 
+            // key label cannot be missing, but according to the specification
+            // encryption/decryption should not fail
             return null;
         }
     }
@@ -463,7 +509,7 @@ public final class KeyLabelTools {
                 case V_2 -> {
                     return "2";
                 }
-                default -> throw new IllegalStateException("Unexpected key label data version: " + v);
+                default -> throw new IllegalArgumentException("Unexpected key label data version: " + v);
             }
         }
     }

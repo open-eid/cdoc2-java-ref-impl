@@ -25,12 +25,10 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
 
-import ee.cyber.cdoc2.crypto.KeyLabelParams;
-import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
+import ee.cyber.cdoc2.crypto.KeyLabelTools;
 
 
 /**
@@ -163,11 +161,8 @@ public final class SkLdapUtil {
                 for (var certNameEntry: certs.entrySet()) {
                     X509Certificate cert = certNameEntry.getKey();
                     String distinguishedName = certNameEntry.getValue();
-                    String keyLabel = getKeyLabel(cert, distinguishedName);
-
-                    CertificateData certificateData = new CertificateData();
+                    CertificateData certificateData = getKeyLabel(cert, distinguishedName);
                     certificateData.setPublicKey(cert.getPublicKey());
-                    certificateData.setKeyLabel(keyLabel);
                     certificateData.setSerialNumber(cert.getSerialNumber());
 
                     log.debug("Adding certificate data {}", certificateData);
@@ -181,32 +176,25 @@ public final class SkLdapUtil {
         return certDatas;
     }
 
-    public static EncryptionKeyMaterial toEncryptionKeyMaterial(SkLdapUtil.CertificateData certData) {
-        KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
-            certData.getKeyLabel(), certData.getSerialNumber()
-        );
-
-        return EncryptionKeyMaterial.fromPublicKey(certData.getPublicKey(), keyLabelParams);
-    }
-
     /**
-     * Get label value from certificate. Used as KeyLabel value in FBS header. For SK issued certificates,
-     * use CN part of Subject as label, for other certs use x509 Subject
+     * Prepare key label data from certificate. Used as KeyLabel value in FBS header. For SK issued
+     * certificates, use CN part of Subject as label, for other certs use x509 Subject.
      * @param cert certificate to be used for label creation
      * @return label parsed from cert
      */
-    public static String getKeyLabel(X509Certificate cert) {
+    public static CertificateData getKeyLabel(X509Certificate cert) {
         return getKeyLabel(cert, null);
     }
 
     /**
-     * Get label value from certificate. Used as KeyLabel value in FBS header. For SK issued certificates,
-     * use CN part of Subject as label, for other certs use x509 Subject
+     * Prepare key label data from certificate. Used as KeyLabel value in FBS header. For SK
+     * issued certificates, use CN part of Subject as label, for other certs use x509 Subject.
      * @param cert certificate to be used for label creation
      * @param dName the distinguished name (optional) - used to add certificate type to the label
      * @return label parsed from cert
      */
-    private static String getKeyLabel(X509Certificate cert, @Nullable String dName)  {
+    private static CertificateData getKeyLabel(X509Certificate cert, @Nullable String dName)  {
+        CertificateData certificateData = new SkLdapUtil.CertificateData();
         // KeyLabel is UI specific field, so its value is not specified in the Spec.
         // DigiDoc4-Client uses this field to hint user what type of eID was used for encryption
         // https://github.com
@@ -231,19 +219,37 @@ public final class SkLdapUtil {
                 if (dName != null) {
                     if (dName.contains(DIGI_ID)) {
                         keyLabel += " (digi-id)";
+                        certificateData.setKeyLabelType(
+                            KeyLabelTools.KeyLabelType.ID_CARD_DIGI_ID.getName()
+                        );
                     } else if (dName.contains(ID_CARD)) {
                         keyLabel += " (id-card)";
+                        certificateData.setKeyLabelType(
+                            KeyLabelTools.KeyLabelType.ID_CARD_DEFAULT.getName()
+                        );
                     } else if (dName.contains(E_RESIDENT_DIGI_ID)) {
                         keyLabel += " (e-resident digi-id)";
+                        certificateData.setKeyLabelType(
+                            KeyLabelTools.KeyLabelType.ID_CARD_E_RESIDENT.getName()
+                        );
                     }
                 }
-                return keyLabel;
+                certificateData.setKeyLabel(keyLabel);
+                return certificateData;
             } else {
                 log.warn("Unexpected certificate cn values {}", cn);
-                return cert.getSubjectX500Principal().getName();
+                certificateData.setKeyLabel(cert.getSubjectX500Principal().getName());
+                certificateData.setKeyLabelType(
+                    KeyLabelTools.KeyLabelType.ID_CARD_DEFAULT.getName()
+                );
+                return certificateData;
             }
         } catch (InvalidNameException e) {
-            return cert.getSubjectX500Principal().getName();
+            certificateData.setKeyLabel(cert.getSubjectX500Principal().getName());
+            certificateData.setKeyLabelType(
+                KeyLabelTools.KeyLabelType.ID_CARD_DEFAULT.getName()
+            );
+            return certificateData;
         }
     }
 
@@ -256,6 +262,7 @@ public final class SkLdapUtil {
         private String fingerprint;
         @Nullable
         private BigInteger serialNumber;
+        private String keyLabelType;
 
         public CertificateData() {
             // utility class
@@ -281,6 +288,10 @@ public final class SkLdapUtil {
             return this.serialNumber;
         }
 
+        public String getKeyLabelType() {
+            return this.keyLabelType;
+        }
+
         public void setPublicKey(PublicKey publicKey) {
             this.publicKey = publicKey;
         }
@@ -299,6 +310,10 @@ public final class SkLdapUtil {
 
         public void setSerialNumber(BigInteger serialNumber) {
             this.serialNumber = serialNumber;
+        }
+
+        public void setKeyLabelType(String keyLabelType) {
+            this.keyLabelType = keyLabelType;
         }
     }
 

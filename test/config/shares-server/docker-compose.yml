@@ -1,0 +1,106 @@
+services:
+  cdoc2-shares-postgres:
+    container_name: cdoc2-shares-postgres-bats
+    image: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres -U postgres" ]
+      interval: 5s
+      timeout: 10s
+      retries: 120
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  cdoc2-shares-server-liquibase:
+    container_name: cdoc2-shares-server-liquibase-bats
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server-liquibase:${SHARES_SERVER_VERSION}
+    depends_on:
+      cdoc2-shares-postgres:
+        condition: service_started
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    command: --url="jdbc:postgresql://${POSTGRES_URL}/${POSTGRES_DB}?user=${POSTGRES_USER}&password=${POSTGRES_PASSWORD}" --defaultsFile=liquibase.properties update
+
+  shares-server:
+    container_name: shares-server-bats
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server:${SHARES_SERVER_VERSION}
+    ports:
+      - "8443:8443"
+      # monitoring
+      - "18443:18443"
+    depends_on:
+      cdoc2-shares-server-liquibase:
+        condition: service_completed_successfully
+    configs:
+      - source: shares-server-props
+        target: /config/application.properties
+      - source: truststore
+        target: /config/servertruststore.jks
+      - source: keystore
+        target: /config/cdoc2server.p12
+      - source: sid-trusted-issuers-truststore
+        target: /config/sid_trusted_issuers.jks
+
+    environment:
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/application.properties
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      #      - JAVA_OPTS=-Djavax.net.debug=ssl:handshake:verbose:keymanager:trustmanager -Djava.security.debug=access:stack
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # second instance of shares-server, according to configured key-shares.properties in cdoc2-java-ref-impl repository
+  shares-server-second:
+    container_name: shares-server-second-bats
+    image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/cdoc2-shares-server:${SHARES_SERVER_VERSION}
+    ports:
+      - "8442:8442"
+      # monitoring
+      - "18442:18442"
+    depends_on:
+      cdoc2-shares-server-liquibase:
+        condition: service_completed_successfully
+    configs:
+      - source: shares-server-props
+        target: /config/application.properties
+      - source: truststore
+        target: /config/servertruststore.jks
+      - source: keystore
+        target: /config/cdoc2server.p12
+      - source: sid-trusted-issuers-truststore
+        target: /config/sid_trusted_issuers.jks
+    environment:
+      # in real deployment, cdoc2-shares-server-second is installed in different organization
+      # and uses separate postgres instance
+      - SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/application.properties
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - server.port=8442
+      - management.server.port=18442
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+configs:
+  shares-server-props:
+    file: serverconf/application-server.properties
+  truststore:
+    file: ./serverconf/servertruststore.jks
+  sid-trusted-issuers-truststore:
+      file: ./serverconf/test_sid_trusted_issuers.jks
+  keystore:
+    file: ./serverconf/cdoc2server.p12

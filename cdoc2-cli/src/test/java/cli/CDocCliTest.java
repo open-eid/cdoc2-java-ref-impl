@@ -387,8 +387,7 @@ class CDocCliTest {
         decrypt(decryptArgs, FAILURE_EXIT_CODE);
     }
 
-    private void decrypt(String decryptionArgument, int expectedDecryptExitCode)
-        throws IOException {
+    private void decrypt(String decryptionArgument, int expectedDecryptExitCode) throws IOException {
 
         String[] decryptArgs = createDecryptArgs(decryptionArgument, null);
         executeDecryptionWithDefaultPath(decryptArgs, expectedDecryptExitCode);

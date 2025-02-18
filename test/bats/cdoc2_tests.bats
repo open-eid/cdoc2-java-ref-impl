@@ -20,7 +20,7 @@ setup() {
 
 
 TEST_RESULTS_DIR=$TESTING_DIR/target/results
-mkdir -p $TEST_RESULTS_DIR
+mkdir -p "$TEST_RESULTS_DIR"
 FILE_FOR_ENCRYPTION=$CDOC2_DIR/README.md
 FILE_FOR_ENCRYPTION2=$CDOC2_DIR/pom.xml
 DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
@@ -54,9 +54,10 @@ run_alias() {
 }
 
 @test "CDOC2 version is found" {
-  run echo $CDOC2_VER
+  run echo "$CDOC2_VER"
   echo "# $CDOC2_VER">&3
-  assert_output --regexp '^[0-9]+\.[0-9]+\.[0-9].*$'
+  # Support also versions with 'SID-' prefix
+  assert_output --regexp '^[A-Za-z0-9_-]*[0-9]+\.[0-9]+\.[0-9].*$'
 }
 
 @test "preparing: assert BATS_HOME value exists" {
@@ -66,7 +67,7 @@ run_alias() {
 }
 
 @test "preparing: assert bats helpers are installed" {
-  run ${BATS_HOME}/bats-core
+  run "${BATS_HOME}"/bats-core
   assert_output --partial '/test/bats/target/bats-core'
 }
 
@@ -92,62 +93,66 @@ run_alias() {
 
 @test "test1: successfully encrypt CDOC2 container with EC" {
   local cdoc_file="ec_simple.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
-          -c $CLI_KEYS_DIR/cdoc2client-certificate.pem $FILE_FOR_ENCRYPTION
+  echo "# Encrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -c "$CLI_KEYS_DIR"/cdoc2client-certificate.pem "$FILE_FOR_ENCRYPTION"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/cdoc2client_priv.key -o $TEST_RESULTS_DIR
+  echo "# Decrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli decrypt -f "$TEST_RESULTS_DIR"/$cdoc_file -k "$CLI_KEYS_DIR"/cdoc2client_priv.key -o "$TEST_RESULTS_DIR"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test2: assert EC decryption is compatible with earlier encrypted CDOC2" {
   local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
 
   echo "# Decrypting ${cdoc_file}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${cdoc_file} -k $CLI_KEYS_DIR/expired/cdoc2client_expired_priv.key --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${cdoc_file} -k "$CLI_KEYS_DIR"/expired/cdoc2client_expired_priv.key --output "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${cdoc_file}"
   assertSuccessfulDecryption
 }
 
 @test "test3: successfully encrypt CDOC2 container with RSA" {
   local cdoc_file="rsa_simple.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
-          -p $CLI_KEYS_DIR/rsa_pub.pem $FILE_FOR_ENCRYPTION
+  echo "# Encrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -p "$CLI_KEYS_DIR"/rsa_pub.pem "$FILE_FOR_ENCRYPTION"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $$TEST_RESULTS_DIR/$cdoc_file -k $CLI_KEYS_DIR/rsa_priv.pem -o $TEST_RESULTS_DIR
+  echo "# Decrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli decrypt -f "$TEST_RESULTS_DIR"/$cdoc_file -k "$CLI_KEYS_DIR"/rsa_priv.pem -o "$TEST_RESULTS_DIR"
 
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test4: successfully encrypt CDOC2 container with password" {
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
   assert_output --partial "Created $CDOC2_CONTAINER"
 }
 
 @test "test5: successfully decrypt CDOC2 container from test4 with password" {
-  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli decrypt -f "$CDOC2_CONTAINER" -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
+  assertSuccessfulExecution
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
 }
 
 @test "test5a: successfully decrypt CDOC2 container from test4 with password and without label" {
-  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw ":$PW" --output $TEST_RESULTS_DIR
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli decrypt -f "$CDOC2_CONTAINER" -pw ":$PW" --output "$TEST_RESULTS_DIR"
+  assertSuccessfulExecution
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
 
@@ -159,9 +164,9 @@ run_alias() {
   local existing_test_vector="password_old_version_DO_NOT_DELETE.cdoc"
 
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
   assertSuccessfulDecryption
 }
@@ -171,33 +176,36 @@ run_alias() {
   local existing_test_vector="symmetric_v1.0.0.cdoc"
 
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS}/${existing_test_vector} --secret create_symmetric_label:$SECRET --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} --secret create_symmetric_label:$SECRET --output "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
   assertSuccessfulDecryption
 }
 
 @test "test8: successfully encrypt CDOC2 container with few files" {
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION $FILE_FOR_ENCRYPTION2
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION" "$FILE_FOR_ENCRYPTION2"
+  assertSuccessfulExecution
 
   removeEncryptedCdoc
 }
 
 @test "test9: fail to encrypt CDOC2 container with password if it's validation has failed" {
   password="passwordlabel:short";
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER -pw $password $FILE_FOR_ENCRYPTION
+  echo "# Encrypting with password '${password}'...">&3
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" -pw $password "$FILE_FOR_ENCRYPTION"
   assertFailure
 }
 
 @test "test10: fail to decrypt CDOC2 container with wrong decryption key type" {
   # encrypt with secret key
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  echo "# Encrypting with secret key...">&3
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
 
   # try to decrypt with password
-  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+  echo "# Decrypting with password...">&3
+  run run_alias cdoc-cli decrypt -f "$CDOC2_CONTAINER" -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
   assertFailure
 
   removeEncryptedCdoc
@@ -205,12 +213,14 @@ run_alias() {
 
 @test "test11: successfully encrypt CDOC with two keys and decrypt with one of them" {
   # encrypt with secret key and password
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  echo "# Encrypting with secret key and password...">&3
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
 
   # decrypt with secret
-  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
-  assertSuccessfulExitCode
+  echo "# Encrypting with secret key...">&3
+  run run_alias cdoc-cli decrypt -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL --output "$TEST_RESULTS_DIR"
+  assertSuccessfulExecution
   assert_output --partial "Decrypting $CDOC2_CONTAINER"
   assertSuccessfulDecryption
 
@@ -219,11 +229,11 @@ run_alias() {
 
 @test "test11a: fail to decrypt if two keys are used for decryption" {
   # encrypt with secret key and password
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
 
   # try to decrypt with two keys
-  run run_alias cdoc-cli decrypt -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
   assert_output --partial "Error:"
   assert_output --partial "(specify only one)"
 
@@ -232,35 +242,33 @@ run_alias() {
 
 @test "test12: successfully re-encrypt CDOC2 container" {
   # prepare encrypted container for further re-encryption
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
 
   # create new directory for re-encrypted container
   new_directory=$TEST_RESULTS_DIR/reencrypt
-  mkdir -p $new_directory
+  mkdir -p "$new_directory"
 
-  run run_alias cdoc-cli re -f $CDOC2_CONTAINER --encpassword $PASSWORD_WITH_LABEL --secret $SECRET_WITH_LABEL --output $new_directory
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli re -f "$CDOC2_CONTAINER" --encpassword $PASSWORD_WITH_LABEL --secret $SECRET_WITH_LABEL --output "$new_directory"
+  assertSuccessfulExecution
 
   # ensure re-encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $new_directory/$CDOC2_CONTAINER_NAME -pw $PASSWORD_WITH_LABEL --output $new_directory
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli decrypt -f "$new_directory"/$CDOC2_CONTAINER_NAME -pw $PASSWORD_WITH_LABEL --output "$new_directory"
+  assertSuccessfulExecution
   assert_output --partial "Decrypting $new_directory/$CDOC2_CONTAINER_NAME"
   assertSuccessfulDecryption
 
   # remove new directory and all created files in it
-  rm -f $new_directory/$CDOC2_CONTAINER_NAME
-  rm -f $new_directory/README.md
-  rm -d $new_directory
+  rm -r "$new_directory"
 
   removeEncryptedCdoc
 }
 
 @test "test13: fail re-encryption within the same directory" {
-  run run_alias cdoc-cli create -f $CDOC2_CONTAINER --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
-  assertSuccessfulExitCode
+  run run_alias cdoc-cli create -f "$CDOC2_CONTAINER" --secret $SECRET_WITH_LABEL "$FILE_FOR_ENCRYPTION"
+  assertSuccessfulExecution
 
-  run run_alias cdoc-cli re -f $CDOC2_CONTAINER --encpassword $PASSWORD_WITH_LABEL --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli re -f "$CDOC2_CONTAINER" --encpassword $PASSWORD_WITH_LABEL --secret $SECRET_WITH_LABEL --output "$TEST_RESULTS_DIR"
   assertFailure
 
   removeEncryptedCdoc
@@ -275,7 +283,7 @@ run_alias() {
   fi
 
   # bats doesn't directly support interactive scripts, run expect script
-  tmp_expect_script=$(mktemp --tmpdir=$TEST_RESULTS_DIR)
+  tmp_expect_script=$(mktemp --tmpdir="$TEST_RESULTS_DIR")
   cat >"$tmp_expect_script" <<EOF
 #!/usr/bin/expect -d
 set timeout 3
@@ -311,13 +319,13 @@ exit [lindex \$result 3]
 EOF
 
   #echo "# expect $tmp_expect_script" >&3
-  chmod +x $tmp_expect_script
+  chmod +x "$tmp_expect_script"
   eval "run $tmp_expect_script"
 
   assert_success
 
   # bats doesn't directly support interactive scripts, run expect
-  tmp_expect_decrypt_script=$(mktemp --tmpdir=$TEST_RESULTS_DIR)
+  tmp_expect_decrypt_script=$(mktemp --tmpdir="$TEST_RESULTS_DIR")
   cat >"$tmp_expect_decrypt_script" <<EOF
 #!/usr/bin/expect -d
 set timeout 3
@@ -336,25 +344,25 @@ catch wait result
 exit [lindex \$result 3]
 EOF
   #echo "# expect $tmp_expect_decrypt_script" >&3
-  chmod +x $tmp_expect_decrypt_script
+  chmod +x "$tmp_expect_decrypt_script"
   run $tmp_expect_decrypt_script
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assertSuccessfulDecryption
 
   removeEncryptedCdoc
 
-  rm -rf $tmp_expect_script
-  rm -rf $tmp_expect_decrypt_script
+  rm -rf "$tmp_expect_script"
+  rm -rf "$tmp_expect_decrypt_script"
 }
 
 @test "test15: assert earlier encrypted CDOC2 with Symmetric key displays only pure key label" {
   local cdoc_file="symmetric_v1.0.0.cdoc"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="SymmetricKey: LABEL:create_symmetric_label "
   echo "# $expected_output_info">&3
   assert_equal "$output" "$expected_output_info"
@@ -364,9 +372,9 @@ EOF
   local cdoc_file="password_old_version_DO_NOT_DELETE.cdoc"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="Password: LABEL:$PW_LABEL "
   echo "# $expected_output_info">&3
   assert_equal "$output" "$expected_output_info"
@@ -376,9 +384,9 @@ EOF
   local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="EC PublicKey: LABEL:cdoc20-client "
   echo "# $expected_output_info">&3
   assert_equal "$output" "$expected_output_info"
@@ -386,13 +394,13 @@ EOF
 
 @test "test18: assert newly encrypted CDOC2 with EC key displays formatted key label" {
   local cdoc_file="ec_simple_with_formatted_key_label.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
-          -c $CLI_KEYS_DIR/cdoc2client-certificate.pem $FILE_FOR_ENCRYPTION
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -c "$CLI_KEYS_DIR"/cdoc2client-certificate.pem "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_RESULTS_DIR}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_RESULTS_DIR}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="EC PublicKey: CERT_SHA1:9460be97b0f67a2fb98f0d73821293879804ab5e, V:1, CN:cdoc2-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
   echo "# $expected_output_info">&3
   assert_output --partial "EC PublicKey:"
@@ -402,16 +410,16 @@ EOF
   assert_output --partial "FILE:cdoc2client-certificate.pem"
   assert_output --partial "TYPE:cert"
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test18a: assert earlier encrypted CDOC2 with EC key displays formatted key label and successfully decrypted" {
   local existing_test_vector="ec_simple_with_formatted_key_label.cdoc"
 
   echo "# Requesting info for ${existing_test_vector}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_2}/${existing_test_vector}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="EC PublicKey: CERT_SHA1:5d5d9c00eeb79d89e3a54e791a6256f892ad9411, V:1, CN:cdoc20-client, FILE:cdoc2client-certificate.pem, TYPE:cert "
   echo "# $expected_output_info">&3
   assert_output --partial "EC PublicKey:"
@@ -422,21 +430,21 @@ EOF
   assert_output --partial "TYPE:cert"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/cdoc2client_priv.key -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "$TEST_VECTORS_V_1_2"/$existing_test_vector -k "$CLI_KEYS_DIR"/cdoc2client_priv.key -o "$TEST_RESULTS_DIR"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$existing_test_vector
+  rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
 
 @test "test19: assert newly encrypted CDOC2 with RSA key displays formatted key label" {
   local cdoc_file="rsa_simple_with_formatted_key_label.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file \
-          -p $CLI_KEYS_DIR/rsa_pub.pem $FILE_FOR_ENCRYPTION
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -p "$CLI_KEYS_DIR"/rsa_pub.pem "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_RESULTS_DIR}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_RESULTS_DIR}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key "
   echo "# $expected_output_info">&3
   assert_output --partial "RSA PublicKey:"
@@ -444,16 +452,16 @@ EOF
   assert_output --partial "FILE:rsa_pub.pem"
   assert_output --partial "TYPE:pub_key"
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test19a: assert earlier encrypted CDOC2 with RSA key displays formatted key label and successfully decrypted" {
   local existing_test_vector="rsa_simple_with_formatted_key_label.cdoc"
 
   echo "# Requesting info for ${existing_test_vector}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_2}/${existing_test_vector}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="RSA PublicKey: V:1, FILE:rsa_pub.pem, TYPE:pub_key "
   echo "# $expected_output_info">&3
   assert_output --partial "RSA PublicKey:"
@@ -462,20 +470,20 @@ EOF
   assert_output --partial "TYPE:pub_key"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f $TEST_VECTORS_V_1_2/$existing_test_vector -k $CLI_KEYS_DIR/rsa_priv.pem -o $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "$TEST_VECTORS_V_1_2"/$existing_test_vector -k "$CLI_KEYS_DIR"/rsa_priv.pem -o "$TEST_RESULTS_DIR"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$existing_test_vector
+  rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
 
 @test "test20: assert newly encrypted CDOC2 with Symmetric key displays formatted key label" {
   local cdoc_file="symmetric_with_formatted_key_label.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file --secret $SECRET_WITH_LABEL $FILE_FOR_ENCRYPTION
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file --secret $SECRET_WITH_LABEL "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_RESULTS_DIR}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_RESULTS_DIR}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="SymmetricKey: V:1, LABEL:$SECRET_LABEL, TYPE:secret "
   echo "# $expected_output_info">&3
   assert_output --partial "SymmetricKey:"
@@ -483,16 +491,16 @@ EOF
   assert_output --partial "LABEL:$SECRET_LABEL"
   assert_output --partial "TYPE:secret"
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test20a: assert earlier encrypted CDOC2 with Symmetric key displays formatted key label and successfully decrypted" {
   local existing_test_vector="symmetric_with_formatted_key_label.cdoc"
 
   echo "# Requesting info for ${existing_test_vector}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_4}/${existing_test_vector}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS_V_1_4}"/${existing_test_vector}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="SymmetricKey: V:1, LABEL:$SECRET_LABEL, FILE:$existing_test_vector, TYPE:secret "
   echo "# $expected_output_info">&3
   assert_output --partial "SymmetricKey:"
@@ -502,23 +510,23 @@ EOF
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS_V_1_4}/${existing_test_vector} --secret $SECRET_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS_V_1_4}"/${existing_test_vector} --secret $SECRET_WITH_LABEL --output "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS_V_1_4}/${existing_test_vector}"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$existing_test_vector
+  rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
 
 @test "test21: assert newly encrypted CDOC2 with password displays formatted key label" {
   local cdoc_file="password_with_formatted_key_label.cdoc"
-  run run_alias cdoc-cli create -f $TEST_RESULTS_DIR/$cdoc_file -pw $PASSWORD_WITH_LABEL $FILE_FOR_ENCRYPTION
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f ${TEST_RESULTS_DIR}/${cdoc_file}
+  run run_alias cdoc-cli info -f "${TEST_RESULTS_DIR}"/${cdoc_file}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="Password: V:1, LABEL:${PW_LABEL}, TYPE:pw "
   echo "# $expected_output_info">&3
   assert_output --partial "Password:"
@@ -526,16 +534,16 @@ EOF
   assert_output --partial "LABEL:${PW_LABEL}"
   assert_output --partial "TYPE:pw"
 
-  rm -f $TEST_RESULTS_DIR/$cdoc_file
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "test21a: assert earlier encrypted CDOC2 with password displays formatted key label and successfully decrypted" {
   local existing_test_vector="password_with_formatted_key_label.cdoc"
 
   echo "# Requesting info for ${existing_test_vector}">&3
-  run run_alias cdoc-cli info -f ${TEST_VECTORS_V_1_2}/${existing_test_vector}
+  run run_alias cdoc-cli info -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector}
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   local expected_output_info="Password: V:1, LABEL:${PW_LABEL}, TYPE:pw "
   echo "# $expected_output_info">&3
   assert_output --partial "Password:"
@@ -545,43 +553,53 @@ EOF
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f ${TEST_VECTORS_V_1_2}/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output $TEST_RESULTS_DIR
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
 
-  assertSuccessfulExitCode
+  assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS_V_1_2}/${existing_test_vector}"
   assertSuccessfulDecryption
 
-  rm -f $TEST_RESULTS_DIR/$existing_test_vector
+  rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
 
 @test "All tests were executed." {
   echo "All tests were executed."
 }
 
-assertSuccessfulExitCode() {
+assertSuccessfulExecution() {
   successfulExitCode=0
   assert_success
   assert_equal $status $successfulExitCode
+
+  if [ $status != $successfulExitCode ]; then
+    rm -f "$CDOC2_CONTAINER"
+  fi
 }
 
 assertSuccessfulDecryption() {
   input_filename=$(basename "$FILE_FOR_ENCRYPTION")
   output_filename=$(basename "$DECRYPTED_FILE")
-  assert_equal $output_filename $input_filename
+  assert_equal "$output_filename" "$input_filename"
+  if [ "$output_filename" == "$input_filename" ]; then
+    echo "# File successfully decrypted.">&3
+  fi
 
-  rm -f $DECRYPTED_FILE
+  rm -f "$DECRYPTED_FILE"
 }
 
 assertFailure() {
   failureExitCode=1
   assert_equal $status $failureExitCode
+  if [ $status == $failureExitCode ]; then
+    echo "# Execution has failed as expected.">&3
+  fi
 }
 
 removeEncryptedCdoc() {
-  rm -f $CDOC2_CONTAINER
+  rm -f "$CDOC2_CONTAINER"
 }
 
-# removes created temporary files within testing
+# removes temporary created directory with files within testing
 teardown_file() {
-  rm -d $TEST_RESULTS_DIR
+  rm -r "$TEST_RESULTS_DIR"
 }

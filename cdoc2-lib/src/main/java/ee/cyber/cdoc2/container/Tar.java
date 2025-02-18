@@ -14,9 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 
-import static ee.cyber.cdoc2.CDocConfiguration.DISK_USAGE_THRESHOLD_PROPERTY;
-import static ee.cyber.cdoc2.CDocConfiguration.GZIP_COMPRESSION_THRESHOLD_PROPERTY;
-import static ee.cyber.cdoc2.CDocConfiguration.TAR_ENTRIES_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 
 
 /**
@@ -74,7 +72,6 @@ public final class Tar {
             }
         }
     }
-
 
     /**
      * Create a compressed (zlib) archive with single entry.

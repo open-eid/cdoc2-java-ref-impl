@@ -1,6 +1,5 @@
 package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 
-import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
@@ -9,7 +8,6 @@ import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.util.SkLdapUtil;
 
 import javax.annotation.Nullable;
-import javax.naming.NamingException;
 import java.io.File;
 import java.io.IOException;
 
@@ -17,7 +15,6 @@ import java.nio.file.Files;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,7 +27,7 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
  */
 public class EncryptionKeyMaterialCollectionBuilder {
 
-    private List<EncryptionKeyMaterial> recipients = new LinkedList<>();
+    private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
 
     /**
      * Create EncryptionKeyMaterial from publicKey and keyLabel data params. Add to list of recipients.
@@ -81,27 +78,6 @@ public class EncryptionKeyMaterialCollectionBuilder {
     }
 
     /**
-     * Create EncryptionKeyMaterial from publicKey, extracted from identity codes, and keyLabel
-     * data params. To decrypt CDOC, recipient must have the private key part of the public key.
-     * RSA and EC public keys are supported by CDOC.
-     * @param identificationCodes identification codes
-     * @return the list of EncryptionKeyMaterial
-     */
-    public EncryptionKeyMaterialCollectionBuilder fromEId(String[] identificationCodes)
-        throws CertificateException, NamingException {
-
-        List<SkLdapUtil.CertificateData> certData
-            = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
-        List<EncryptionKeyMaterial> keyMaterials = certData.stream()
-            .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
-            .map(SkLdapUtil::toEncryptionKeyMaterial)
-            .toList();
-
-        recipients.addAll(keyMaterials);
-        return this;
-    }
-
-    /**
      * Create PasswordEncryptionKeyMaterial from password and keyLabel. KeyLabel can be in plain
      * text or as data params.
      * To decrypt CDOC, recipient must have same password that is identified by the same keyLabel.
@@ -119,7 +95,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
     /**
      * Create EncryptionKeyMaterial from label and secret.
      * @param secrets the array of labeled secrets
-     * @return
+     * @return the list of EncryptionKeyMaterial
      */
     public EncryptionKeyMaterialCollectionBuilder fromSecrets(@Nullable LabeledSecret[] secrets) {
         if (secrets != null) {
@@ -130,14 +106,9 @@ public class EncryptionKeyMaterialCollectionBuilder {
                         labeledSecret.getLabel()
                     )
                 )
-                .forEach(encryptionKeyMaterial -> recipients.add(encryptionKeyMaterial));
+                .forEach(recipients::add);
         }
 
-        return this;
-    }
-
-    public EncryptionKeyMaterialCollectionBuilder addAll(Collection<EncryptionKeyMaterial> c) {
-        recipients.addAll(c);
         return this;
     }
 

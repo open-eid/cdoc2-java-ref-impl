@@ -8,26 +8,32 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 
-import ee.cyber.cdoc2.CDocConfiguration;
 import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParamsConfigurable;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+
+import ee.cyber.cdoc2.services.Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
+import static ee.sk.mid.MidInputUtil.getValidatedPhoneNumber;
 
 
 /**
@@ -56,7 +62,7 @@ public final class CDocDecryptionHelper {
     ) throws GeneralSecurityException, IOException {
         log.info("Decryption key not provided as CLI parameter, trying to read it from smart-card");
 
-        String pkcs11LibPath = System.getProperty(CDocConfiguration.PKCS11_LIBRARY_PROPERTY, null);
+        String pkcs11LibPath = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
         KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
 
         return DecryptionKeyMaterial.fromKeyPair(keyPair);
@@ -66,11 +72,15 @@ public final class CDocDecryptionHelper {
      * Loads DecryptionKeyMaterial from CLI options.
      * @param cdocFile cdoc file that is decrypted. Used to find correct key label,
      *                 if password is entered without a label ":password"
-     * @param labeledPasswordParam when labeledPasswordParam.isEmpty() == true (-pw without value),
-     *                             then password is read interactively. Has value when password was provided from CLI
-     * @param secret LabeledSecret value when provided, otherwise null
-     * @param p12 Read private key from .p12 file. Format is "FILE.p12:password". null when not provided
-     * @param privKeyFile file containing privateKey in PEM format. null when not provided
+     * @param decryptArguments exclusive decryption arguments. At least one of them must be present:
+     *                     - labeledPasswordParam: when labeledPasswordParam.isEmpty() == true
+     *                       (-pw without value), then password is read interactively. Has value
+     *                       when password was provided from CLI
+     *                     - secret: LabeledSecret value when provided, otherwise null
+     *                     - p12: Read private key from .p12 file. Format is "FILE
+     *                       .p12:password". null when not provided
+     *                     - privKeyFile: file containing privateKey in PEM format.
+     *                       null when not provided
      * @return loaded DecryptionKeyMaterial
      * @throws GeneralSecurityException general security exception
      * @throws IOException in case decryption key material extraction has failed
@@ -78,13 +88,17 @@ public final class CDocDecryptionHelper {
      */
     public static DecryptionKeyMaterial getDecryptionKeyMaterial(
         File cdocFile,
-        @Nullable LabeledPasswordParam labeledPasswordParam,
-        @Nullable LabeledSecret secret,
-        @Nullable String p12,
-        @Nullable File privKeyFile
+        DecryptionKeyExclusiveArgument decryptArguments
     ) throws GeneralSecurityException, IOException, CDocParseException {
         Objects.requireNonNull(cdocFile);
-        countParams(labeledPasswordParam, secret, p12, privKeyFile);
+        LabeledPasswordParam labeledPasswordParam = decryptArguments.getLabeledPasswordParam();
+        LabeledSecret secret = decryptArguments.getSecret();
+        String p12 = decryptArguments.getP12();
+        File privKeyFile = decryptArguments.getPrivKeyFile();
+        boolean isWithSid = decryptArguments.isWithSid();
+        boolean isWithMid = decryptArguments.isWithMid();
+
+        countParams(labeledPasswordParam, secret, p12, privKeyFile, isWithSid, isWithMid);
 
         DecryptionKeyMaterial decryptionKm = null;
         if (secret != null) {
@@ -92,30 +106,87 @@ public final class CDocDecryptionHelper {
         }
 
         if (labeledPasswordParam != null) {
-            List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
-            LabeledPassword labeledPassword = getLabeledPassword(labeledPasswordParam, recipients);
-
-            if (labeledPassword != null) {
-                decryptionKm = (decryptionKm == null)
-                    ? DecryptionKeyMaterial
-                    .fromPassword(labeledPassword.getPassword(), labeledPassword.getLabel())
-                    : decryptionKm;
-            }
+            decryptionKm = getPasswordDecryptionKeyMaterial(
+                decryptionKm, cdocFile, labeledPasswordParam
+            );
         }
 
-        if (decryptionKm == null)  {
-            KeyPair keyPair;
-            if (p12 != null) {
-                keyPair = PemTools.loadKeyPairFromP12File(p12);
-            } else if (privKeyFile != null) {
-                keyPair = PemTools.loadKeyPair(privKeyFile);
-            } else {
-                throw new CDocParseException(
-                    "At least one of decryption keys must be present"
-                );
-            }
+        if (isWithSid && decryptionKm == null) {
+            decryptionKm = getSidDecryptionKeyMaterial(decryptArguments.getSid(), cdocFile);
+        }
 
-            decryptionKm = DecryptionKeyMaterial.fromKeyPair(keyPair);
+        if (isWithMid && decryptionKm == null) {
+            decryptionKm = getMidDecryptionKeyMaterial(
+                decryptArguments.getMid(), decryptArguments.getMidPhone(), cdocFile
+            );
+        }
+
+        // this must be final initialization
+        if (decryptionKm == null)  {
+            decryptionKm = getKeyPairDecryptionKeyMaterial(p12, privKeyFile);
+        }
+
+        return decryptionKm;
+    }
+
+    private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode, File cdocFile) {
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
+        );
+
+        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        addInteractionParameters(cdocFile, dkm);
+        return dkm;
+
+    }
+
+    /**
+     *
+     * @param idCode estonian national identity code
+     * @param phoneNumber user phone number international format +372...
+     * @param cdocFile cdoc2 file decrypted
+     * @return
+     */
+    private static DecryptionKeyMaterial getMidDecryptionKeyMaterial(
+        String idCode,
+        String phoneNumber,
+        File cdocFile
+    ) {
+
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
+            createSemanticsIdentifier(idCode),
+            getValidatedPhoneNumber(phoneNumber)
+        );
+
+        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
+        addInteractionParameters(cdocFile, dkm);
+        return dkm;
+    }
+
+    private static void addInteractionParameters(File cdocFile, DecryptionKeyMaterial dkm) {
+        if (dkm instanceof InteractionParamsConfigurable paramsConfigurable) {
+
+            InteractionParams interactionParams = (cdocFile == null)
+                ? InteractionParams.displayTextAndPin()
+                : InteractionParams.displayTextAndVCCForDocument(cdocFile.toPath().getFileName().toString());
+            interactionParams.addAuthListener(e -> System.out.println("Verification code:" + e.getVerificationCode()));
+            paramsConfigurable.init(interactionParams);
+        }
+    }
+
+    private static DecryptionKeyMaterial getPasswordDecryptionKeyMaterial(
+        DecryptionKeyMaterial decryptionKm,
+        File cdocFile,
+        LabeledPasswordParam labeledPasswordParam
+    ) throws IOException, GeneralSecurityException, CDocParseException {
+        List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
+        LabeledPassword labeledPassword = getLabeledPassword(labeledPasswordParam, recipients);
+
+        if (labeledPassword != null) {
+            decryptionKm = (decryptionKm == null)
+                ? DecryptionKeyMaterial
+                .fromPassword(labeledPassword.getPassword(), labeledPassword.getLabel())
+                : decryptionKm;
         }
 
         return decryptionKm;
@@ -125,13 +196,17 @@ public final class CDocDecryptionHelper {
         LabeledPasswordParam labeledPasswordParam,
         LabeledSecret secret,
         String p12,
-        File privKeyFile
+        File privKeyFile,
+        boolean isWithSid,
+        boolean isWithMid
     ) {
         int n = 0;
         if (labeledPasswordParam != null) n += 1;
         if (secret != null) n += 1;
         if (p12 != null) n += 1;
         if (privKeyFile != null) n += 1;
+        if (isWithSid) n += 1;
+        if (isWithMid) n += 1;
 
         if (n > 1) {
             //should be detected by picocli ArgGroup(exclusive = true) before reaching here
@@ -139,27 +214,37 @@ public final class CDocDecryptionHelper {
         }
     }
 
+    private static DecryptionKeyMaterial getKeyPairDecryptionKeyMaterial(
+        String p12,
+        File privKeyFile
+    ) throws CDocParseException, GeneralSecurityException, IOException {
+        KeyPair keyPair;
+        if (p12 != null) {
+            keyPair = PemTools.loadKeyPairFromP12File(p12);
+        } else if (privKeyFile != null) {
+            keyPair = PemTools.loadKeyPair(privKeyFile);
+        } else {
+            throw new CDocParseException(
+                "At least one of decryption keys must be present"
+            );
+        }
+
+        return DecryptionKeyMaterial.fromKeyPair(keyPair);
+    }
+
     public static CDocDecrypter getDecrypterWithFilesExtraction(
         File cdocFile,
         String[] filesToExtract,
         File outputPath,
         DecryptionKeyMaterial decryptionKeyMaterial,
-        KeyCapsuleClientFactory keyCapsulesClientFactory
+        @Nullable Services services
     ) throws IOException {
         return new CDocDecrypter()
             .withCDoc(cdocFile)
             .withRecipient(decryptionKeyMaterial)
             .withFilesToExtract(Arrays.asList(filesToExtract))
-            .withKeyServers(keyCapsulesClientFactory)
+            .withServices(services)
             .withDestinationDirectory(outputPath);
-    }
-
-    public static KeyCapsuleClientFactory getKeyCapsulesClientFactory(
-        String keyServerPropertiesFile,
-        Integer slot) throws GeneralSecurityException, IOException {
-        Properties p = CDocCommonHelper.getServerProperties(keyServerPropertiesFile);
-        p.setProperty("pkcs11.slot", slot.toString());
-        return KeyCapsuleClientImpl.createFactory(p);
     }
 
     public static List<Recipient> parseRecipients(File cdocFile)

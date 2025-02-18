@@ -11,7 +11,6 @@ import ee.cyber.cdoc2.util.PasswordValidationUtil;
 
 /**
  * Represents key material required for encryption with symmetric key derived from the password.
- *
  * @param password password chars
  * @param keyLabel key label
  */

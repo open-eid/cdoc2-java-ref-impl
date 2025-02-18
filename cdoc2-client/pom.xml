@@ -4,11 +4,11 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>1.4.1</version>
+        <version>SID-1.4.1</version>
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>1.5.1</version>
+    <version>SID-1.6.1-SNAPSHOT</version>
     <description>CDOC2 server client generation from openapi specification</description>
 
     <properties>
@@ -19,17 +19,24 @@
 
         <spotbugs-annotations.version>4.8.3</spotbugs-annotations.version>
 
-        <!--info.version from cdoc2-openapi/cdoc2-key-capsules-openapi.yaml -->
+        <!--info.version from cdoc2-openapi/*-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>2.1.0</cdoc2-key-capsules-openapi.version>
+        <cdoc2-key-shares-openapi.version>1.0.1-draft</cdoc2-key-shares-openapi.version>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback-classic.version}</version>
+            <scope>test</scope>
         </dependency>
-
         <!-- javax.annotation.Nonnull and friends used by jersey3 client-->
         <!-- no longer required for client, but lib depends on it yet. Move to lib with client move -->
         <!-- remove, and add jakarta-annotation, and start using jakarta.annotation.Nullable instead -->
@@ -124,7 +131,7 @@
                 <executions>
 
                     <!-- download openapi yaml using dependency::get -->
-                    <!-- Can be also done using by defining cdoc2-key-capsules-openapi as dependency, -->
+                    <!-- Can be also done using by defining cdoc2-key-*-openapi as dependency, -->
                     <!-- but that breaks maven-shade plugin as it cannot handle non jar artifacts -->
                     <execution>
                         <id>download-cdoc2-key-capsules-openapi-yaml</id>
@@ -159,6 +166,40 @@
                             <useBaseVersion>true</useBaseVersion>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>download-cdoc2-key-shares-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>get</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>ee.cyber.cdoc2.openapi</groupId>
+                            <artifactId>cdoc2-key-shares-openapi</artifactId>
+                            <version>${cdoc2-key-shares-openapi.version}</version>
+                            <packaging>yaml</packaging>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-cdoc2-key-shares-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>ee.cyber.cdoc2.openapi</groupId>
+                                    <artifactId>cdoc2-key-shares-openapi</artifactId>
+                                    <version>${cdoc2-key-shares-openapi.version}</version>
+                                    <type>yaml</type>
+                                    <outputDirectory>${project.build.directory}/openapi</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                            <useBaseVersion>true</useBaseVersion>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
@@ -180,6 +221,20 @@
                             <inputSpec>${project.build.directory}/openapi/cdoc2-key-capsules-openapi-${cdoc2-key-capsules-openapi.version}.yaml</inputSpec>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>generate-key-shares-api-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <configOptions>
+                                <useSpringBoot3>true</useSpringBoot3>
+                            </configOptions>
+                            <!-- copied by maven-dependency-plugin -->
+                            <inputSpec>${project.build.directory}/openapi/cdoc2-key-shares-openapi-${cdoc2-key-shares-openapi.version}.yaml</inputSpec>
+                        </configuration>
+                    </execution>
+
                 </executions>
 
                 <configuration>

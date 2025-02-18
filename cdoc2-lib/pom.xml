@@ -3,12 +3,12 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>1.4.1</version>
+        <version>SID-1.4.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>cdoc2-lib</artifactId>
-    <version>2.0.1</version>
+    <version>SID-2.1.1-SNAPSHOT</version>
     <description>CDOC2 creation and processing library</description>
 
     <properties>
@@ -20,13 +20,19 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-schema</artifactId>
-            <version>1.3.1</version>
+            <version>SID-1.3.1</version>
         </dependency>
 
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-client</artifactId>
-            <version>1.5.1</version>
+            <version>SID-1.6.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ee.cyber.cdoc2</groupId>
+            <artifactId>cdoc2-auth-token</artifactId>
+            <version>0.3.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -48,9 +54,17 @@
         </dependency>
 
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback-classic.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -64,12 +78,38 @@
             <artifactId>commons-io</artifactId>
             <version>2.16.1</version>
         </dependency>
+
         <!-- tar and zlib -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.26.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>ee.sk.smartid</groupId>
+            <artifactId>smart-id-java-client</artifactId>
+            <version>2.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>ee.sk.mid</groupId>
+            <artifactId>mid-rest-java-client</artifactId>
+            <version>1.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>

@@ -14,10 +14,12 @@ import javax.annotation.Nullable;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.exceptions.CDocException;
 
+import ee.cyber.cdoc2.services.Services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * CDOC2 container re-encryption data builder.
@@ -34,14 +36,14 @@ public class CDocReEncrypter {
     private final EncryptionKeyMaterial reEncryptionKeyMaterial;
 
     @Nullable
-    private final KeyCapsuleClientFactory keyServerClientFactory;
+    private Services services;
 
     public CDocReEncrypter(
         File cDocFile,
         DecryptionKeyMaterial decryptionKeyMaterial,
         File destCdocFile,
         EncryptionKeyMaterial reEncryptionKeyMaterial,
-        @Nullable KeyCapsuleClientFactory keyCapsulesClientFactory
+        @Nullable Services services
     ) {
         Objects.nonNull(cDocFile);
         Objects.nonNull(decryptionKeyMaterial);
@@ -52,8 +54,12 @@ public class CDocReEncrypter {
         this.decryptionKeyMaterial = decryptionKeyMaterial;
         this.destCdocFile = destCdocFile;
         this.reEncryptionKeyMaterial = reEncryptionKeyMaterial;
-        this.keyServerClientFactory = keyCapsulesClientFactory;
+        this.services = services;
     }
+
+//    public void addKeyShareClientFactory(ExternalService keyShareClientFactory) {
+//        serverClientFactory = keyShareClientFactory;
+//    }
 
     public void reEncryptCDocContainer()
         throws IOException, CDocException, GeneralSecurityException {
@@ -71,7 +77,7 @@ public class CDocReEncrypter {
                 destCdocOs,
                 this.reEncryptionKeyMaterial,
                 destDir,
-                this.keyServerClientFactory
+                this.services
             );
         } catch (Exception ex) {
             log.info("Exception, removing {}", destCdocFile);

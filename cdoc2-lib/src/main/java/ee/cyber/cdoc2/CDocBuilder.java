@@ -1,8 +1,14 @@
 package ee.cyber.cdoc2;
 
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.services.Services;
+import jakarta.annotation.Nullable;
+
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
+import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.ECKeys;
@@ -10,6 +16,10 @@ import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.encrypt.KeyShareEncryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.PublicKeyEncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.SecretEncryptionKeyMaterial;
 
@@ -36,6 +46,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
+import static ee.cyber.cdoc2.crypto.KeyLabelTools.assertKeyLabelIsFormatted;
+
 
 /**
  * CDocBuilder for building CDOCs using EC (secp384r1) or RSA public keys or symmetric key.
@@ -47,6 +59,11 @@ public class CDocBuilder {
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
     private Duration keyCapsuleExpiryDuration;
     private Properties serverProperties;
+    @Nullable
+    private KeySharesClientFactory keySharesClientFactory;
+
+    @Nullable
+    KeyCapsuleClient keyCapsuleClient;
 
     public CDocBuilder withPayloadFiles(List<File> files) {
         this.payloadFiles = files;
@@ -68,13 +85,49 @@ public class CDocBuilder {
         return this;
     }
 
-    public CDocBuilder withServerProperties(Properties p) {
+    /**
+     * @deprecated use {@link #withKeyCapsuleClient(KeyCapsuleClient)} or {@link #withServices(Services)} instead
+     */
+    @Deprecated
+    public CDocBuilder withServerProperties(Properties p) throws GeneralSecurityException {
         this.serverProperties = p;
+
+        KeyCapsuleClientConfiguration capsuleClientConfig =
+            KeyCapsuleClientConfiguration.load(serverProperties);
+        // for encryption, do not init mTLS client as this might require smart-card
+        return withKeyCapsuleClient(KeyCapsuleClientImpl.create(capsuleClientConfig, false));
+    }
+
+    public CDocBuilder withKeyCapsuleClient(KeyCapsuleClient capsuleClient) {
+        this.keyCapsuleClient = capsuleClient;
+        return this;
+    }
+
+    public CDocBuilder withKeyShares(KeySharesClientFactory clientFactory) {
+        this.keySharesClientFactory = clientFactory;
+        return this;
+    }
+
+    /**
+     * Initialize {@code KeySharesClientFactory} and/or {@code KeyCapsuleClient}
+     * from {@code services} when {@code KeySharesClientFactory.class} and/or
+     * {@code KeyCapsuleClient.class} is defined.
+     * @param services use services to initialize KeySharesClientFactory and KeyCapsuleClient
+     */
+    public CDocBuilder withServices(Services services) {
+        if (services.hasService(KeySharesClientFactory.class)) {
+            this.keySharesClientFactory = services.get(KeySharesClientFactory.class);
+        }
+
+        if (services.hasService(KeyCapsuleClient.class)) {
+            this.keyCapsuleClient = services.get(KeyCapsuleClient.class);
+        }
+
         return this;
     }
 
     public void buildToFile(File outputCDocFile)
-        throws CDocException, IOException, CDocValidationException {
+        throws CDocException, IOException, CDocValidationException, ConfigurationLoadingException {
 
         if (outputCDocFile == null) {
             throw new CDocValidationException("Must provide CDOC output filename ");
@@ -92,7 +145,7 @@ public class CDocBuilder {
     }
 
     private void buildToOutputStreamFromFiles(OutputStream outputStream)
-        throws CDocException, CDocValidationException, IOException {
+        throws CDocException, CDocValidationException, IOException, ConfigurationLoadingException {
         validate();
 
         try {
@@ -104,34 +157,29 @@ public class CDocBuilder {
     }
 
     private void ensureFileCanBeCreatedInOutputDir(File outputCDocFile) throws FileAlreadyExistsException {
-        if (!CDocConfiguration.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
+        if (!Cdoc2ConfigurationProperties.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
             log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
             throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
         }
     }
 
     private OpenOption getOpenOption() {
-        return (CDocConfiguration.isOverWriteAllowed())
+        return (Cdoc2ConfigurationProperties.isOverWriteAllowed())
             ? StandardOpenOption.CREATE
             : StandardOpenOption.CREATE_NEW;
     }
 
     private Envelope prepareEnvelope()
-        throws ExtApiException, GeneralSecurityException, IOException {
+        throws ExtApiException, GeneralSecurityException, ConfigurationLoadingException {
 
-        if (serverProperties == null) {
-            return Envelope.prepare(recipients, null);
-        } else {
-            // for encryption, do not init mTLS client as this might require smart-card
-           KeyCapsuleClient client = KeyCapsuleClientImpl.create(serverProperties, false);
-           if (null != keyCapsuleExpiryDuration) {
-               client.setExpiryDuration(keyCapsuleExpiryDuration);
+           if ((keyCapsuleClient != null) && (keyCapsuleExpiryDuration != null)) {
+               keyCapsuleClient.setExpiryDuration(keyCapsuleExpiryDuration);
            }
-            return Envelope.prepare(
-                recipients,
-                client
+           return Envelope.prepare(
+               recipients,
+               keyCapsuleClient,
+               keySharesClientFactory
             );
-        }
     }
 
     private void handleFileEncryptionError(Exception ex, File outputCDocFile) {
@@ -144,7 +192,7 @@ public class CDocBuilder {
             }
 
         } catch (IOException ioException) {
-            log.error("Error when deleting {} {}", outputCDocFile, ioException);
+            log.error("Error when deleting {}", outputCDocFile, ioException);
         }
     }
 
@@ -179,6 +227,8 @@ public class CDocBuilder {
                 || (secretKey.getEncoded().length < Crypto.SYMMETRIC_KEY_MIN_LEN_BYTES)) {
                 throw new CDocValidationException("Too short key for label: " + secretKeyMaterial.getLabel());
             }
+        } else if (keyMaterial instanceof KeyShareEncryptionKeyMaterial keyShareKeyMaterial) {
+            assertKeyLabelIsFormatted(keyShareKeyMaterial.keyLabel());
         } else {
             String errorMsg = "Unsupported key " + keyMaterial.getLabel();
             log.error(errorMsg);
