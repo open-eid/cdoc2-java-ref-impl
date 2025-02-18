@@ -121,6 +121,9 @@ Key and label can be safely stored in a password manager.
 
 ### Encryption with Smart ID
 
+Current encryption/decryption implementation of cdoc2 container with Smart ID supports only Estonian
+personal ID codes.
+
 ```
 java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc README.md
 ```
@@ -128,7 +131,8 @@ java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.c
 Multiple ID codes are allowed to be sent for encryption:
 
 ```
-java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 -f /tmp/smartid.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 \
+ -f /tmp/smartid.cdoc README.md
 ```
 
 Key shares or Smart-ID properties can be sent externally by adding following options (the same 
@@ -143,6 +147,9 @@ and/or
 
 ### Encryption with Mobile ID
 
+Current encryption/decryption implementation of cdoc2 container with Mobile ID supports only 
+Estonian personal ID codes.
+
 ```
 java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid.cdoc README.md
 ```
@@ -150,7 +157,8 @@ java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid
 Multiple ID codes are allowed to be sent for encryption:
 
 ```
-java -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 -f /tmp/mobileid.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 \
+ -f /tmp/mobileid.cdoc README.md
 ```
 
 Key shares or Mobile-ID properties can be sent externally by adding following options (the same
@@ -173,16 +181,17 @@ To decrypt:
 java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
 ```
 
-or with Smart-ID:
+or with Smart-ID for Estonian personal ID code:
 
 ```
 java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc --output /tmp
 ```
 
-or with Mobile-ID:
+or with Mobile-ID for Estonian personal ID code and Estonian phone number with country code `+372`:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 -f /tmp/mobileid.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 \
+ -f /tmp/mobileid.cdoc --output /tmp
 ```
 
 ### Decrypting with server scenario
