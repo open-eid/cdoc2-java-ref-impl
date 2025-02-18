@@ -129,6 +129,11 @@ public final class CDocDecryptionHelper {
         return decryptionKm;
     }
 
+    /**
+     * @param idCode estonian national identity code
+     * @param cdocFile cdoc2 file decrypted
+     * @return DecryptionKeyMaterial object
+     */
     private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(String idCode, File cdocFile) {
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
             createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
@@ -141,18 +146,16 @@ public final class CDocDecryptionHelper {
     }
 
     /**
-     *
      * @param idCode estonian national identity code
      * @param phoneNumber user phone number international format +372...
      * @param cdocFile cdoc2 file decrypted
-     * @return
+     * @return DecryptionKeyMaterial object
      */
     private static DecryptionKeyMaterial getMidDecryptionKeyMaterial(
         String idCode,
         String phoneNumber,
         File cdocFile
     ) {
-
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
             createSemanticsIdentifier(idCode),
             getValidatedPhoneNumber(phoneNumber)
