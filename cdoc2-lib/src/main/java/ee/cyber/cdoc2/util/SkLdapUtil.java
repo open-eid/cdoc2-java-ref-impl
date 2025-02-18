@@ -2,7 +2,6 @@ package ee.cyber.cdoc2.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -24,6 +23,8 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+import javax.security.auth.x500.X500Principal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,8 @@ import ee.cyber.cdoc2.crypto.KeyLabelTools;
  * @see <a href=https://www.skidsolutions.eu/repositoorium/ldap/esteid-ldap-kataloogi-kasutamine/>SK LDAP</a>
  */
 public final class SkLdapUtil {
-    private SkLdapUtil() {
 
+    private SkLdapUtil() {
     }
 
     private static final Logger log = LoggerFactory.getLogger(SkLdapUtil.class);
@@ -155,7 +156,7 @@ public final class SkLdapUtil {
             for (String id: ids) {
                 Map<X509Certificate, String> certs = findAuthenticationEstEidCertificates(ctx, id);
                 if (certs.isEmpty()) {
-                    throw new CertificateException("Identity code " + id + "is  not found at server");
+                    throw new CertificateException("Identity code " + id + " is not found at server");
                 }
 
                 for (var certNameEntry: certs.entrySet()) {
@@ -163,7 +164,7 @@ public final class SkLdapUtil {
                     String distinguishedName = certNameEntry.getValue();
                     CertificateData certificateData = getKeyLabel(cert, distinguishedName);
                     certificateData.setPublicKey(cert.getPublicKey());
-                    certificateData.setSerialNumber(cert.getSerialNumber());
+                    certificateData.setSerialNumber(getSemanticsIdentifier(cert));
 
                     log.debug("Adding certificate data {}", certificateData);
                     certDatas.add(certificateData);
@@ -253,6 +254,39 @@ public final class SkLdapUtil {
         }
     }
 
+    /**
+     * Parse serialNumber from certificate subjectDN serialNumber
+     * (example subjectDN='SERIALNUMBER=PNOEE-30303039914, GIVENNAME=OK, SURNAME=TESTNUMBER, CN="TESTNUMBER,OK", C=EE')
+     * @param cert certificate
+     * @return semanticsIdentifier as String (for example PNOEE-30303039914)
+     */
+    @Nullable
+    private static String getSemanticsIdentifier(X509Certificate cert) {
+        X500Principal subjectX500Principal = cert.getSubjectX500Principal();
+        var knownOids = Map.of(
+            "2.5.4.5", "serialNumber",
+            "2.5.4.42", "givenName",
+            "2.5.4.4", "surname");
+
+        // X500Principal in Java 17 doesn't know about knowOids, although deprecated getSubjectDN is able to parse those
+        // subjectDN='SERIALNUMBER=PNOEE-30303039914, GIVENNAME=OK, SURNAME=TESTNUMBER, CN="TESTNUMBER,OK", C=EE'
+        String subjectDN = subjectX500Principal.getName(X500Principal.RFC2253, knownOids);
+
+        try {
+            LdapName ln = new LdapName(subjectDN);
+
+            for (Rdn rdn : ln.getRdns()) {
+                if (rdn.getType().equalsIgnoreCase("serialNumber")) {
+                    return rdn.getValue().toString();
+                }
+            }
+            log.info("serialNumber not found from subjectDN {}", subjectDN);
+        } catch (InvalidNameException ine) {
+            log.info("Failed to get serialNumber from invalid certificate subjectDN field");
+        }
+        return null;
+    }
+
     public static class CertificateData {
         private PublicKey publicKey;
         private String keyLabel;
@@ -261,7 +295,7 @@ public final class SkLdapUtil {
         @Nullable
         private String fingerprint;
         @Nullable
-        private BigInteger serialNumber;
+        private String serialNumber;
         private String keyLabelType;
 
         public CertificateData() {
@@ -276,15 +310,18 @@ public final class SkLdapUtil {
             return this.keyLabel;
         }
 
+        @Nullable
         public File getFile() {
             return this.file;
         }
 
+        @Nullable
         public String getFingerprint() {
             return this.fingerprint;
         }
 
-        public BigInteger getSerialNumber() {
+        @Nullable
+        public String getSerialNumber() {
             return this.serialNumber;
         }
 
@@ -300,15 +337,15 @@ public final class SkLdapUtil {
             this.keyLabel = keyLabel;
         }
 
-        public void setFile(File file) {
+        public void setFile(@Nullable File file) {
             this.file = file;
         }
 
-        public void setFingerprint(String fingerprint) {
+        public void setFingerprint(@Nullable String fingerprint) {
             this.fingerprint = fingerprint;
         }
 
-        public void setSerialNumber(BigInteger serialNumber) {
+        public void setSerialNumber(@Nullable String serialNumber) {
             this.serialNumber = serialNumber;
         }
 
