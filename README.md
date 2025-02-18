@@ -209,6 +209,7 @@ Other CDOC2 repositories:
 - https://github.com/open-eid/cdoc2-shares-server CDOC2 Shares Server (encryption/decryption Smart-ID/Mobile-ID scenarios)
 - https://github.com/open-eid/cdoc2-auth CDOC2 auth token implementation (used for Smart-ID/Mobile-ID scenarios)
 - https://github.com/open-eid/cdoc2-gatling-tests Gatling tests for CDOC2 Capsule Server and CDOC2 Shares Server
+- https://github.com/open-eid/CDOC2 Source for open-eid.github.io/CDOC2/ documentation site
 
 ## Using
 
