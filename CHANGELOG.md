@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.0.0-RC] Support for Smart-ID and Mobile-ID
+
+### Features
+
+* CDOC2 encryption/decryption with symmetric key from/to N-of-N shares (Smart-ID/Mobile-ID)
+
+### Internal
+
+* cdoc2-cli bats tests for Smart-ID/Mobile-ID using SK test env and `docker compose`
+
+### Maven package versions:
+```
+cdoc2 2.0.0-SNAPSHOT
+cdoc2-schema 1.4.0-SNAPSHOT
+cdoc2-lib 3.0.0-SNAPSHOT
+cdoc2-client 2.0.0-SNAPSHOT
+cdoc2-cli 1.6.0-SNAPSHOT
+```
+
 ## [1.4.1] Bug fixes, documentation, tests improvements (2024-09-19)
 
 ### Bug Fixes
