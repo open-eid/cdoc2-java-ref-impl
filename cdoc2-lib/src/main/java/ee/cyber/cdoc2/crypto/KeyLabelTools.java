@@ -3,7 +3,6 @@ package ee.cyber.cdoc2.crypto;
 import jakarta.annotation.Nullable;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -167,12 +166,12 @@ public final class KeyLabelTools {
     /**
      * Create eID key label parameters for data section of formatted key label.
      * @param keyLabel key label as common name from certificate
-     * @param serialNumber serial number from certificate
+     * @param serialNumber serial number, parsed from certificate field 'subjectDn'
      * @param keyLabelType key label type from certificate
      * @return KeyLabelParams key label parameters required for data section
      */
     public static KeyLabelParams createEIdKeyLabelParams(
-        String keyLabel, BigInteger serialNumber, String keyLabelType
+        String keyLabel, String serialNumber, String keyLabelType
     ) {
         Map<String, String> keyLabelParamsMap = createKeyLabelParamsMap();
         keyLabelParamsMap.put(
@@ -190,7 +189,7 @@ public final class KeyLabelTools {
             = new KeyLabelParams(EncryptionKeyOrigin.ID_CARD, keyLabelParamsMap);
 
         keyLabelParams.addParam(KeyLabelDataFields.CN.name(), keyLabel);
-        keyLabelParams.addParam(KeyLabelDataFields.SERIAL_NUMBER.name(), String.valueOf(serialNumber));
+        keyLabelParams.addParam(KeyLabelDataFields.SERIAL_NUMBER.name(), serialNumber);
 
         int endAfterLastName = keyLabel.indexOf(",");
         int endAfterFirstName = keyLabel.indexOf(",", endAfterLastName + 1);

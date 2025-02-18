@@ -11,7 +11,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
@@ -238,7 +237,7 @@ class KeyLabelToolsTest {
     void testEIdLabelParamsCreation() {
         KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
             "Common,Name,IdentityCode",
-            BigInteger.valueOf(123456),
+            "PNOEE-30303039914",
             KeyLabelTools.KeyLabelType.CERT.getName()
         );
 
@@ -250,7 +249,7 @@ class KeyLabelToolsTest {
             )
         );
         assertEquals(
-            "123456",
+            "PNOEE-30303039914",
             getDecodedKeyLabelParamValue(
                 keyLabelParams.keyLabelParams(),
                 KeyLabelTools.KeyLabelDataFields.SERIAL_NUMBER
