@@ -62,7 +62,7 @@ public final class Pkcs11Tools {
      *
      * @param pkcs11LibPath pkcs11 provider library location, defaults described above if null
      * @param slot          the slot number with the keys
-     * @param keyAlias      key alias (optional) to use in case the are more than one entry in the
+     * @param keyAlias      key alias (optional) to use in case there are more than one entry in the
      *                      keystore
      * @return KeyPair
      *
@@ -82,6 +82,34 @@ public final class Pkcs11Tools {
         var entry = loadFromPKCS11(
             createSunPkcsConfigurationFile(null, pkcs11LibPath, slot),
             getKeyStoreProtectionHandler(pinPrompt),
+            keyAlias
+        );
+
+        return new KeyPair(entry.getValue().getPublicKey(), entry.getKey());
+    }
+
+    /**
+     * Load KeyPair using automatically generated SunPKCS11 configuration with given pin code.
+     *
+     * @param pkcs11LibPath pkcs11 provider library location, defaults described above if null
+     * @param slot          the slot number with the keys
+     * @param pin           pin code wrapped into PasswordProtection object
+     * @param keyAlias      key alias (optional) to use in case there are more than one entry in the
+     *                      keystore
+     * @return KeyPair
+     *
+     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
+     *     SunPKCS11 documentation Table 5-1</a>
+     */
+    public static KeyPair loadFromPKCS11WithPin(
+        String pkcs11LibPath,
+        Integer slot,
+        KeyStore.PasswordProtection pin,
+        @Nullable String keyAlias
+    ) throws GeneralSecurityException, IOException {
+        var entry = loadFromPKCS11(
+            Pkcs11Tools.createSunPkcsConfigurationFile(null, pkcs11LibPath, slot),
+            pin,
             keyAlias
         );
 
