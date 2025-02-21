@@ -279,20 +279,32 @@ with `cdoc2-lib` verify that you can access id-card with [DigiDoc4](https://gith
         Path destDir = Paths.get("/tmp");
         Integer slot = 0;
         String alias = "Isikutuvastus";
-        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(
-            Pkcs11Tools.loadFromPKCS11Interactively(
-                "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
-                slot, 
-                alias
-            )
+
+        // load keys by asking pin code interactively
+        KeyPair keyPair = Pkcs11Tools.loadFromPKCS11Interactively(
+            "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
+            slot, 
+            alias
         );
         
+        // or load keys with a given pin code
+        char[] pin;
+        KeyPair keyPair = Pkcs11Tools.loadFromPKCS11WithPin(
+                 "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
+                 slot,
+                 new PasswordProtection(pin),
+                 alias
+        );
+
+        DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(keyPair);
+        
         List<String> extractedFiles = new CDocDecrypter()
-                .withCDoc(cdoc2FileToDecrypt.toFile())
-                .withRecipient(dkm)
-                .withDestinationDirectory(destDir.toFile())
-                .decrypt();
+             .withCDoc(cdoc2FileToDecrypt.toFile())
+             .withRecipient(dkm)
+             .withDestinationDirectory(destDir.toFile())
+             .decrypt();
 ```
+
 `/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so` is location of OpenSC pkcs11 driver library. Some info
 on setting up pcks11 on Ubuntu can be found in [pkcs11.README](https://github.com/open-eid/cdoc2-java-ref-impl/blob/master/cdoc2-lib/pkcs11.README)
 
@@ -379,8 +391,6 @@ Similar to previous example, to decrypt cdoc2 with server recipient,
 [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server)client needs to be configured.
 
 ```java
-
-
 Path cdoc2FileToDecrypt = Paths.get("/tmp/second.cdoc2");
 Path destDir = Paths.get("/tmp");
 Integer slot = 0;
