@@ -7,6 +7,7 @@ import jakarta.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 
+
 /**
  * Smart-ID and Mobile-ID interaction parameters.
  * Optional parameters to drive user interaction and to get verification code.
@@ -27,7 +28,6 @@ public class InteractionParams {
         VERIFICATION_CODE_CHOICE,
         CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE
     }
-
 
     /** Default text for Smart-ID. Max length 60 chars. Default text for MID is defined in mobile-id.properties */
     public static final String DEFAULT_DISPLAY_TEXT = "Authenticate to decrypt CDOC2 document";
@@ -119,7 +119,6 @@ public class InteractionParams {
         this.encoding = encoding;
     }
 
-
     /** Get text displayed. If text is longer than 200 chars, will be capped to 200 chars */
     public String getDisplayText200() {
         return getDisplayText(200);
@@ -160,4 +159,5 @@ public class InteractionParams {
             listener.authStarted(event);
         }
     }
+
 }

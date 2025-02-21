@@ -475,6 +475,35 @@ List<String> extractedFiles = new CDocDecrypter()
         .decrypt();
 ```
 
+
+### User interaction with Smart ID and Mobile ID clients
+Smart ID and Mobile ID clients interact with user by display messages and verification code.
+Available interactions are implemented in a class `InteractionParams`, which can be of
+following types `InteractionParams.InteractionType`:
+* DISPLAY_TEXT_AND_PIN
+* CONFIRMATION_MESSAGE
+* VERIFICATION_CODE_CHOICE
+* CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE
+
+Initialized `InteractionParams` will be transferred to Smart ID and Mobile ID clients while
+authenticating.
+
+`InteractionParams` can be configured by initializing `KeyShareDecryptionKeyMaterial`
+with method `InteractionParamsConfigurable.init()` while decrypting:
+```java
+    private static void addInteractionParameters(File cdocFile, DecryptionKeyMaterial dkm) {
+        if (dkm instanceof InteractionParamsConfigurable paramsConfigurable) {
+
+            InteractionParams interactionParams = (cdocFile == null)
+                ? InteractionParams.displayTextAndPin()
+                : InteractionParams.displayTextAndVCCForDocument(cdocFile.toPath().getFileName().toString());
+            interactionParams.addAuthListener(e -> System.out.println("Verification code:" + e.getVerificationCode()));
+            paramsConfigurable.init(interactionParams);
+        }
+    }
+```
+
+
 ## Long-term crypto
 
 Scenarios with id-card are meant for transport cryptography only as id-card certificates expiry and
