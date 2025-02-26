@@ -968,7 +968,6 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         builder.buildToFile(cdocFile);
 
-
         List<Recipient> recipients = Envelope.parseHeader(Files.newInputStream(cdocFile.toPath()));
 
         assertTrue(recipients.size() == 2);
