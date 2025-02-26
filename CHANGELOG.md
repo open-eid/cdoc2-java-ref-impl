@@ -2,6 +2,15 @@
 
 ## [2.0.0] Version update (2025-02-26)
 
+### Maven package versions:
+```
+cdoc2 2.0.0
+cdoc2-schema 1.4.0
+cdoc2-lib 3.0.0
+cdoc2-client 2.0.0
+cdoc2-cli 1.6.0
+```
+
 ## [2.0.0-RC] Support for Smart-ID and Mobile-ID
 
 ### Features
