@@ -230,8 +230,9 @@ When certificate has expired there is needed to replace it with new certificate 
         
         CDocBuilder builder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(payloadFiles))
-            .withRecipients(List.of(km))
-            .buildToFile(cdoc2FileToCreate);
+            .withRecipients(List.of(km));
+        
+        builder.buildToFile(cdoc2FileToCreate);
 ```
 
 ### To decrypt with password:
@@ -257,10 +258,12 @@ When certificate has expired there is needed to replace it with new certificate 
 
         List<EncryptionKeyMaterial> recipients =      
             EncryptionKeyMaterial.collectionBuilder().fromEId(new String[]{identificationCode});
+
         CDocBuilder builder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(payloadFiles))
-            .withRecipients(recipients)
-            .buildToFile(cdoc2FileToCreate);
+            .withRecipients(recipients);
+        
+        builder.buildToFile(cdoc2FileToCreate);
 ```
 
 **Note**: this works only for end user id-cards. It doesn't work for test id-cards as test-id card
@@ -332,11 +335,13 @@ directory and `.withServerProperties` method:
 
         List<EncryptionKeyMaterial> recipients =      
             EncryptionKeyMaterial.collectionBuilder().fromEId(new String[]{identificationCode});
+
         CDocBuilder builder = new CDocBuilder()
             .withServerProperties(p)
             .withPayloadFiles(Arrays.asList(payloadFiles))
-            .withRecipients(recipients)
-            .buildToFile(cdoc2FileToCreate);
+            .withRecipients(recipients);
+
+        builder.buildToFile(cdoc2FileToCreate);
 ```
 **Note**: `cdoc2-cli/config` contains usually several properties files. For id-card usage, use one with
 the shortest name (without `_pkcs12` or `_p12` in name).
@@ -376,13 +381,12 @@ key parts
            .forAuthMeans(new String[]{identificationCode}) // will create authentication based recipient, that can be decrypted with SID/MID
            .build();
 
-
-CDocBuilder builder = new CDocBuilder()
+   CDocBuilder builder = new CDocBuilder()
            .withPayloadFiles(files)
            .withRecipients(encKeyMaterial)
            .withServices(services);
    
-  builder.buildToFile(cdoc2FileToCreate);
+   builder.buildToFile(cdoc2FileToCreate);
 ```
 
 ### Decrypting with key material from the server
