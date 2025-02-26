@@ -1,5 +1,7 @@
 # Changelog
 
+## [2.0.0] Version update (2025-02-26)
+
 ## [2.0.0-RC] Support for Smart-ID and Mobile-ID
 
 ### Features
