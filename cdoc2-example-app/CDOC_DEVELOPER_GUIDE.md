@@ -101,7 +101,7 @@ with details for application configuration, keystore creation and monitoring.
 
 ### Server maven dependencies installation
 You should configure GitHub package repository access with Personal Access Token for getting
-[Open API](https://gitlab.ext.cyber.ee/cdoc2/cdoc2-java-ref-impl#maven-dependencies) and [Key 
+[Open API](https://github.com/open-eid/cdoc2-java-ref-impl#maven-dependencies) and [Key 
 Capsule Server](https://github.com/open-eid/cdoc2-capsule-server/blob/master/README.md#maven-dependencies)
 Maven dependencies.
 

@@ -180,7 +180,7 @@ can do that.
     For Mobile-ID, user needs to enter mobile phone number additionally to identity code.
 13. Recipient finds `KeySharesCapsule` record from CDOC2 header where `recipient_id` matches 
     recipients entered identity code.   
-14. Recipient [prepares](https://open-eid.github.io/CDOC2/2.0-Draft/03_system_architecture/ch05_ID_authentication_protocol/#overview-of-the-generic-authentication-protocol) 
+14. Recipient [prepares](https://open-eid.github.io/CDOC2/2.0-Draft/03_system_architecture/ch06_ID_authentication_protocol/#overview-of-the-generic-authentication-protocol) 
     auth token by creating `nonce` for each share in [shares](https://github.com/open-eid/cdoc2-java-ref-impl/blob/a2dbe6711d88d2442e23d4ca80494f285f4d00cd/cdoc2-schema/src/main/fbs/recipients.fbs#L93). 
     `nonce` is created by using [`/key-shares/{shareId}/nonce`](https://github.com/open-eid/cdoc2-openapi/blob/55a0b02adae0d8c61f2589a47555a93e4cf31971/cdoc2-key-shares-openapi.yaml#L105)
     endpoint in each `cdoc2-shares-server`.

@@ -39,8 +39,7 @@ public abstract class ApiClientBuilder {
     private boolean debug = false;
     private String userAgent = "cdoc2-client";
 
-    // ToDo. Basic authentication temporary fields for /key-shares. Remove when bearer auth
-    //  implemented. #2749
+    // used for monitoring API-s
     private String username;
     private String password;
 
@@ -118,15 +117,21 @@ public abstract class ApiClientBuilder {
         return this;
     }
 
-    // ToDo. Basic authentication temporary fields for /key-shares. Remove when bearer auth
-    //  implemented. #2749
+    /**
+     * Used for basic authentication for monitoring API-s
+     * @param xUsername username
+     * @return Builder for API client
+     */
     public ApiClientBuilder withUsername(String xUsername) {
         this.username = xUsername;
         return this;
     }
 
-    // ToDo. Basic authentication temporary fields for /key-shares. Remove when bearer auth
-    //  implemented. #2749
+    /**
+     * Used for basic authentication for monitoring API-s
+     * @param xPassword password
+     * @return Builder for API client
+     */
     public ApiClientBuilder withPassword(String xPassword) {
         this.password = xPassword;
         return this;
