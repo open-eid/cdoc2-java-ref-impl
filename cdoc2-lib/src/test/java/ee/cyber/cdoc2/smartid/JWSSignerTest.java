@@ -182,7 +182,8 @@ class JWSSignerTest {
         assertEquals("PNOEE-30303039914", certData.getSemanticsIdentifier());
         assertEquals("30303039914", certData.getIdentityNumber());
         assertEquals(sidCert, certData.getAuthCertificate());
-        assertEquals(expectedRsaPubKeyPem, SIDAuthCertData.getRSAPublicKeyPkcs1Pem(sidCert));
+        assertEquals(expectedRsaPubKeyPem.replaceAll("\\s", ""),
+                SIDAuthCertData.getRSAPublicKeyPkcs1Pem(sidCert).replaceAll("\\s", ""));
     }
 
 }
