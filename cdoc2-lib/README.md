@@ -6,7 +6,8 @@ CDOC stands for 'Crypto Digidoc', encrypted file transmission format used in the
 
 * CDOC1 - Unofficial term for all (XML-ENC based) CDOC formats preceding CDOC2.
 * [CDOC2](https://open-eid.github.io/CDOC2) is a new version of CDOC, featuring additional security
-  measures with optional server backend and support for long term cryptography.
+  measures with optional server backend and support for long term cryptography and Smart-ID/Mobile-ID 
+  (auth based encryption)
 
 CDOC1 and CDOC2 version are not compatible.
 
@@ -120,6 +121,7 @@ public KeyCapsuleClientFactory initKeyCapsuleClientFactory(String keyServerPrope
 }
 ```
 
+
 Alternatively:
 
 ```java
@@ -136,7 +138,8 @@ Or:
 ```java
 import ee.cyber.cdoc2.services.Cdoc2Services;
 
-Properties p = new Properties().setProperty("key-capsule.properties", "classpath:localhost.properties");
+Properties p = new Properties();
+p.setProperty("key-capsule.properties", "classpath:localhost.properties");
 Services services = Cdoc2Services.initFromProperties(p);
 KeyCapsuleClientFactory capsuleClientFactory = services.get(KeyCapsuleClientFactory.class);
 ```
@@ -324,22 +327,29 @@ was used, see source code for [cdoc2-cli info](https://github.com/open-eid/cdoc2
 
 To create CDOC2 document with server scenario, [cdoc2-capsule-server](https://github.com/open-eid/cdoc2-capsule-server) client needs to be configured.
 Easiest is to use one of existing properties files from [cdoc2-cli/config](https://github.com/open-eid/cdoc2-java-ref-impl/tree/master/cdoc2-cli/config/)
-directory and `.withServerProperties` method:
+directory and `.withKeyCapsuleClient` method (or `.withServices` where `Services` object `.hasService(KeyCapsuleClient.class)` ):
 
 ```java
-        File cdoc2FileToCreate = Paths.get("/tmp/second.cdoc2").toFile();
-        String identificationCode = "3..."; // your id-code
-        String keyServerPropertiesFile = "/path/to/cdoc2-cli/conf/id.properties"; 
-        Properties p = new Properties().load(
-            Resources.getResourceAsStream(keyServerPropertiesFile));
+import ee.cyber.cdoc2.client.KeyCapsuleClient;
+import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
+import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
+import ee.cyber.cdoc2.config.PropertiesLoader;
 
-        List<EncryptionKeyMaterial> recipients =      
-            EncryptionKeyMaterial.collectionBuilder().fromEId(new String[]{identificationCode});
+File cdoc2FileToCreate = Paths.get("/tmp/second.cdoc2").toFile();
+String identificationCode = "3..."; // your id-code
+String keyServerPropertiesFile = "/path/to/cdoc2-cli/conf/id.properties";
+Properties p = PropertiesLoader.loadProperties(keyServerPropertiesFile);
+KeyCapsuleClient capsuleClient = KeyCapsuleClientImpl.create(KeyCapsuleClientConfiguration.load(p), false);
 
-        CDocBuilder builder = new CDocBuilder()
-            .withServerProperties(p)
-            .withPayloadFiles(Arrays.asList(payloadFiles))
-            .withRecipients(recipients);
+// download certificates from SK LDAP and creates EncryptionKeyMaterial from them 
+// works for Estonian ID code only, implement similar class for other national ID codes or different LDAP
+List<EncryptionKeyMaterial> recipients =
+        EstEncKeyMaterialBuilder.fromCertDirectory(new String[]{identificationCode}).build();
+
+CDocBuilder builder = new CDocBuilder()
+        .withKeyCapsuleClient(capsuleClient) // will use server scenario
+        .withPayloadFiles(Arrays.asList(payloadFiles))
+        .withRecipients(recipients);
 
         builder.buildToFile(cdoc2FileToCreate);
 ```
@@ -370,7 +380,7 @@ key parts
    File[] payloadFiles = new File[]{};//add some files
    
    // normally initialized through -D option to java process
-   System.setProperty("key-capsule.properties","classpath:localhost.properties"); // from classpath
+   System.setProperty("key-capsule-post.properties","classpath:localhost.properties"); // from classpath
    System.setProperty("key-shares.properties","config/key_shares-test.properties"); // from file system
 
    // alternatively use Cdoc2Services.initFromProperties(Properties)
