@@ -23,7 +23,7 @@ and [id.ee CDOC 2.0 article](https://www.id.ee/artikkel/cdoc-2-0/)
 CDOC1 is xml document, examples can be found [here](https://github.com/open-eid/cdoc4j/blob/master/src/test/resources/cdoc/)
 
 ```
-~/workspace/cdoc2-java-ref-impl/cdoc2-example-app/src/test/resources/cdoc$ head -1 valid_cdoc11_ECC.cdoc 
+~/workspace/cdoc2-java-ref-impl/cdoc2-example-app/src/test/resources/cdoc$ head -1 valid_cdoc11_ECC.cdoc
 <?xml version="1.0" encoding="UTF-8"?><denc:EncryptedData xmlns:denc="http://www.w3.org/2001/04/xmlenc#" MimeType="application/octet-stream">
 ```
 
@@ -36,7 +36,7 @@ To create/decrypt CDOC1 documents see [cdoc4j: Examples of how to use it](https:
 
 CDOC2 is binary document, where first 4 bytes are `0x43, 0x44, 0x4f, 0x43` or `CDOC` in ASCII:
 ```
-~/workspace/cdoc2-java-ref-impl/test/testvectors$ hd ec_simple.cdoc 
+~/workspace/cdoc2-java-ref-impl/test/testvectors$ hd ec_simple.cdoc2 
 00000000  43 44 4f 43 02 00 00 01  6c 0c 00 00 00 08 00 0c  |CDOC....l.......|
 ```
 

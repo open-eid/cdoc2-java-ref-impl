@@ -82,7 +82,7 @@ run_alias() {
 }
 
 @test "capsule-server-test1: successfully encrypt CDOC2 container with server capsule and send capsule to server, then use GET server to decrypt" {
-  local cdoc_file="ec_simple_to_server.cdoc"
+  local cdoc_file="ec_simple_to_server.cdoc2"
   echo "# Crypt and send capsule to PUT server for file ${cdoc_file}">&3
   run run_alias cdoc-cli \
           create --server="$TESTING_DIR"/config/localhost/localhost_pkcs12.properties \

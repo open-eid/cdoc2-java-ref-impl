@@ -30,7 +30,7 @@ public class CDocInfoCmd implements Callable<Void> {
 
     private static final Logger log = LoggerFactory.getLogger(CDocInfoCmd.class);
     @CommandLine.Option(names = {"-f", "--file" }, required = true,
-            paramLabel = "CDOC", description = "the CDOC2 file")
+            paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
     // allow -Dkey for setting System properties

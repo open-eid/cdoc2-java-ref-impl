@@ -23,13 +23,13 @@ Run from cdoc2-cli directory
 
 ### Encrypt for id-card
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -r 38001085718 README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -r 38001085718 README.md
 ```
 Replace `3800108571` with your id code
 
 ### Decrypting with id-card
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -o /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -o /tmp
 ```
 
 If Pkcs11 driver is not found from default location, then alternative location can be provided with 
