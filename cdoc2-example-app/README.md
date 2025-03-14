@@ -18,7 +18,7 @@ mvnw install
 
 Convert CDOC1 -> CDOC2 with password:
 ```bash
-java -jar target/cdoc2-converter-1.0-SNAPSHOT.jar --cdoc=src/test/resources/cdoc/valid_cdoc11_ECC.cdoc -p12=src/test/resources/ecc/ecc.p12:test --cdoc2=out.cdoc2
+java -jar target/cdoc2-converter-1.0-SNAPSHOT.jar --cdoc=src/test/resources/cdoc/valid_cdoc11_ECC.cdoc2 -p12=src/test/resources/ecc/ecc.p12:test --cdoc2=out.cdoc2
 ```
 
 Install cdoc2-cli:

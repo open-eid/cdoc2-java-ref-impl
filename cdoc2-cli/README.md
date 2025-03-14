@@ -33,7 +33,7 @@ To create:
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -p keys/bob_pub.pem README.md
+java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc2 -p keys/bob_pub.pem README.md
 ```
 
 ### Encryption with server scenario
@@ -43,19 +43,19 @@ To store keys in key server, specify addition `--server` option:
 
 When encrypting for est-eid card, `-r` <id-code> can be used
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -r 38001085718 README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc2 -r 38001085718 README.md
 ```
 
 Optionally cdoc2-cli also supports encrypting with "soft" key or certificate
 
 Public key (`-p`)
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.key README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -p keys/cdoc2client_pub.key README.md
 ```
 
 Certificate (`-c` option):
 ```
-java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -c keys/cdoc2client-certificate.pem README.md
+java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -c keys/cdoc2client-certificate.pem README.md
 ```
 
 Key capsule expiration date can be requested when adding expiry duration:
@@ -78,12 +78,12 @@ Base64 encoded keys must be prefixed with 'base64,', so that key becomes "base64
 
 Encrypt with generated key and label 'label_b64secret':
 ```
-java -jar target/cdoc2-cli-*.jar create --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc2 README.md
 ```
 
 Or secret read from file (so that secret is not exposed through process list)
 ```
-java -jar target/cdoc2-cli-*.jar create @keys/b64secret.option -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create @keys/b64secret.option -f /tmp/symmetric.cdoc2 README.md
 ```
 
 ```
@@ -92,28 +92,28 @@ cat keys/b64secret.option --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACf
 
 Or encrypt with password clear text (note, that password also can be encoded to base64 format, as secret):
 ```
-java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc2 README.md
 ```
 
 Decryption is done with the same label and key used for encryption
 ```
-java -jar target/cdoc2-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc -o /tmp
+java -jar target/cdoc2-cli-*.jar decrypt @keys/b64secret.option -f /tmp/symmetric.cdoc2 -o /tmp
 ```
 
 Or with the same label and password used for encryption:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/password.cdoc2 --output /tmp
 ```
 
 If cdoc2 file contains only one password, then specifying label is not required and label can be omitted:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --password ":myPlainTextPassword" -f /tmp/password.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --password ":myPlainTextPassword" -f /tmp/password.cdoc2 --output /tmp
 ```
 
 
 Or with the same label and secret used for encryption:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=" -f /tmp/symmetric.cdoc2 --output /tmp
 ```
 
 Key and label can be safely stored in a password manager.
@@ -125,14 +125,14 @@ Current encryption/decryption implementation of cdoc2 container with Smart ID su
 personal ID codes.
 
 ```
-java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc2 README.md
 ```
 
 Multiple ID codes are allowed to be sent for encryption:
 
 ```
 java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 \
- -f /tmp/smartid.cdoc README.md
+ -f /tmp/smartid.cdoc2 README.md
 ```
 
 Key shares or Smart-ID properties can be sent externally by adding following options (the same 
@@ -151,14 +151,14 @@ Current encryption/decryption implementation of cdoc2 container with Mobile ID s
 Estonian personal ID codes.
 
 ```
-java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid.cdoc2 README.md
 ```
 
 Multiple ID codes are allowed to be sent for encryption:
 
 ```
 java -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 \
- -f /tmp/mobileid.cdoc README.md
+ -f /tmp/mobileid.cdoc2 README.md
 ```
 
 Key shares or Mobile-ID properties can be sent externally by adding following options (the same
@@ -173,42 +173,42 @@ and/or
 
 ### Decryption
 To decrypt:
-- CDOC2 file `/tmp/mydoc.cdoc`
+- CDOC2 file `/tmp/mydoc.cdoc2`
 - with decryption private EC key `keys/bob.pem`
 - to output directory `/tmp`
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc -k keys/bob.pem --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc2 -k keys/bob.pem --output /tmp
 ```
 
 or with Smart-ID for Estonian personal ID code:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc2 --output /tmp
 ```
 
 or with Mobile-ID for Estonian personal ID code and Estonian phone number with country code `+372`:
 
 ```
 java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 \
- -f /tmp/mobileid.cdoc --output /tmp
+ -f /tmp/mobileid.cdoc2 --output /tmp
 ```
 
 ### Decrypting with server scenario
 Server must be running, see cdoc2-capsule-server/README.md for starting the server
 
-To decrypt CDOC document that has its keys distributed through key server, cdoc-cli must have `--server` option:
+To decrypt CDOC2 document that has its keys distributed through key server, cdoc2-cli must have `--server` option:
 
 Configuration for id-card (certificate for mutual TLS and private key is read from smart-card)
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc -o /tmp/
+java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost_id-card.cdoc2 -o /tmp/
 ```
 
 It is also possible to decrypt documents created with "soft" keys, but configuration for mutual TLS (properties file) and
 key (read separately from a file) must match. Also, server must be configured to trust client certificate used for
 mutual TLS.
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key -o /tmp/
+java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc2 -k keys/cdoc2client_priv.key -o /tmp/
 ```
 
 
@@ -216,7 +216,7 @@ java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost_pkc
 
 First encrypt the document:
 ```
-java -jar target/cdoc2-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc README.md
+java -jar target/cdoc2-cli-*.jar create --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc2 README.md
 ```
 
 Create different directory for re-encrypted container:
@@ -226,42 +226,42 @@ mkdir -p /tmp/cdoc2
 
 Then re-encrypt it with password for long-term storage:
 ```
-java -jar target/cdoc2-cli-*.jar re-encrypt --encpassword "passwordlabel:myPlainTextPassword" --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc --output /tmp/cdoc2
+java -jar target/cdoc2-cli-*.jar re-encrypt --encpassword "passwordlabel:myPlainTextPassword" --secret "mylongpasswd:longstringthatIcanremember,butothersdon'tknow" -f /tmp/symmetric.cdoc2 --output /tmp/cdoc2
 ```
 
 For testing decryption ensure the correct re-encrypted container location:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/cdoc2/symmetric.cdoc --output /tmp/cdoc2
+java -jar target/cdoc2-cli-*.jar decrypt --password "passwordlabel:myPlainTextPassword" -f /tmp/cdoc2/symmetric.cdoc2 --output /tmp/cdoc2
 ```
 
 ### List
 
 ```
-java -jar target/cdoc2-cli-*.jar list --file /tmp/mydoc.cdoc -k keys/bob.pem
+java -jar target/cdoc2-cli-*.jar list --file /tmp/mydoc.cdoc2 -k keys/bob.pem
 ```
 
 or with server scenario:
 
 ```
-java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc -k keys/cdoc2client_priv.key
+java -jar target/cdoc2-cli-*.jar list --server=config/localhost/localhost_pkcs12.properties -f /tmp/localhost.cdoc2 -k keys/cdoc2client_priv.key
 ```
 
 or with password:
 ```
-java -jar target/cdoc2-cli-*.jar list --file /tmp/symmetric.cdoc --password "passwordlabel:myPlainTextPassword"
+java -jar target/cdoc2-cli-*.jar list --file /tmp/symmetric.cdoc2 --password "passwordlabel:myPlainTextPassword"
 ```
 
 or with secret:
 ```
-java -jar target/cdoc2-cli-*.jar list --file /tmp/symmetric.cdoc --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
+java -jar target/cdoc2-cli-*.jar list --file /tmp/symmetric.cdoc2 --secret "label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0="
 ```
 
 ### List recipients
 
-List recipients. Prints recipient types and key labels from CDOC header.
+List recipients. Prints recipient types and key labels from CDOC2 header.
 
 ```
-java -jar target/cdoc2-cli-*.jar info -f /tmp/id.cdoc
+java -jar target/cdoc2-cli-*.jar info -f /tmp/id.cdoc2
 ```
 
 
@@ -275,18 +275,18 @@ https://github.com/SK-EID/LDAP/wiki/Knowledge-Base
 
 To create cdoc for recipient with id code 37101010021 use:
 ```
-java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -r 37101010021 README.md
+java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc2 -r 37101010021 README.md
 ```
 
 
 ### Decrypting with ID-card
 
 To decrypt:
-- CDOC file mydoc.cdoc
+- CDOC file mydoc.cdoc2
 - use private key from ID-card slot 0 (Isikutuvastus PIN1)
-- Decrypt files from cdoc file into current directory
+- Decrypt files from cdoc2 file into current directory
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f mydoc.cdoc
+java -jar target/cdoc2-cli-*.jar decrypt -f mydoc.cdoc2
 ```
 
 ### Certificate extraction
@@ -307,18 +307,18 @@ or
 ### Encrypting documents with certificate
 
 To create:
-- Output file `/tmp/mydoc.cdoc`
+- Output file `/tmp/mydoc.cdoc2`
 - with generated private key
 - to recipient with certificate `keys/cdoc2client-certificate.pem` (DER or PEM formats are supported)
 - to encrypt file 'README.md'
 
 ```
-java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc -c keys/cdoc2client-certificate.pem README.md
+java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc2 -c keys/cdoc2client-certificate.pem README.md
 ```
 
 Decrypt created container with private key:
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc -k keys/cdoc2client_priv.key --output /tmp
+java -jar target/cdoc2-cli-*.jar decrypt -f /tmp/mydoc.cdoc2 -k keys/cdoc2client_priv.key --output /tmp
 ```
 
 ### Troubleshooting ID-card
@@ -329,7 +329,7 @@ cdoc2-cli will try to configure itself automatically. If OpenSC library is insta
 specify its location by setting 'pkcs11-library' property:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -Dpkcs11-library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc
+java -jar target/cdoc2-cli-*.jar decrypt -Dpkcs11-library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -f mydoc.cdoc2
 ```
 
 More tips for debugging ID-card related issues are provided in cdoc2-lib/pkcs11.README file
@@ -340,7 +340,7 @@ More tips for debugging ID-card related issues are provided in cdoc2-lib/pkcs11.
 Set with -D option
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -Dee.cyber.cdoc2.overwrite=false -f mydoc.cdoc
+java -jar target/cdoc2-cli-*.jar decrypt -Dee.cyber.cdoc2.overwrite=false -f mydoc.cdoc2
 ```
 
 #### pkcs11-library
@@ -389,13 +389,13 @@ Encrypt certificate as described in the "Encrypting documents with certificate" 
 List files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc2-cli-*.jar list -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc2-cli-*.jar list -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
 ```
 
 Decrypt files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f file-for-etoken.cdoc -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc2-cli-*.jar decrypt -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
 ```
 
 #### ee.cyber.cdoc2.overwrite 

@@ -339,9 +339,9 @@ class CDocCliTest {
         Path cdocPath = Path.of(".").toAbsolutePath().normalize();
 
         log.debug("Temp dir {}", tempPath.toAbsolutePath());
-        Path cdoc2File = tempPath.resolve("cdoc_cli_test.cdoc");
+        Path cdoc2File = tempPath.resolve("cdoc_cli_test.cdoc2");
 
-        // prepare encrypted CDOC container for further re-encryption
+        // prepare encrypted CDOC2 container for further re-encryption
         cmd.execute("create",
             secretForEncrypt,
             "--file=" + cdoc2File,
@@ -366,7 +366,7 @@ class CDocCliTest {
 
     private Path getCdocFilePath(Path tempPath) {
         log.debug("Temp dir {}", tempPath.toAbsolutePath());
-        return tempPath.resolve("cdoc_cli_test.cdoc");
+        return tempPath.resolve("cdoc_cli_test.cdoc2");
     }
 
     private void encrypt(String encryptionArgument) {

@@ -113,11 +113,11 @@ Local configuration example located in [localhost.properties](https://github.com
 ### Server scenario usage example
 Encrypt document with server properties and public key:
 
-`java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -p keys/cdoc2client_pub.key README.md`
+`java -jar target/cdoc2-cli-*.jar create --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -p keys/cdoc2client_pub.key README.md`
 
 Decrypt document with server properties:
 
-`java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc -o /tmp/`
+`java -jar target/cdoc2-cli-*.jar decrypt --server=config/localhost/localhost.properties -f /tmp/localhost.cdoc2 -o /tmp/`
 
 `*` must be replaced with the latest version built. Example `1.4.0`.
 

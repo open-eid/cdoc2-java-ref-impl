@@ -47,7 +47,7 @@ public class CDocCreateCmd implements Callable<Void> {
     // default server configuration disabled, until public key server is up and running
     //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost.properties";
 
-    @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC", description = "the CDOC2 file")
+    @Option(names = {"-f", "--file" }, required = true, paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
     // one of cert or pubkey must be specified
