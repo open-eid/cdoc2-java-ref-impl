@@ -24,7 +24,7 @@ mkdir -p "$TEST_RESULTS_DIR"
 FILE_FOR_ENCRYPTION=$CDOC2_DIR/README.md
 FILE_FOR_ENCRYPTION2=$CDOC2_DIR/pom.xml
 DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
-CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc"
+CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc2"
 CDOC2_CONTAINER=$TEST_RESULTS_DIR/$CDOC2_CONTAINER_NAME
 CLI_KEYS_DIR=$CDOC2_DIR/cdoc2-cli/keys
 PW="myPlainTextPassword"
@@ -109,7 +109,7 @@ run_alias() {
 }
 
 @test "test2: assert EC decryption is compatible with earlier encrypted CDOC2" {
-  local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
+  local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc2"
 
   echo "# Decrypting ${cdoc_file}">&3
   run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${cdoc_file} -k "$CLI_KEYS_DIR"/expired/cdoc2client_expired_priv.key --output "$TEST_RESULTS_DIR"
@@ -120,7 +120,7 @@ run_alias() {
 }
 
 @test "test3: successfully encrypt CDOC2 container with RSA" {
-  local cdoc_file="rsa_simple.cdoc"
+  local cdoc_file="rsa_simple.cdoc2"
   echo "# Encrypting ${cdoc_file}...">&3
   run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
           -p "$CLI_KEYS_DIR"/rsa_pub.pem "$FILE_FOR_ENCRYPTION"
@@ -161,7 +161,7 @@ run_alias() {
 
 
 @test "test6: assert password decryption is compatible with earlier encrypted CDOC2" {
-  local existing_test_vector="password_old_version_DO_NOT_DELETE.cdoc"
+  local existing_test_vector="password_old_version_DO_NOT_DELETE.cdoc2"
 
   echo "# Decrypting ${existing_test_vector}">&3
   run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
@@ -172,8 +172,8 @@ run_alias() {
 }
 
 @test "test7: assert decryption with symmetric key is compatible with earlier encrypted CDOC2" {
-  # from tag v1.0.0 test/testvectors/symmetric.cdoc
-  local existing_test_vector="symmetric_v1.0.0.cdoc"
+  # from tag v1.0.0 test/testvectors/symmetric.cdoc2
+  local existing_test_vector="symmetric_v1.0.0.cdoc2"
 
   echo "# Decrypting ${existing_test_vector}">&3
   run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} --secret create_symmetric_label:$SECRET --output "$TEST_RESULTS_DIR"
@@ -357,10 +357,10 @@ EOF
 }
 
 @test "test15: assert earlier encrypted CDOC2 with Symmetric key displays only pure key label" {
-  local cdoc_file="symmetric_v1.0.0.cdoc"
+  local existing_test_vector="symmetric_v1.0.0.cdoc2"
 
-  echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
+  echo "# Requesting info for ${existing_test_vector}">&3
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${existing_test_vector}
 
   assertSuccessfulExecution
   local expected_output_info="SymmetricKey: LABEL:create_symmetric_label "
@@ -369,10 +369,10 @@ EOF
 }
 
 @test "test16: assert earlier encrypted CDOC2 with password displays only pure key label" {
-  local cdoc_file="password_old_version_DO_NOT_DELETE.cdoc"
+  local existing_test_vector="password_old_version_DO_NOT_DELETE.cdoc2"
 
-  echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
+  echo "# Requesting info for ${existing_test_vector}">&3
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${existing_test_vector}
 
   assertSuccessfulExecution
   local expected_output_info="Password: LABEL:$PW_LABEL "
@@ -381,10 +381,10 @@ EOF
 }
 
 @test "test17: assert earlier encrypted CDOC2 with EC key displays only pure key label" {
-  local cdoc_file="ec_simple_old_version_DO_NOT_DELETE.cdoc"
+  local existing_test_vector="ec_simple_old_version_DO_NOT_DELETE.cdoc2"
 
-  echo "# Requesting info for ${cdoc_file}">&3
-  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${cdoc_file}
+  echo "# Requesting info for ${existing_test_vector}">&3
+  run run_alias cdoc-cli info -f "${TEST_VECTORS}"/${existing_test_vector}
 
   assertSuccessfulExecution
   local expected_output_info="EC PublicKey: LABEL:cdoc20-client "
@@ -393,7 +393,7 @@ EOF
 }
 
 @test "test18: assert newly encrypted CDOC2 with EC key displays formatted key label" {
-  local cdoc_file="ec_simple_with_formatted_key_label.cdoc"
+  local cdoc_file="ec_simple_with_formatted_key_label.cdoc2"
   run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
           -c "$CLI_KEYS_DIR"/cdoc2client-certificate.pem "$FILE_FOR_ENCRYPTION"
 
@@ -437,7 +437,7 @@ EOF
 }
 
 @test "test19: assert newly encrypted CDOC2 with RSA key displays formatted key label" {
-  local cdoc_file="rsa_simple_with_formatted_key_label.cdoc"
+  local cdoc_file="rsa_simple_with_formatted_key_label.cdoc2"
   run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
           -p "$CLI_KEYS_DIR"/rsa_pub.pem "$FILE_FOR_ENCRYPTION"
 
@@ -477,7 +477,7 @@ EOF
 }
 
 @test "test20: assert newly encrypted CDOC2 with Symmetric key displays formatted key label" {
-  local cdoc_file="symmetric_with_formatted_key_label.cdoc"
+  local cdoc_file="symmetric_with_formatted_key_label.cdoc2"
   run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file --secret $SECRET_WITH_LABEL "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3
@@ -520,7 +520,7 @@ EOF
 }
 
 @test "test21: assert newly encrypted CDOC2 with password displays formatted key label" {
-  local cdoc_file="password_with_formatted_key_label.cdoc"
+  local cdoc_file="password_with_formatted_key_label.cdoc2"
   run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file -pw $PASSWORD_WITH_LABEL "$FILE_FOR_ENCRYPTION"
 
   echo "# Requesting info for ${cdoc_file}">&3

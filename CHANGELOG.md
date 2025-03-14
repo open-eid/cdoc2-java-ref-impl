@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1] Use .cdoc2 for file extension (2025-XX-XX)
+
+### Internal
+* Change all mentions of `cdoc` file extension to `cdoc2` in README-s, `cdoc2-cli` commands 
+  description and bats tests.
+* Change `cdoc2-lib` version to 3.0.1-SNAPSHOT.
+
+
 ## [2.0.0] Version update (2025-02-26)
 
 ### Maven package versions:

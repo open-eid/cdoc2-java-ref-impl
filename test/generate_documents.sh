@@ -41,7 +41,7 @@ SECRET_WITH_LABEL="mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
 PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
 
 create_simple_ec() {
-  local cdoc_file="ec_simple.cdoc"
+  local cdoc_file="ec_simple.cdoc2"
 
   if $RUN_CREATE
   then
@@ -59,7 +59,7 @@ create_simple_ec() {
 }
 
 create_simple_ec_with_formatted_key_label() {
-  local cdoc_file="ec_simple_with_formatted_key_label.cdoc"
+  local cdoc_file="ec_simple_with_formatted_key_label.cdoc2"
 
   if $RUN_CREATE
   then
@@ -77,7 +77,7 @@ create_simple_ec_with_formatted_key_label() {
 }
 
 create_ec_server_ria_dev_pkcs12() {
-  local cdoc_file="ec_server_ria_dev_pkcs12.cdoc"
+  local cdoc_file="ec_server_ria_dev_pkcs12.cdoc2"
 
   if $RUN_CREATE
   then
@@ -100,10 +100,10 @@ create_ec_server_ria_dev_pkcs12() {
 }
 
 
-# encrypt cdoc with certificate downloaded from ldap.sk.ee
+# encrypt cdoc2 with certificate downloaded from ldap.sk.ee
 # can be decrypted with physical est-eid smart-card only
 create_ec_server_ria_dev_id_card() {
-  local cdoc_file="ec_server_ria_dev_id_card.cdoc"
+  local cdoc_file="ec_server_ria_dev_id_card.cdoc2"
 
   if $RUN_CREATE
   then
@@ -131,7 +131,7 @@ create_ec_server_ria_dev_id_card() {
 
 
 create_simple_rsa() {
-  local cdoc_file="rsa_simple.cdoc"
+  local cdoc_file="rsa_simple.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -148,7 +148,7 @@ create_simple_rsa() {
 }
 
 create_simple_rsa_with_formatted_key_label() {
-  local cdoc_file="rsa_simple_with_formatted_key_label.cdoc"
+  local cdoc_file="rsa_simple_with_formatted_key_label.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -165,7 +165,7 @@ create_simple_rsa_with_formatted_key_label() {
 }
 
 create_rsa_server_ria_dev_pkcs12() {
-  local cdoc_file="rsa_server_ria_dev_pkcs12.cdoc"
+  local cdoc_file="rsa_server_ria_dev_pkcs12.cdoc2"
 
   if $RUN_CREATE
   then
@@ -187,7 +187,7 @@ create_rsa_server_ria_dev_pkcs12() {
 }
 
 create_symmetric() {
-  local cdoc_file="symmetric.cdoc"
+  local cdoc_file="symmetric.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -205,7 +205,7 @@ create_symmetric() {
 }
 
 create_symmetric_with_formatted_key_label() {
-  local cdoc_file="symmetric_with_formatted_key_label.cdoc"
+  local cdoc_file="symmetric_with_formatted_key_label.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -224,7 +224,7 @@ create_symmetric_with_formatted_key_label() {
 
 create_symmetric_longfilename() {
   # over 100 bytes filenames require POSIX tar long filename extension
-  local cdoc_file="symmetric_longfilename.cdoc"
+  local cdoc_file="symmetric_longfilename.cdoc2"
   local unicode=$(echo -e "\u2620")
   local long_filename="long_filename_${unicode}_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 
@@ -247,7 +247,7 @@ create_symmetric_longfilename() {
 }
 
 create_password() {
-  local cdoc_file="password.cdoc"
+  local cdoc_file="password.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -265,7 +265,7 @@ create_password() {
 }
 
 create_password_with_formatted_key_label() {
-  local cdoc_file="password_with_formatted_key_label.cdoc"
+  local cdoc_file="password_with_formatted_key_label.cdoc2"
   if $RUN_CREATE
   then
     echo "Creating ${cdoc_file}"
@@ -285,7 +285,7 @@ create_password_with_formatted_key_label() {
 
 create_zipbomb() {
   #over 8GB files require POSIX tar long file extension
-  local cdoc_file="zipbomb.cdoc"
+  local cdoc_file="zipbomb.cdoc2"
   local bomb=$(echo -e "\U0001F4A3")
 
   # requires 8GB+ of disk space

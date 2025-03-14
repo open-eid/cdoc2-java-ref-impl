@@ -31,7 +31,7 @@ public class CDocDecryptCmd implements Callable<Void> {
     //private static final String DEFAULT_SERVER_PROPERTIES = "classpath:localhost_pkcs11.properties";
 
     @Option(names = {"-f", "--file" }, required = true,
-            paramLabel = "CDOC", description = "the CDOC2 file")
+            paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
     @CommandLine.ArgGroup

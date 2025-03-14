@@ -85,7 +85,7 @@ run_alias() {
 }
 
 @test "shares-server-test1: successfully encrypt and decrypt CDOC2 container with Smart-ID" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Smart-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -115,7 +115,7 @@ run_alias() {
 }
 
 @test "shares-server-test2: successfully encrypt and decrypt CDOC2 container with Smart-ID EID-Q certs" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Smart-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -142,7 +142,7 @@ run_alias() {
 }
 
 @test "shares-server-test3: fail to decrypt CDOC2 container with wrong ID code" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -168,7 +168,7 @@ run_alias() {
 }
 
 @test "shares-server-test4: fail to encrypt CDOC2 container with missing key shares configuration" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
   run run_alias cdoc-cli \
           create \
@@ -181,7 +181,7 @@ run_alias() {
 }
 
 @test "shares-server-test5: fail to encrypt CDOC2 container with missing Smart-ID configuration" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -194,7 +194,7 @@ run_alias() {
 }
 
 @test "shares-server-test6: fail to encrypt CDOC2 container with Smart-ID when ID code is invalid" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   invalidIdCode=01987654321
   echo "# Encrypting file ${cdocFile} with Smart-ID for non-existing ID code ${invalidIdCode}">&3
   run run_alias cdoc-cli \
@@ -208,7 +208,7 @@ run_alias() {
 }
 
 @test "shares-server-test7: fail to decrypt CDOC2 container with wrong authentication type" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Smart-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -233,7 +233,7 @@ run_alias() {
 }
 
 @test "shares-server-test8: successfully encrypt and decrypt CDOC2 container with Mobile-ID" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -264,7 +264,7 @@ run_alias() {
 }
 
 @test "shares-server-test9: fail to decrypt CDOC2 container with Mobile-ID when phone number is missing" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -287,7 +287,7 @@ run_alias() {
 }
 
 @test "shares-server-test10: fail to decrypt CDOC2 container with Mobile-ID when phone number format is invalid" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -313,7 +313,7 @@ run_alias() {
 }
 
 @test "shares-server-test11: fail to encrypt CDOC2 container with Mobile-ID when ID code is invalid" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   invalidIdCode=01987654321
   echo "# Encrypt file ${cdocFile} with Mobile-ID for non-existing ID code ${invalidIdCode}">&3
   run run_alias cdoc-cli \
@@ -327,7 +327,7 @@ run_alias() {
 }
 
 @test "shares-server-test12: fail to decrypt CDOC2 container with wrong authentication type" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -351,7 +351,7 @@ run_alias() {
 }
 
 @test "shares-server-test13: successfully re-encrypt CDOC2 container from Smart-ID container" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypting file ${cdocFile} with Smart-ID for ID code ${SID_ID_CODE}">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -384,7 +384,7 @@ run_alias() {
 }
 
 @test "shares-server-test14: successfully re-encrypt CDOC2 container from Mobile-ID container" {
-  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+  cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
   echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
   run run_alias cdoc-cli \
           create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -417,7 +417,7 @@ run_alias() {
 }
 
 @test "shares-server-test15: assert encrypted CDOC2 with Smart ID displays formatted key label" {
-    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
     echo "# Encrypt file ${cdocFile} with Smart-ID">&3
     run run_alias cdoc-cli \
             create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \
@@ -443,7 +443,7 @@ run_alias() {
 }
 
 @test "shares-server-test16: assert encrypted CDOC2 with Mobile ID displays formatted key label" {
-    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc"
+    cdocFile="key-shares-$(tr -dC '[:xdigit:]' </dev/urandom | head -c8).cdoc2"
     echo "# Encrypt file ${cdocFile} with Mobile-ID">&3
     run run_alias cdoc-cli \
             create -Dkey-shares.properties="$KEY_SHARES_PROPERTIES" \

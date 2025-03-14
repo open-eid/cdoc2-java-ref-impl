@@ -908,7 +908,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         var encKM = EncryptionKeyMaterial
             .fromPublicKey(publicKey, bobKeyLabelParams);
 
-        File cdocFile = tempDir.resolve("incomplete.cdoc").toFile();
+        File cdocFile = tempDir.resolve("incomplete.cdoc2").toFile();
 
         Files.createFile(cdocFile.toPath());
         assertTrue(cdocFile.exists());
@@ -945,7 +945,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        File cdocFile = tempDir.resolve("testCdocBuilder.cdoc").toFile();
+        File cdocFile = tempDir.resolve("testCdocBuilder.cdoc2").toFile();
 
         List<EncryptionKeyMaterial> encKeyMaterial = new EstEncKeyMaterialBuilder()
             // will download recipient certificate and add public key based recipient
@@ -1314,7 +1314,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             null, null
         );
 
-        File bigDotCdoc = outDir.resolve("big.cdoc").toFile();
+        File bigDotCdoc = outDir.resolve("big.cdoc2").toFile();
 
         log.debug("Encrypting big payload...");
         try (FileOutputStream dst = new FileOutputStream(bigDotCdoc)) {

@@ -30,7 +30,7 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PRO
 @Command(name = "list", aliases = {"l"}, showAtFileInUsageHelp = true)
 public class CDocListCmd implements Callable<Void> {
     @Option(names = {"-f", "--file" }, required = true,
-            paramLabel = "CDOC", description = "the CDOC2 file")
+            paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
     @CommandLine.ArgGroup
