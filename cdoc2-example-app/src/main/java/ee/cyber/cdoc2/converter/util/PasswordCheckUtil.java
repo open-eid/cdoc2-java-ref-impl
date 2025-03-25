@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-public class PasswordCheckUtil {
+public final class PasswordCheckUtil {
 
     public static final int PW_MIN_LEN = 8;
     public static final int PW_MAX_LEN = 64;

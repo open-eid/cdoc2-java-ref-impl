@@ -450,7 +450,7 @@ SemanticsIdentifier semId = new SemanticsIdentifier(
         idCode
         );
 
-AuthenticationIdentifier authId = 
+AuthenticationIdentifier decryptAuthIdentifier = 
         new AuthenticationIdentifier(AuthenticationType.SID, semId);
 
 // normally initialized through -D option to java process
@@ -481,7 +481,7 @@ SemanticsIdentifier semId = new SemanticsIdentifier(
         idCode
         );
 
-AuthenticationIdentifier authId = 
+AuthenticationIdentifier decryptAuthIdentifier = 
         new AuthenticationIdentifier(AuthenticationType.MID, semId, phoneNumber);
 
 // normally initialized through -D option to java process
