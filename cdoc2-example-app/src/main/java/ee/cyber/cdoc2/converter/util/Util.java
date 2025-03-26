@@ -1,9 +1,9 @@
 package ee.cyber.cdoc2.converter.util;
 
 import ee.cyber.cdoc2.CDocBuilder;
-import ee.cyber.cdoc2.CDocException;
-import ee.cyber.cdoc2.CDocUserException;
-import ee.cyber.cdoc2.CDocValidationException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
+import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.UUID;
 
 
-public class Util {
+public final class Util {
 
     private Util() {
         // utility class
@@ -78,13 +78,19 @@ public class Util {
      * Re-Encrypt cdoc format InputStream into cdoc2 format OutputStream
      * @param cdoc cdoc inputStream to re-encrypt into cdoc2 format
      * @param cdocToken cdoc4j token used for decrypting
+     * @param cdoc2OutFile cdoc2 output file
+     * @param label label for password used for encryption
      * @param password password used for encryption
      * @param tempDir Extract cdoc files under tempDir or in the OS temporary directory if dir is null
      */
-    public static void reEncrypt(InputStream cdoc, Token cdocToken,
-                                 File cdoc2OutFile, String label, char[] password,
-                                 @Nullable Path tempDir) throws CDocException,
-        IOException, CDocValidationException, CDOCException {
+    public static void reEncrypt(
+        InputStream cdoc,
+        Token cdocToken,
+        File cdoc2OutFile,
+        String label,
+        char[] password,
+        @Nullable Path tempDir
+    ) throws CDocException, IOException, CDocValidationException, CDOCException {
 
         @SuppressWarnings("java:S5443")
         Path outDir = (tempDir != null)
@@ -100,11 +106,28 @@ public class Util {
                 .withCDOC(cdoc)
                 .decrypt(outDir.toFile());
 
-            new CDocBuilder()
-                .withPayloadFiles(dataFiles)
-                .withRecipients(List.of(EncryptionKeyMaterial.fromPassword(password, label)))
-                .buildToFile(cdoc2OutFile);
+            encrypt(cdoc2OutFile, dataFiles, label, password);
         }
+    }
+
+    /**
+     * Encrypt files into cdoc2 format OutputStream
+     * @param cdoc2OutFile cdoc2 output file
+     * @param dataFiles files for encryption
+     * @param label label for password used for encryption
+     * @param password password used for encryption
+     */
+    public static void encrypt(
+        File cdoc2OutFile,
+        List<File> dataFiles,
+        String label,
+        char[] password
+    ) throws CDocException, IOException, CDocValidationException, CDOCException {
+
+        new CDocBuilder()
+            .withPayloadFiles(dataFiles)
+            .withRecipients(List.of(EncryptionKeyMaterial.fromPassword(password, label)))
+            .buildToFile(cdoc2OutFile);
     }
 
     /**
