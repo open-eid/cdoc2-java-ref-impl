@@ -47,8 +47,6 @@ results will be deleted after each test case execution automatically.
 
 ### Running capsule server scenario tests (experimental)
 
-Create DB Docker image, follow https://github.com/open-eid/cdoc2-capsule-server/server-db/README.md
-
 Login to docker (ghcr.io) - [Authenticating with personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
 Run `run-capsule-server-bats-tests.sh`:
