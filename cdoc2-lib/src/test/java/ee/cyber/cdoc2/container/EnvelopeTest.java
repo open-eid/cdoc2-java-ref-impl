@@ -572,7 +572,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         AuthenticationIdentifier.AuthenticationType authType
             = AuthenticationIdentifier.AuthenticationType.SID;
-        String idCode = "30303039914";
+        String idCode = "50001029996";
 
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
             createSemanticsIdentifier(idCode), authType

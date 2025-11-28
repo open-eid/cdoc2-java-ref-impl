@@ -299,7 +299,7 @@ class TarDeflateTest implements TestLifecycleLogger {
         for (String fileName: VALID_FILE_NAMES) {
             File file = createTar(tempDir, TGZ_FILE_NAME + '.' + i++, fileName, PAYLOAD);
             var result = new TarDeflate(new FileInputStream(file))
-                .extractFilesToDir(List.of(fileName), tempDir);
+                .extractFilesToDir(List.of(sanitizeFileName(fileName)), tempDir);
             assertEquals(1, result.size());
         }
     }
@@ -399,6 +399,26 @@ class TarDeflateTest implements TestLifecycleLogger {
         assertTrue(closeWasCalled[0]);
     }
 
+    @Test
+    void canArchiveFileWithTrailingSlash(@TempDir Path tempDir) throws IOException {
+        var fileName = "abc/";
+        // here the trailing slash is already removed by path.resolve()
+        File file = createAndWriteToFile(tempDir, fileName, PAYLOAD);
+        var bos = new ByteArrayOutputStream();
+        Tar.archiveFiles(bos, List.of(file));
+        assertTrue(bos.toByteArray().length > 0);
+    }
+
+    @Test
+    void canExtractFileWithTrailingSlash(@TempDir Path tempDir) throws IOException {
+        var fileName = "abc/";
+        File file = createTar(tempDir, TGZ_FILE_NAME, fileName, PAYLOAD);
+
+        var result = new TarDeflate(new FileInputStream(file))
+            .extractFilesToDir(List.of(sanitizeFileName(fileName)), tempDir);
+        assertEquals(1, result.size());
+    }
+
     private static File createAndWriteToFile(Path path, String fileName, String contents) throws IOException {
         File file = path.resolve(fileName).toFile();
         try (FileOutputStream fos = new FileOutputStream(file)) {
@@ -413,9 +433,29 @@ class TarDeflateTest implements TestLifecycleLogger {
 
         try (FileOutputStream fos = new FileOutputStream(outFile)) {
             ByteArrayInputStream bos = new ByteArrayInputStream(entryContents.getBytes(UTF_8));
-            Tar.archiveData(fos, bos, entryFileName);
+            Tar.archiveData(fos, bos, sanitizeFileName(entryFileName));
         }
         return outFile;
+    }
+
+    private static String sanitizeFileName(String fileName) {
+        // Remove all trailing slashes
+        //
+        // The trailing slash causes issues with some methods used in the tests, e.g.
+        // using "abc/" in the Tar.archiveData(fos, bos, entryFileName) thinks that the abc/ is
+        // the directory and there is no file name, so the file header should be 0 bytes that throws an error later.
+        //
+        // The file name abc/ does not cause issue in the reference implementation,
+        // because the filename is not passed to the reference implementation in the File object,
+        // rather than raw string.
+        // When creating the file, the call to the File file = path.resolve(fileName).toFile();
+        // removes the trailing slash from the file name.
+        // Because of this, the FileNameValidator does not give an error for a filename ending with "/".
+        while (fileName.endsWith("/")) {
+            fileName = fileName.substring(0, fileName.length() - 1);
+        }
+
+        return fileName;
     }
 
 }

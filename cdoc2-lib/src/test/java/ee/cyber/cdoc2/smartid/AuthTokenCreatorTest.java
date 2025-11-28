@@ -75,8 +75,8 @@ public class AuthTokenCreatorTest {
     public static final String NONCE02 = Base64.getUrlEncoder().withoutPadding().encodeToString(
         "02".getBytes(StandardCharsets.UTF_8));
 
-    //demo env 30303039914 that automatically authenticates successfully
-    private static final String DEMO_ID_CODE = "30303039914";
+    //demo env 50001029996 that automatically authenticates successfully
+    private static final String DEMO_ID_CODE = "50001029996";
 
     KeySharesClientFactory setupMockSharesClientFac() {
         KeySharesConfiguration configuration = initKeySharesTestEnvConfiguration();

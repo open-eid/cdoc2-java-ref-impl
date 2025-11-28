@@ -45,8 +45,8 @@ class JWSSignerTest {
 
     private static final String AUD = "https://junit.cdoc2.ria.ee/key-shares/12345/nonce/6789";
 
-    //demo env 30303039914 that automatically authenticates successfully
-    private static final String IDENTITY_NUMBER = "30303039914";
+    //demo env 50001029996 that automatically authenticates successfully
+    private static final String IDENTITY_NUMBER = "50001029996";
 
     // SID demo env cert for 30303039914 that automatically authenticates successfully
     private final String sidCertStr = """

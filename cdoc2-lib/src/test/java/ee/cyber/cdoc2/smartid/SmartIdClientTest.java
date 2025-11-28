@@ -23,7 +23,7 @@ public class SmartIdClientTest {
 
     private static final String CERT_LEVEL_ADVANCED = "ADVANCED";
     private static final String CERT_LEVEL_QUALIFIED = "QUALIFIED";
-    private static final String IDENTITY_NUMBER = "30303039914";
+    private static final String IDENTITY_NUMBER = "50001029996";
 
     private final SmartIdClient smartIdClient;
 
