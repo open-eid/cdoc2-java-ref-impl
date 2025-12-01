@@ -40,7 +40,7 @@ class Pkcs11Test {
         // seems that when pin has already been provided to SunPKCS11, then pin is not asked again
         // so running this test with other tests doesn't make much sense
         KeyPair keyPair = Pkcs11Tools.loadFromPKCS11Interactively(
-            conf.getPkcs11Library(), conf.getSlot(), conf.getKeyAlias()
+            conf.getPkcs11Library(), conf.getSlot(), conf.getKeyAlias(), conf.getCryptoStickConf()
         );
 
         if (Crypto.isECPKCS11Key(keyPair.getPrivate())) {

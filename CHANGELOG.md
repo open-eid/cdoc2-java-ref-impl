@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.0] Adding support for `secp256r1` elliptic curves (2025-11-xx)
+
+### Features
+
+* Implement support for `secp256r1` elliptic curves, used by crypto sticks.
+
+### Maven package versions:
+```
+cdoc2 2.0.0
+cdoc2-schema 2.0.0
+cdoc2-lib 3.1.0
+cdoc2-client 2.0.0
+cdoc2-cli 1.7.0
+```
+
 ## [2.0.1] Use .cdoc2 for file extension (2025-XX-XX)
 
 ### Internal

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 import ee.cyber.cdoc2.CDocDecrypter;
+import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
@@ -52,18 +53,20 @@ public final class CDocDecryptionHelper {
      * location.
      * @param slot smart-card slot number when overwriting default
      * @param keyAlias key alias
+     * @param cryptoStickConf   CryptoStick configuration, if it is used
      * @return loaded DecryptionKeyMaterial
      * @throws GeneralSecurityException general security exception
      * @throws IOException in case decryption key material extraction has failed
      */
     public static DecryptionKeyMaterial getSmartCardDecryptionKeyMaterial(
         Integer slot,
-        String keyAlias
-    ) throws GeneralSecurityException, IOException {
+        String keyAlias,
+        @Nullable CryptoStickConf cryptoStickConf
+        ) throws GeneralSecurityException, IOException {
         log.info("Decryption key not provided as CLI parameter, trying to read it from smart-card");
 
         String pkcs11LibPath = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
-        KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias);
+        KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias, cryptoStickConf);
 
         return DecryptionKeyMaterial.fromKeyPair(keyPair);
     }

@@ -98,6 +98,9 @@ public final class Cdoc2ConfigurationProperties {
     /** Provider name that provides KeyStore.PKCS11, usually SunPKCS11-...*/
     public static final String PKCS11_PROVIDER_SYSTEM_PROPERTY = "ee.cyber.cdoc2.pkcs11.name";
 
+    /** The slot to use with pkcs11 provider, if not set, then the default of 0 is used */
+    public static final String PKCS11_SLOT = "ee.cyber.cdoc2.pkcs11.slot";
+
     /** Defines Smart-ID client properties file location */
     public static final String SMART_ID_PROPERTIES = "smart-id.properties";
     public static final String SMART_ID_CLIENT_HOST_URL = "smartid.client.hostUrl";

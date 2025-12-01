@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.services.Cdoc2Services;
@@ -68,6 +69,10 @@ public class CDocDecryptCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
+    @Option(names = {"-c", "--crypto-stick"},
+        description = "Specify what type of crypto stick is used, allowed values: [SECP256R1, SECP384R1]")
+    private CryptoStickConf cryptoStickConf;
+
     @Override
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
@@ -75,7 +80,7 @@ public class CDocDecryptCmd implements Callable<Void> {
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
-            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
             : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(

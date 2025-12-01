@@ -20,7 +20,8 @@ import org.slf4j.LoggerFactory;
 public enum EllipticCurve {
 
     UNKNOWN(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.UNKNOWN, null, null),
-    SECP384R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID);
+    SECP384R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID),
+    SECP256R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1, ECKeys.SECP_256_R_1, ECKeys.SECP_256_OID);
 
     private static final Logger log = LoggerFactory.getLogger(EllipticCurve.class);
 
@@ -46,15 +47,19 @@ public enum EllipticCurve {
     }
 
     public boolean isValidKey(ECPublicKey key) throws GeneralSecurityException {
-        if (this == EllipticCurve.SECP384R1) {
-            return ECKeys.isValidSecP384R1(key);
-        }
-        throw new IllegalStateException("isValidKey not implemented for " + this);
+        return switch (this) {
+            case SECP384R1 -> ECKeys.isValidSecP384R1(key);
+            case SECP256R1 -> ECKeys.isEcSecp256r1Curve(key);
+            default -> throw new IllegalStateException("isValidKey not implemented for " + this);
+        };
     }
 
     public boolean isValidKeyPair(KeyPair keyPair) throws GeneralSecurityException {
         if (this == EllipticCurve.SECP384R1) {
             return ECKeys.isECSecp384r1(keyPair);
+        }
+        if (this == EllipticCurve.SECP256R1) {
+            return ECKeys.isECSecp256r1(keyPair);
         }
         throw new IllegalStateException("isValidKeyPair not implemented for " + this);
     }
@@ -63,17 +68,19 @@ public enum EllipticCurve {
      * Key length in bytes. For secp384r1, its 384/8=48
      */
     public int getKeyLength() {
-        if (this == EllipticCurve.SECP384R1) {
-            return ECKeys.SECP_384_R_1_LEN_BYTES;
-        }
-        throw new IllegalStateException("getKeyLength not implemented for " + this);
+        return switch (this) {
+            case SECP384R1 -> ECKeys.SECP_384_R_1_LEN_BYTES;
+            case SECP256R1 -> ECKeys.SECP_256_R_1_LEN_BYTES;
+            default -> throw new IllegalStateException("getKeyLength not implemented for " + this);
+        };
     }
 
     public ECPublicKey decodeFromTls(ByteBuffer encoded) throws GeneralSecurityException {
-        if (this == EllipticCurve.SECP384R1) { // calls also isValidSecP384R1
-            return ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
-        }
-        throw new IllegalStateException("decodeFromTls not implemented for " + this);
+        return switch (this) {
+            case SECP384R1 -> ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
+            case SECP256R1 -> ECKeys.decodeSecP256R1EcPublicKeyFromTls(encoded);
+            default -> throw new IllegalStateException("decodeFromTls not implemented for " + this);
+        };
     }
 
     public KeyPair generateEcKeyPair() throws GeneralSecurityException {
@@ -88,17 +95,19 @@ public enum EllipticCurve {
     }
 
     public static EllipticCurve forOid(String oid) throws NoSuchAlgorithmException {
-        if (ECKeys.SECP_384_OID.equals(oid)) {
-            return SECP384R1;
-        }
-        throw new NoSuchAlgorithmException("Unknown EC curve oid " + oid);
+        return switch (oid) {
+            case ECKeys.SECP_384_OID -> SECP384R1;
+            case ECKeys.SECP_256_OID -> SECP256R1;
+            default -> throw new NoSuchAlgorithmException("Unknown EC curve oid " + oid);
+        };
     }
 
     public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
-        if (value == ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1) {
-            return SECP384R1;
-        }
-        throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
+        return switch (value) {
+            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1 -> SECP384R1;
+            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1 -> SECP256R1;
+            default -> throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
+        };
     }
 
     /**

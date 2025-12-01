@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 
 @SuppressWarnings("java:S106")
 @Command(
-        version = {"cdoc2-cli version: 1.6.0", "cdoc2-lib version: 3.0.0"},
+        version = {"cdoc2-cli version: 1.6.0", "cdoc2-lib version: 3.1.0"},
         name = "cdoc2-example-app",
         header = "\r\ncdoc2-example-app is a command line interface for converting cdoc or asic "
             + "documents to cdoc2\r\n",

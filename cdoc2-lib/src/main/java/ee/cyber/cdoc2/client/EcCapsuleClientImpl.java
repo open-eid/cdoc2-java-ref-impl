@@ -42,13 +42,14 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
             throw new ExtApiException(gse);
         }
 
-        if (EllipticCurve.SECP384R1 != curve) {
-            // API doesn't support other curves beside secp384r1
-            throw new IllegalArgumentException("Unsupported EC curve " + curve);
-        }
+        var capsuleType = switch (curve) {
+            case SECP384R1 -> Capsule.CapsuleTypeEnum.ECC_SECP384R1;
+            case SECP256R1 -> Capsule.CapsuleTypeEnum.ECC_SECP256R1;
+            default -> throw new IllegalArgumentException("Unsupported EC curve " + curve);
+        };
 
         Capsule capsule = new Capsule()
-                .capsuleType(Capsule.CapsuleTypeEnum.ECC_SECP384R1)
+                .capsuleType(capsuleType)
                 .recipientId(ECKeys.encodeEcPubKeyForTls(curve, receiverKey))
                 .ephemeralKeyMaterial(ECKeys.encodeEcPubKeyForTls(curve, senderKey));
 
@@ -63,13 +64,15 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
             if (capsuleOptional.isPresent()) {
                 Capsule capsule = capsuleOptional.get();
 
-                if (Capsule.CapsuleTypeEnum.ECC_SECP384R1 != capsule.getCapsuleType()) {
-                    throw new ExtApiException("Unsupported capsule type " + capsule.getCapsuleType());
-                }
-
-                return Optional.of(
-                    EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
-                );
+                return switch (capsule.getCapsuleType()) {
+                    case ECC_SECP384R1 -> Optional.of(
+                        EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
+                    );
+                    case ECC_SECP256R1 -> Optional.of(
+                        EllipticCurve.SECP256R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
+                    );
+                    default -> throw new ExtApiException("Unsupported capsule type " + capsule.getCapsuleType());
+                };
             }
 
             return Optional.empty();

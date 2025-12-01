@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.util.Resources;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_CONF_FILE;
@@ -34,6 +35,8 @@ public class Pkcs11DeviceConfiguration {
     private char[] pin;
     // part of the CN field in the certificate
     private String certCn;
+    // the crypto stick configuration
+    private @Nullable CryptoStickConf cryptoStickConf;
 
     public String getPkcs11Library() {
         return pkcs11Library;
@@ -79,6 +82,11 @@ public class Pkcs11DeviceConfiguration {
     @Deprecated(since = "2.0.1")
     public String certCn() {
         return getCertCn();
+    }
+
+    @Nullable
+    public CryptoStickConf getCryptoStickConf() {
+        return cryptoStickConf;
     }
 
     /**

@@ -36,6 +36,7 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
  * @param clientKeyStorePassword client key store password
  * @param clientKeyStorePwdPrompt client key store password prompt
  * @param pkcs11LibraryPath PKCS11 library path
+ * @param pkcs11Slot PKCS11 slot
  */
 public record KeyCapsuleClientConfigurationProps(
     String clientServerId,
@@ -49,13 +50,15 @@ public record KeyCapsuleClientConfigurationProps(
     String clientKeyStoreFile,
     String clientKeyStorePassword,
     String clientKeyStorePwdPrompt,
-    String pkcs11LibraryPath
+    String pkcs11LibraryPath,
+    Integer pkcs11Slot
 ) implements KeyCapsuleClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(KeyCapsuleClientConfigurationProps.class);
 
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
     private static final int DEFAULT_READ_TIMEOUT_MS = 500;
+    private static final int DEFAULT_SLOT = 0;
 
     public static KeyCapsuleClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
@@ -85,6 +88,7 @@ public record KeyCapsuleClientConfigurationProps(
         var clientKeyStorePassword = properties.getProperty(CLIENT_STORE_PWD);
         var clientKeyStorePwdPrompt = properties.getProperty(CLIENT_STORE_PWD_PROMPT);
         var pkcs11LibraryPath = properties.getProperty(PKCS11_LIBRARY_PROPERTY, null);
+        var slot = getSlotOrDefault(properties);
 
         return new KeyCapsuleClientConfigurationProps(
             clientServerId,
@@ -98,7 +102,8 @@ public record KeyCapsuleClientConfigurationProps(
             clientKeyStoreFile,
             clientKeyStorePassword,
             clientKeyStorePwdPrompt,
-            pkcs11LibraryPath
+            pkcs11LibraryPath,
+            slot
         );
     }
 
@@ -147,7 +152,7 @@ public record KeyCapsuleClientConfigurationProps(
      * @return client key store or null if not defined in properties
      */
     @Nullable
-    private KeyStore loadClientKeyStore() throws ConfigurationLoadingException {
+    private KeyStore loadClientKeyStore(Integer slot) throws ConfigurationLoadingException {
         KeyStore clientKeyStore;
 
         if (null == this.clientKeyStoreType) {
@@ -159,7 +164,7 @@ public record KeyCapsuleClientConfigurationProps(
                 this.clientKeyStoreFile, this.clientKeyStoreType, this.clientKeyStorePassword
             );
         } else if ("PKCS11".equalsIgnoreCase(this.clientKeyStoreType)) {
-            clientKeyStore = loadPkcs11KeyStore();
+            clientKeyStore = loadPkcs11KeyStore(slot);
         } else {
             throw new IllegalArgumentException(
                 CLIENT_STORE_TYPE + " " + this.clientKeyStoreType + " not supported"
@@ -169,13 +174,12 @@ public record KeyCapsuleClientConfigurationProps(
         return clientKeyStore;
     }
 
-    private KeyStore loadPkcs11KeyStore() {
+    private KeyStore loadPkcs11KeyStore(Integer slot) {
         String openScLibPath = loadPkcs11LibPath();
         KeyStore.ProtectionParameter protectionParameter
             = loadClientKeyStoreProtectionParameter();
         try {
-            // default slot 0 - Isikutuvastus
-            return Pkcs11Tools.initPKCS11KeysStore(openScLibPath, null, protectionParameter);
+            return Pkcs11Tools.initPKCS11KeysStore(openScLibPath, slot, protectionParameter);
         } catch (KeyStoreException | IOException e) {
             throw new ConfigurationLoadingException("Failed to load PKCS11 key trust store", e);
         }
@@ -206,6 +210,14 @@ public record KeyCapsuleClientConfigurationProps(
         return null;
     }
 
+    public static Integer getSlotOrDefault(Properties properties) {
+        try {
+            return Integer.parseInt(properties.getProperty(PKCS11_SLOT, String.valueOf(DEFAULT_SLOT)));
+        } catch (NumberFormatException e) {
+            return DEFAULT_SLOT;
+        }
+    }
+
     @Override
     public String getClientServerId() {
         return clientServerId;
@@ -213,7 +225,7 @@ public record KeyCapsuleClientConfigurationProps(
 
     @Override
     public KeyStore getClientKeyStore() {
-        return loadClientKeyStore();
+        return loadClientKeyStore(pkcs11Slot);
     }
 
     @Override

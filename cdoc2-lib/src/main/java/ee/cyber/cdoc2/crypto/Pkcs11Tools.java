@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
+import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.UserErrorCode;
 import java.io.BufferedWriter;
@@ -64,12 +65,18 @@ public final class Pkcs11Tools {
      * @param slot          the slot number with the keys
      * @param keyAlias      key alias (optional) to use in case there are more than one entry in the
      *                      keystore
+     * @param cryptoStickConf   CryptoStick configuration, if it is used
      * @return KeyPair
      *
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
-    public static KeyPair loadFromPKCS11Interactively(String pkcs11LibPath, Integer slot, @Nullable String keyAlias)
+    public static KeyPair loadFromPKCS11Interactively(
+        String pkcs11LibPath,
+        Integer slot,
+        @Nullable String keyAlias,
+        @Nullable CryptoStickConf cryptoStickConf
+    )
             throws GeneralSecurityException, IOException {
 
         String pinPrompt;
@@ -80,7 +87,7 @@ public final class Pkcs11Tools {
         }
 
         var entry = loadFromPKCS11(
-            createSunPkcsConfigurationFile(null, pkcs11LibPath, slot),
+            createSunPkcsConfigurationFile(null, pkcs11LibPath, slot, cryptoStickConf),
             getKeyStoreProtectionHandler(pinPrompt),
             keyAlias
         );
@@ -272,10 +279,50 @@ public final class Pkcs11Tools {
      * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
      *     SunPKCS11 documentation Table 5-1</a>
      */
-    static Path createSunPkcsConfigurationFile(String name, String openScLibrary, Integer slot) throws IOException {
-        Path confPath = Path.of(System.getProperty("java.io.tmpdir")).resolve("opensc-java.cfg");
+    static Path createSunPkcsConfigurationFile(
+        String name,
+        String openScLibrary,
+        Integer slot
+    ) throws IOException {
+        return createSunPkcsConfigurationFile(
+            name,
+            openScLibrary,
+            slot,
+            null
+        );
+    }
 
-        String library = openScLibrary;
+    /**
+     * Creates a configuration file for SunPKCS11.
+     * <p>
+     * File example:
+     * <pre>
+     *     {
+     *         name=OpenSC
+     *         library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so
+     *         slot=0
+     *         attributes(*,CKO_SECRET_KEY,*) = {
+     *              CKA_TOKEN = false
+     *         }
+     *     }
+     * </pre>
+     * @param name          any string, default OpenSC
+     * @param pkcs11Library pkcs11 library location, defaults described above
+     * @param slot          Slot, default 0
+     * @param cryptoStickConf   CryptoStick configuration, if it is used
+     * @return Path
+     * @see <a href="https://docs.oracle.com/en/java/javase/17/security/pkcs11-reference-guide1.html">
+     *     SunPKCS11 documentation Table 5-1</a>
+     */
+    static Path createSunPkcsConfigurationFile(
+        String name,
+        String pkcs11Library,
+        Integer slot,
+        @Nullable CryptoStickConf cryptoStickConf
+    ) throws IOException {
+        Path confPath = Path.of(System.getProperty("java.io.tmpdir")).resolve("pkcs11-java.cfg");
+
+        String library = pkcs11Library;
 
         if (library == null) {
             library = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
@@ -287,7 +334,7 @@ public final class Pkcs11Tools {
 
         if (!Files.isReadable(Path.of(library))) {
             log.error(
-                "OpenSC library not found at {}, define {} System.property to overwrite ",
+                "pkcs11 library not found at {}, define {} System.property to overwrite ",
                 library, PKCS11_LIBRARY_PROPERTY
             );
         }
@@ -322,6 +369,10 @@ public final class Pkcs11Tools {
             writer.newLine();
             writer.write("  CKA_TOKEN = false");
             writer.newLine();
+            if (cryptoStickConf != null) {
+                writer.write("  CKA_VALUE_LEN = " + cryptoStickConf.getKeySizeInBytes());
+                writer.newLine();
+            }
             writer.write("}");
             writer.newLine();
         }

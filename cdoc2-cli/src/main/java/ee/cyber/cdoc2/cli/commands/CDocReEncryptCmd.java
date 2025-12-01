@@ -91,7 +91,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
-            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, null)
             : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         File destCdocFile = getDestinationFile();
