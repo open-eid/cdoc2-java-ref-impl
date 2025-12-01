@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.0] Adding support for `secp256r1` elliptic curves (2025-11-xx)
+## [3.0.0] Adding support for `secp256r1` elliptic curves (2025-12-01)
 
 ### Features
 
