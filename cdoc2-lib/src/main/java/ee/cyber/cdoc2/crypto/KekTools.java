@@ -241,8 +241,16 @@ public final class KekTools {
             throw new IllegalArgumentException(MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO);
         }
 
-        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
-        return RsaUtils.rsaDecrypt(rsaPubKeyRecipient.getEncryptedKek(), rsaPrivateKey);
+        byte[] encryptedKek = rsaPubKeyRecipient.getEncryptedKek();
+
+        PrivateKey privateKey = recipientKeyPair.getPrivate();
+        RSAPrivateKey rsaPrivateKey;
+        if (privateKey instanceof RSAPrivateKey) {
+            rsaPrivateKey = (RSAPrivateKey) privateKey;
+            return RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
+        } else {
+            return DirectPKCS11Wrapper.rsaDecryptPKCS11(encryptedKek);
+        }
     }
 
     private static void validateKeyOrigin(
