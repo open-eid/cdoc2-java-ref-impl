@@ -20,6 +20,8 @@ import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
+import static ee.cyber.cdoc2.util.LoggingUtil.censorFileName;
+
 /**
  * AutoCloseable tarDeflate stream extractor. If any exception is thrown
  * during processing {@link #process(TarEntryProcessingDelegate)}, then close() deletes extracted files.
@@ -247,7 +249,11 @@ public class TarDeflate implements AutoCloseable {
         boolean processed;
 
         if (tarArchiveEntry.isFile()) {
-            log.debug("Found: {} {}B", tarArchiveEntry.getName(), tarArchiveEntry.getSize());
+            log.debug(
+                "Found: {} {}B",
+                censorFileName(tarArchiveEntry.getName()),
+                tarArchiveEntry.getSize()
+            );
 
             File createdFile = delegate.onTarEntry(tarArchiveEntry);
             if (createdFile != null) {
@@ -269,7 +275,7 @@ public class TarDeflate implements AutoCloseable {
 
             processed = delegate.onEndOfTarEntry();
 
-            log.debug("Transferred {} {}B", tarArchiveEntry.getName(), written);
+            log.debug("Transferred {} {}B", censorFileName(tarArchiveEntry.getName()), written);
 
         } else {
             throw Tar.logTarEntryIllegalTypeAndThrow(tarArchiveEntry.getName());

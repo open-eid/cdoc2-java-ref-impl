@@ -33,6 +33,7 @@ import javax.naming.NamingException;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
+import static ee.cyber.cdoc2.util.LoggingUtil.censorFileNames;
 
 //S106 - Standard outputs should not be used directly to log anything
 //CLI needs to interact with standard outputs
@@ -132,7 +133,7 @@ public class CDocCreateCmd implements Callable<Void> {
                 (recipient.labeledPasswordParam != null) ? "****" : null,
                 Arrays.toString(recipient.sidCodes),
                 Arrays.toString(recipient.midCodes),
-                Arrays.toString(inputFiles));
+                censorFileNames(inputFiles));
         }
 
         CDocBuilder cDocBuilder = new CDocBuilder()

@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.cli.commands;
 
+import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
@@ -63,6 +64,11 @@ public class CDocListCmd implements Callable<Void> {
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
+    @Option(names = {"-c", "--crypto-stick"},
+        description = "Specify what type of crypto stick is used, allowed values: "
+            + "[SECP256R1, SECP384R1, RSA3072, RSA4096]")
+    private CryptoStickConf cryptoStickConf;
+
     @Override
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
@@ -70,7 +76,7 @@ public class CDocListCmd implements Callable<Void> {
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
-            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, null)
+            ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
             : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()

@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.util.function.Function;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.util.LoggingUtil.censorFileName;
+import static ee.cyber.cdoc2.util.LoggingUtil.censorPathFileName;
 
 
 /**
@@ -40,7 +42,11 @@ public final class Tar {
 
     static void addFileToTar(TarArchiveOutputStream outputStream, Path file, String entryName) throws IOException {
 
-        log.debug("Adding file {} as {}", file.toAbsolutePath(), entryName);
+        log.debug(
+            "Adding file {} as {}",
+            censorPathFileName(file.toAbsolutePath()),
+            censorFileName(entryName)
+        );
         if (Files.isRegularFile(file)) {
             TarArchiveEntry tarArchiveEntry = outputStream.createArchiveEntry(file.toFile(),
                     entryName);

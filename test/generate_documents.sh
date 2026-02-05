@@ -58,6 +58,24 @@ create_simple_ec() {
   fi
 }
 
+create_simple_ec_256() {
+  local cdoc_file="ec_256_simple.cdoc2"
+
+  if $RUN_CREATE
+  then
+    echo "Creating ${cdoc_file}"
+    $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
+        -c ${CLI_KEYS_DIR}/cdoc2client-256-certificate.pem ${CDOC_DIR}/README.md
+    echo
+  fi
+
+  if $RUN_DECRYPT
+  then
+    echo "Decrypting ${cdoc_file}"
+    $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} -k ${CLI_KEYS_DIR}/cdoc2client_256_priv.key -o ${TMP_DIR}
+  fi
+}
+
 create_simple_ec_with_formatted_key_label() {
   local cdoc_file="ec_simple_with_formatted_key_label.cdoc2"
 
@@ -318,6 +336,7 @@ create_zipbomb() {
 
 
 create_simple_ec
+create_simple_ec_256
 create_simple_ec_with_formatted_key_label
 create_ec_server_ria_dev_pkcs12
 create_ec_server_ria_dev_id_card

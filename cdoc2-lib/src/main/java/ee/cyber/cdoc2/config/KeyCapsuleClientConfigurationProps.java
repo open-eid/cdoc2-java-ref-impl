@@ -175,7 +175,7 @@ public record KeyCapsuleClientConfigurationProps(
     }
 
     private KeyStore loadPkcs11KeyStore(Integer slot) {
-        String openScLibPath = loadPkcs11LibPath();
+        String openScLibPath = loadPkcs11LibPath(this.pkcs11LibraryPath);
         KeyStore.ProtectionParameter protectionParameter
             = loadClientKeyStoreProtectionParameter();
         try {
@@ -190,10 +190,10 @@ public record KeyCapsuleClientConfigurationProps(
      * If both specify a value then use one from System properties.
      * @return "pkcs11-library" value specified in properties or null if not property not present
      */
-    private String loadPkcs11LibPath() {
+    public static String loadPkcs11LibPath(String pkcs11LibraryPath) {
         // try to load from System Properties (initialized using -D) and from properties file provided.
         // Give priority to System property
-        return System.getProperty(PKCS11_LIBRARY_PROPERTY, this.pkcs11LibraryPath);
+        return System.getProperty(PKCS11_LIBRARY_PROPERTY, pkcs11LibraryPath);
     }
 
     private KeyStore.ProtectionParameter loadClientKeyStoreProtectionParameter() {

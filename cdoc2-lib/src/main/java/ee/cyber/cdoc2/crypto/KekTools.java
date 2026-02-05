@@ -31,6 +31,7 @@ import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.LinkedList;
@@ -213,8 +214,14 @@ public final class KekTools {
         RsaCapsuleClient client = new RsaCapsuleClientImpl(capsulesClientFac.getForId(serverId));
         byte[] encryptedKek = client.getEncryptedKek(transactionId).orElseThrow();
 
-        RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) recipientKeyPair.getPrivate();
-        return RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
+        PrivateKey privateKey = recipientKeyPair.getPrivate();
+        RSAPrivateKey rsaPrivateKey;
+        if (privateKey instanceof RSAPrivateKey) {
+            rsaPrivateKey = (RSAPrivateKey) privateKey;
+            return RsaUtils.rsaDecrypt(encryptedKek, rsaPrivateKey);
+        } else {
+            return DirectPKCS11Wrapper.rsaDecryptPKCS11(encryptedKek);
+        }
     }
 
     public static byte[] deriveKekForRsa(

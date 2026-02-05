@@ -83,6 +83,14 @@ class CDocCliTest {
     }
 
     @Test
+    void testCreateDecryptDocEC256() throws IOException {
+        String publicKey = "keys/cdoc2client_256_pub.key";
+        String privateKey = "keys/cdoc2client_256_priv.key";
+
+        successfullyDecryptDocWithPublicKey(publicKey, privateKey);
+    }
+
+    @Test
     void testCreateDecryptDocRSA() throws IOException {
         String publicKey = "keys/rsa_pub.pem";
         String privateKey = "keys/rsa_priv.pem";

@@ -358,18 +358,16 @@ Requirements:
 * OpenSC is installed
 * SafeNet Authentication Client (provides the pkcs11 library) is installed.
   See https://knowledge.digicert.com/generalinformation/INFO1982.html for details.
-* Create an OpenSC configuration file `opensc-safenet.cfg` for the USB device in the following format
-
-```
-name=SafeNet-eToken
-library=/usr/lib/libeToken.so
-slot=1
-```
 
 To find the slot for the SafeNet eToken, execute:
 
 ```
 pkcs11-tool --module /usr/lib/libeToken.so -L
+```
+
+Configure the slot in the `application.properties`:
+```
+ee.cyber.cdoc2.pkcs11.slot=1
 ```
 
 List entries on the eToken device:
@@ -389,13 +387,50 @@ Encrypt certificate as described in the "Encrypting documents with certificate" 
 List files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc2-cli-*.jar list -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc2-cli-*.jar list -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -a cdoc2-test --slot 1 --crypto-stick SECP256R1
 ```
 
 Decrypt files encrypted for the eToken device by specifying pkcs11 library, slot and key alias:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -s 2 -a cdoc2-test
+java -jar target/cdoc2-cli-*.jar decrypt -f file-for-etoken.cdoc2 -Dpkcs11-library=/usr/lib/libeToken.so -a cdoc2-test --slot 1 --crypto-stick SECP256R1
+```
+
+The java PKCS#11 interface does not support the OAEP padding, 
+so the implementation uses the `sun.security.pkcs11.wrapper` private methods to directly communicate with the crypto stick.
+For this, it is necessary to add these to the java classpath with `--add-exports`.
+
+List files encrypted for the RSA eToken device by specifying pkcs11 library, slot and key alias:
+
+```
+java \
+  --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED \
+  --add-opens=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED \
+  -jar target/cdoc2-cli-*.jar \
+  list \
+  --server=config/localhost/localhost.properties \
+  -f /tmp/localhost.cdoc2 \
+  -Dpkcs11-library=/usr/lib/libeToken.so \
+  -a cdoc2-test \
+  --slot 1 \
+  --crypto-stick RSA4096
+```
+
+Decrypt files encrypted for the RSA eToken device by specifying pkcs11 library, slot and key alias:
+
+```
+java \
+  --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED \
+  --add-opens=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED \
+  -jar target/cdoc2-cli-*.jar \
+  decrypt \
+  -Dpkcs11-library=/usr/lib/libeToken.so \
+  --server=config/localhost/localhost.properties \
+  -f /tmp/localhost.cdoc2 \
+  -o /tmp \
+  -a cdoc2-test \
+  --slot 1 \
+  --crypto-stick RSA4096
 ```
 
 #### ee.cyber.cdoc2.overwrite 
@@ -421,7 +456,7 @@ Decrypting will be stopped if compressed file compression ratio is over compress
 #### ee.cyber.cdoc2.key-label.machine-readable-format.enabled
 default true
 
-Key label format can be defined while encrypting. Machine parsable format is enabled by default 
+Key label format can be defined while encrypting. Machine parsable format is enabled by default
 and free text format is allowed if the property disabled.
 Machine-readable format is following, where `<data>` is the key label value:
 ```

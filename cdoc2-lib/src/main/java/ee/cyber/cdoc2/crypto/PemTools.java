@@ -19,6 +19,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.AbstractMap;
@@ -36,6 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
+import static ee.cyber.cdoc2.crypto.ECKeys.*;
 
 
 /**
@@ -167,8 +170,18 @@ public final class PemTools {
 
         publicKey = keyPair.getPublic();
         if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
-            if (!ECKeys.isECSecp384r1(keyPair)) {
-                throw new InvalidKeyException("Not an EC keypair with secp384r1 curve");
+            String oid = getCurveOid((ECKey) publicKey);
+
+            if (SECP_384_OID.equals(oid)) {
+                if (!ECKeys.isECSecp384r1(keyPair)) {
+                    throw new InvalidKeyException("Not an EC keypair with secp384r1 curve");
+                }
+            } else if (SECP_256_OID.equals(oid)) {
+                if (!ECKeys.isECSecp256r1(keyPair)) {
+                    throw new InvalidKeyException("Not an EC keypair with secp256r1 curve");
+                }
+            } else {
+                throw new InvalidKeyException("Unknown EC keypair OID: " + oid);
             }
         } else if (KeyAlgorithm.isRsaKeysAlgorithm(publicKey.getAlgorithm())) {
             // all RSA keys are considered good. Shorter will fail during encryption as OAEP takes some space

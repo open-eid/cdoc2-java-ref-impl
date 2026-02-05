@@ -116,7 +116,7 @@ run_alias() {
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${cdoc_file}"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 }
 
 @test "test3: successfully encrypt CDOC2 container with RSA" {
@@ -168,7 +168,7 @@ run_alias() {
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 }
 
 @test "test7: assert decryption with symmetric key is compatible with earlier encrypted CDOC2" {
@@ -180,7 +180,7 @@ run_alias() {
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 }
 
 @test "test8: successfully encrypt CDOC2 container with few files" {
@@ -256,7 +256,12 @@ run_alias() {
   run run_alias cdoc-cli decrypt -f "$new_directory"/$CDOC2_CONTAINER_NAME -pw $PASSWORD_WITH_LABEL --output "$new_directory"
   assertSuccessfulExecution
   assert_output --partial "Decrypting $new_directory/$CDOC2_CONTAINER_NAME"
-  assertSuccessfulDecryption
+
+  successfulExitCode=0
+  run diff -q "$FILE_FOR_ENCRYPTION" "$new_directory/$(basename "$DECRYPTED_FILE")"
+  assert_equal $status $successfulExitCode
+
+  echo "# File successfully decrypted.">&3
 
   # remove new directory and all created files in it
   rm -r "$new_directory"
@@ -430,8 +435,8 @@ EOF
   assert_output --partial "TYPE:cert"
 
   # ensure encrypted container can be decrypted successfully
-  run run_alias cdoc-cli decrypt -f "$TEST_VECTORS_V_1_2"/$existing_test_vector -k "$CLI_KEYS_DIR"/cdoc2client_priv.key -o "$TEST_RESULTS_DIR"
-  assertSuccessfulDecryption
+  run run_alias cdoc-cli decrypt -f "$TEST_VECTORS_V_1_2"/$existing_test_vector -k "$CLI_KEYS_DIR"/expired/cdoc2client_expired_priv.key -o "$TEST_RESULTS_DIR"
+  assertSuccessfulAndDecryptedFileExists
 
   rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
@@ -471,7 +476,7 @@ EOF
 
   # ensure encrypted container can be decrypted successfully
   run run_alias cdoc-cli decrypt -f "$TEST_VECTORS_V_1_2"/$existing_test_vector -k "$CLI_KEYS_DIR"/rsa_priv.pem -o "$TEST_RESULTS_DIR"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 
   rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
@@ -514,7 +519,7 @@ EOF
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS_V_1_4}/${existing_test_vector}"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 
   rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
 }
@@ -557,9 +562,26 @@ EOF
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS_V_1_2}/${existing_test_vector}"
-  assertSuccessfulDecryption
+  assertSuccessfulAndDecryptedFileExists
 
   rm -f "$TEST_RESULTS_DIR"/$existing_test_vector
+}
+
+@test "test22: successfully encrypt CDOC2 container with EC 256" {
+  local cdoc_file="ec_256_simple.cdoc"
+  echo "# Encrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli create -f "$TEST_RESULTS_DIR"/$cdoc_file \
+          -c "$CLI_KEYS_DIR"/cdoc2client-256-certificate.pem "$FILE_FOR_ENCRYPTION"
+
+  assertSuccessfulExecution
+  assert_output --partial "Created $TEST_RESULTS_DIR/$cdoc_file"
+
+  # ensure encrypted container can be decrypted successfully
+  echo "# Decrypting ${cdoc_file}...">&3
+  run run_alias cdoc-cli decrypt -f "$TEST_RESULTS_DIR"/$cdoc_file -k "$CLI_KEYS_DIR"/cdoc2client_256_priv.key -o "$TEST_RESULTS_DIR"
+  assertSuccessfulDecryption
+
+  rm -f "$TEST_RESULTS_DIR"/$cdoc_file
 }
 
 @test "All tests were executed." {
@@ -577,12 +599,23 @@ assertSuccessfulExecution() {
 }
 
 assertSuccessfulDecryption() {
-  input_filename=$(basename "$FILE_FOR_ENCRYPTION")
-  output_filename=$(basename "$DECRYPTED_FILE")
-  assert_equal "$output_filename" "$input_filename"
-  if [ "$output_filename" == "$input_filename" ]; then
-    echo "# File successfully decrypted.">&3
-  fi
+  # If the exit code is not 0, the files are not the same
+  successfulExitCode=0
+  run diff -q "$FILE_FOR_ENCRYPTION" "$DECRYPTED_FILE"
+  assert_equal $status $successfulExitCode
+
+  echo "# File successfully decrypted.">&3
+
+  rm -f "$DECRYPTED_FILE"
+}
+
+assertSuccessfulAndDecryptedFileExists() {
+  # If the exit code is not 0, the files are not the same
+  successfulExitCode=0
+  run test -f "$DECRYPTED_FILE"
+  assert_equal $status $successfulExitCode
+
+  echo "# File successfully decrypted.">&3
 
   rm -f "$DECRYPTED_FILE"
 }

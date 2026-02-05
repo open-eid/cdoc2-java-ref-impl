@@ -8,16 +8,16 @@
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <description>CDOC2 server client generation from openapi specifications https://github.com/open-eid/cdoc2-openapi</description>
 
     <properties>
-        <logback-classic.version>1.5.7</logback-classic.version>
-        <jersey.version>3.1.6</jersey.version>
+        <logback-classic.version>1.5.25</logback-classic.version>
+        <jersey.version>4.0.0</jersey.version>
         <jackson.version>2.17.2</jackson.version>
         <jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
 
-        <spotbugs-annotations.version>4.8.3</spotbugs-annotations.version>
+        <spotbugs-annotations.version>4.9.8</spotbugs-annotations.version>
 
         <!--info.version from cdoc2-openapi/*-openapi.yaml -->
         <cdoc2-key-capsules-openapi.version>3.0.0</cdoc2-key-capsules-openapi.version>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.16</version>
+            <version>2.0.17</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -206,7 +206,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.8.0</version>
+                <version>7.19.0</version>
                 <executions>
                     <execution>
                         <id>generate-key-capsules-api-client</id>
