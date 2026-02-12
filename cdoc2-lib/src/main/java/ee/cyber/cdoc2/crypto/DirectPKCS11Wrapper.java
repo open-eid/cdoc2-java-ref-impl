@@ -1,7 +1,5 @@
 package ee.cyber.cdoc2.crypto;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Properties;
 import ee.cyber.cdoc2.config.PropertiesLoader;
@@ -46,8 +44,6 @@ public final class DirectPKCS11Wrapper {
     private static final long CKM_SHA256 = 0x00000250L;
     private static final long CKG_MGF1_SHA1 = 0x00000002L;
     private static final long CKZ_DATA_SPECIFIED = 0x00000001L;
-    private static final long pSourceData = 0x00000000L;
-    private static final long ulSourceDataLen = 0x00000000L;
 
     private DirectPKCS11Wrapper() {
     }
@@ -86,16 +82,16 @@ public final class DirectPKCS11Wrapper {
         Long hKey,
         byte[] encryptedBytes
     ) throws PKCS11Exception {
-        byte[] pParam = ByteBuffer.allocate(40)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .putLong(CKM_SHA256)
-            .putLong(CKG_MGF1_SHA1)
-            .putLong(CKZ_DATA_SPECIFIED)
-            .putLong(pSourceData)
-            .putLong(ulSourceDataLen)
-            .array();
+        CK_RSA_PKCS_OAEP_PARAMS params = new CK_RSA_PKCS_OAEP_PARAMS();
+        params.hashAlg = CKM_SHA256;
+        params.mgf = CKG_MGF1_SHA1;
+        params.source = CKZ_DATA_SPECIFIED;
+        params.pSourceData = null;
 
-        CK_MECHANISM ckMechanism = new CK_MECHANISM(CKM_RSA_PKCS_OAEP, pParam);
+        // Create mechanism and set the parameter object directly
+        CK_MECHANISM ckMechanism = new CK_MECHANISM(CKM_RSA_PKCS_OAEP);
+        ckMechanism.pParameter = params;
+
         p11.C_DecryptInit(session, ckMechanism, hKey);
 
         byte[] decryptedBytes = new byte[encryptedBytes.length];
