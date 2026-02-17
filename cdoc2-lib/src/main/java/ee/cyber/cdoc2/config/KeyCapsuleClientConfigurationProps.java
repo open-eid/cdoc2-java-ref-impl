@@ -211,8 +211,21 @@ public record KeyCapsuleClientConfigurationProps(
     }
 
     public static Integer getSlotOrDefault(Properties properties) {
+        // Give priority to System property (set via -D or CLI --slot),
+        String systemSlot = System.getProperty(PKCS11_SLOT);
+        if (systemSlot != null) {
+            try {
+                return Integer.parseInt(systemSlot);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid system property value for {}: '{}', using properties file value",
+                    PKCS11_SLOT, systemSlot);
+            }
+        }
+
         try {
-            return Integer.parseInt(properties.getProperty(PKCS11_SLOT, String.valueOf(DEFAULT_SLOT)));
+            return Integer.parseInt(
+                properties.getProperty(PKCS11_SLOT, String.valueOf(DEFAULT_SLOT))
+            );
         } catch (NumberFormatException e) {
             return DEFAULT_SLOT;
         }

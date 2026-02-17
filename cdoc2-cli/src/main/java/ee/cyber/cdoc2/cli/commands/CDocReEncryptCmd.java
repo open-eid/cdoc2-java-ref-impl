@@ -6,6 +6,7 @@ import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.services.Cdoc2Services;
@@ -94,6 +95,12 @@ public class CDocReEncryptCmd implements Callable<Void> {
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
+        }
+
+        if (this.slot != null) {
+            System.setProperty(
+                Cdoc2ConfigurationProperties.PKCS11_SLOT, String.valueOf(this.slot)
+            );
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
