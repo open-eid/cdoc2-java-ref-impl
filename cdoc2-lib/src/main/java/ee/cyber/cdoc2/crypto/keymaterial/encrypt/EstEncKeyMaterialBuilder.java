@@ -77,28 +77,25 @@ public class EstEncKeyMaterialBuilder {
 
         // Try SK LDAP (IDEMIA cards)
         try {
-            allCertData.addAll(SkLdapUtil.getPublicKeysWithLabels(identificationCodes));
+            var certData = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
             log.debug("Found certificates from SK LDAP");
+            return certData;
         } catch (CertificateException | NameNotFoundException e) {
             log.debug("Failed to retrieve from SK LDAP: {}", e.getMessage());
         }
 
-        // TODO: Should we search from both LDAP's, even when we have found in SK?
         // Try Zetes LDAP (Thales cards)
         try {
-            allCertData.addAll(ZetesLdapUtil.getPublicKeysWithLabels(identificationCodes));
+            var certData = ZetesLdapUtil.getPublicKeysWithLabels(identificationCodes);
             log.debug("Found certificates from Zetes LDAP");
+            return certData;
         } catch (CertificateException | NameNotFoundException e) {
             log.debug("Failed to retrieve from Zetes LDAP: {}", e.getMessage());
         }
 
-        if (allCertData.isEmpty()) {
-            throw new CertificateException(
-                "No certificates found in SK or Zetes LDAP"
-            );
-        }
-
-        return allCertData;
+        throw new CertificateException(
+            "No certificates found in SK or Zetes LDAP"
+        );
     }
 
     /**
