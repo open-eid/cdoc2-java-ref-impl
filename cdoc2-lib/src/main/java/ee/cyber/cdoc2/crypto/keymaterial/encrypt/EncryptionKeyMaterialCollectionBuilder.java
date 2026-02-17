@@ -5,7 +5,7 @@ import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
-import ee.cyber.cdoc2.util.SkLdapUtil;
+import ee.cyber.cdoc2.util.EstEidLdapUtil;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -62,7 +62,7 @@ public class EncryptionKeyMaterialCollectionBuilder {
         File[] certificates
     ) throws IOException, CertificateException {
 
-        List<SkLdapUtil.CertificateData> certData = PemTools.loadCertKeysWithLabel(certificates);
+        List<EstEidLdapUtil.CertificateData> certData = PemTools.loadCertKeysWithLabel(certificates);
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
             .map(entry -> {
                     KeyLabelParams keyLabelParams = createCertKeyLabelParams(
