@@ -6,7 +6,6 @@ import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
-import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.services.Cdoc2Services;
@@ -27,6 +26,7 @@ import ee.cyber.cdoc2.CDocReEncrypter;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToSystemProps;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
@@ -97,11 +97,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        if (this.slot != null) {
-            System.setProperty(
-                Cdoc2ConfigurationProperties.PKCS11_SLOT, String.valueOf(this.slot)
-            );
-        }
+        assignClientConfValuesToSystemProps(this.slot, this.keyAlias);
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
