@@ -100,6 +100,7 @@ public final class KeyCapsuleClientImpl implements KeyCapsuleClient, KeyCapsuleC
             builder.withClientKeyStore(clientKeyStore);
             builder.withClientKeyStoreProtectionParameter(config.getKeyStoreProtectionParameter());
             builder.withBaseUrl(config.getClientServerBaseUrlGet());
+            builder.withClientKeyLabel(config.getKeyAlias());
             getClient = builder.build();
         }
 

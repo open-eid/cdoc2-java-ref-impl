@@ -16,6 +16,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509KeyManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ public abstract class ApiClientBuilder {
     private String baseUrl;
     private KeyStore clientKeyStore;
     private KeyStore.ProtectionParameter clientKeyStoreProtectionParameter;
+    private String clientKeyLabel;
     private KeyStore trustKeyStore;
     private int connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MS;
     private int readTimeoutMs = DEFAULT_READ_TIMEOUT_MS;
@@ -78,6 +80,18 @@ public abstract class ApiClientBuilder {
      */
     public ApiClientBuilder withClientKeyStoreProtectionParameter(KeyStore.ProtectionParameter pm) {
         this.clientKeyStoreProtectionParameter = pm;
+        return this;
+    }
+
+    /**
+     * Selects a specific key entry by label (alias) from the client keystore.
+     * Required when a PKCS11 token contains multiple certificates/keys and you need
+     * to control which one is used for mutual TLS.
+     *
+     * @param keyLabel the PKCS11 label / keystore alias of the desired key entry
+     */
+    public ApiClientBuilder withClientKeyLabel(String keyLabel) {
+        this.clientKeyLabel = keyLabel;
         return this;
     }
 
@@ -208,16 +222,21 @@ public abstract class ApiClientBuilder {
     }
 
     /**
-     * Client manager used for mutual TLS and initialized in {@link Cdoc2KeyCapsuleApiClient} only
+     *  Client manager used for mutual TLS and initialized in {@link Cdoc2KeyCapsuleApiClient} only
+     * <p>
+     * When {@link #clientKeyLabel} is set the raw managers from the factory are wrapped in a
+     * {@link AliasForcingX509KeyManager} so that the TLS stack always selects the entry
+     * identified by that label, regardless of how many entries the PKCS11 token exposes.
      */
-    private Optional<KeyManager[]> getClientKeyManager() throws NoSuchAlgorithmException,
-        InvalidAlgorithmParameterException {
+    private Optional<KeyManager[]> getClientKeyManager()
+        throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+
         if (clientKeyStore == null) {
             return Optional.empty();
         }
 
         KeyManagerFactory clientKeyManagerFactory =
-            KeyManagerFactory.getInstance("PKIX"); //only PKIX supports ManagerFactoryParameters
+            KeyManagerFactory.getInstance("PKIX"); // only PKIX supports ManagerFactoryParameters
         log.debug("client key store type: {}", this.clientKeyStore.getType());
 
         KeyStore.Builder clientKeyStoreBuilder = ("PKCS11".equals(clientKeyStore.getType()))
@@ -225,9 +244,31 @@ public abstract class ApiClientBuilder {
             clientKeyStore.getProvider(), clientKeyStoreProtectionParameter)
             : KeyStore.Builder.newInstance(clientKeyStore, clientKeyStoreProtectionParameter);
 
-        var params = new KeyStoreBuilderParameters(clientKeyStoreBuilder);
-        clientKeyManagerFactory.init(params);
-        return Optional.of(clientKeyManagerFactory.getKeyManagers());
+        clientKeyManagerFactory.init(new KeyStoreBuilderParameters(clientKeyStoreBuilder));
+
+        KeyManager[] managers = clientKeyManagerFactory.getKeyManagers();
+
+        if (clientKeyLabel != null) {
+            log.debug("Wrapping KeyManagers to force alias '{}'", clientKeyLabel);
+            managers = wrapWithForcedAlias(managers, clientKeyLabel);
+        }
+
+        return Optional.of(managers);
     }
 
+    /**
+     * Wraps every {@link X509KeyManager} in the array with an {@link AliasForcingX509KeyManager}.
+     * Non-X509 managers are passed through unchanged.
+     */
+    private static KeyManager[] wrapWithForcedAlias(KeyManager[] managers, String alias) {
+        KeyManager[] wrapped = new KeyManager[managers.length];
+        for (int i = 0; i < managers.length; i++) {
+            if (managers[i] instanceof X509KeyManager x509km) {
+                wrapped[i] = new AliasForcingX509KeyManager(x509km, alias);
+            } else {
+                wrapped[i] = managers[i];
+            }
+        }
+        return wrapped;
+    }
 }
