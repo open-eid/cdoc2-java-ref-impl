@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static ee.cyber.cdoc2.crypto.ECKeys.*;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP256R1;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
 
 
 /**
@@ -172,11 +174,11 @@ public final class PemTools {
         if (KeyAlgorithm.isEcKeysAlgorithm(publicKey.getAlgorithm())) {
             String oid = getCurveOid((ECKey) publicKey);
 
-            if (SECP_384_OID.equals(oid)) {
+            if (SECP384R1.getOid().equals(oid)) {
                 if (!ECKeys.isECSecp384r1(keyPair)) {
                     throw new InvalidKeyException("Not an EC keypair with secp384r1 curve");
                 }
-            } else if (SECP_256_OID.equals(oid)) {
+            } else if (SECP256R1.getOid().equals(oid)) {
                 if (!ECKeys.isECSecp256r1(keyPair)) {
                     throw new InvalidKeyException("Not an EC keypair with secp256r1 curve");
                 }

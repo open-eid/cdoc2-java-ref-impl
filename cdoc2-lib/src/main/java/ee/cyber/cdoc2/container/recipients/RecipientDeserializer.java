@@ -4,6 +4,7 @@ import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.UnknownFlatBufferTypeException;
 import ee.cyber.cdoc2.crypto.Crypto;
+import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.RsaUtils;
@@ -172,7 +173,7 @@ public final class RecipientDeserializer {
             EllipticCurve curve = EllipticCurve.forValue(serverEccDetails.curve());
             try {
                 ByteBuffer recipientPubKeyBuf = serverEccDetails.recipientPublicKeyAsByteBuffer();
-                recipientPubKey = curve.decodeFromTls(recipientPubKeyBuf);
+                recipientPubKey = ECKeys.decodeEcPublicKeyFromTls(curve, recipientPubKeyBuf);
             } catch (IllegalArgumentException iae) {
                 throw new CDocParseException("illegal EC pub key encoding", iae);
             }
@@ -255,9 +256,9 @@ public final class RecipientDeserializer {
         try {
             EllipticCurve curve = EllipticCurve.forValue(eccPublicKeyCapsule.curve());
             ECPublicKey recipientPubKey =
-                    curve.decodeFromTls(eccPublicKeyCapsule.recipientPublicKeyAsByteBuffer());
+                ECKeys.decodeEcPublicKeyFromTls(curve, eccPublicKeyCapsule.recipientPublicKeyAsByteBuffer());
             ECPublicKey senderPubKey =
-                    curve.decodeFromTls(eccPublicKeyCapsule.senderPublicKeyAsByteBuffer());
+                ECKeys.decodeEcPublicKeyFromTls(curve, eccPublicKeyCapsule.senderPublicKeyAsByteBuffer());
 
             return new EccPubKeyRecipient(curve, recipientPubKey, senderPubKey,
                     encryptedFmkBytes, keyLabel);

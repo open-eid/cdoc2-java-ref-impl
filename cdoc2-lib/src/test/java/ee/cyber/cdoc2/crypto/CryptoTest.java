@@ -6,6 +6,7 @@ import ee.cyber.cdoc2.fbs.recipients.KDFAlgorithmIdentifier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -53,20 +54,20 @@ class CryptoTest {
 
     @Test
     void testGenSharedSecret() throws GeneralSecurityException {
-        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
-        KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair keyPair = ECKeys.generateEcKeyPair(SECP384R1);
+        KeyPair other = ECKeys.generateEcKeyPair(SECP384R1);
         byte[] ecdhSharedSecret =
             Crypto.calcEcDhSharedSecret(keyPair.getPrivate(), (ECPublicKey) other.getPublic());
 
-        assertEquals(ECKeys.SECP_384_R_1_LEN_BYTES, ecdhSharedSecret.length);
+        assertEquals(SECP384R1.getKeyLength(), ecdhSharedSecret.length);
     }
 
     @Test
     void testXorCrypto() throws GeneralSecurityException {
         log.trace("testXorCrypto()");
         byte[] fmk = Crypto.generateFileMasterKey();
-        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
-        KeyPair other = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair keyPair = ECKeys.generateEcKeyPair(SECP384R1);
+        KeyPair other = ECKeys.generateEcKeyPair(SECP384R1);
 
         byte[] kek = Crypto.deriveKeyEncryptionKey(keyPair, (ECPublicKey) other.getPublic(), fmk.length);
         byte[] encryptedFmk = Crypto.xor(fmk, kek);
@@ -96,7 +97,7 @@ class CryptoTest {
                 -----END EC PRIVATE KEY-----
                 """;
         KeyPair aliceKeyPair = PemTools.loadKeyPair(pem);
-        KeyPair bobKeyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair bobKeyPair = ECKeys.generateEcKeyPair(SECP384R1);
 
         byte[] aliceKek = Crypto.deriveKeyEncryptionKey(aliceKeyPair, (ECPublicKey) bobKeyPair.getPublic(), fmk.length);
         byte[] encryptedFmk = Crypto.xor(fmk, aliceKek);

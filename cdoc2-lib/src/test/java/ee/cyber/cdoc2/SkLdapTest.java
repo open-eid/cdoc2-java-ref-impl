@@ -1,6 +1,6 @@
 package ee.cyber.cdoc2;
 
-import ee.cyber.cdoc2.crypto.EllipticCurve;
+import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.util.SkLdapUtil;
 
 import java.security.PublicKey;
@@ -47,7 +47,7 @@ class SkLdapTest {
         assertFalse(keysWithLabels.isEmpty());
 
         Map<PublicKey, String> ecKeysWithLabels = keysWithLabels.stream()
-                .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
+                .filter(entry -> ECKeys.isSupported(entry.getPublicKey()))
                 .collect(Collectors.toMap(
                     SkLdapUtil.CertificateData::getPublicKey,
                     SkLdapUtil.CertificateData::getKeyLabel

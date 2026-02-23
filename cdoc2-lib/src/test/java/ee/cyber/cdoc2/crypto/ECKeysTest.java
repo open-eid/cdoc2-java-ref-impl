@@ -9,7 +9,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
@@ -28,6 +27,7 @@ import java.util.HexFormat;
 
 import ee.cyber.cdoc2.util.SkLdapUtil;
 
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,15 +56,14 @@ class ECKeysTest {
     void testEcPubKeyEncodeDecode() throws GeneralSecurityException {
         log.trace("testEcPubKeyEncodeDecode()");
 
-        KeyPair keyPair = ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1);
+        KeyPair keyPair = ECKeys.generateEcKeyPair(SECP384R1);
         ECPublicKey ecPublicKey = (ECPublicKey) keyPair.getPublic();
         byte[] encodedEcPubKey = ECKeys.encodeEcPubKeyForTls(ecPublicKey);
 
-        assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
-        assertEquals(1 + ECKeys.SECP_384_R_1_LEN_BYTES * 2, encodedEcPubKey.length);
+        assertEquals(1 + SECP384R1.getKeyLength() * 2, encodedEcPubKey.length);
         assertEquals(0x04, encodedEcPubKey[0]);
 
-        ECPublicKey decoded = EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(encodedEcPubKey));
+        ECPublicKey decoded = ECKeys.decodeEcPublicKeyFromTls(SECP384R1, encodedEcPubKey);
         assertEquals(ecPublicKey.getW(), decoded.getW());
         assertEquals(ecPublicKey, decoded);
     }
@@ -360,7 +359,7 @@ class ECKeysTest {
 
     public static ECPublicKey getInfinityPublicKey() throws InvalidParameterSpecException, NoSuchAlgorithmException {
         AlgorithmParameters params = AlgorithmParameters.getInstance(KeyAlgorithm.Algorithm.EC.name());
-        params.init(new ECGenParameterSpec(ECKeys.SECP_384_R_1));
+        params.init(new ECGenParameterSpec(SECP384R1.getName()));
 
         ECParameterSpec ecParameterSpec = params.getParameterSpec(ECParameterSpec.class);
 

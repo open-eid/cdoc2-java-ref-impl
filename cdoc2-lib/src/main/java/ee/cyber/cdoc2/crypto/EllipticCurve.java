@@ -1,105 +1,99 @@
 package ee.cyber.cdoc2.crypto;
 
-import java.nio.ByteBuffer;
-import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidParameterSpecException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Locale;
+
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.custom.sec.SecP256R1Curve;
+import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
 
 
 /**
- * Curve values from {@link ee.cyber.cdoc2.fbs.recipients.EllipticCurve} defined as enum and mapped to
- * known elliptic curve names and oid's
+ * Elliptic curve enums mapped to known elliptic curve names, OIDs, key lengths,
+ * and their BouncyCastle curve instances for point validation.
  */
 public enum EllipticCurve {
 
-    UNKNOWN(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.UNKNOWN, null, null),
-    SECP384R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1, ECKeys.SECP_384_R_1, ECKeys.SECP_384_OID),
-    SECP256R1(ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1, ECKeys.SECP_256_R_1, ECKeys.SECP_256_OID);
+    UNKNOWN(
+        null,
+        null,
+        0,
+        null,
+        ee.cyber.cdoc2.fbs.recipients.EllipticCurve.UNKNOWN
+    ),
+    SECP384R1(
+        "secp384r1",
+        "1.3.132.0.34",
+        384 / 8, new SecP384R1Curve(),
+        ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1
+    ),
+    SECP256R1(
+        "secp256r1",
+        "1.2.840.10045.3.1.7",
+        256 / 8,
+        new SecP256R1Curve(),
+        ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1
+    );
 
-    private static final Logger log = LoggerFactory.getLogger(EllipticCurve.class);
-
-    private final byte value;
     private final String name;
     private final String oid;
+    private final int keyLengthBytes;
+    private final ECCurve bcCurve;
+    private final byte value;
 
-    EllipticCurve(byte value, String name, String oid) {
-        this.value = value;
+    EllipticCurve(String name, String oid, int keyLengthBytes, ECCurve bcCurve, byte value) {
         this.name = name;
         this.oid = oid;
+        this.keyLengthBytes = keyLengthBytes;
+        this.bcCurve = bcCurve;
+        this.value = value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getOid() {
+        return oid;
     }
 
     public byte getValue() {
         return value;
     }
 
-    public String getName() {
-        return name;
-    }
-    public String getOid() {
-        return oid;
-    }
-
-    public boolean isValidKey(ECPublicKey key) throws GeneralSecurityException {
-        return switch (this) {
-            case SECP384R1 -> ECKeys.isValidSecP384R1(key);
-            case SECP256R1 -> ECKeys.isEcSecp256r1Curve(key);
-            default -> throw new IllegalStateException("isValidKey not implemented for " + this);
-        };
-    }
-
-    public boolean isValidKeyPair(KeyPair keyPair) throws GeneralSecurityException {
-        if (this == EllipticCurve.SECP384R1) {
-            return ECKeys.isECSecp384r1(keyPair);
+    /**
+     * Key length in bytes (e.g. 48 for secp384r1, 32 for secp256r1).
+     */
+    public int getKeyLength() {
+        if (this == UNKNOWN) {
+            throw new IllegalStateException("getKeyLength() not supported for UNKNOWN curve");
         }
-        if (this == EllipticCurve.SECP256R1) {
-            return ECKeys.isECSecp256r1(keyPair);
-        }
-        throw new IllegalStateException("isValidKeyPair not implemented for " + this);
+        return keyLengthBytes;
     }
 
     /**
-     * Key length in bytes. For secp384r1, its 384/8=48
+     * BouncyCastle ECCurve instance used for point-on-curve validation.
      */
-    public int getKeyLength() {
-        return switch (this) {
-            case SECP384R1 -> ECKeys.SECP_384_R_1_LEN_BYTES;
-            case SECP256R1 -> ECKeys.SECP_256_R_1_LEN_BYTES;
-            default -> throw new IllegalStateException("getKeyLength not implemented for " + this);
-        };
-    }
-
-    public ECPublicKey decodeFromTls(ByteBuffer encoded) throws GeneralSecurityException {
-        return switch (this) {
-            case SECP384R1 -> ECKeys.decodeSecP384R1EcPublicKeyFromTls(encoded);
-            case SECP256R1 -> ECKeys.decodeSecP256R1EcPublicKeyFromTls(encoded);
-            default -> throw new IllegalStateException("decodeFromTls not implemented for " + this);
-        };
-    }
-
-    public KeyPair generateEcKeyPair() throws GeneralSecurityException {
-        return ECKeys.generateEcKeyPair(this.getName());
-    }
-
-    public static EllipticCurve forName(String name) throws NoSuchAlgorithmException {
-        if (ECKeys.SECP_384_R_1.equalsIgnoreCase(name)) {
-            return SECP384R1;
+    public ECCurve getBcCurve() {
+        if (this == UNKNOWN) {
+            throw new IllegalStateException("getBcCurve() not supported for UNKNOWN curve");
         }
-        throw new NoSuchAlgorithmException("Unknown curve name " + name);
+        return bcCurve;
     }
 
     public static EllipticCurve forOid(String oid) throws NoSuchAlgorithmException {
-        return switch (oid) {
-            case ECKeys.SECP_384_OID -> SECP384R1;
-            case ECKeys.SECP_256_OID -> SECP256R1;
-            default -> throw new NoSuchAlgorithmException("Unknown EC curve oid " + oid);
-        };
+        for (EllipticCurve curve : values()) {
+            if (curve != UNKNOWN && curve.oid.equals(oid)) {
+                return curve;
+            }
+        }
+
+        throw new NoSuchAlgorithmException("Unknown EC curve OID: " + oid);
     }
 
     public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
@@ -108,6 +102,15 @@ public enum EllipticCurve {
             case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1 -> SECP256R1;
             default -> throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
         };
+    }
+
+    public static EllipticCurve forName(String name) throws NoSuchAlgorithmException {
+        for (EllipticCurve curve : values()) {
+            if (curve != UNKNOWN && curve.name.equals(name.toLowerCase(Locale.ROOT))) {
+                return curve;
+            }
+        }
+        throw new NoSuchAlgorithmException("Unknown EC curve name: " + name);
     }
 
     /**
@@ -126,29 +129,6 @@ public enum EllipticCurve {
         } else {
             throw new InvalidKeyException("Unsupported key algorithm " + publicKey.getAlgorithm());
         }
-    }
-
-    /**
-     * Check if public key is supported by CDOC lib
-     *
-     * @param publicKey to check for encryption by CDOC
-     * @return if publicKey is supported for encryption by CDOC
-     */
-    public static boolean isSupported(PublicKey publicKey) {
-        try {
-            EllipticCurve curve = forPubKey(publicKey);
-            return curve.isValidKey((ECPublicKey) publicKey);
-        } catch (GeneralSecurityException ge) {
-            log.info("Unsupported public key {}", ge.toString());
-            return false;
-        }
-    }
-
-    /**
-     * Supported curve names
-     */
-    public static String[] names() {
-        return ee.cyber.cdoc2.fbs.recipients.EllipticCurve.names;
     }
 
 }

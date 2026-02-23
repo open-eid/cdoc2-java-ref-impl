@@ -15,7 +15,6 @@ import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
 import ee.cyber.cdoc2.crypto.Crypto;
 import ee.cyber.cdoc2.crypto.ECKeys;
-import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
@@ -95,6 +94,7 @@ import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
@@ -507,11 +507,14 @@ class EnvelopeTest implements TestLifecycleLogger {
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
         assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
-        Assertions.assertEquals(keyPair.getPublic(), EllipticCurve.SECP384R1.decodeFromTls(
-            ByteBuffer.wrap(capsuleData.getRecipientId())));
-        assertTrue(EllipticCurve.SECP384R1.isValidKey(
-            EllipticCurve.SECP384R1.decodeFromTls(
-                ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial())))
+        Assertions.assertEquals(
+            keyPair.getPublic(),
+            ECKeys.decodeEcPublicKeyFromTls(SECP384R1, capsuleData.getRecipientId())
+        );
+        assertTrue(
+            ECKeys.isValidSecP384R1(
+                ECKeys.decodeEcPublicKeyFromTls(SECP384R1, capsuleData.getEphemeralKeyMaterial())
+            )
         );
     }
 
@@ -1170,7 +1173,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                         .fromPublicKey(bobPubKey, bobKeyLabelParams),
                     EncryptionKeyMaterial
                         .fromPublicKey(
-                            ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
+                            ECKeys.generateEcKeyPair(SECP384R1).getPublic(),
                             getPublicKeyLabelParams()
                         )
                 ), null, null
@@ -1196,7 +1199,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Map<PublicKey, String> keyLabelMap = new HashMap<>();
         Instant start = Instant.now();
         for  (int i = 1; i < maxRecipientsNum; i++) {
-            keyLabelMap.put(ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(), "longHeader");
+            keyLabelMap.put(ECKeys.generateEcKeyPair(SECP384R1).getPublic(), "longHeader");
         }
         keyLabelMap.put(bobPubKey, "_bob_key_");
 
@@ -1224,7 +1227,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         recipients.add(
             EncryptionKeyMaterial
                 .fromPublicKey(
-                    ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
+                    ECKeys.generateEcKeyPair(SECP384R1).getPublic(),
                     getPublicKeyLabelParams()
                 )
         );

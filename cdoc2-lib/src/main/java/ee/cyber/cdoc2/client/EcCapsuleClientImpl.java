@@ -7,10 +7,12 @@ import ee.cyber.cdoc2.client.model.Capsule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
 import java.util.Optional;
+
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP256R1;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
 
 
 @SuppressWarnings("java:S2139")
@@ -66,10 +68,10 @@ public class EcCapsuleClientImpl implements EcCapsuleClient {
 
                 return switch (capsule.getCapsuleType()) {
                     case ECC_SECP384R1 -> Optional.of(
-                        EllipticCurve.SECP384R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
+                        ECKeys.decodeEcPublicKeyFromTls(SECP384R1, capsule.getEphemeralKeyMaterial())
                     );
                     case ECC_SECP256R1 -> Optional.of(
-                        EllipticCurve.SECP256R1.decodeFromTls(ByteBuffer.wrap(capsule.getEphemeralKeyMaterial()))
+                        ECKeys.decodeEcPublicKeyFromTls(SECP256R1, capsule.getEphemeralKeyMaterial())
                     );
                     default -> throw new ExtApiException("Unsupported capsule type " + capsule.getCapsuleType());
                 };
