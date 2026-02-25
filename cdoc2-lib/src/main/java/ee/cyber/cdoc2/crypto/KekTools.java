@@ -223,7 +223,11 @@ public final class KekTools {
             if (keyMaterial.slot() == null) {
                 throw new RuntimeException("The slot must be specified for hardware RSA keys");
             }
-            return DirectPKCS11Wrapper.rsaDecryptPKCS11(encryptedKek, keyMaterial.slot());
+            return DirectPKCS11Wrapper.rsaDecryptPKCS11(
+                encryptedKek,
+                keyMaterial.slot(),
+                keyMaterial.alias()
+            );
         }
     }
 
@@ -255,7 +259,11 @@ public final class KekTools {
             if (keyMaterial.slot() == null) {
                 throw new RuntimeException("The slot must be specified for hardware RSA keys");
             }
-            return DirectPKCS11Wrapper.rsaDecryptPKCS11(encryptedKek, keyMaterial.slot());
+            return DirectPKCS11Wrapper.rsaDecryptPKCS11(
+                encryptedKek,
+                keyMaterial.slot(),
+                keyMaterial.alias()
+            );
         }
     }
 
