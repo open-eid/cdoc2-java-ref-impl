@@ -101,6 +101,9 @@ public final class Cdoc2ConfigurationProperties {
     /** The slot to use with pkcs11 provider, if not set, then the default of 0 is used */
     public static final String PKCS11_SLOT = "ee.cyber.cdoc2.pkcs11.slot";
 
+    /** The key alias to choose the key form pkcs11 keystore, if not set, then the first key is used */
+    public static final String PKCS11_ALIAS = "ee.cyber.cdoc2.pkcs11.alias";
+
     /** Defines Smart-ID client properties file location */
     public static final String SMART_ID_PROPERTIES = "smart-id.properties";
     public static final String SMART_ID_CLIENT_HOST_URL = "smartid.client.hostUrl";

@@ -3,8 +3,9 @@ package ee.cyber.cdoc2.crypto;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Properties;
 import ee.cyber.cdoc2.config.PropertiesLoader;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+import javax.annotation.Nullable;
 //CHECKSTYLE:OFF
 import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.CK_ATTRIBUTE.DECRYPT_TRUE;
@@ -13,8 +14,6 @@ import static sun.security.pkcs11.wrapper.PKCS11Constants.CKM_RSA_PKCS_OAEP;
 //CHECKSTYLE:ON
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
-import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.getSlotOrDefault;
-import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.loadPkcs11LibPath;
 
 /**
  * Utility class for performing RSA OAEP decryption via a direct PKCS#11 wrapper.
@@ -34,10 +33,9 @@ import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.loadPkcs1
  *   that are not part of the Java SE specification.</li>
  *   <li>These APIs may change or be removed without notice in future Java versions.</li>
  *   <li>Use of this class requirers additional JVM flags (for example {@code --add-exports}).</li>
- *   <li>Error handling is intentionally minimal; any PKCS#11 failure results in a {@link RuntimeException}.</li>
  * </ul>
  * <p>
- * The PKCS#11 library path, slot selection, and other parameters are resolved from
+ * The PKCS#11 library path, slot selection, and other parameters are resolved from system and
  * application configuration properties.
  */
 public final class DirectPKCS11Wrapper {
@@ -52,32 +50,64 @@ public final class DirectPKCS11Wrapper {
     private DirectPKCS11Wrapper() {
     }
 
-    public static byte[] rsaDecryptPKCS11(byte[] encrypted) {
-        var properties = loadProperties();
-        var slot = getSlotOrDefault(properties);
-        var pkcs11LibraryPath = loadPkcs11LibPath(properties.getProperty(PKCS11_LIBRARY_PROPERTY, null));
+    /**
+     * Decrypts the data using RSA OAEP padding.
+     *
+     * @param encrypted the encrypted bytes
+     * @param slot token slot number
+     * @param alias (optional) key alias, must be present if multiple keys are on the token
+     * @return decrypted bytes
+     */
+    public static byte[] rsaDecryptPKCS11(
+        byte[] encrypted,
+        Integer slot,
+        @Nullable String alias
+    ) {
+        var pkcs11LibraryPath = getPkcs11LibraryPath();
+        PKCS11 p11 = null;
+        Long session = null;
 
         try {
-            var p11 = PKCS11.getInstance(pkcs11LibraryPath, "C_GetFunctionList", null, false);
-            var session = p11.C_OpenSession(slot, CKF_SERIAL_SESSION, null, null);
+            p11 = PKCS11.getInstance(pkcs11LibraryPath, "C_GetFunctionList", null, false);
+            session = p11.C_OpenSession(slot, CKF_SERIAL_SESSION, null, null);
 
-            p11.C_FindObjectsInit(session, new CK_ATTRIBUTE[]{DECRYPT_TRUE});
-            var objects = p11.C_FindObjects(session, 100L);
-            var hKey = objects[0];
-            p11.C_FindObjectsFinal(session);
+            long hKey = alias == null ? getKey(p11, session) : getKeyWithAlias(p11, session, alias);
 
             byte[] decryptedBytes = decryptData(p11, session, hKey, encrypted);
 
             p11.C_CloseSession(session);
             return decryptedBytes;
         } catch (Exception e) {
+            if (p11 != null && session != null) {
+                try {
+                    p11.C_CloseSession(session);
+                } catch (PKCS11Exception sCloseException) {
+                    e.addSuppressed(sCloseException);
+                }
+            }
             throw new RuntimeException("Decryption with PKCS11 failed", e);
         }
     }
 
-    private static Properties loadProperties() {
-        String propertiesFilePath = System.getProperty(KEY_CAPSULE_PROPERTIES);
-        return PropertiesLoader.loadProperties(propertiesFilePath);
+    private static String getPkcs11LibraryPath() {
+        // try to load from System Properties (initialized using -D)
+        String pkcs11Library = System.getProperty(PKCS11_LIBRARY_PROPERTY);
+        if (pkcs11Library != null) {
+            return pkcs11Library;
+        }
+
+        // try loading from properties file
+        try {
+            String propertiesFilePath = System.getProperty(KEY_CAPSULE_PROPERTIES);
+            var properties = PropertiesLoader.loadProperties(propertiesFilePath);
+            return properties.getProperty(PKCS11_LIBRARY_PROPERTY, null);
+        } catch (ConfigurationLoadingException e) {
+            throw new ConfigurationLoadingException(
+                "If the system property " + PKCS11_LIBRARY_PROPERTY + " is not set, "
+                    + "a properties file must be provided.",
+                e
+            );
+        }
     }
 
     private static byte[] decryptData(
@@ -113,5 +143,63 @@ public final class DirectPKCS11Wrapper {
         );
 
         return Arrays.copyOf(decryptedBytes, n);
+    }
+
+    private static long getKey(
+        PKCS11 p11,
+        long session
+    ) throws PKCS11Exception {
+        p11.C_FindObjectsInit(session, new CK_ATTRIBUTE[]{DECRYPT_TRUE});
+        var objects = p11.C_FindObjects(session, 100L);
+        p11.C_FindObjectsFinal(session);
+
+        if (objects.length == 0) {
+            throw new RuntimeException("No decryptable key objects found on the token.");
+        }
+        if (objects.length > 1) {
+            throw new RuntimeException(
+                "Multiple key objects on the token. "
+                    + "Please specify an alias to select the correct key."
+            );
+        }
+
+        return objects[0];
+    }
+
+    private static long getKeyWithAlias(
+        PKCS11 p11,
+        long session,
+        String alias
+    ) throws PKCS11Exception {
+        // find the certificate by its label (what KeyStore shows as alias)
+        p11.C_FindObjectsInit(session, new CK_ATTRIBUTE[]{
+            new CK_ATTRIBUTE(PKCS11Constants.CKA_CLASS, PKCS11Constants.CKO_CERTIFICATE),
+            new CK_ATTRIBUTE(PKCS11Constants.CKA_LABEL, alias.toCharArray())
+        });
+        var certObjects = p11.C_FindObjects(session, 10L);
+        p11.C_FindObjectsFinal(session);
+
+        if (certObjects.length == 0) {
+            throw new RuntimeException("No certificate found with alias: " + alias);
+        }
+
+        // read CKA_ID from the certificate
+        CK_ATTRIBUTE[] idAttr = new CK_ATTRIBUTE[]{new CK_ATTRIBUTE(PKCS11Constants.CKA_ID)};
+        p11.C_GetAttributeValue(session, certObjects[0], idAttr);
+        byte[] ckaId = (byte[]) idAttr[0].pValue;
+
+        // find the private key with the same CKA_ID
+        p11.C_FindObjectsInit(session, new CK_ATTRIBUTE[]{
+            new CK_ATTRIBUTE(PKCS11Constants.CKA_CLASS, PKCS11Constants.CKO_PRIVATE_KEY),
+            new CK_ATTRIBUTE(PKCS11Constants.CKA_ID, ckaId)
+        });
+        var keyObjects = p11.C_FindObjects(session, 10L);
+        p11.C_FindObjectsFinal(session);
+
+        if (keyObjects.length == 0) {
+            throw new RuntimeException("No private key found matching certificate alias: " + alias);
+        }
+
+        return keyObjects[0];
     }
 }

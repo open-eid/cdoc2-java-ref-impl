@@ -37,6 +37,7 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
  * @param clientKeyStorePwdPrompt client key store password prompt
  * @param pkcs11LibraryPath PKCS11 library path
  * @param pkcs11Slot PKCS11 slot
+ * @param keyAlias key alias
  */
 public record KeyCapsuleClientConfigurationProps(
     String clientServerId,
@@ -51,7 +52,8 @@ public record KeyCapsuleClientConfigurationProps(
     String clientKeyStorePassword,
     String clientKeyStorePwdPrompt,
     String pkcs11LibraryPath,
-    Integer pkcs11Slot
+    Integer pkcs11Slot,
+    String keyAlias
 ) implements KeyCapsuleClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(KeyCapsuleClientConfigurationProps.class);
@@ -89,6 +91,7 @@ public record KeyCapsuleClientConfigurationProps(
         var clientKeyStorePwdPrompt = properties.getProperty(CLIENT_STORE_PWD_PROMPT);
         var pkcs11LibraryPath = properties.getProperty(PKCS11_LIBRARY_PROPERTY, null);
         var slot = getSlotOrDefault(properties);
+        var alias = getKeyAlias(properties);
 
         return new KeyCapsuleClientConfigurationProps(
             clientServerId,
@@ -103,7 +106,8 @@ public record KeyCapsuleClientConfigurationProps(
             clientKeyStorePassword,
             clientKeyStorePwdPrompt,
             pkcs11LibraryPath,
-            slot
+            slot,
+            alias
         );
     }
 
@@ -210,12 +214,35 @@ public record KeyCapsuleClientConfigurationProps(
         return null;
     }
 
-    public static Integer getSlotOrDefault(Properties properties) {
+    private static Integer getSlotOrDefault(Properties properties) {
+        // Give priority to System property (set via -D or CLI --slot),
+        String systemSlot = System.getProperty(PKCS11_SLOT);
+        if (systemSlot != null) {
+            try {
+                return Integer.parseInt(systemSlot);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid system property value for {}: '{}', using properties file value",
+                    PKCS11_SLOT, systemSlot);
+            }
+        }
+
         try {
-            return Integer.parseInt(properties.getProperty(PKCS11_SLOT, String.valueOf(DEFAULT_SLOT)));
+            return Integer.parseInt(
+                properties.getProperty(PKCS11_SLOT, String.valueOf(DEFAULT_SLOT))
+            );
         } catch (NumberFormatException e) {
             return DEFAULT_SLOT;
         }
+    }
+
+    private static String getKeyAlias(Properties properties) {
+        // Give priority to System property (set via -D or CLI --slot),
+        String keyAlias = System.getProperty(PKCS11_ALIAS);
+        if (keyAlias != null) {
+            return keyAlias;
+        }
+
+        return properties.getProperty(PKCS11_ALIAS, null);
     }
 
     @Override
@@ -261,6 +288,11 @@ public record KeyCapsuleClientConfigurationProps(
     @Override
     public KeyStore getClientTrustStore() {
         return clientTrustStore;
+    }
+
+    @Override
+    public String getKeyAlias() {
+        return keyAlias;
     }
 
 }
