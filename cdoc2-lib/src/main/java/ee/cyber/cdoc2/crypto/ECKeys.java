@@ -126,18 +126,6 @@ public final class ECKeys {
         return ecPublicKey;
     }
 
-    /** @deprecated Use {@link #decodeEcPublicKeyFromTls(EllipticCurve, byte[])} with {@code EllipticCurve.SECP384R1} */
-    @Deprecated
-    public static ECPublicKey decodeSecP384R1EcPublicKeyFromTls(byte[] encoded) throws GeneralSecurityException {
-        return decodeEcPublicKeyFromTls(EllipticCurve.SECP384R1, encoded);
-    }
-
-    /** @deprecated Use {@link #decodeEcPublicKeyFromTls(EllipticCurve, byte[])} with {@code EllipticCurve.SECP256R1} */
-    @Deprecated
-    public static ECPublicKey decodeSecP256R1EcPublicKeyFromTls(byte[] encoded) throws GeneralSecurityException {
-        return decodeEcPublicKeyFromTls(EllipticCurve.SECP256R1, encoded);
-    }
-
     // -------------------------------------------------------------------------
     // Validation
     // -------------------------------------------------------------------------
@@ -174,18 +162,6 @@ public final class ECKeys {
         return onCurve;
     }
 
-    /** @deprecated Use {@link #isValidPublicKey(EllipticCurve, ECPublicKey)} with {@code EllipticCurve.SECP384R1} */
-    @Deprecated
-    public static boolean isValidSecP384R1(ECPublicKey ecPublicKey) throws GeneralSecurityException {
-        return isValidPublicKey(EllipticCurve.SECP384R1, ecPublicKey);
-    }
-
-    /** @deprecated Use {@link #isValidPublicKey(EllipticCurve, ECPublicKey)} with {@code EllipticCurve.SECP256R1} */
-    @Deprecated
-    public static boolean isValidSecP256R1(ECPublicKey ecPublicKey) throws GeneralSecurityException {
-        return isValidPublicKey(EllipticCurve.SECP256R1, ecPublicKey);
-    }
-
     /**
      * Returns true if the key pair's algorithm is EC and both keys are on the expected {@code curve}.
      */
@@ -201,18 +177,6 @@ public final class ECKeys {
             // Can't interrogate the curve for unextractable PKCS11 keys; trust the public key
             return isValidPublicKey(curve, ecPublicKey) && Crypto.isECPKCS11Key(keyPair.getPrivate());
         }
-    }
-
-    /** @deprecated Use {@link #isECKeyPairForCurve(EllipticCurve, KeyPair)} with {@code EllipticCurve.SECP384R1} */
-    @Deprecated
-    public static boolean isECSecp384r1(KeyPair keyPair) throws GeneralSecurityException {
-        return isECKeyPairForCurve(EllipticCurve.SECP384R1, keyPair);
-    }
-
-    /** @deprecated Use {@link #isECKeyPairForCurve(EllipticCurve, KeyPair)} with {@code EllipticCurve.SECP256R1} */
-    @Deprecated
-    public static boolean isECSecp256r1(KeyPair keyPair) throws GeneralSecurityException {
-        return isECKeyPairForCurve(EllipticCurve.SECP256R1, keyPair);
     }
 
     /**
@@ -233,18 +197,6 @@ public final class ECKeys {
             AlgorithmParameters.getInstance(KeyAlgorithm.Algorithm.EC.name(), "SunEC");
         params.init(key.getParams());
         return params.getParameterSpec(ECGenParameterSpec.class).getName();
-    }
-
-    /** @deprecated Use {@link #getCurve(ECKey)} and compare to {@code EllipticCurve.SECP384R1} */
-    @Deprecated
-    public static boolean isEcSecp384r1Curve(ECKey key) throws GeneralSecurityException {
-        return getCurve(key) == EllipticCurve.SECP384R1;
-    }
-
-    /** @deprecated Use {@link #getCurve(ECKey)} and compare to {@code EllipticCurve.SECP256R1} */
-    @Deprecated
-    public static boolean isEcSecp256r1Curve(ECKey key) throws GeneralSecurityException {
-        return getCurve(key) == EllipticCurve.SECP256R1;
     }
 
     /**
@@ -306,7 +258,8 @@ public final class ECKeys {
     static ECPrivateKey loadECPrivateKey(String openSslPem) throws GeneralSecurityException, IOException {
 
         KeyPair keyPair = PemTools.loadKeyPair(openSslPem);
-        if (!isECSecp384r1(keyPair)) {
+        var curve = EllipticCurve.forPubKey(keyPair.getPublic());
+        if (!isECKeyPairForCurve(curve, keyPair)) {
             throw new IllegalArgumentException("Not EC key pair");
         }
 
