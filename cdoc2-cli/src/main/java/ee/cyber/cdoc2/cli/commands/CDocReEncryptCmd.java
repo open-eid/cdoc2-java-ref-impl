@@ -88,7 +88,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
     @CommandLine.Option(names = {"-c", "--crypto-stick"},
         description = "Specify what type of crypto stick is used, allowed values: "
-            + "[SECP256R1, SECP384R1, RSA3072, RSA4096]")
+            + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
 
     @Override

@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.1.1] Adding support for `secp521r1` elliptic curve (2026-02-xx)
+
+### Features
+* Implement support for `secp521r1` elliptic curve.
+
+### Maven package versions:
+```
+cdoc2 2.0.0
+cdoc2-schema 2.1.0-SNAPSHOT
+cdoc2-lib 3.3.0-SNAPSHOT
+cdoc2-client 2.1.0-SNAPSHOT
+cdoc2-cli 1.9.0-SNAPSHOT
+```
+
 ## [3.1.0] Adding support for RSA based crypto sticks (2026-01-30)
 
 ### Features

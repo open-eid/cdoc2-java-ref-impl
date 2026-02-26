@@ -11,6 +11,7 @@ import java.util.Locale;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.custom.sec.SecP256R1Curve;
 import org.bouncycastle.math.ec.custom.sec.SecP384R1Curve;
+import org.bouncycastle.math.ec.custom.sec.SecP521R1Curve;
 
 
 /**
@@ -26,18 +27,25 @@ public enum EllipticCurve {
         null,
         ee.cyber.cdoc2.fbs.recipients.EllipticCurve.UNKNOWN
     ),
-    SECP384R1(
-        "secp384r1",
-        "1.3.132.0.34",
-        384 / 8, new SecP384R1Curve(),
-        ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1
-    ),
     SECP256R1(
         "secp256r1",
         "1.2.840.10045.3.1.7",
         256 / 8,
         new SecP256R1Curve(),
         ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1
+    ),
+    SECP384R1(
+        "secp384r1",
+        "1.3.132.0.34",
+        384 / 8, new SecP384R1Curve(),
+        ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1
+    ),
+    SECP521R1(
+        "secp521r1",
+            "1.3.132.0.35",
+            521 / 8 + 1,
+            new SecP521R1Curve(),
+    ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp521r1
     );
 
     private final String name;
@@ -98,8 +106,9 @@ public enum EllipticCurve {
 
     public static EllipticCurve forValue(byte value) throws NoSuchAlgorithmException {
         return switch (value) {
-            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1 -> SECP384R1;
             case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp256r1 -> SECP256R1;
+            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp384r1 -> SECP384R1;
+            case ee.cyber.cdoc2.fbs.recipients.EllipticCurve.secp521r1 -> SECP521R1;
             default -> throw new NoSuchAlgorithmException("Unknown EC curve value " + value);
         };
     }

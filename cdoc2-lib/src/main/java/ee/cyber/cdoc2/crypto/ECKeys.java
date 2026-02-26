@@ -1,8 +1,11 @@
 package ee.cyber.cdoc2.crypto;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -13,6 +16,9 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -23,6 +29,8 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 import org.bouncycastle.jce.ECNamedCurveTable;
@@ -34,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import static ee.cyber.cdoc2.crypto.EllipticCurve.forPubKey;
 
 /**
- * EC key generation, encoding and decoding. Supports secp384r1 and secp256r1.
+ * EC key generation, encoding and decoding. Supports secp256r1, secp384r1 and secp521r1.
  */
 @SuppressWarnings("squid:S6706")
 public final class ECKeys {
@@ -265,6 +273,28 @@ public final class ECKeys {
 
         return (ECPrivateKey)keyPair.getPrivate();
     }
+
+    /**
+     * Load EC public keys from certificate files
+     * @param certDerFiles x509 certificates
+     * @return ECPublicKeys loaded from certificates
+     * @throws CertificateException if cert file format is invalid
+     * @throws IOException if error happens when reading certDerFiles
+     */
+    public static List<ECPublicKey> loadCertKeys(File[] certDerFiles) throws CertificateException, IOException {
+        List<ECPublicKey> list = new LinkedList<>();
+        if (certDerFiles != null) {
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            for (File f : certDerFiles) {
+                InputStream in = Files.newInputStream(f.toPath());
+                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
+                ECPublicKey ecPublicKey = (ECPublicKey) cert.getPublicKey();
+                list.add(ecPublicKey);
+            }
+        }
+        return list;
+    }
+
 
     // -------------------------------------------------------------------------
     // Private helpers
