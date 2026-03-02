@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.1.1] Bug fixes (2026-03-02)
+* Fixed a bug causing the DirectPKCS11Wrapper to fail on Windows.
+* Do not require application.properties for offline RSA decryption.
+
 ## [3.1.0] Adding support for RSA based crypto sticks (2026-01-30)
 
 ### Features
