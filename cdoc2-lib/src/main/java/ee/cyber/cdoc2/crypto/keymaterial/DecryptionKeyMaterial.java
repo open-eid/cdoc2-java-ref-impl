@@ -51,7 +51,11 @@ public interface DecryptionKeyMaterial {
     }
 
     static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair) {
-        return new KeyPairDecryptionKeyMaterial(recipientKeyPair);
+        return fromKeyPair(recipientKeyPair, null);
+    }
+
+    static DecryptionKeyMaterial fromKeyPair(KeyPair recipientKeyPair, Integer slot) {
+        return new KeyPairDecryptionKeyMaterial(recipientKeyPair, slot);
     }
 
     static DecryptionKeyMaterial fromAuthMeans(

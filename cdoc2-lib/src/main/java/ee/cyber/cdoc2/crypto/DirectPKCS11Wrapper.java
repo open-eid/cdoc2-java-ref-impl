@@ -1,8 +1,8 @@
 package ee.cyber.cdoc2.crypto;
 
 import java.util.Arrays;
-import java.util.Properties;
 import ee.cyber.cdoc2.config.PropertiesLoader;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 //CHECKSTYLE:OFF
 import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.CK_ATTRIBUTE.DECRYPT_TRUE;
@@ -11,8 +11,6 @@ import static sun.security.pkcs11.wrapper.PKCS11Constants.CKM_RSA_PKCS_OAEP;
 //CHECKSTYLE:ON
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
-import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.getSlotOrDefault;
-import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.loadPkcs11LibPath;
 
 /**
  * Utility class for performing RSA OAEP decryption via a direct PKCS#11 wrapper.
@@ -35,7 +33,7 @@ import static ee.cyber.cdoc2.config.KeyCapsuleClientConfigurationProps.loadPkcs1
  *   <li>Error handling is intentionally minimal; any PKCS#11 failure results in a {@link RuntimeException}.</li>
  * </ul>
  * <p>
- * The PKCS#11 library path, slot selection, and other parameters are resolved from
+ * The PKCS#11 library path, slot selection, and other parameters are resolved from system and
  * application configuration properties.
  */
 public final class DirectPKCS11Wrapper {
@@ -48,10 +46,8 @@ public final class DirectPKCS11Wrapper {
     private DirectPKCS11Wrapper() {
     }
 
-    public static byte[] rsaDecryptPKCS11(byte[] encrypted) {
-        var properties = loadProperties();
-        var slot = getSlotOrDefault(properties);
-        var pkcs11LibraryPath = loadPkcs11LibPath(properties.getProperty(PKCS11_LIBRARY_PROPERTY, null));
+    public static byte[] rsaDecryptPKCS11(byte[] encrypted, Integer slot) {
+        var pkcs11LibraryPath = getPkcs11LibraryPath();
 
         try {
             var p11 = PKCS11.getInstance(pkcs11LibraryPath, "C_GetFunctionList", null, false);
@@ -71,9 +67,25 @@ public final class DirectPKCS11Wrapper {
         }
     }
 
-    private static Properties loadProperties() {
-        String propertiesFilePath = System.getProperty(KEY_CAPSULE_PROPERTIES);
-        return PropertiesLoader.loadProperties(propertiesFilePath);
+    private static String getPkcs11LibraryPath() {
+        // try to load from System Properties (initialized using -D)
+        String pkcs11Library = System.getProperty(PKCS11_LIBRARY_PROPERTY);
+        if (pkcs11Library != null) {
+            return pkcs11Library;
+        }
+
+        // try loading from properties file
+        try {
+            String propertiesFilePath = System.getProperty(KEY_CAPSULE_PROPERTIES);
+            var properties = PropertiesLoader.loadProperties(propertiesFilePath);
+            return properties.getProperty(PKCS11_LIBRARY_PROPERTY, null);
+        } catch (ConfigurationLoadingException e) {
+            throw new ConfigurationLoadingException(
+                "If the system property " + PKCS11_LIBRARY_PROPERTY + " is not set, "
+                    + "a properties file must be provided.",
+                e
+            );
+        }
     }
 
     private static byte[] decryptData(

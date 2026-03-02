@@ -3,6 +3,7 @@ package ee.cyber.cdoc2.cli.commands;
 import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
 import ee.cyber.cdoc2.CDocDecrypter;
+import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import java.io.File;
 import java.nio.file.InvalidPathException;
@@ -73,6 +74,12 @@ public class CDocListCmd implements Callable<Void> {
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
+        }
+
+        if (this.slot != null) {
+            System.setProperty(
+                Cdoc2ConfigurationProperties.PKCS11_SLOT, String.valueOf(this.slot)
+            );
         }
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
