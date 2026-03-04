@@ -5,6 +5,10 @@
 ### Features
 * Implement support for `secp521r1` elliptic curve.
 
+### Bug Fixes
+* Fixed a bug causing key alias to be ignored for RSA crypto sticks
+* Add support for Zetes LDAP
+
 ### Maven package versions:
 ```
 cdoc2 3.1.2

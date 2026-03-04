@@ -43,6 +43,8 @@ public final class DirectPKCS11Wrapper {
     private static final long CKG_MGF1_SHA1 = 0x00000002L;
     private static final long CKZ_DATA_SPECIFIED = 0x00000001L;
 
+    private static final long FINDOBJECTS_MAX = 100;
+
     private DirectPKCS11Wrapper() {
     }
 
@@ -146,11 +148,11 @@ public final class DirectPKCS11Wrapper {
         long session
     ) throws PKCS11Exception {
         p11.C_FindObjectsInit(session, new CK_ATTRIBUTE[]{DECRYPT_TRUE});
-        var objects = p11.C_FindObjects(session, 100L);
+        var objects = p11.C_FindObjects(session, FINDOBJECTS_MAX);
         p11.C_FindObjectsFinal(session);
 
         if (objects.length == 0) {
-            throw new RuntimeException("No decryptable key objects found on the token.");
+            throw new RuntimeException("No decryption key objects found on the token.");
         }
         if (objects.length > 1) {
             throw new RuntimeException(
@@ -172,7 +174,7 @@ public final class DirectPKCS11Wrapper {
             new CK_ATTRIBUTE(PKCS11Constants.CKA_CLASS, PKCS11Constants.CKO_CERTIFICATE),
             new CK_ATTRIBUTE(PKCS11Constants.CKA_LABEL, alias.toCharArray())
         });
-        var certObjects = p11.C_FindObjects(session, 10L);
+        var certObjects = p11.C_FindObjects(session, FINDOBJECTS_MAX);
         p11.C_FindObjectsFinal(session);
 
         if (certObjects.length == 0) {
@@ -189,7 +191,7 @@ public final class DirectPKCS11Wrapper {
             new CK_ATTRIBUTE(PKCS11Constants.CKA_CLASS, PKCS11Constants.CKO_PRIVATE_KEY),
             new CK_ATTRIBUTE(PKCS11Constants.CKA_ID, ckaId)
         });
-        var keyObjects = p11.C_FindObjects(session, 10L);
+        var keyObjects = p11.C_FindObjects(session, FINDOBJECTS_MAX);
         p11.C_FindObjectsFinal(session);
 
         if (keyObjects.length == 0) {

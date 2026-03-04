@@ -1,7 +1,7 @@
 package ee.cyber.cdoc2.crypto;
 
+import ee.cyber.cdoc2.util.EstEidLdapUtil;
 import ee.cyber.cdoc2.util.Resources;
-import ee.cyber.cdoc2.util.SkLdapUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -263,12 +263,12 @@ public final class PemTools {
      * @return certificate data with few parameters
      * @throws CertificateException
      */
-    public static SkLdapUtil.CertificateData loadCertKeyWithLabel(InputStream certIs)
+    public static EstEidLdapUtil.CertificateData loadCertKeyWithLabel(InputStream certIs)
         throws CertificateException {
 
         var cert = loadCertificate(certIs);
         PublicKey publicKey = cert.getPublicKey();
-        SkLdapUtil.CertificateData certificateData = SkLdapUtil.getKeyLabel(cert);
+        EstEidLdapUtil.CertificateData certificateData = EstEidLdapUtil.getKeyLabel(cert);
 
         String certFingerprint = getCertFingerprint(cert);
 
@@ -296,14 +296,14 @@ public final class PemTools {
      * @throws CertificateException
      * @throws IOException
      */
-    public static List<SkLdapUtil.CertificateData> loadCertKeysWithLabel(File[] certFiles)
+    public static List<EstEidLdapUtil.CertificateData> loadCertKeysWithLabel(File[] certFiles)
             throws CertificateException, IOException {
 
-        List<SkLdapUtil.CertificateData> certificateData = new ArrayList<>();
+        List<EstEidLdapUtil.CertificateData> certificateData = new ArrayList<>();
         if (certFiles != null) {
             for (File f : certFiles) {
                 InputStream in = Files.newInputStream(f.toPath());
-                SkLdapUtil.CertificateData data = loadCertKeyWithLabel(in);
+                EstEidLdapUtil.CertificateData data = loadCertKeyWithLabel(in);
                 data.setFile(f);
                 certificateData.add(data);
             }

@@ -3,17 +3,26 @@ package ee.cyber.cdoc2.crypto.keymaterial.encrypt;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.util.EstEidLdapUtil;
 import ee.cyber.cdoc2.util.SkLdapUtil;
+import ee.cyber.cdoc2.util.ZetesLdapUtil;
 
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createEIdKeyLabelParams;
@@ -21,7 +30,7 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 
 
 /**
- * Class for creating collection of EncryptionKeyMaterial from Estonian ID codes. Will use SK LDAP to download
+ * Class for creating collection of EncryptionKeyMaterial from Estonian ID codes. Will use SK and Zetes LDAP to download
  * certificates.
  * This class is Estonian ID and SK ID solutions specific. Use to create EncryptionKeyMaterial from Estonian ID codes or
  * use as an example to download from custom identity/certificate provider.
@@ -30,18 +39,19 @@ import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
  */
 public class EstEncKeyMaterialBuilder {
 
+    private static final Logger log = LoggerFactory.getLogger(EstEncKeyMaterialBuilder.class);
+
     private final List<EncryptionKeyMaterial> recipients = new LinkedList<>();
 
     /**
-     * Download certificate from SK LDAP server and create PublicKeyEncryptionKeyMaterial from it.
+     * Download certificate from SK or Zetes LDAP server and create PublicKeyEncryptionKeyMaterial from it.
      * @param identificationCodes Estonian national personal identifier (isikukood)
      * @return the list of EncryptionKeyMaterial
      */
     public EstEncKeyMaterialBuilder fromCertDirectory(String[] identificationCodes)
         throws CertificateException, NamingException {
 
-        List<SkLdapUtil.CertificateData> certData
-            = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
+        List<EstEidLdapUtil.CertificateData> certData = getCertData(identificationCodes);
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
             .filter(entry -> ECKeys.isSupported(entry.getPublicKey()))
             .map(cd -> {
@@ -55,6 +65,38 @@ public class EstEncKeyMaterialBuilder {
         recipients.addAll(keyMaterials);
 
         return this;
+    }
+
+    private List<EstEidLdapUtil.CertificateData> getCertData(
+        String[] identificationCodes
+    ) throws NamingException, CertificateException {
+        if (identificationCodes == null) {
+            return Collections.emptyList();
+        }
+
+        List<EstEidLdapUtil.CertificateData> allCertData = new ArrayList<>();
+
+        // Try SK LDAP (IDEMIA cards)
+        try {
+            var certData = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
+            log.debug("Found certificates from SK LDAP");
+            return certData;
+        } catch (CertificateException | NameNotFoundException e) {
+            log.debug("Failed to retrieve from SK LDAP: {}", e.getMessage());
+        }
+
+        // Try Zetes LDAP (Thales cards)
+        try {
+            var certData = ZetesLdapUtil.getPublicKeysWithLabels(identificationCodes);
+            log.debug("Found certificates from Zetes LDAP");
+            return certData;
+        } catch (CertificateException | NameNotFoundException e) {
+            log.debug("Failed to retrieve from Zetes LDAP: {}", e.getMessage());
+        }
+
+        throw new CertificateException(
+            "No certificates found in SK or Zetes LDAP"
+        );
     }
 
     /**
