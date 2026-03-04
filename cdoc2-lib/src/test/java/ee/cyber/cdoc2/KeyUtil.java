@@ -35,6 +35,16 @@ public final class KeyUtil {
         -----END EC PRIVATE KEY-----
         """;
 
+    private static final String BOB_KEY_PEM_EC521 = """
+        -----BEGIN EC PRIVATE KEY-----
+        MIHcAgEBBEIAlKN42c1ch0R/cc58kI6PC2Rudlrww5CkGkpOMeIkEgsXEoRtPmt5
+        +oPGyFFDI1C9wT7/7aKvBTThFYFQLzmXXeCgBwYFK4EEACOhgYkDgYYABACT+/eV
+        3xtrITFFpctIAAA/QXF0ha1bCb8X2nAydbdhgza0FdWznOEOWs8IZPrXpjnbPQxy
+        R0RZ4wepk2OM7Pop5AFLLoxiF6EllNLS09VRij2dqNg0e7zVjceAsdUUZUhW06m6
+        cKqQ63UtBMM87TvUgGXKhJAag1Mn2wOv0K69h7ZPTw==
+        -----END EC PRIVATE KEY-----
+        """;
+
     private KeyUtil() { }
 
     public static KeyPairGenerator getKeyPairRsaInstance() throws NoSuchAlgorithmException {
@@ -47,6 +57,10 @@ public final class KeyUtil {
 
     public static KeyPair createKeyPairEc256() throws Exception {
         return PemTools.loadKeyPair(BOB_KEY_PEM_EC256);
+    }
+
+    public static KeyPair createKeyPairEc521() throws Exception {
+        return PemTools.loadKeyPair(BOB_KEY_PEM_EC521);
     }
 
     public static PublicKey createPublicKey() throws Exception {

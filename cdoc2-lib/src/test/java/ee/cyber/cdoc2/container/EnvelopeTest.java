@@ -92,8 +92,7 @@ import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
-import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP256R1;
-import static ee.cyber.cdoc2.crypto.EllipticCurve.SECP384R1;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
@@ -490,6 +489,13 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
+    void testEC521Container(@TempDir Path tempDir) throws Exception {
+        KeyPair bobKeyPair = createKeyPairEc521();
+        testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
+            "testECContainer", null);
+    }
+
+    @Test
     void testEC384ServerScenario(@TempDir Path tempDir) throws Exception {
         KeyPair keyPair = createKeyPairEc384();
         testECServerScenario(keyPair, SECP384R1, tempDir);
@@ -500,6 +506,13 @@ class EnvelopeTest implements TestLifecycleLogger {
         KeyPair keyPair = createKeyPairEc256();
         testECServerScenario(keyPair, SECP256R1, tempDir);
     }
+
+    @Test
+    void testEC521ServerScenario(@TempDir Path tempDir) throws Exception {
+        KeyPair keyPair = createKeyPairEc521();
+        testECServerScenario(keyPair, SECP521R1, tempDir);
+    }
+
 
     private void testECServerScenario(
         KeyPair keyPair, EllipticCurve ellipticCurve, @TempDir Path tempDir
@@ -527,6 +540,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         var capsuleType = switch (ellipticCurve) {
             case SECP256R1 -> Capsule.CapsuleTypeEnum.ECC_SECP256R1;
             case SECP384R1 -> Capsule.CapsuleTypeEnum.ECC_SECP384R1;
+            case SECP521R1 -> Capsule.CapsuleTypeEnum.ECC_SECP521R1;
             default -> throw new RuntimeException(
                 "Invalid elliptic curve: " + ellipticCurve.getName()
             );
