@@ -13,6 +13,7 @@ import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.crypto.Crypto;
+import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.EllipticCurve;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
@@ -274,14 +275,14 @@ public final class RecipientFactory {
         }
 
         try {
-            if (!curve.isValidKey(recipientPubKey)) {
+            if (!ECKeys.isValidPublicKey(curve, recipientPubKey)) {
                 throw new InvalidKeyException("ECKey not valid");
             }
         } catch (GeneralSecurityException e) {
             throw new InvalidKeyException("ECKey not valid");
         }
 
-        KeyPair senderEcKeyPair = curve.generateEcKeyPair();
+        KeyPair senderEcKeyPair = ECKeys.generateEcKeyPair(curve);
         byte[] kek = Crypto.deriveKeyEncryptionKey(
             senderEcKeyPair, recipientPubKey, Crypto.KEK_LEN_BYTES
         );

@@ -268,7 +268,7 @@ public class CDocBuilder {
         try {
             EllipticCurve curve = retrieveEllipticCurve(ecPubKey, encoded);
 
-            if (!curve.isValidKey(ecPubKey)) {
+            if (!ECKeys.isValidPublicKey(curve, ecPubKey)) {
                 log.error("EC pub key is not valid for curve {}. EC public key={}",
                     curve.getName(), encoded);
                 throw new CDocValidationException("Recipient key not valid");

@@ -15,7 +15,7 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.crypto.EllipticCurve;
+import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
@@ -52,7 +52,7 @@ public class EstEncKeyMaterialBuilder {
 
         List<EstEidLdapUtil.CertificateData> certData = getCertData(identificationCodes);
         List<EncryptionKeyMaterial> keyMaterials = certData.stream()
-            .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
+            .filter(entry -> ECKeys.isSupported(entry.getPublicKey()))
             .map(cd -> {
                 KeyLabelParams keyLabelParams = createEIdKeyLabelParams(
                     cd.getKeyLabel(), cd.getSerialNumber(), cd.getKeyLabelType()

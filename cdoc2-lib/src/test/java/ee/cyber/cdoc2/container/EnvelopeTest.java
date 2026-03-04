@@ -84,17 +84,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
+import static ee.cyber.cdoc2.KeyUtil.*;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
-import static ee.cyber.cdoc2.KeyUtil.createKeyPair;
-import static ee.cyber.cdoc2.KeyUtil.createPublicKey;
-import static ee.cyber.cdoc2.KeyUtil.createSecretKey;
-import static ee.cyber.cdoc2.KeyUtil.getKeyPairRsaInstance;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.checkContainerDecrypt;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.createKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.getPublicKeyLabelParams;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainer;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.testContainerWithKeyShares;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
+import static ee.cyber.cdoc2.crypto.EllipticCurve.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.*;
 import static ee.cyber.cdoc2.fbs.header.Capsule.recipients_PBKDF2Capsule;
 import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
@@ -477,15 +475,48 @@ class EnvelopeTest implements TestLifecycleLogger {
     }
 
     @Test
-    void testECContainer(@TempDir Path tempDir) throws Exception {
-        KeyPair bobKeyPair = createKeyPair();
+    void testEC384Container(@TempDir Path tempDir) throws Exception {
+        KeyPair bobKeyPair = createKeyPairEc384();
         testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
             "testECContainer", null);
     }
 
     @Test
-    void testECServerScenario(@TempDir Path tempDir) throws Exception {
-        KeyPair keyPair = createKeyPair();
+    void testEC256Container(@TempDir Path tempDir) throws Exception {
+        KeyPair bobKeyPair = createKeyPairEc256();
+        testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
+            "testECContainer", null);
+    }
+
+    @Test
+    void testEC521Container(@TempDir Path tempDir) throws Exception {
+        KeyPair bobKeyPair = createKeyPairEc521();
+        testContainer(tempDir, DecryptionKeyMaterial.fromKeyPair(bobKeyPair),
+            "testECContainer", null);
+    }
+
+    @Test
+    void testEC384ServerScenario(@TempDir Path tempDir) throws Exception {
+        KeyPair keyPair = createKeyPairEc384();
+        testECServerScenario(keyPair, SECP384R1, tempDir);
+    }
+
+    @Test
+    void testEC256ServerScenario(@TempDir Path tempDir) throws Exception {
+        KeyPair keyPair = createKeyPairEc256();
+        testECServerScenario(keyPair, SECP256R1, tempDir);
+    }
+
+    @Test
+    void testEC521ServerScenario(@TempDir Path tempDir) throws Exception {
+        KeyPair keyPair = createKeyPairEc521();
+        testECServerScenario(keyPair, SECP521R1, tempDir);
+    }
+
+
+    private void testECServerScenario(
+        KeyPair keyPair, EllipticCurve ellipticCurve, @TempDir Path tempDir
+    ) throws Exception {
         String transactionId = "KC1234567890123456789011";
 
         when(capsuleClientMock.getServerIdentifier()).thenReturn("mock_ec_server");
@@ -506,12 +537,24 @@ class EnvelopeTest implements TestLifecycleLogger {
         verify(capsuleClientMock, times(1)).storeCapsule(any());
         verify(capsuleClientMock, times(1)).getCapsule(transactionId);
 
-        assertEquals(Capsule.CapsuleTypeEnum.ECC_SECP384R1, capsuleData.getCapsuleType());
-        Assertions.assertEquals(keyPair.getPublic(), EllipticCurve.SECP384R1.decodeFromTls(
-            ByteBuffer.wrap(capsuleData.getRecipientId())));
-        assertTrue(EllipticCurve.SECP384R1.isValidKey(
-            EllipticCurve.SECP384R1.decodeFromTls(
-                ByteBuffer.wrap(capsuleData.getEphemeralKeyMaterial())))
+        var capsuleType = switch (ellipticCurve) {
+            case SECP256R1 -> Capsule.CapsuleTypeEnum.ECC_SECP256R1;
+            case SECP384R1 -> Capsule.CapsuleTypeEnum.ECC_SECP384R1;
+            case SECP521R1 -> Capsule.CapsuleTypeEnum.ECC_SECP521R1;
+            default -> throw new RuntimeException(
+                "Invalid elliptic curve: " + ellipticCurve.getName()
+            );
+        };
+        assertEquals(capsuleType, capsuleData.getCapsuleType());
+        Assertions.assertEquals(
+            keyPair.getPublic(),
+            ECKeys.decodeEcPublicKeyFromTls(ellipticCurve, capsuleData.getRecipientId())
+        );
+        assertTrue(
+            ECKeys.isValidPublicKey(
+                ellipticCurve,
+                ECKeys.decodeEcPublicKeyFromTls(ellipticCurve, capsuleData.getEphemeralKeyMaterial())
+            )
         );
     }
 
@@ -839,7 +882,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     @DisplayName("Check that already created files are removed, when mac check in ChaCha20Poly1305 fails")
     void testContainerWrongPoly1305Mac(@TempDir Path tempDir) throws Exception {
-        KeyPair bobKeyPair = createKeyPair();
+        KeyPair bobKeyPair = createKeyPairEc384();
         UUID uuid = UUID.randomUUID();
         String payloadFileName = "payload-" + uuid + ".txt";
         String payloadData = "payload-" + uuid;
@@ -1154,7 +1197,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Path outDir = tempDir.resolve("testContainer-" + uuid);
         Files.createDirectories(outDir);
 
-        KeyPair bobKeyPair = createKeyPair();
+        KeyPair bobKeyPair = createKeyPairEc384();
 
         ECPublicKey bobPubKey = (ECPublicKey) bobKeyPair.getPublic();
 
@@ -1170,7 +1213,7 @@ class EnvelopeTest implements TestLifecycleLogger {
                         .fromPublicKey(bobPubKey, bobKeyLabelParams),
                     EncryptionKeyMaterial
                         .fromPublicKey(
-                            ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
+                            ECKeys.generateEcKeyPair(SECP384R1).getPublic(),
                             getPublicKeyLabelParams()
                         )
                 ), null, null
@@ -1196,7 +1239,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Map<PublicKey, String> keyLabelMap = new HashMap<>();
         Instant start = Instant.now();
         for  (int i = 1; i < maxRecipientsNum; i++) {
-            keyLabelMap.put(ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(), "longHeader");
+            keyLabelMap.put(ECKeys.generateEcKeyPair(SECP384R1).getPublic(), "longHeader");
         }
         keyLabelMap.put(bobPubKey, "_bob_key_");
 
@@ -1224,7 +1267,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         recipients.add(
             EncryptionKeyMaterial
                 .fromPublicKey(
-                    ECKeys.generateEcKeyPair(ECKeys.SECP_384_R_1).getPublic(),
+                    ECKeys.generateEcKeyPair(SECP384R1).getPublic(),
                     getPublicKeyLabelParams()
                 )
         );

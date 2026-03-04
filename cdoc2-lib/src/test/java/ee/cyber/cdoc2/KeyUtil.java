@@ -17,12 +17,31 @@ import ee.cyber.cdoc2.crypto.PemTools;
 public final class KeyUtil {
 
     @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
-    private static final String BOB_KEY_PEM = """
+    private static final String BOB_KEY_PEM_EC384 = """
         -----BEGIN EC PRIVATE KEY-----
         MIGkAgEBBDAFxoHAdX8mU9cjiXOy46Gljmongxto0nHwRQs5cb93vIcysAaYLmhL
         mH4DPqnSXJWgBwYFK4EEACKhZANiAAR5Yacpp5H4aBAIxkDtdBXcw/BFyMNEQu4B
         LqnEv1cUVHROnhw3hAW63F3H2PI93ZzB/BT6+C+gOLt3XkCT/H3C9X1ZktCd5lS2
         BmC8zN4UciwrTb68gt4ylKUCd5g30KY=
+        -----END EC PRIVATE KEY-----
+        """;
+
+    @SuppressWarnings({"checkstyle:OperatorWrap", "squid:S6706"})
+    private static final String BOB_KEY_PEM_EC256 = """
+        -----BEGIN EC PRIVATE KEY-----
+        MHcCAQEEIELeTkTT8cENlN9EBk0lEYpJ8YUO984+5Xqf0HEqAfWMoAoGCCqGSM49
+        AwEHoUQDQgAEnfHV0tndYo3MjcPcw3KL6JxjoLO44deGTfBJ9CxhLRsctVJYX3y/
+        N0snT9m9Y1AB/An9bD+rpDrVIeNIupEahg==
+        -----END EC PRIVATE KEY-----
+        """;
+
+    private static final String BOB_KEY_PEM_EC521 = """
+        -----BEGIN EC PRIVATE KEY-----
+        MIHcAgEBBEIAlKN42c1ch0R/cc58kI6PC2Rudlrww5CkGkpOMeIkEgsXEoRtPmt5
+        +oPGyFFDI1C9wT7/7aKvBTThFYFQLzmXXeCgBwYFK4EEACOhgYkDgYYABACT+/eV
+        3xtrITFFpctIAAA/QXF0ha1bCb8X2nAydbdhgza0FdWznOEOWs8IZPrXpjnbPQxy
+        R0RZ4wepk2OM7Pop5AFLLoxiF6EllNLS09VRij2dqNg0e7zVjceAsdUUZUhW06m6
+        cKqQ63UtBMM87TvUgGXKhJAag1Mn2wOv0K69h7ZPTw==
         -----END EC PRIVATE KEY-----
         """;
 
@@ -32,12 +51,20 @@ public final class KeyUtil {
         return KeyPairGenerator.getInstance(KeyAlgorithm.Algorithm.RSA.name());
     }
 
-    public static KeyPair createKeyPair() throws Exception {
-        return PemTools.loadKeyPair(BOB_KEY_PEM);
+    public static KeyPair createKeyPairEc384() throws Exception {
+        return PemTools.loadKeyPair(BOB_KEY_PEM_EC384);
+    }
+
+    public static KeyPair createKeyPairEc256() throws Exception {
+        return PemTools.loadKeyPair(BOB_KEY_PEM_EC256);
+    }
+
+    public static KeyPair createKeyPairEc521() throws Exception {
+        return PemTools.loadKeyPair(BOB_KEY_PEM_EC521);
     }
 
     public static PublicKey createPublicKey() throws Exception {
-        return createKeyPair().getPublic();
+        return createKeyPairEc384().getPublic();
     }
 
     public static SecretKey createSecretKey() throws Exception {

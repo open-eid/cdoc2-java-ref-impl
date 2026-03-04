@@ -1,8 +1,22 @@
 # Changelog
 
-## [3.1.2] Bug fixes (2026-03-xx)
+## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-xx)
+
+### Features
+* Implement support for `secp521r1` elliptic curve.
+
+### Bug Fixes
 * Fixed a bug causing key alias to be ignored for RSA crypto sticks
 * Add support for Zetes LDAP
+
+### Maven package versions:
+```
+cdoc2 3.1.2
+cdoc2-schema 2.1.0-SNAPSHOT
+cdoc2-lib 3.3.0-SNAPSHOT
+cdoc2-client 2.1.0-SNAPSHOT
+cdoc2-cli 1.9.0-SNAPSHOT
+```
 
 ## [3.1.1] Bug fixes (2026-03-02)
 * Fixed a bug causing the DirectPKCS11Wrapper to fail on Windows.

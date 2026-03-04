@@ -6,6 +6,7 @@ package ee.cyber.cdoc2;
 public enum CryptoStickConf {
     SECP256R1(256),
     SECP384R1(384),
+    SECP521R1(521),
     RSA3072(3072),
     RSA4096(4096);
 
@@ -16,6 +17,6 @@ public enum CryptoStickConf {
     }
 
     public int getKeySizeInBytes() {
-        return keySize / 8;
+        return (int) Math.ceil(keySize / 8.0);
     }
 }

@@ -44,7 +44,8 @@ class Pkcs11Test {
         );
 
         if (Crypto.isECPKCS11Key(keyPair.getPrivate())) {
-            assertTrue(EllipticCurve.SECP384R1.isValidKeyPair(keyPair));
+            var curve = EllipticCurve.forPubKey(keyPair.getPublic());
+            assertTrue(ECKeys.isECKeyPairForCurve(curve, keyPair));
         }
     }
 
