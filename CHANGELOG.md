@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.1.2] Bug fixes (2026-03-xx)
+* Fixed a bug causing key alias to be ignored for RSA crypto sticks
+
 ## [3.1.1] Bug fixes (2026-03-02)
 * Fixed a bug causing the DirectPKCS11Wrapper to fail on Windows.
 * Do not require application.properties for offline RSA decryption.
