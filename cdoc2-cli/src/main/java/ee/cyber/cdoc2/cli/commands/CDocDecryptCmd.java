@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToSystemProps;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
@@ -79,6 +80,8 @@ public class CDocDecryptCmd implements Callable<Void> {
         if (!this.cdocFile.exists()) {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
+
+        assignClientConfValuesToSystemProps(this.slot, this.keyAlias);
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)

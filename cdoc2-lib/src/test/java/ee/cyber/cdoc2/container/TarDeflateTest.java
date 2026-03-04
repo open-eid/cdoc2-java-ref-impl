@@ -14,6 +14,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateParameters;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -44,6 +45,13 @@ class TarDeflateTest implements TestLifecycleLogger {
     );
 
     private static final List<String> VALID_FILE_NAMES = List.of("control", "test");
+
+    @AfterEach
+    void cleanup() throws Exception {
+        // Force garbage collection to release file handles
+        System.gc();
+        Thread.sleep(100); // Give Windows time to release locks
+    }
 
     void testCreateArchive(Path tempDir) throws IOException {
         File payloadFile = tempDir.resolve("payload.txt").toFile();

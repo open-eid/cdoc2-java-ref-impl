@@ -30,4 +30,5 @@ public interface KeyCapsuleClientConfiguration {
 
     KeyStore getClientTrustStore();
 
+    String getKeyAlias();
 }

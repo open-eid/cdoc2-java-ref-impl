@@ -365,11 +365,6 @@ To find the slot for the SafeNet eToken, execute:
 pkcs11-tool --module /usr/lib/libeToken.so -L
 ```
 
-Configure the slot in the `application.properties`:
-```
-ee.cyber.cdoc2.pkcs11.slot=1
-```
-
 List entries on the eToken device:
 
 ```

@@ -1,6 +1,7 @@
 package ee.cyber.cdoc2.crypto.keymaterial.decrypt;
 
 import java.security.KeyPair;
+import javax.annotation.Nullable;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
 
@@ -10,9 +11,13 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 /**
  * Represents key material required for decryption with key pair.
  * @param recipientKeyPair recipient key pair
+ * @param slot (optional) smart-card slot number when overwriting default
+ * @param alias (optional) key alias
  */
 public record KeyPairDecryptionKeyMaterial(
-    KeyPair recipientKeyPair
+    KeyPair recipientKeyPair,
+    @Nullable Integer slot,
+    @Nullable String alias
 ) implements DecryptionKeyMaterial, Destroyable {
 
     @Override
