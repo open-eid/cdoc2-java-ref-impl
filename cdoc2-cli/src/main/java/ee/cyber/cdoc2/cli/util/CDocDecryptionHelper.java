@@ -68,7 +68,7 @@ public final class CDocDecryptionHelper {
         String pkcs11LibPath = System.getProperty(PKCS11_LIBRARY_PROPERTY, null);
         KeyPair keyPair =  Pkcs11Tools.loadFromPKCS11Interactively(pkcs11LibPath, slot, keyAlias, cryptoStickConf);
 
-        return DecryptionKeyMaterial.fromKeyPair(keyPair, slot);
+        return DecryptionKeyMaterial.fromKeyPair(keyPair, slot, keyAlias);
     }
 
     /**

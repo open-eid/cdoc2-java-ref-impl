@@ -2,7 +2,6 @@ package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
-import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
@@ -18,6 +17,7 @@ import java.util.concurrent.Callable;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 
+import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToSystemProps;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
@@ -81,11 +81,7 @@ public class CDocDecryptCmd implements Callable<Void> {
             throw new InvalidPathException(this.cdocFile.getAbsolutePath(), "Input CDOC file does not exist");
         }
 
-        if (this.slot != null) {
-            System.setProperty(
-                Cdoc2ConfigurationProperties.PKCS11_SLOT, String.valueOf(this.slot)
-            );
-        }
+        assignClientConfValuesToSystemProps(this.slot, this.keyAlias);
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)

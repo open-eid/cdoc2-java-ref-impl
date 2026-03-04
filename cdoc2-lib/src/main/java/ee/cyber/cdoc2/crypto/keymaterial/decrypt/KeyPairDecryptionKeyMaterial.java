@@ -12,10 +12,12 @@ import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
  * Represents key material required for decryption with key pair.
  * @param recipientKeyPair recipient key pair
  * @param slot (optional) smart-card slot number when overwriting default
+ * @param alias (optional) key alias
  */
 public record KeyPairDecryptionKeyMaterial(
     KeyPair recipientKeyPair,
-    @Nullable Integer slot
+    @Nullable Integer slot,
+    @Nullable String alias
 ) implements DecryptionKeyMaterial, Destroyable {
 
     @Override
