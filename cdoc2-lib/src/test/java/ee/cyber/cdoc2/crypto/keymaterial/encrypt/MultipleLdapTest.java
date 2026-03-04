@@ -74,8 +74,8 @@ public class MultipleLdapTest {
     @Tag("ldap")
     @Tag("net")
     void testShouldSucceedIfInZetesLdap() throws NamingException, CertificateException {
-        String skLdapId = "38001085718";
-        String[] ids = new String[]{skLdapId};
+        String zetesLdapId = "38001085718";
+        String[] ids = new String[]{zetesLdapId};
         List<EstEidLdapUtil.CertificateData> keysWithLabels =
             EstEncKeyMaterialBuilder.getCertData(
                 ids,

@@ -115,18 +115,19 @@ public class EstEncKeyMaterialBuilder {
             );
         }
 
-        // Check if found certificate count matches with provided id-codes
-        if (identificationCodes.length != allCertData.size()) {
-            List<String> missingIdCodes = new ArrayList<>();
-            for (String idCode: identificationCodes) {
-                boolean exists = allCertData.stream()
-                    .anyMatch(cert -> cert.getSerialNumber() != null
-                        && cert.getSerialNumber().contains(idCode));
+        // Check if any id-code is missing from fetched certificates
+        List<String> missingIdCodes = new ArrayList<>();
+        for (String idCode: identificationCodes) {
+            boolean exists = allCertData.stream()
+                .anyMatch(cert -> cert.getSerialNumber() != null
+                    && cert.getSerialNumber().contains(idCode));
 
-                if (!exists) {
-                    missingIdCodes.add(idCode);
-                }
+            if (!exists) {
+                missingIdCodes.add(idCode);
             }
+        }
+
+        if (!missingIdCodes.isEmpty()) {
             throw new CertificateException(
                 "The ID codes " + missingIdCodes + " were not found in SK or Zetes LDAP"
             );
