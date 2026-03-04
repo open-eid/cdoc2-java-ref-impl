@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import ee.cyber.cdoc2.crypto.EllipticCurve;
+import ee.cyber.cdoc2.crypto.ECKeys;
 import ee.cyber.cdoc2.util.SkLdapUtil;
 import ee.cyber.cdoc2.util.ZetesLdapUtil;
 
@@ -41,7 +41,7 @@ class ZetesLdapTest {
         assertFalse(keysWithLabels.isEmpty());
 
         Map<PublicKey, String> ecKeysWithLabels = keysWithLabels.stream()
-            .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
+            .filter(entry -> ECKeys.isSupported(entry.getPublicKey()))
             .collect(Collectors.toMap(
                 ZetesLdapUtil.CertificateData::getPublicKey,
                 ZetesLdapUtil.CertificateData::getKeyLabel
@@ -66,7 +66,7 @@ class ZetesLdapTest {
         assertFalse(keysWithLabels.isEmpty());
 
         Map<PublicKey, String> ecKeysWithLabels = keysWithLabels.stream()
-            .filter(entry -> EllipticCurve.isSupported(entry.getPublicKey()))
+            .filter(entry -> ECKeys.isSupported(entry.getPublicKey()))
             .collect(Collectors.toMap(
                 ZetesLdapUtil.CertificateData::getPublicKey,
                 ZetesLdapUtil.CertificateData::getKeyLabel
