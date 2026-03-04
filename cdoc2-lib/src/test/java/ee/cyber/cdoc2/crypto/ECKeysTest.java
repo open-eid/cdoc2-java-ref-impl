@@ -61,6 +61,11 @@ class ECKeysTest {
         testEcPubKeyEncodeDecode(EllipticCurve.SECP256R1);
     }
 
+    @Test
+    void testEc5P21ubKeyEncodeDecode() throws GeneralSecurityException {
+        testEcPubKeyEncodeDecode(EllipticCurve.SECP521R1);
+    }
+
     private static void testEcPubKeyEncodeDecode(EllipticCurve ellipticCurve) throws GeneralSecurityException {
         log.trace("testEcPubKeyEncodeDecode()");
 
@@ -144,6 +149,47 @@ class ECKeysTest {
         testLoadEcPrivKey(privKeyPem, expectedSecretHex);
     }
 
+    @Test
+    void testLoadEc521PrivKey() throws GeneralSecurityException, IOException {
+        String privKeyPem =
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIHcAgEBBEIAlKN42c1ch0R/cc58kI6PC2Rudlrww5CkGkpOMeIkEgsXEoRtPmt5
+                +oPGyFFDI1C9wT7/7aKvBTThFYFQLzmXXeCgBwYFK4EEACOhgYkDgYYABACT+/eV
+                3xtrITFFpctIAAA/QXF0ha1bCb8X2nAydbdhgza0FdWznOEOWs8IZPrXpjnbPQxy
+                R0RZ4wepk2OM7Pop5AFLLoxiF6EllNLS09VRij2dqNg0e7zVjceAsdUUZUhW06m6
+                cKqQ63UtBMM87TvUgGXKhJAag1Mn2wOv0K69h7ZPTw==
+                -----END EC PRIVATE KEY-----
+                """;
+
+        // openssl ec -in key.pem -text -noout
+        // read EC key
+        // Private-Key: (521 bit)
+        // priv:
+        //     00:94:a3:78:d9:cd:5c:87:44:7f:71:ce:7c:90:8e:
+        //     8f:0b:64:6e:76:5a:f0:c3:90:a4:1a:4a:4e:31:e2:
+        //     24:12:0b:17:12:84:6d:3e:6b:79:fa:83:c6:c8:51:
+        //     43:23:50:bd:c1:3e:ff:ed:a2:af:05:34:e1:15:81:
+        //     50:2f:39:97:5d:e0
+        // pub:
+        //     04:00:93:fb:f7:95:df:1b:6b:21:31:45:a5:cb:48:
+        //     00:00:3f:41:71:74:85:ad:5b:09:bf:17:da:70:32:
+        //     75:b7:61:83:36:b4:15:d5:b3:9c:e1:0e:5a:cf:08:
+        //     64:fa:d7:a6:39:db:3d:0c:72:47:44:59:e3:07:a9:
+        //     93:63:8c:ec:fa:29:e4:01:4b:2e:8c:62:17:a1:25:
+        //     94:d2:d2:d3:d5:51:8a:3d:9d:a8:d8:34:7b:bc:d5:
+        //     8d:c7:80:b1:d5:14:65:48:56:d3:a9:ba:70:aa:90:
+        //     eb:75:2d:04:c3:3c:ed:3b:d4:80:65:ca:84:90:1a:
+        //     83:53:27:db:03:af:d0:ae:bd:87:b6:4f:4f
+        // ASN1 OID: secp521r1
+        // NIST CURVE: P-521
+
+        String expectedSecretHex = "94a378d9cd5c87447f71ce7c908e8f0b646e765af0c390a41a4a4e31e22412"
+            + "0b1712846d3e6b79fa83c6c851432350bdc13effeda2af0534e11581502f39975de0";
+
+        testLoadEcPrivKey(privKeyPem, expectedSecretHex);
+    }
+
     private static void testLoadEcPrivKey(
         String privKeyPem,
         String expectedSecretHex
@@ -220,6 +266,49 @@ class ECKeysTest {
             + "b1cb552585f7cbf374b274fd9bd635001fc09fd6c3faba43ad521e348ba911a86";
 
         testLoadEcPubKey(pubKeyPem, expectedHex, EllipticCurve.SECP256R1);
+    }
+
+    @Test
+    void testLoadEc521PubKey() throws GeneralSecurityException, IOException {
+        // openssl ecparam -name secp521r1 -genkey -noout -out key.pem
+        // openssl ec -in key.pem -pubout -out public.pem
+        String pubKeyPem = """
+            -----BEGIN PUBLIC KEY-----
+            MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAk/v3ld8bayExRaXLSAAAP0FxdIWt
+            Wwm/F9pwMnW3YYM2tBXVs5zhDlrPCGT616Y52z0MckdEWeMHqZNjjOz6KeQBSy6M
+            YhehJZTS0tPVUYo9najYNHu81Y3HgLHVFGVIVtOpunCqkOt1LQTDPO071IBlyoSQ
+            GoNTJ9sDr9CuvYe2T08=
+            -----END PUBLIC KEY-----
+            """;
+
+        // openssl ec -in key.pem -text -noout
+        // read EC key
+        // Private-Key: (521 bit)
+        // priv:
+        //     00:94:a3:78:d9:cd:5c:87:44:7f:71:ce:7c:90:8e:
+        //     8f:0b:64:6e:76:5a:f0:c3:90:a4:1a:4a:4e:31:e2:
+        //     24:12:0b:17:12:84:6d:3e:6b:79:fa:83:c6:c8:51:
+        //     43:23:50:bd:c1:3e:ff:ed:a2:af:05:34:e1:15:81:
+        //     50:2f:39:97:5d:e0
+        // pub:
+        //     04:00:93:fb:f7:95:df:1b:6b:21:31:45:a5:cb:48:
+        //     00:00:3f:41:71:74:85:ad:5b:09:bf:17:da:70:32:
+        //     75:b7:61:83:36:b4:15:d5:b3:9c:e1:0e:5a:cf:08:
+        //     64:fa:d7:a6:39:db:3d:0c:72:47:44:59:e3:07:a9:
+        //     93:63:8c:ec:fa:29:e4:01:4b:2e:8c:62:17:a1:25:
+        //     94:d2:d2:d3:d5:51:8a:3d:9d:a8:d8:34:7b:bc:d5:
+        //     8d:c7:80:b1:d5:14:65:48:56:d3:a9:ba:70:aa:90:
+        //     eb:75:2d:04:c3:3c:ed:3b:d4:80:65:ca:84:90:1a:
+        //     83:53:27:db:03:af:d0:ae:bd:87:b6:4f:4f
+        // ASN1 OID: secp521r1
+        // NIST CURVE: P-521
+
+        String expectedHex = "040093fbf795df1b6b213145a5cb4800003f41717485ad5b09bf17da703275b7"
+            + "618336b415d5b39ce10e5acf0864fad7a639db3d0c72474459e307a993638cecfa"
+            + "29e4014b2e8c6217a12594d2d2d3d5518a3d9da8d8347bbcd58dc780b1d5146548"
+            + "56d3a9ba70aa90eb752d04c33ced3bd48065ca84901a835327db03afd0aebd87b64f4f";
+
+        testLoadEcPubKey(pubKeyPem, expectedHex, EllipticCurve.SECP521R1);
     }
 
     private static void testLoadEcPubKey(
@@ -316,6 +405,52 @@ class ECKeysTest {
         testLoadEcKeyPairFromPem(privKeyPem, expectedSecretHex, expectedPubHex, EllipticCurve.SECP256R1);
     }
 
+    @Test
+    void testLoadEc521KeyPairFromPem() throws GeneralSecurityException, IOException {
+        //openssl ecparam -name secp521r1 -genkey -noout -out key.pem
+        String privKeyPem =
+            """
+                -----BEGIN EC PRIVATE KEY-----
+                MIHcAgEBBEIAlKN42c1ch0R/cc58kI6PC2Rudlrww5CkGkpOMeIkEgsXEoRtPmt5
+                +oPGyFFDI1C9wT7/7aKvBTThFYFQLzmXXeCgBwYFK4EEACOhgYkDgYYABACT+/eV
+                3xtrITFFpctIAAA/QXF0ha1bCb8X2nAydbdhgza0FdWznOEOWs8IZPrXpjnbPQxy
+                R0RZ4wepk2OM7Pop5AFLLoxiF6EllNLS09VRij2dqNg0e7zVjceAsdUUZUhW06m6
+                cKqQ63UtBMM87TvUgGXKhJAag1Mn2wOv0K69h7ZPTw==
+                -----END EC PRIVATE KEY-----
+                """;
+
+        // openssl ec -in key.pem -text -noout
+        // read EC key
+        // Private-Key: (521 bit)
+        // priv:
+        //     00:94:a3:78:d9:cd:5c:87:44:7f:71:ce:7c:90:8e:
+        //     8f:0b:64:6e:76:5a:f0:c3:90:a4:1a:4a:4e:31:e2:
+        //     24:12:0b:17:12:84:6d:3e:6b:79:fa:83:c6:c8:51:
+        //     43:23:50:bd:c1:3e:ff:ed:a2:af:05:34:e1:15:81:
+        //     50:2f:39:97:5d:e0
+        // pub:
+        //     04:00:93:fb:f7:95:df:1b:6b:21:31:45:a5:cb:48:
+        //     00:00:3f:41:71:74:85:ad:5b:09:bf:17:da:70:32:
+        //     75:b7:61:83:36:b4:15:d5:b3:9c:e1:0e:5a:cf:08:
+        //     64:fa:d7:a6:39:db:3d:0c:72:47:44:59:e3:07:a9:
+        //     93:63:8c:ec:fa:29:e4:01:4b:2e:8c:62:17:a1:25:
+        //     94:d2:d2:d3:d5:51:8a:3d:9d:a8:d8:34:7b:bc:d5:
+        //     8d:c7:80:b1:d5:14:65:48:56:d3:a9:ba:70:aa:90:
+        //     eb:75:2d:04:c3:3c:ed:3b:d4:80:65:ca:84:90:1a:
+        //     83:53:27:db:03:af:d0:ae:bd:87:b6:4f:4f
+        // ASN1 OID: secp521r1
+        // NIST CURVE: P-521
+        String expectedSecretHex = "94a378d9cd5c87447f71ce7c908e8f0b646e765af0c390a41a4a4e31e22412"
+            + "0b1712846d3e6b79fa83c6c851432350bdc13effeda2af0534e11581502f39975de0";
+
+        String expectedPubHex = "040093fbf795df1b6b213145a5cb4800003f41717485ad5b09bf17da703275b7"
+            + "618336b415d5b39ce10e5acf0864fad7a639db3d0c72474459e307a993638cecfa"
+            + "29e4014b2e8c6217a12594d2d2d3d5518a3d9da8d8347bbcd58dc780b1d5146548"
+            + "56d3a9ba70aa90eb752d04c33ced3bd48065ca84901a835327db03afd0aebd87b64f4f";
+
+        testLoadEcKeyPairFromPem(privKeyPem, expectedSecretHex, expectedPubHex, EllipticCurve.SECP521R1);
+    }
+
     private static void testLoadEcKeyPairFromPem(
         String privKeyPem,
         String expectedSecretHex,
@@ -344,6 +479,11 @@ class ECKeysTest {
             case SECP256R1 ->
                 assertEquals(
                     "secp256r1 [NIST P-256,X9.62 prime256v1] (1.2.840.10045.3.1.7)",
+                    ecPrivKey.getParams().toString()
+                );
+            case SECP521R1 ->
+                assertEquals(
+                    "secp521r1 [NIST P-521] (1.3.132.0.35)",
                     ecPrivKey.getParams().toString()
                 );
             default -> throw new RuntimeException("Unknown elliptic curve");
@@ -460,6 +600,47 @@ class ECKeysTest {
             "42de4e44d3f1c10d94df44064d25118a49f1850ef7ce3ee57a9fd0712a01f58c";
         String expectedPubHex = "049df1d5d2d9dd628dcc8dc3dcc3728be89c63a0b3b8e1d7864df049f42c612d1"
             + "b1cb552585f7cbf374b274fd9bd635001fc09fd6c3faba43ad521e348ba911a86";
+
+        testLoadEcKeyPairFromPemShort(pem, expectedSecretHex, expectedPubHex);
+    }
+
+    @Test
+    void testLoadEc521KeyPairFromPemShort() throws GeneralSecurityException, IOException {
+        final String pem = """
+            -----BEGIN EC PRIVATE KEY-----
+            MFACAQEEQgCUo3jZzVyHRH9xznyQjo8LZG52WvDDkKQaSk4x4iQSCxcShG0+a3n6
+            g8bIUUMjUL3BPv/toq8FNOEVgVAvOZdd4KAHBgUrgQQAIw==
+            -----END EC PRIVATE KEY-----
+            """;
+
+        // openssl ec -in key.pem -text -noout
+        // read EC key
+        // Private-Key: (521 bit)
+        // priv:
+        //     00:94:a3:78:d9:cd:5c:87:44:7f:71:ce:7c:90:8e:
+        //     8f:0b:64:6e:76:5a:f0:c3:90:a4:1a:4a:4e:31:e2:
+        //     24:12:0b:17:12:84:6d:3e:6b:79:fa:83:c6:c8:51:
+        //     43:23:50:bd:c1:3e:ff:ed:a2:af:05:34:e1:15:81:
+        //     50:2f:39:97:5d:e0
+        // pub:
+        //     04:00:93:fb:f7:95:df:1b:6b:21:31:45:a5:cb:48:
+        //     00:00:3f:41:71:74:85:ad:5b:09:bf:17:da:70:32:
+        //     75:b7:61:83:36:b4:15:d5:b3:9c:e1:0e:5a:cf:08:
+        //     64:fa:d7:a6:39:db:3d:0c:72:47:44:59:e3:07:a9:
+        //     93:63:8c:ec:fa:29:e4:01:4b:2e:8c:62:17:a1:25:
+        //     94:d2:d2:d3:d5:51:8a:3d:9d:a8:d8:34:7b:bc:d5:
+        //     8d:c7:80:b1:d5:14:65:48:56:d3:a9:ba:70:aa:90:
+        //     eb:75:2d:04:c3:3c:ed:3b:d4:80:65:ca:84:90:1a:
+        //     83:53:27:db:03:af:d0:ae:bd:87:b6:4f:4f
+        // ASN1 OID: secp521r1
+        // NIST CURVE: P-521
+        String expectedSecretHex = "94a378d9cd5c87447f71ce7c908e8f0b646e765af0c390a41a4a4e31e22412"
+            + "0b1712846d3e6b79fa83c6c851432350bdc13effeda2af0534e11581502f39975de0";
+
+        String expectedPubHex = "040093fbf795df1b6b213145a5cb4800003f41717485ad5b09bf17da703275b7"
+            + "618336b415d5b39ce10e5acf0864fad7a639db3d0c72474459e307a993638cecfa"
+            + "29e4014b2e8c6217a12594d2d2d3d5518a3d9da8d8347bbcd58dc780b1d5146548"
+            + "56d3a9ba70aa90eb752d04c33ced3bd48065ca84901a835327db03afd0aebd87b64f4f";
 
         testLoadEcKeyPairFromPemShort(pem, expectedSecretHex, expectedPubHex);
     }
