@@ -19,7 +19,7 @@ End-user software to create/decrypt CDOC2: https://github.com/open-eid/DigiDoc4-
 
 ### CDOC2 ECDH scenario
 
-1. Sender downloads recipient's certificate from SK LDAP using recipient id (isikukood). Recipient certificate contains
+1. Sender downloads recipient's certificate from SK or Zetes LDAP using recipient id (isikukood). Recipient certificate contains
    EC public key.
 2. Sender generates EC (elliptic curve) key pair using the same EC curve as in recipient EC public key [^1]
 3. Sender derives key encryption key (KEK) using ECDH (from sender EC private key and recipient EC public key)  
@@ -70,7 +70,7 @@ RSA-OAEP is similar to ECDH scenario, with difference that KEK is generated from
 KEK is encrypted with recipient RSA public key and included into CDOC header (instead of
 sender public key).
 
-1. Sender acquires recipient's certificate from SK LDAP using recipient id or by some other means.
+1. Sender acquires recipient's certificate from SK or Zetes LDAP using recipient id or by some other means.
    Recipient certificate contains recipient RSA public key.
 2. Sender generates file master key (FMK) using HKDF extract algorithm.
 3. Sender generates encryption key (KEK) using secure random.

@@ -10,3 +10,11 @@ https://github.com/open-eid/DigiDoc4-Client/blob/f4298ad9d2fbb40cffc488bed6cf1d3
 https://github.com/open-eid/DigiDoc4-Client/blob/master/client/dialogs/AddRecipients.cpp#L474
 
 ldapsearch -H ldaps://esteid.ldap.sk.ee/ -x -b "dc=ESTEID,c=EE" "(serialNumber=PNOEE-38001085718)"
+
+# The Zetes LDAP servers
+#   test LDAP service address: ldaps://ldap-test.eidpki.ee
+#   live LDAP service address: ldaps://ldap.eidpki.ee
+
+ldapsearch -H ldaps://ldap-test.eidpki.ee -x -b "dc=ESTEID,c=EE,dc=eidpki,dc=ee" "serialNumber=PNOEE-38001085718"
+ldapsearch -H ldaps://ldap-test.eidpki.ee -x -b "dc=ESTEID,c=EE,dc=eidpki,dc=ee" "cn= JÕEORG,JAAK-KRISTJAN,38001085718"
+

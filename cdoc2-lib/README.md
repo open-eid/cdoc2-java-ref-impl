@@ -270,7 +270,7 @@ When certificate has expired there is needed to replace it with new certificate 
 ```
 
 **Note**: this works only for end user id-cards. It doesn't work for test id-cards as test-id card
-certificates are not in [SK LDAP](https://github.com/SK-EID/LDAP/wiki/Knowledge-Base). 
+certificates are not in the live LDAP servers, see [SK LDAP](https://github.com/SK-EID/LDAP/wiki/Knowledge-Base). 
 To use test id-card, extract certificate from id-card and encrypt with certificate. 
 There is no difference between real and test id-cards when decrypting.
 
@@ -341,7 +341,7 @@ String keyServerPropertiesFile = "/path/to/cdoc2-cli/conf/id.properties";
 Properties p = PropertiesLoader.loadProperties(keyServerPropertiesFile);
 KeyCapsuleClient capsuleClient = KeyCapsuleClientImpl.create(KeyCapsuleClientConfiguration.load(p), false);
 
-// download certificates from SK LDAP and creates EncryptionKeyMaterial from them 
+// download certificates from SK  or Zetes LDAP and creates EncryptionKeyMaterial from them 
 // works for Estonian ID code only, implement similar class for other national ID codes or different LDAP
 List<EncryptionKeyMaterial> recipients =
         EstEncKeyMaterialBuilder.fromCertDirectory(new String[]{identificationCode}).build();
@@ -376,7 +376,7 @@ key parts
 
 ```java
    File cdoc2FileToCreate = Paths.get("/tmp/second3.cdoc2").toFile();
-   String identificationCode = "38001085718"; // Jõeorg, replace with real id-code that is present in SK LDAP
+   String identificationCode = "38001085718"; // Jõeorg, replace with real id-code that is present in SK or Zetes LDAP
    File[] payloadFiles = new File[]{};//add some files
    
    // normally initialized through -D option to java process

@@ -270,7 +270,7 @@ java -jar target/cdoc2-cli-*.jar info -f /tmp/id.cdoc2
 
 ### Encrypting for ID-card owner
 
-cdoc2-cli can download authentication certificate (Isikutuvastus PIN1) from SK LDAP directory
+cdoc2-cli can download authentication certificate (Isikutuvastus PIN1) from SK and Zetes LDAP directory
 https://github.com/SK-EID/LDAP/wiki/Knowledge-Base
 
 To create cdoc for recipient with id code 37101010021 use:
