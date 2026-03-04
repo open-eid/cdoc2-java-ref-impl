@@ -5,7 +5,6 @@ import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import org.junit.jupiter.api.Disabled;
@@ -22,10 +21,12 @@ class ZetesLdapTest {
 
     @Test
     @Tag("ldap")
-    void shouldFailToFindMissingAuthenticationCert() {
+    void shouldFailToFindMissingAuthenticationCert() throws NamingException, CertificateException {
         // Non existent ID code
         String[] ids = new String[]{"30000000000"};
-        assertThrows(NameNotFoundException.class, () -> ZetesLdapUtil.getPublicKeysWithLabels(ids));
+        List<ZetesLdapUtil.CertificateData> keysWithLabels =
+            ZetesLdapUtil.getPublicKeysWithLabelsFromTestServer(ids);
+        assertTrue(keysWithLabels.isEmpty());
     }
 
     @Test

@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class SkLdapTest {
@@ -25,11 +24,12 @@ class SkLdapTest {
 
     @Test
     @Tag("ldap")
-    void shouldFailToFindMissingAuthenticationCert() {
+    void shouldFailToFindMissingAuthenticationCert() throws NamingException, CertificateException {
         // JAAK-KRISTJAN JÕEORG 38001085718 cert is not available from SK Ldap as he is a test
         // person and SK doesn't have test LDAP environment.
         String[] ids = new String[]{"38001085718"};
-        assertThrows(CertificateException.class, () -> SkLdapUtil.getPublicKeysWithLabels(ids));
+        List<SkLdapUtil.CertificateData> keysWithLabels =  SkLdapUtil.getPublicKeysWithLabels(ids);
+        assertTrue(keysWithLabels.isEmpty());
     }
 
     @Test

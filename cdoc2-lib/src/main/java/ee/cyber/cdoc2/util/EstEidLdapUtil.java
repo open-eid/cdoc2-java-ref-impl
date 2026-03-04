@@ -197,9 +197,10 @@ public abstract class EstEidLdapUtil {
             for (String id: ids) {
                 Map<X509Certificate, String> certs = findAuthenticationEstEidCertificates(ctx, id, config);
                 if (certs.isEmpty()) {
-                    throw new CertificateException(
-                        "Identity code " + id + " is not found at " + config.getProviderName() + " server"
+                    log.debug(
+                        "Identity code {} is not found at {} server", id, config.getProviderName()
                     );
+                    continue;
                 }
 
                 for (var certNameEntry: certs.entrySet()) {
