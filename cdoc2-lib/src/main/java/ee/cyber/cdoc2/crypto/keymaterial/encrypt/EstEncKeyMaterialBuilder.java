@@ -66,8 +66,26 @@ public class EstEncKeyMaterialBuilder {
         return this;
     }
 
-    private List<EstEidLdapUtil.CertificateData> getCertData(
+    @FunctionalInterface
+    interface LdapCertProvider {
+        List<EstEidLdapUtil.CertificateData> getCerts(String[] ids)
+            throws NamingException, CertificateException;
+    }
+
+    static List<EstEidLdapUtil.CertificateData> getCertData(
         String[] identificationCodes
+    ) throws NamingException, CertificateException {
+        return getCertData(
+            identificationCodes,
+            SkLdapUtil::getPublicKeysWithLabels,
+            ZetesLdapUtil::getPublicKeysWithLabels
+        );
+    }
+
+    static List<EstEidLdapUtil.CertificateData> getCertData(
+        String[] identificationCodes,
+        LdapCertProvider skProvider,
+        LdapCertProvider zetesProvider
     ) throws NamingException, CertificateException {
         if (identificationCodes == null) {
             return Collections.emptyList();
@@ -77,25 +95,45 @@ public class EstEncKeyMaterialBuilder {
 
         // Try SK LDAP (IDEMIA cards)
         try {
-            var certData = SkLdapUtil.getPublicKeysWithLabels(identificationCodes);
+            allCertData.addAll(skProvider.getCerts(identificationCodes));
             log.debug("Found certificates from SK LDAP");
-            return certData;
         } catch (CertificateException | NameNotFoundException e) {
             log.debug("Failed to retrieve from SK LDAP: {}", e.getMessage());
         }
 
         // Try Zetes LDAP (Thales cards)
         try {
-            var certData = ZetesLdapUtil.getPublicKeysWithLabels(identificationCodes);
+            allCertData.addAll(zetesProvider.getCerts(identificationCodes));
             log.debug("Found certificates from Zetes LDAP");
-            return certData;
         } catch (CertificateException | NameNotFoundException e) {
             log.debug("Failed to retrieve from Zetes LDAP: {}", e.getMessage());
         }
 
-        throw new CertificateException(
-            "No certificates found in SK or Zetes LDAP"
-        );
+        if (allCertData.isEmpty()) {
+            throw new CertificateException(
+                "No certificates found in SK or Zetes LDAP"
+            );
+        }
+
+        // Check if any id-code is missing from fetched certificates
+        List<String> missingIdCodes = new ArrayList<>();
+        for (String idCode: identificationCodes) {
+            boolean exists = allCertData.stream()
+                .anyMatch(cert -> cert.getSerialNumber() != null
+                    && cert.getSerialNumber().contains(idCode));
+
+            if (!exists) {
+                missingIdCodes.add(idCode);
+            }
+        }
+
+        if (!missingIdCodes.isEmpty()) {
+            throw new CertificateException(
+                "The ID codes " + missingIdCodes + " were not found in SK or Zetes LDAP"
+            );
+        }
+
+        return allCertData;
     }
 
     /**
