@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-xx)
+## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 
 ### Features
 * Implement support for `secp521r1` elliptic curve.
@@ -12,10 +12,10 @@
 ### Maven package versions:
 ```
 cdoc2 3.1.2
-cdoc2-schema 2.1.0-SNAPSHOT
-cdoc2-lib 3.3.0-SNAPSHOT
-cdoc2-client 2.1.0-SNAPSHOT
-cdoc2-cli 1.9.0-SNAPSHOT
+cdoc2-schema 2.1.0
+cdoc2-lib 3.3.0
+cdoc2-client 2.1.0
+cdoc2-cli 1.9.0
 ```
 
 ## [3.1.1] Bug fixes (2026-03-02)
