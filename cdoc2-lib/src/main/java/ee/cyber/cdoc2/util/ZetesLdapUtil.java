@@ -43,7 +43,7 @@ public final class ZetesLdapUtil extends EstEidLdapUtil {
 
         @Override
         public String getBaseDn() {
-            return "dc=ESTEID,c=EE,dc=eidpki,dc=ee";
+            return "dc=ldap,dc=eidpki,dc=ee";
         }
 
         @Override
