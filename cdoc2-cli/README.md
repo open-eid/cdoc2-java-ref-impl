@@ -278,6 +278,18 @@ To create cdoc for recipient with id code 37101010021 use:
 java -jar target/cdoc2-cli-*.jar create --file /tmp/mydoc.cdoc2 -r 37101010021 README.md
 ```
 
+[TODO: Onece the SK LDAP is updated, remove this section]: #
+> **NOTE:** Currently the SK LDAP service is using TLS_RSA_WITH_AES_256_GCM_SHA384 which is 
+> disabled by some Java Development Kit (JDK).
+>
+> If the encryption gives `javax.naming.CommunicationException: simple bind failed: esteid.ldap.sk.ee:636` error,
+> then in the `jdk/conf/security/java.security` remove the `TLS_RSA_*` in the `jdk.tls.disabledAlgorithms`.
+> 
+> A script to do it automatically:
+> ``` 
+> sed -i '/^jdk\.tls\.disabledAlgorithms=/{:loop; /\\$/{N; b loop}; s/TLS_RSA_\*,[ \t]*//g}' /usr/lib/jvm/java-17-openjdk-amd64/conf/security/java.security
+> ```
+
 
 ### Decrypting with ID-card
 
