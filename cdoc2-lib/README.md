@@ -227,7 +227,7 @@ When certificate has expired there is needed to replace it with new certificate 
         File payloadFile2 = Paths.get("some_file2.txt").toFile();
         File[] payloadFiles = new File[]{payloadFile1, payloadFile2};
         char[] password = "myPlainTextPassword".toCharArray(); // don't store password in String in production code
-        Sting keyLabel = "labelFromExample";
+        String keyLabel = "labelFromExample";
  
         EncryptionKeyMaterial km = EncryptionKeyMaterial.fromPassword(password, keyLabel);
         
@@ -243,7 +243,7 @@ When certificate has expired there is needed to replace it with new certificate 
         Path cdoc2FileToDecrypt = Paths.get("/tmp/first.cdoc2");
         Path destDir = Paths.get("/tmp");
         char[] password = "myPlainTextPassword".toCharArray(); // don't store password in String in production code
-        Sting keyLabel = "labelFromExample";
+        String keyLabel = "labelFromExample";
 
         List<String> extractedFileNames = new CDocDecrypter()
             .withCDoc(cdoc2FileToDecrypt.toFile())
@@ -259,8 +259,9 @@ When certificate has expired there is needed to replace it with new certificate 
         String identificationCode = "3..."; // your id-code
         File[] payloadFiles = new File[]{};//add some files
 
-        List<EncryptionKeyMaterial> recipients =      
-            EncryptionKeyMaterial.collectionBuilder().fromEId(new String[]{identificationCode});
+        List<EncryptionKeyMaterial> etsiRecipients = new EstEncKeyMaterialBuilder()
+            .fromCertDirectory(this.recipient.identificationCodes)
+            .build();
 
         CDocBuilder builder = new CDocBuilder()
             .withPayloadFiles(Arrays.asList(payloadFiles))
@@ -289,26 +290,27 @@ with `cdoc2-lib` verify that you can access id-card with [DigiDoc4](https://gith
         // load keys by asking pin code interactively
         KeyPair keyPair = Pkcs11Tools.loadFromPKCS11Interactively(
             "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
-            slot, 
-            alias
+            slot,
+            alias,
+            null
         );
         
         // or load keys with a given pin code
         char[] pin;
         KeyPair keyPair = Pkcs11Tools.loadFromPKCS11WithPin(
-                 "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
-                 slot,
-                 new PasswordProtection(pin),
-                 alias
+            "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
+            slot,
+            new KeyStore.PasswordProtection(pin),
+            alias
         );
-
+        
         DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(keyPair);
         
         List<String> extractedFiles = new CDocDecrypter()
-             .withCDoc(cdoc2FileToDecrypt.toFile())
-             .withRecipient(dkm)
-             .withDestinationDirectory(destDir.toFile())
-             .decrypt();
+            .withCDoc(cdoc2FileToDecrypt.toFile())
+            .withRecipient(dkm)
+            .withDestinationDirectory(destDir.toFile())
+            .decrypt();
 ```
 
 `/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so` is location of OpenSC pkcs11 driver library. Some info
@@ -341,17 +343,17 @@ String keyServerPropertiesFile = "/path/to/cdoc2-cli/conf/id.properties";
 Properties p = PropertiesLoader.loadProperties(keyServerPropertiesFile);
 KeyCapsuleClient capsuleClient = KeyCapsuleClientImpl.create(KeyCapsuleClientConfiguration.load(p), false);
 
-// download certificates from SK  or Zetes LDAP and creates EncryptionKeyMaterial from them 
+// download certificates from SK  or Zetes LDAP and creates EncryptionKeyMaterial from them
 // works for Estonian ID code only, implement similar class for other national ID codes or different LDAP
-List<EncryptionKeyMaterial> recipients =
-        EstEncKeyMaterialBuilder.fromCertDirectory(new String[]{identificationCode}).build();
+List<EncryptionKeyMaterial> recipients = new EstEncKeyMaterialBuilder()
+    .fromCertDirectory(new String[]{identificationCode}).build();
 
 CDocBuilder builder = new CDocBuilder()
         .withKeyCapsuleClient(capsuleClient) // will use server scenario
         .withPayloadFiles(Arrays.asList(payloadFiles))
         .withRecipients(recipients);
 
-        builder.buildToFile(cdoc2FileToCreate);
+builder.buildToFile(cdoc2FileToCreate);
 ```
 **Note**: `cdoc2-cli/config` contains usually several properties files. For id-card usage, use one with
 the shortest name (without `_pkcs12` or `_p12` in name).
@@ -418,7 +420,8 @@ DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromKeyPair(
         Pkcs11Tools.loadFromPKCS11Interactively(
                 "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so", // pkcs11 driver location, differs on different platforms 
                 slot,
-                alias
+                alias,
+                null
         )
 );
 
