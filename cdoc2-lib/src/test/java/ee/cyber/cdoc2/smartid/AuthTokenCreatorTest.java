@@ -23,6 +23,8 @@ import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
 import ee.cyber.cdoc2.services.Cdoc2Services;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,6 +120,7 @@ public class AuthTokenCreatorTest {
     }
 
 
+    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Test
     @Tag("net") //requires external network to connect to SID demo server
     void testCreateAuthTokenWithSID() throws Exception {

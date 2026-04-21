@@ -234,6 +234,19 @@
                             <inputSpec>${project.build.directory}/openapi/cdoc2-key-shares-openapi-${cdoc2-key-shares-openapi.version}.yaml</inputSpec>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>generate-auth-server-api-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <configOptions>
+                                <useSpringBoot3>true</useSpringBoot3>
+                            </configOptions>
+                            <!-- This should come from the Spec repo, once it is added there -->
+                           <inputSpec>${project.basedir}/src/main/resources/cdoc2-auth-server-openapi.yaml</inputSpec>
+                       </configuration>
+                   </execution>
 
                 </executions>
 

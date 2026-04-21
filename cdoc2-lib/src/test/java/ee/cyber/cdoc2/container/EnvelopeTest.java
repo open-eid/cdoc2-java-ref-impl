@@ -608,6 +608,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         );
     }
 
+    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Test
     void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
         // SID demo env that authenticates automatically
