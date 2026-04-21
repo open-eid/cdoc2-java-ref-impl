@@ -18,6 +18,8 @@ import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.services.Cdoc2Services;
+
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -84,6 +86,7 @@ class JWSSignerTest {
         -----END CERTIFICATE-----
         """;
 
+    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Tag("net")
     @Test
     void testSignature() throws JOSEException, ParseException, GeneralSecurityException {

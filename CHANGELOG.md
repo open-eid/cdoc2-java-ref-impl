@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.2.0] Support for updated Smart-ID usage (2026-04-xx)
+
+### Internal
+* Created new client Cdoc2AuthClient for the cdoc2 authentication server.
+
 ## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 
 ### Features

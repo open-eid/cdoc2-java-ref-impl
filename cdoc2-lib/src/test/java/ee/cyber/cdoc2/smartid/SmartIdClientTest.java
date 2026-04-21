@@ -7,6 +7,7 @@ import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.SmartIdAuthenticationResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +36,7 @@ public class SmartIdClientTest {
         return ClientConfigurationUtil.getSmartIdDemoEnvConfiguration();
     }
 
+    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Tag("net")
     @Test
     void successfullyAuthenticateUser() throws Exception {
