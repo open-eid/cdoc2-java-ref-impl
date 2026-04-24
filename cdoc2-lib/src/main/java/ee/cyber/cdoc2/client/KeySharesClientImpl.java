@@ -67,12 +67,26 @@ public final class KeySharesClientImpl implements KeySharesClient {
     }
 
     @Override
-    public Optional<KeyShare> getKeyShare(String shareId, String authTicket, String authTicketSignerCert)
+    public Optional<KeyShare> getKeyShare(
+        String shareId,
+        String authTicket,
+        String authTicketSignerCert,
+        String sessionToken,
+        String sessionCertificate,
+        String sidRpv3SignatureParameters
+    )
         throws ExtApiException {
 
         Optional<KeyShare> result = Optional.empty();
         try {
-            result = apiClient.getKeyShare(shareId, authTicket, authTicketSignerCert);
+            result = apiClient.getKeyShare(
+                shareId,
+                authTicket,
+                authTicketSignerCert,
+                sessionToken,
+                sessionCertificate,
+                sidRpv3SignatureParameters
+            );
         } catch (Exception e) {
             log.error("Failed to get key share", e);
             handleOpenApiException(e);

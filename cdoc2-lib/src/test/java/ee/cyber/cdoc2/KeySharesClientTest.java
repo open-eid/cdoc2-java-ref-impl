@@ -70,8 +70,12 @@ class KeySharesClientTest {
     void shouldGetCreatedKeyShare() throws ExtApiException {
         KeyShare keyShare = getKeyShare();
 
-        when(client.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare));
-        Optional<KeyShare> createdKeyShare = client.getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
+        when(
+            client.getKeyShare(any(), any(), any(), any(), any(), any())
+        ).thenReturn(Optional.of(keyShare));
+        Optional<KeyShare> createdKeyShare = client.getKeyShare(
+            SHARE_ID, AUTH_TICKET, CERT_PEM, "", "", ""
+        );
 
         assertTrue(createdKeyShare.isPresent());
         assertEquals(keyShare, createdKeyShare.get());
@@ -84,8 +88,12 @@ class KeySharesClientTest {
         when(client.storeKeyShare(any())).thenReturn(SHARE_ID);
         String shareId = client.storeKeyShare(keyShare);
 
-        when(client.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare));
-        Optional<KeyShare> createdKeyShare = client.getKeyShare(shareId, AUTH_TICKET, CERT_PEM);
+        when(
+            client.getKeyShare(any(), any(), any(), any(), any(), any())
+        ).thenReturn(Optional.of(keyShare));
+        Optional<KeyShare> createdKeyShare = client.getKeyShare(
+            shareId, AUTH_TICKET, CERT_PEM, "", "", ""
+        );
 
         assertTrue(createdKeyShare.isPresent());
         assertEquals(keyShare, createdKeyShare.get());
@@ -124,9 +132,11 @@ class KeySharesClientTest {
 
     @Test
     void shouldInvokeApiWhenGetKeyShare() throws ApiException, ExtApiException {
-        clientImpl.getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
+        clientImpl.getKeyShare(
+            SHARE_ID, AUTH_TICKET, CERT_PEM, "", "", ""
+        );
 
-        verify(apiClient, times(1)).getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM);
+        verify(apiClient, times(1)).getKeyShare(SHARE_ID, AUTH_TICKET, CERT_PEM, "", "", "");
     }
 
     @Test

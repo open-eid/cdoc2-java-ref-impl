@@ -811,8 +811,12 @@ class EnvelopeTest implements TestLifecycleLogger {
         NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
         NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
 
-        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
-        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+        when(mockKeySharesClient1.getKeyShare(
+            any(), any(), any(), any(), any(), any()
+        )).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(
+            any(), any(), any(), any(), any(), any()
+        )).thenReturn(Optional.of(keyShare2));
 
 
         when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
@@ -1477,8 +1481,12 @@ class EnvelopeTest implements TestLifecycleLogger {
         NonceResponse nonce1 = new NonceResponse().nonce("nonce01nonce01");
         NonceResponse nonce2 = new NonceResponse().nonce("nonce02nonce02");
 
-        when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
-        when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
+        when(mockKeySharesClient1.getKeyShare(
+            any(), any(), any(), any(), any(), any()
+        )).thenReturn(Optional.of(keyShare1));
+        when(mockKeySharesClient2.getKeyShare(
+            any(), any(), any(), any(), any(), any()
+        )).thenReturn(Optional.of(keyShare2));
 
         when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
         when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
