@@ -23,9 +23,15 @@ public interface KeySharesClient extends ServerClient {
     /**
      * Create server nonce for authentication signature.
      * @param shareId key share ID
+     * @param sessionToken CDOC2 session token (SDJWT)
+     * @param signingCertificate PEM encoded certificate that signed the sessionToken
      * @return NonceResponse created server nonce response
      */
-    NonceResponse createKeyShareNonce(String shareId) throws ApiException;
+    NonceResponse createKeyShareNonce(
+        String shareId,
+        String sessionToken,
+        String signingCertificate
+    ) throws ApiException;
 
     /**
      * Get key share by share ID.

@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 class KeySharesClientTest {
 
     private static final String AUTH_TICKET = "";
+    private static final String SESSION_TOKEN = "";
     private static final String CERT_PEM = "";
     private static final String SHARE_ID = "shareId";
     private static final String NONCE = "nonce12345";
@@ -98,9 +99,9 @@ class KeySharesClientTest {
         NonceResponse nonceResponse = new NonceResponse();
         nonceResponse.setNonce(nonce);
         
-        when(client.createKeyShareNonce(any())).thenReturn(nonceResponse);
+        when(client.createKeyShareNonce(any(), any(), any())).thenReturn(nonceResponse);
 
-        NonceResponse response = client.createKeyShareNonce(SHARE_ID);
+        NonceResponse response = client.createKeyShareNonce(SHARE_ID, SESSION_TOKEN, CERT_PEM);
 
         assertEquals(nonceResponse, response);
         assertEquals(nonce, response.getNonce());
@@ -116,9 +117,9 @@ class KeySharesClientTest {
 
     @Test
     void shouldInvokeApiWhenCreateKeyShareNonce() throws ApiException {
-        clientImpl.createKeyShareNonce(SHARE_ID);
+        clientImpl.createKeyShareNonce(SHARE_ID, SESSION_TOKEN, CERT_PEM);
 
-        verify(apiClient, times(1)).createNonce(SHARE_ID);
+        verify(apiClient, times(1)).createNonce(SHARE_ID, SESSION_TOKEN, CERT_PEM);
     }
 
     @Test

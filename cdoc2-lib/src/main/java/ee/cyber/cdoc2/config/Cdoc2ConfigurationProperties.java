@@ -116,8 +116,8 @@ public final class Cdoc2ConfigurationProperties {
         = "smartid.client.ssl.trust-store-password";
 
     /** Defines CDOC2 Authentication Server client properties file location */
-    public static final String AUTH_SERVER_PROPERTIES = "auth_server.properties";
-    public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth.server.client.hostUrl";
+    public static final String AUTH_SERVER_PROPERTIES = "auth-server.properties";
+    public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth-server.client.hostUrl";
 
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 

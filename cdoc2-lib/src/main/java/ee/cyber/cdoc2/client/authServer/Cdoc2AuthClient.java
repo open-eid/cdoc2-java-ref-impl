@@ -80,16 +80,17 @@ public class Cdoc2AuthClient {
 
         log.debug("Polling auth process status for UUID: {}", authProcessUuid);
 
+        AuthProcessStatusResponse status;
         try {
-            AuthProcessStatusResponse status =
-                authApi.getAuthProcessStatus(String.valueOf(authProcessUuid));
+            status = authApi.getAuthProcessStatus(String.valueOf(authProcessUuid));
             log.debug("Auth process {} status: {}", authProcessUuid, status);
-            return status;
-
         } catch (ApiException ex) {
             throw wrapApiException(
                 "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex);
         }
+
+        // TODO: Should we check the status and do some retrying?
+        return status;
     }
 
     /**

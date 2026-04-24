@@ -5,8 +5,10 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
@@ -19,11 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.security.GeneralSecurityException;
 import java.util.Properties;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_SHARES_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.MOBILE_ID_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.SMART_ID_PROPERTIES;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 
 /**
  * Initialize Services from properties.
@@ -130,6 +128,16 @@ public final class Cdoc2Services {
             var config = SmartIdClientConfiguration.load(loadFromPropertyValue(SMART_ID_PROPERTIES));
             services.registerService(SmartIdClient.class,
                 ServiceTemplate.service(config, SmartIdClient::new), null);
+        }
+
+        if (isPropertyDefined(AUTH_SERVER_PROPERTIES)) {
+            log.info("Initializing Authentication server client from {}",
+                propertiesLocations.getProperty(AUTH_SERVER_PROPERTIES));
+            var config = Cdoc2AuthClientConfiguration.load(
+                loadFromPropertyValue(AUTH_SERVER_PROPERTIES)
+            );
+            services.registerService(Cdoc2AuthClient.class,
+                ServiceTemplate.service(config, Cdoc2AuthClient::new), null);
         }
 
         return services.build();

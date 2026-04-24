@@ -1,0 +1,69 @@
+package ee.cyber.cdoc2.crypto.jwt;
+
+import java.util.UUID;
+
+import ee.cyber.cdoc2.client.authServer.AuthProcessData;
+import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.model.AuthIdentity;
+import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
+import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
+
+import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClaimValue;
+
+
+public class SessionToken {
+    Cdoc2AuthClient cdoc2AuthClient;
+
+    String sessionTokenBase64Url;
+    String signingCertificate;
+
+    public SessionToken(
+        Cdoc2AuthClient cdoc2AuthClient,
+        String recipient
+    ) {
+        this.cdoc2AuthClient = cdoc2AuthClient;
+
+        create(recipient);
+    }
+
+    // package-private, for tests only
+    SessionToken(
+        String sessionTokenStr,
+        String signingCertificateStr
+    ) {
+        this.sessionTokenBase64Url = sessionTokenStr;
+        this.signingCertificate = signingCertificateStr;
+    }
+
+    public String getSessionToken(KeyShareUri shareUri) {
+        return discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+    }
+
+    private void create(String recipient) {
+        var identity = new AuthIdentity();
+        identity.setIdentifier(recipient);
+
+        AuthProcessData authProcess = startAuth(identity);
+        AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());
+
+        this.sessionTokenBase64Url = status.getSessionToken();
+        this.signingCertificate = status.getSigningCertificate();
+    }
+
+    private AuthProcessData startAuth(AuthIdentity identity) {
+        try {
+            return cdoc2AuthClient.startAuth(identity);
+        } catch (CdocAuthClientException e) {
+            throw new RuntimeException("Failed to start authentication process", e);
+        }
+    }
+
+    private AuthProcessStatusResponse getAuthStatus(UUID uuid) {
+        try {
+            return cdoc2AuthClient.getAuthProcessStatus(uuid);
+        } catch (CdocAuthClientException e) {
+            throw new RuntimeException("Failed to retrieve authentication process status", e);
+        }
+    }
+}

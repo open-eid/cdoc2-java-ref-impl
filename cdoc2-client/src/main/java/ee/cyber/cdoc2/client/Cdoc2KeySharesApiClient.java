@@ -63,13 +63,24 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param shareId key share ID
+     * @param sessionToken CDOC2 session token (SDJWT)
+     * @param signingCertificate PEM encoded certificate that signed the sessionToken
      * @return NonceResponse created server nonce response
      * @throws ApiException if server nonce creation fails
      */
-    public NonceResponse createNonce(String shareId) throws ApiException {
+    public NonceResponse createNonce(
+        String shareId,
+        String sessionToken,
+        String signingCertificate
+    ) throws ApiException {
         Objects.requireNonNull(shareId);
 
-        return sharesApi.createNonce(shareId, null);
+        return sharesApi.createNonce(
+            shareId,
+            sessionToken,
+            signingCertificate,
+            null
+        );
     }
 
     /**
@@ -88,7 +99,10 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
         try {
             ApiResponse<KeyShare> response
-                = sharesApi.getKeyShareByShareIdWithHttpInfo(shareId, xAuthTicket, xAuthCertificate);
+                = sharesApi.getKeyShareByShareIdWithHttpInfo(
+                    // TODO: Implement the xCdoc2SessionToken xCdoc2SessionX5c xCdoc2SidRpv3SignatureParameters
+                    shareId, xAuthTicket, xAuthCertificate, "", "", ""
+            );
             return Optional.of(response.getData());
         } catch (ApiException ex) {
             log.error("Key share get request with share ID {} has failed with error code {}",

@@ -30,25 +30,30 @@ public class SidMidAuthTokenCreator {
     AuthTokenCreator authTokenCreator;
     X509Certificate authenticatorCert;
 
+    SessionToken sessionToken;
+
     /**
      * Create signature for key shares auth token. Uses {@link IdentityJWSSigner} to create
      * signature using Smart-ID ({@link SIDAuthJWSSigner})
      * or Mobile-ID ({@link MIDAuthJWSSigner}) REST APIs
      * @param idJwsSigner {@link IdentityJWSSigner} that implements signing either
      *                                                                   with Smart-ID or Mobile-ID
-     * @param shareUris key share uris that are accessed
-     * @param fac KeyShareClientFactory used to create key share nonces that are signed
+     * @param shareUris     key share uris that are accessed
+     * @param fac           KeyShareClientFactory used to create key share nonces that are signed
+     * @param sessionToken  cdoc2 session token
      * @throws AuthSignatureCreationException if signature creation fails
      */
     public SidMidAuthTokenCreator(
         IdentityJWSSigner idJwsSigner,
         List<KeyShareUri> shareUris,
-        KeySharesClientFactory fac
+        KeySharesClientFactory fac,
+        SessionToken sessionToken
     )  throws AuthSignatureCreationException {
 
         this.sharesClientFac = fac;
         this.idJwsSigner = idJwsSigner;
         this.shareUris = shareUris;
+        this.sessionToken = sessionToken;
 
         try {
             this.authTokenCreator = prepare();
@@ -125,9 +130,19 @@ public class SidMidAuthTokenCreator {
      * @throws ApiException if server nonce creation fails
      */
     ShareAccessData createNonce(KeyShareUri shareUri, KeySharesClientFactory fac) throws ApiException {
+        String disclosedSessionToken = "";
+        String signingCertificate = "";
+        // TODO: This is not implemented for MiD yet, so the token might be null,
+        //  remove this once session token is implemented for MiD
+        if (sessionToken != null) {
+            disclosedSessionToken = this.sessionToken.getSessionToken(shareUri);
+            signingCertificate = this.sessionToken.signingCertificate;
+        }
 
         KeySharesClient shareClient = fac.getClientForServerUrl(shareUri.serverBaseUrl());
-        NonceResponse nonceResponse = shareClient.createKeyShareNonce(shareUri.shareId());
+        NonceResponse nonceResponse = shareClient.createKeyShareNonce(
+            shareUri.shareId(), disclosedSessionToken, signingCertificate
+        );
         String nonce = nonceResponse.getNonce();
 
         return new ShareAccessData(shareUri.serverBaseUrl(), shareUri.shareId(), nonce);

@@ -2,9 +2,11 @@ package ee.cyber.cdoc2.container;
 
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.TestLifecycleLogger;
+import ee.cyber.cdoc2.authServer.Cdoc2AuthClientMock;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
@@ -73,6 +75,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.mockito.ArgumentCaptor;
@@ -83,6 +86,10 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static ee.cyber.cdoc2.KeyUtil.*;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
@@ -119,6 +126,20 @@ class EnvelopeTest implements TestLifecycleLogger {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
 
     private static KeyLabelParams bobKeyLabelParams;
+
+    private Cdoc2AuthClientMock cdoc2AuthClientMock;
+
+    private static final int WIREMOCK_PORT = 8080;
+
+    @RegisterExtension
+    static WireMockExtension wiremock = WireMockExtension.newInstance()
+        .options(wireMockConfig().port(WIREMOCK_PORT))
+        .build();
+
+    @BeforeEach
+    void setUp() {
+        cdoc2AuthClientMock = new Cdoc2AuthClientMock(wiremock);
+    }
 
     @Mock
     KeyCapsuleClient capsuleClientMock;
@@ -611,6 +632,10 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Test
     void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
+        var authProccessUuid = UUID.randomUUID();
+        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+
         // SID demo env that authenticates automatically
         setupKeyShareClientMocks();
 
@@ -633,9 +658,11 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         //TODO: RM-4756, mock SmartIdClient
         SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
+        Cdoc2AuthClient cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(SmartIdClient.class, smartIdClient, null)
+            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
             .build();
 
         checkContainerDecrypt(
@@ -788,8 +815,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
 
 
-        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
-        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+        when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
 
         //  TODO: RM-4756, mock MobileIdClient
         MobileIdClient midClient = MIDTestData.getDemoEnvClient();
@@ -1453,8 +1480,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         when(mockKeySharesClient1.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare1));
         when(mockKeySharesClient2.getKeyShare(any(), any(), any())).thenReturn(Optional.of(keyShare2));
 
-        when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
-        when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+        when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
+        when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
     }
 
 }

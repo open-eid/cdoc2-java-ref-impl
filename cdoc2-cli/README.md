@@ -125,7 +125,7 @@ Current encryption/decryption implementation of cdoc2 container with Smart ID su
 personal ID codes.
 
 ```
-java -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc2 README.md
+java -Dauth-server.properties=config/localhost/auth-server.properties -jar target/cdoc2-cli-*.jar create --smart-id=38001085718 -f /tmp/smartid.cdoc2 README.md
 ```
 
 Multiple ID codes are allowed to be sent for encryption:
@@ -184,7 +184,7 @@ java -jar target/cdoc2-cli-*.jar decrypt --file /tmp/mydoc.cdoc2 -k keys/bob.pem
 or with Smart-ID for Estonian personal ID code:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc2 --output /tmp
+java -Dsmart-id.properties=config/smart-id/smart-id.properties -Dsmart-id.properties=config/smart-id/smart-id.properties -jar target/cdoc2-cli-*.jar decrypt -sid=38001085718 -f /tmp/smartid.cdoc2 --output /tmp
 ```
 
 or with Mobile-ID for Estonian personal ID code and Estonian phone number with country code `+372`:
