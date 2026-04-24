@@ -58,8 +58,12 @@ public final class KeySharesClientImpl implements KeySharesClient {
     }
 
     @Override
-    public NonceResponse createKeyShareNonce(String shareId) throws ApiException {
-        return apiClient.createNonce(shareId);
+    public NonceResponse createKeyShareNonce(
+        String shareId,
+        String sessionToken,
+        String signingCertificate
+    ) throws ApiException {
+        return apiClient.createNonce(shareId, sessionToken, signingCertificate);
     }
 
     @Override

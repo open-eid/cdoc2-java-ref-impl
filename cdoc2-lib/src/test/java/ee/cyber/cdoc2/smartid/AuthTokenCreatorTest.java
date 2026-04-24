@@ -15,6 +15,8 @@ import ee.cyber.cdoc2.client.smartid.SmartIdClientWrapper;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.crypto.jwt.SessionToken;
+import ee.cyber.cdoc2.crypto.jwt.SessionTokenUtil;
 import ee.cyber.cdoc2.exceptions.UnCheckedException;
 import ee.cyber.cdoc2.mobileid.MIDAuthJWSSignerTest;
 import ee.cyber.cdoc2.mobileid.MIDTestData;
@@ -24,7 +26,6 @@ import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
 import ee.cyber.cdoc2.services.Cdoc2Services;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,8 +67,8 @@ public class AuthTokenCreatorTest {
     @Mock
     KeySharesClient mockKeySharesClient2;
 
-    public static final String SERVER1 = "https://localhost:8443";
-    public static final String SERVER2 = "https://cdoc2-css.smit.ee:443/css";
+    public static final String SERVER1 = "https://localhost:8442";
+    public static final String SERVER2 = "https://localhost:8443";
 
     public static final String SHARE_ID1 = "ff0102030405060708090a0b0c0e0dff";
     public static final String SHARE_ID2 = "5BAE4603-C33C-4425-B301-125F2ACF9B1E";
@@ -97,8 +98,8 @@ public class AuthTokenCreatorTest {
         nonce2.setNonce(NONCE02);
 
         try {
-            when(mockKeySharesClient1.createKeyShareNonce(any())).thenReturn(nonce1);
-            when(mockKeySharesClient2.createKeyShareNonce(any())).thenReturn(nonce2);
+            when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
+            when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
         } catch (ApiException e) {
             throw new RuntimeException("Should never be thrown from here");
         }
@@ -120,7 +121,6 @@ public class AuthTokenCreatorTest {
     }
 
 
-    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
     @Test
     @Tag("net") //requires external network to connect to SID demo server
     void testCreateAuthTokenWithSID() throws Exception {
@@ -128,7 +128,7 @@ public class AuthTokenCreatorTest {
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + DEMO_ID_CODE);
         IdentityJWSSigner idJwsSigner = new SIDAuthJWSSigner(etsiIdentifier, setupSIDClient());
 
-        testCreateAuthToken(idJwsSigner, loadSIDTestTrustStore());
+        testCreateAuthToken(idJwsSigner, loadSIDTestTrustStore(), SessionTokenUtil.createSessionToken());
 
         //for validating at sdjwt.org
         log.debug("RSA PKCS#1 {}", getRSAPublicKeyPkcs1Pem(idJwsSigner.getSignerCertificate()));
@@ -147,14 +147,18 @@ public class AuthTokenCreatorTest {
 
         IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(etsiIdentifier, phoneNumber, demoEnvClient, null);
 
-        testCreateAuthToken(idJwsSigner, demoEnvClient.readTrustedCertificates());
+        testCreateAuthToken(idJwsSigner, demoEnvClient.readTrustedCertificates(), null);
 
         //for validating at sdjwt.org
         log.debug("EC jwk {}", MIDAuthJWSSignerTest.getECPublicKeyJWK(idJwsSigner.getSignerCertificate()));
 
     }
 
-    void testCreateAuthToken(IdentityJWSSigner idJwsSigner, KeyStore trustStore) throws Exception {
+    void testCreateAuthToken(
+        IdentityJWSSigner idJwsSigner,
+        KeyStore trustStore,
+        SessionToken sessionToken
+    ) throws Exception {
 
         List<KeyShareUri> shares = List.of(
             new KeyShareUri(
@@ -167,8 +171,12 @@ public class AuthTokenCreatorTest {
             )
         );
 
-        SidMidAuthTokenCreator tokenCreator =
-            new SidMidAuthTokenCreator(idJwsSigner, shares, setupMockSharesClientFac());
+        SidMidAuthTokenCreator tokenCreator = new SidMidAuthTokenCreator(
+            idJwsSigner,
+            shares,
+            setupMockSharesClientFac(),
+            sessionToken
+        );
 
         String token1 = tokenCreator.getTokenForShareID(SHARE_ID1);
 
