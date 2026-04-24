@@ -87,10 +87,25 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
      * @param shareId key share ID
      * @param xAuthTicket CDOC2 Auth token (SDJWT)
      * @param xAuthCertificate PEM encoded certificate that signed the xAuthTicket
+     * @param xSessionToken CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param xSidRpv3SignatureParameters Base64Url-encoded JSON structure containing additional
+     *                                    parameters necessary to verify the signature of
+     *                                    an auth token (x-cdoc2-auth-token).
+     *                                    Required when the auth token is signed  with SID RPv3,
+     *                                    omitted otherwise.  (optional)
      * @return KeyShare key share
      * @throws ApiException if http response code is something else that 200
      */
-    public Optional<KeyShare> getKeyShare(String shareId, String xAuthTicket, String xAuthCertificate)
+    public Optional<KeyShare> getKeyShare(
+        String shareId,
+        String xAuthTicket,
+        String xAuthCertificate,
+        String xSessionToken,
+        String xSessionCertificate,
+        String xSidRpv3SignatureParameters
+    )
         throws ApiException {
 
         if (shareId == null) {
@@ -100,8 +115,8 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         try {
             ApiResponse<KeyShare> response
                 = sharesApi.getKeyShareByShareIdWithHttpInfo(
-                    // TODO: Implement the xCdoc2SessionToken xCdoc2SessionX5c xCdoc2SidRpv3SignatureParameters
-                    shareId, xAuthTicket, xAuthCertificate, "", "", ""
+                    shareId, xAuthTicket, xAuthCertificate,
+                xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters
             );
             return Optional.of(response.getData());
         } catch (ApiException ex) {

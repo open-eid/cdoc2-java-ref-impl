@@ -38,9 +38,24 @@ public interface KeySharesClient extends ServerClient {
      * @param shareId key share ID
      * @param authTicket server authentication ticket
      * @param authTicketSignerCert authentication ticket signer certificate in PEM format
+     * @param sessionToken CDOC2 Session token (SDJWT)
+     * @param sessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param sidRpv3SignatureParameters Base64Url-encoded JSON structure containing additional
+     *                                   parameters necessary to verify the signature of
+     *                                   an auth token.
+     *                                   Required when the auth token is signed  with SID RPv3,
+     *                                   omitted otherwise.  (optional)
      * @return KeyShare key share
      */
-    Optional<KeyShare> getKeyShare(String shareId, String authTicket, String authTicketSignerCert)
+    Optional<KeyShare> getKeyShare(
+        String shareId,
+        String authTicket,
+        String authTicketSignerCert,
+        String sessionToken,
+        String sessionCertificate,
+        String sidRpv3SignatureParameters
+    )
         throws ExtApiException;
 
 }

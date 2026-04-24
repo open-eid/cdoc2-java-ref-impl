@@ -473,7 +473,11 @@ public final class KekTools {
         Optional<KeyShare> keyShare = client.getKeyShare(
             share.shareId(),
             authTicket,
-            authenticatorCertPEM
+            authenticatorCertPEM,
+            // TODO: Implement session token usage here
+            "",
+            "",
+            ""
         );
         if (keyShare.isEmpty()) {
             throw new GeneralSecurityException(
