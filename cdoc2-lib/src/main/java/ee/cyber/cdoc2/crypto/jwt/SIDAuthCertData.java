@@ -1,17 +1,8 @@
 package ee.cyber.cdoc2.crypto.jwt;
 
 import ee.sk.smartid.AuthenticationIdentity;
-import ee.sk.smartid.AuthenticationResponseValidator;
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
-import javax.security.auth.x500.X500Principal;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.security.PublicKey;
@@ -25,6 +16,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+import javax.security.auth.x500.X500Principal;
+
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.crypto.KeyAlgorithm;
 
@@ -46,18 +46,6 @@ public class SIDAuthCertData extends AuthenticationIdentity {
     SIDAuthCertData(AuthenticationIdentity authenticationIdentity, String semanticsIdentifier) {
         this.authIdentity = authenticationIdentity;
         this.semanticsIdentifier = semanticsIdentifier;
-    }
-
-    /**
-     * Parse data from Smart-ID certificate
-     * @param sidCert certificate for Smart-ID
-     * @return SIDCertData parsed from smart-id certificate
-     * @throws SmartIdClientException if certificate parsing fails
-     */
-    public static SIDAuthCertData parse(X509Certificate sidCert)  {
-        AuthenticationIdentity authIdentity = AuthenticationResponseValidator.constructAuthenticationIdentity(sidCert);
-        String semanticsIdentifier = parseSemanticsIdentifier(sidCert);
-        return new SIDAuthCertData(authIdentity, semanticsIdentifier);
     }
 
     /**
@@ -121,7 +109,6 @@ public class SIDAuthCertData extends AuthenticationIdentity {
 
         return sidAccountNum;
     }
-
     /**
      * Return RSA public in PEM PKCS#1 format, useful for validating signatures in JWT tools like https://sdjwt.org/
      * <pre>

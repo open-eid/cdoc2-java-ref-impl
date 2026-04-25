@@ -1,7 +1,5 @@
 package ee.cyber.cdoc2.crypto.jwt;
 
-import ee.sk.smartid.AuthenticationHash;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
@@ -11,9 +9,7 @@ import java.util.List;
 /**
  * Smart-ID and Mobile-ID interaction parameters.
  * Optional parameters to drive user interaction and to get verification code.
- * Current implementation is a base, extend this to support more Interaction. Even more control can be achieved by
- * overriding {@link ee.cyber.cdoc2.client.smartid.SmartIdClient#getSIDInteractions(SemanticsIdentifier,
- * AuthenticationHash, String, InteractionParams)} method
+ * Current implementation is a base, extend this to support more Interaction.
  */
 public class InteractionParams {
 

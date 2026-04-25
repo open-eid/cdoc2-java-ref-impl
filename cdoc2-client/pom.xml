@@ -23,6 +23,7 @@
         <cdoc2-key-capsules-openapi.version>3.1.1</cdoc2-key-capsules-openapi.version>
         <cdoc2-key-shares-openapi.version>1.2.1-draft</cdoc2-key-shares-openapi.version>
         <cdoc2-auth-server-openapi.version>0.9.0-draft</cdoc2-auth-server-openapi.version>
+        <cdoc2-rp-server-openapi.version>0.9.0-draft</cdoc2-rp-server-openapi.version>
     </properties>
 
     <dependencies>
@@ -234,6 +235,39 @@
                         </configuration>
                     </execution>
 
+                    <execution>
+                        <id>download-cdoc2-rp-server-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>get</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>ee.cyber.cdoc2.openapi</groupId>
+                            <artifactId>cdoc2-rp-server-openapi</artifactId>
+                            <version>${cdoc2-rp-server-openapi.version}</version>
+                            <packaging>yaml</packaging>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-cdoc2-rp-server-openapi-yaml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>ee.cyber.cdoc2.openapi</groupId>
+                                    <artifactId>cdoc2-rp-server-openapi</artifactId>
+                                    <version>${cdoc2-rp-server-openapi.version}</version>
+                                    <type>yaml</type>
+                                    <outputDirectory>${project.build.directory}/openapi</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                            <useBaseVersion>true</useBaseVersion>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
@@ -280,6 +314,18 @@
                            <inputSpec>${project.build.directory}/openapi/cdoc2-auth-server-openapi-${cdoc2-auth-server-openapi.version}.yaml</inputSpec>
                        </configuration>
                    </execution>
+                    <execution>
+                        <id>generate-rp-server-api-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <configOptions>
+                                <useSpringBoot3>true</useSpringBoot3>
+                            </configOptions>
+                            <inputSpec>${project.build.directory}/openapi/cdoc2-rp-server-openapi-${cdoc2-rp-server-openapi.version}.yaml</inputSpec>
+                        </configuration>
+                    </execution>
 
                 </executions>
 

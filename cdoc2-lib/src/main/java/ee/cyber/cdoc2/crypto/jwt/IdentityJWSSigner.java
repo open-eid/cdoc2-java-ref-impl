@@ -26,4 +26,5 @@ public interface IdentityJWSSigner extends JWSSigner {
      * @return signer certificate if {@code sign()} has succeeded, otherwise will be {@code null}
      */
     @Nullable X509Certificate getSignerCertificate();
+    @Nullable String getSignatureValidationParamsBase64Url();
 }

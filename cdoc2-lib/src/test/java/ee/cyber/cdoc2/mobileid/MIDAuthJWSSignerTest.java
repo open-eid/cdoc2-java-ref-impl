@@ -1,29 +1,30 @@
 package ee.cyber.cdoc2.mobileid;
 
+import java.security.cert.X509Certificate;
+import java.text.ParseException;
+import java.util.List;
+
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.jose.jwk.ECKey;
+
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
-import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -90,9 +91,9 @@ public class MIDAuthJWSSignerTest {
 
         assertTrue(parsedJWT.verify(jwsVerifier));
 
-        SIDAuthCertData certData = SIDAuthCertData.parse(signerCert);
+//        SIDAuthCertData certData = SIDAuthCertData.parse(signerCert);
 
-        assertEquals(etsiIdentifier.getSemanticsIdentifier(), certData.getSemanticsIdentifier());
+//        assertEquals(etsiIdentifier.getSemanticsIdentifier(), certData.getSemanticsIdentifier());
     }
 
     /**

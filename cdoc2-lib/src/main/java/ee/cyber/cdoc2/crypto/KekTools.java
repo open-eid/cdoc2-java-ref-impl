@@ -1,36 +1,5 @@
 package ee.cyber.cdoc2.crypto;
 
-import ee.cyber.cdoc2.auth.EtsiIdentifier;
-import ee.cyber.cdoc2.client.KeySharesClientFactory;
-import ee.cyber.cdoc2.client.KeySharesClient;
-import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
-import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
-import ee.cyber.cdoc2.client.model.KeyShare;
-import ee.cyber.cdoc2.client.smartid.SmartIdClient;
-import ee.cyber.cdoc2.container.CDocParseException;
-import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
-import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
-import ee.cyber.cdoc2.container.recipients.KeySharesRecipient;
-import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
-import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
-import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
-import ee.cyber.cdoc2.crypto.jwt.SessionToken;
-import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
-import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
-import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
-import ee.cyber.cdoc2.exceptions.CDocException;
-import ee.cyber.cdoc2.exceptions.CDocUserException;
-import ee.cyber.cdoc2.UserErrorCode;
-import ee.cyber.cdoc2.client.EcCapsuleClient;
-import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
-import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
-import ee.cyber.cdoc2.client.RsaCapsuleClient;
-import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
-import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
-import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -43,13 +12,45 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.crypto.SecretKey;
 
-import ee.cyber.cdoc2.services.Services;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ee.cyber.cdoc2.UserErrorCode;
+import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.client.EcCapsuleClient;
+import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
+import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.RsaCapsuleClient;
+import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
+import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.client.model.KeyShare;
+import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.container.CDocParseException;
+import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.KeySharesRecipient;
+import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
+import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
+import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SessionToken;
 import ee.cyber.cdoc2.crypto.jwt.SidMidAuthTokenCreator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
+import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
+import ee.cyber.cdoc2.exceptions.CDocException;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
+import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
+import ee.cyber.cdoc2.services.Services;
 
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.AuthenticationType.MID;
 
@@ -61,9 +62,10 @@ public final class KekTools {
 
     private static final Logger log = LoggerFactory.getLogger(KekTools.class);
     private static final String MUST_CONTAIN_RSA_KEY_PAIR_FOR_RSA_SCENARIO =
-            "must contain RSA key pair for RSA scenario";
+        "must contain RSA key pair for RSA scenario";
 
-    private KekTools() { }
+    private KekTools() {
+    }
 
 
     public static byte[] deriveKekForSymmetricKey(
@@ -283,8 +285,9 @@ public final class KekTools {
 
     /**
      * Derive KEK from shares. Used for SID/MID.
-     * @param keySharesRecipient key shares recipient
-     * @param keyMaterial key share decryption key material
+     *
+     * @param keySharesRecipient     key shares recipient
+     * @param keyMaterial            key share decryption key material
      * @param keySharesClientFactory key shares client factory
      * @return bytes of KEK
      * @throws GeneralSecurityException if key extraction has failed
@@ -370,6 +373,7 @@ public final class KekTools {
 
     /**
      * Ask nonce for each share, sign share with nonce using auth means
+     *
      * @param shares
      * @param decryptKeyMaterial
      * @param keySharesClientFactory
@@ -394,12 +398,15 @@ public final class KekTools {
 
         switch (authType) {
             case SID -> {
-                if (!services.hasService(SmartIdClient.class)) {
-                    throw new CDocException("SmartIdClient not configured");
+                if (!services.hasService(Cdoc2RpClient.class)) {
+                    throw new CDocException("Cdoc2RpClient not configured");
                 }
-                SmartIdClient sidClient = services.get(SmartIdClient.class);
+                Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
                 return new SidMidAuthTokenCreator(
-                    new SIDAuthJWSSigner(etsiIdentifier, sidClient, decryptKeyMaterial.getInteractionParams()),
+                    new SIDAuthJWSSigner(etsiIdentifier, rpClient,
+                        decryptKeyMaterial.getInteractionParams(),
+                        sessionToken
+                    ),
                     shares,
                     keySharesClientFactory,
                     sessionToken
@@ -431,8 +438,8 @@ public final class KekTools {
 
     /**
      * @param keySharesClientFactory key shares client factory
-     * @param tokenCreator signed authentication token
-     * @param share share to fetch
+     * @param tokenCreator           signed authentication token
+     * @param share                  share to fetch
      * @return
      * @throws GeneralSecurityException
      */
@@ -445,6 +452,7 @@ public final class KekTools {
             = keySharesClientFactory.getClientForServerUrl(share.serverBaseUrl());
         String authTicket = tokenCreator.getTokenForShareID(share.shareId());
         String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
+        SessionToken sessionToken = tokenCreator.getSessionToken();
 
         return getKeyShare(share, client, authTicket, authenticatorCertPEM);
     }

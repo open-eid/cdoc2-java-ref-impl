@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
-import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;

@@ -1,25 +1,26 @@
 package ee.cyber.cdoc2.services;
 
+import java.security.GeneralSecurityException;
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
-import ee.cyber.cdoc2.client.smartid.SmartIdClient;
+import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
+import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
 import ee.cyber.cdoc2.config.PropertiesLoader;
-import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.security.GeneralSecurityException;
-import java.util.Properties;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 
@@ -33,7 +34,7 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
  *     <li>{@link Cdoc2ConfigurationProperties#MOBILE_ID_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#SMART_ID_PROPERTIES}</li>
  * </ul>
- *
+ * <p>
  * For example define following properties:
  * <pre
  *       smart-id.properties=classpath:smart-id/smart_id-test.properties
@@ -47,7 +48,6 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
  * SmartIdClient sidClient = services.get(SmartIdClient.class);
  * }
  * </pre>
-
  */
 public final class Cdoc2Services {
 
@@ -62,6 +62,7 @@ public final class Cdoc2Services {
 
     /**
      * Initialize Services from properties
+     *
      * @param propertiesLocations defines property locations in properties
      * @return Service initialized from properties
      * @throws GeneralSecurityException
@@ -72,6 +73,7 @@ public final class Cdoc2Services {
 
     /**
      * Read property locations from System properties
+     *
      * @return Services initialized from System properties
      * @throws GeneralSecurityException
      */
@@ -122,14 +124,6 @@ public final class Cdoc2Services {
                 ServiceTemplate.service(config, MobileIdClient::new), null);
         }
 
-        if (isPropertyDefined(SMART_ID_PROPERTIES)) {
-            log.info("Initializing Smart-ID client from {}",
-                propertiesLocations.getProperty(SMART_ID_PROPERTIES));
-            var config = SmartIdClientConfiguration.load(loadFromPropertyValue(SMART_ID_PROPERTIES));
-            services.registerService(SmartIdClient.class,
-                ServiceTemplate.service(config, SmartIdClient::new), null);
-        }
-
         if (isPropertyDefined(AUTH_SERVER_PROPERTIES)) {
             log.info("Initializing Authentication server client from {}",
                 propertiesLocations.getProperty(AUTH_SERVER_PROPERTIES));
@@ -138,6 +132,16 @@ public final class Cdoc2Services {
             );
             services.registerService(Cdoc2AuthClient.class,
                 ServiceTemplate.service(config, Cdoc2AuthClient::new), null);
+        }
+
+        if (isPropertyDefined(RP_SERVER_PROPERTIES)) {
+            log.info("Initializing RP server client from {}",
+                propertiesLocations.getProperty(RP_SERVER_PROPERTIES));
+            var config = Cdoc2RpClientConfiguration.load(
+                loadFromPropertyValue(RP_SERVER_PROPERTIES)
+            );
+            services.registerService(Cdoc2RpClient.class,
+                ServiceTemplate.service(config, Cdoc2RpClient::new), null);
         }
 
         return services.build();
@@ -150,8 +154,9 @@ public final class Cdoc2Services {
     /**
      * Read properties file location from propertyName and load it using PropertiesLoader
      * For example, define following properties:
-     *  smart-id.properties=classpath:smart-id/smart_id-test.properties
+     * smart-id.properties=classpath:smart-id/smart_id-test.properties
      * and call {@code loadFromProperty("smart-id.properties")}
+     *
      * @param propertyName property that value defined propertiesFilePath
      * @return Properties loaded from
      */

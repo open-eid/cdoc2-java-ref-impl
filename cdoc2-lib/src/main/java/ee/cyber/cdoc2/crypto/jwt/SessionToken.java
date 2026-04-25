@@ -2,8 +2,8 @@ package ee.cyber.cdoc2.crypto.jwt;
 
 import java.util.UUID;
 
-import ee.cyber.cdoc2.client.authServer.AuthProcessData;
-import ee.cyber.cdoc2.client.authServer.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.authserver.AuthProcessData;
+import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
@@ -28,7 +28,7 @@ public class SessionToken {
     }
 
     // package-private, for tests only
-    SessionToken(
+    public SessionToken(
         String sessionTokenStr,
         String signingCertificateStr
     ) {
@@ -38,6 +38,10 @@ public class SessionToken {
 
     public String getSessionToken(KeyShareUri shareUri) {
         return discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+    }
+
+    public String getSessionToken(String claimValue) {
+        return discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
     }
 
     private void create(String recipient) {

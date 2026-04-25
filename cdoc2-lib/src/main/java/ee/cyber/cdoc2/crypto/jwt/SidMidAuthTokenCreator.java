@@ -1,20 +1,22 @@
 package ee.cyber.cdoc2.crypto.jwt;
 
-import com.nimbusds.jose.JOSEException;
-import ee.cyber.cdoc2.auth.AuthTokenCreator;
-import ee.cyber.cdoc2.auth.ShareAccessData;
-import ee.cyber.cdoc2.client.KeySharesClientFactory;
-import ee.cyber.cdoc2.client.KeySharesClient;
-import ee.cyber.cdoc2.client.api.ApiException;
-import ee.cyber.cdoc2.client.model.NonceResponse;
-import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.nimbusds.jose.JOSEException;
+
+import ee.cyber.cdoc2.auth.AuthTokenCreator;
+import ee.cyber.cdoc2.auth.ShareAccessData;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.api.ApiException;
+import ee.cyber.cdoc2.client.model.NonceResponse;
+import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 
 
 /**
@@ -29,8 +31,8 @@ public class SidMidAuthTokenCreator {
 
     AuthTokenCreator authTokenCreator;
     X509Certificate authenticatorCert;
-
     SessionToken sessionToken;
+    String sidRpV3SignatureParameters;
 
     /**
      * Create signature for key shares auth token. Uses {@link IdentityJWSSigner} to create
@@ -58,9 +60,23 @@ public class SidMidAuthTokenCreator {
         try {
             this.authTokenCreator = prepare();
             this.authenticatorCert = idJwsSigner.getSignerCertificate();
+            this.sidRpV3SignatureParameters = idJwsSigner.getSignatureValidationParamsBase64Url();
         } catch (ApiException | JOSEException | ParseException ex) {
             throw new AuthSignatureCreationException(ex);
         }
+    }
+
+    public SessionToken getSessionToken() {
+        return this.sessionToken;
+    }
+
+    /**
+     * Additional parameters needed to verify a SID RpV3 ACSP_V2 signature.
+     * {@code null} for MID-signed tokens
+     * @return Base64Url-encoded JSON structure or {@code null} for MID
+     */
+    public String getSidRpV3SignatureParameters() {
+        return this.sidRpV3SignatureParameters;
     }
 
     /**
@@ -88,7 +104,7 @@ public class SidMidAuthTokenCreator {
      */
     public String getAuthenticatorCertPEM() throws CertificateEncodingException {
 
-        X509Certificate certificate = getAuthenticatorCert();
+        X509Certificate certificate = this.authenticatorCert;
         return (certificate == null) ? null
             : "-----BEGIN CERTIFICATE-----"
               + Base64.getEncoder().encodeToString(certificate.getEncoded())
