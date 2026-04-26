@@ -181,13 +181,13 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
             UUID sessionId = rpClient.authenticate(
                 disclosedSessionToken,
-                sessionToken.signingCertificate,
+                sessionToken.getSigningCertificate(),
                 request
             );
 
             SessionStatusResponse response = pollForFinalSessionStatus(
                 disclosedSessionToken,
-                sessionToken.signingCertificate,
+                sessionToken.getSigningCertificate(),
                 sessionId
             );
 

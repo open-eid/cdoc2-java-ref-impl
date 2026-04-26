@@ -2,6 +2,9 @@ package ee.cyber.cdoc2.crypto.jwt;
 
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ee.cyber.cdoc2.client.authserver.AuthProcessData;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
@@ -13,10 +16,11 @@ import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClai
 
 
 public class SessionToken {
+    private static final Logger log = LoggerFactory.getLogger(SessionToken.class);
     Cdoc2AuthClient cdoc2AuthClient;
 
-    String sessionTokenBase64Url;
-    String signingCertificate;
+    private String sessionTokenBase64Url;
+    private String signingCertificate;
 
     public SessionToken(
         Cdoc2AuthClient cdoc2AuthClient,
@@ -50,6 +54,10 @@ public class SessionToken {
 
         AuthProcessData authProcess = startAuth(identity);
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());
+        log.debug("Final auth process {} status: {}", authProcess.uuid(), status);
+        if (!"COMPLETE".equals(status.getStatus())) {
+            throw new RuntimeException("Auth process did not complete successfully");
+        }
 
         this.sessionTokenBase64Url = status.getSessionToken();
         this.signingCertificate = status.getSigningCertificate();
@@ -69,5 +77,9 @@ public class SessionToken {
         } catch (CdocAuthClientException e) {
             throw new RuntimeException("Failed to retrieve authentication process status", e);
         }
+    }
+
+    public String getSigningCertificate() {
+        return signingCertificate;
     }
 }
