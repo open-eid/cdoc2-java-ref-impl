@@ -198,6 +198,7 @@ public class AuthTokenCreatorTest {
 
         log.debug("token1: {}", token1);
         X509Certificate issCert = tokenCreator.getAuthenticatorCert();
+        log.debug("signatureParams: {}", tokenCreator.getSidRpV3SignatureParameters());
 
         AuthTokenVerifierV2 authTokenVerifier = new AuthTokenVerifierV2(trustStore, false);
 

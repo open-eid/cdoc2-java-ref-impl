@@ -450,21 +450,17 @@ public final class KekTools {
     ) throws GeneralSecurityException {
         KeySharesClient client
             = keySharesClientFactory.getClientForServerUrl(share.serverBaseUrl());
-        String authTicket = tokenCreator.getTokenForShareID(share.shareId());
-        String authenticatorCertPEM = tokenCreator.getAuthenticatorCertPEM();
-        SessionToken sessionToken = tokenCreator.getSessionToken();
 
-        return getKeyShare(share, client, authTicket, authenticatorCertPEM);
+        return getKeyShare(share, client, tokenCreator);
     }
 
     private static byte[] getKeyShare(
         KeyShareUri share,
         KeySharesClient client,
-        String authTicket,
-        String authenticatorCertPEM
+        SidMidAuthTokenCreator tokenCreator
     ) throws GeneralSecurityException {
         try {
-            return requestKeyShare(share, client, authTicket, authenticatorCertPEM);
+            return requestKeyShare(share, client, tokenCreator);
         } catch (ExtApiException e) {
             throw new GeneralSecurityException(
                 "Failed to derive key encryption key from shares", e
@@ -475,17 +471,21 @@ public final class KekTools {
     private static byte[] requestKeyShare(
         KeyShareUri share,
         KeySharesClient client,
-        String authTicket,
-        String authenticatorCertPEM
+        SidMidAuthTokenCreator tokenCreator
     ) throws ExtApiException, GeneralSecurityException {
+        SessionToken sessionToken = tokenCreator.getSessionToken();
+
+        //TODO sessionToken is currently null in the MID case -
+        // fix when MID is implemented
         Optional<KeyShare> keyShare = client.getKeyShare(
             share.shareId(),
-            authTicket,
-            authenticatorCertPEM,
-            // TODO: Implement session token usage here
-            "",
-            "",
-            ""
+            tokenCreator.getTokenForShareID(share.shareId()),
+            tokenCreator.getAuthenticatorCertBase64Url(),
+            sessionToken != null ? sessionToken.getSessionToken(share)
+                : "",
+            sessionToken != null ? sessionToken.getSigningCertificate()
+                : "",
+            tokenCreator.getSidRpV3SignatureParameters()
         );
         if (keyShare.isEmpty()) {
             throw new GeneralSecurityException(
