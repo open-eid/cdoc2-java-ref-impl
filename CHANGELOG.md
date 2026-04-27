@@ -8,6 +8,8 @@
 * SID interaction changed to use Cdoc2RpClient, SmartIdClient removed
 * Auth token signature implementation in SIDAuthJWSSigner changed to use SID RPv3 protocol.
 * Session token creation and usage
+* Auth token certificate header `x-cdoc2-auth-x5c` format changed from single-line PEM with header 
+  and footer to Base64Url-encoded DER
 
 ## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 
