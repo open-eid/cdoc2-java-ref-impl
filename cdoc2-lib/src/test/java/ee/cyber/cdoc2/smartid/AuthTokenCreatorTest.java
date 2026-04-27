@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.ClientConfigurationUtil;
-import ee.cyber.cdoc2.auth.AuthTokenVerifierV2;
+import ee.cyber.cdoc2.auth.AuthTokenVerifier;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.ShareAccessData;
 import ee.cyber.cdoc2.auth.TokenVerificationResponse;
@@ -200,7 +200,7 @@ public class AuthTokenCreatorTest {
         X509Certificate issCert = tokenCreator.getAuthenticatorCert();
         log.debug("signatureParams: {}", tokenCreator.getSidRpV3SignatureParameters());
 
-        AuthTokenVerifierV2 authTokenVerifier = new AuthTokenVerifierV2(trustStore, false);
+        AuthTokenVerifier authTokenVerifier = new AuthTokenVerifier(trustStore, false);
 
         String certBase64Url = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(issCert.getEncoded());
