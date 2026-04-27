@@ -11,6 +11,15 @@
 * Auth token certificate header `x-cdoc2-auth-x5c` format changed from single-line PEM with header 
   and footer to Base64Url-encoded DER
 
+### Maven package versions:
+```
+cdoc2 3.2.0
+cdoc2-schema 2.1.0
+cdoc2-lib 3.4.0
+cdoc2-client 2.2.1
+cdoc2-cli 1.9.0
+```
+
 ## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 
 ### Features
