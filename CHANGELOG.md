@@ -4,6 +4,10 @@
 
 ### Internal
 * Created new client Cdoc2AuthClient for the cdoc2 authentication server.
+* Created new client Cdoc2RpClient for cdoc2 rp server
+* SID interaction changed to use Cdoc2RpClient, SmartIdClient removed
+* Auth token signature implementation in SIDAuthJWSSigner changed to use SID RPv3 protocol.
+* Session token creation and usage
 
 ## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 
