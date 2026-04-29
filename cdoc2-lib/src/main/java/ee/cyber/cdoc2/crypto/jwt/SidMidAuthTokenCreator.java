@@ -1,20 +1,22 @@
 package ee.cyber.cdoc2.crypto.jwt;
 
-import com.nimbusds.jose.JOSEException;
-import ee.cyber.cdoc2.auth.AuthTokenCreator;
-import ee.cyber.cdoc2.auth.ShareAccessData;
-import ee.cyber.cdoc2.client.KeySharesClientFactory;
-import ee.cyber.cdoc2.client.KeySharesClient;
-import ee.cyber.cdoc2.client.api.ApiException;
-import ee.cyber.cdoc2.client.model.NonceResponse;
-import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.nimbusds.jose.JOSEException;
+
+import ee.cyber.cdoc2.auth.AuthTokenCreator;
+import ee.cyber.cdoc2.auth.ShareAccessData;
+import ee.cyber.cdoc2.client.KeySharesClient;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.api.ApiException;
+import ee.cyber.cdoc2.client.model.NonceResponse;
+import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.exceptions.AuthSignatureCreationException;
 
 
 /**
@@ -29,18 +31,19 @@ public class SidMidAuthTokenCreator {
 
     AuthTokenCreator authTokenCreator;
     X509Certificate authenticatorCert;
-
     SessionToken sessionToken;
+    String sidRpV3SignatureParameters;
 
     /**
      * Create signature for key shares auth token. Uses {@link IdentityJWSSigner} to create
      * signature using Smart-ID ({@link SIDAuthJWSSigner})
      * or Mobile-ID ({@link MIDAuthJWSSigner}) REST APIs
-     * @param idJwsSigner {@link IdentityJWSSigner} that implements signing either
-     *                                                                   with Smart-ID or Mobile-ID
-     * @param shareUris     key share uris that are accessed
-     * @param fac           KeyShareClientFactory used to create key share nonces that are signed
-     * @param sessionToken  cdoc2 session token
+     *
+     * @param idJwsSigner  {@link IdentityJWSSigner} that implements signing either
+     *                     with Smart-ID or Mobile-ID
+     * @param shareUris    key share uris that are accessed
+     * @param fac          KeyShareClientFactory used to create key share nonces that are signed
+     * @param sessionToken cdoc2 session token
      * @throws AuthSignatureCreationException if signature creation fails
      */
     public SidMidAuthTokenCreator(
@@ -48,7 +51,7 @@ public class SidMidAuthTokenCreator {
         List<KeyShareUri> shareUris,
         KeySharesClientFactory fac,
         SessionToken sessionToken
-    )  throws AuthSignatureCreationException {
+    ) throws AuthSignatureCreationException {
 
         this.sharesClientFac = fac;
         this.idJwsSigner = idJwsSigner;
@@ -58,13 +61,29 @@ public class SidMidAuthTokenCreator {
         try {
             this.authTokenCreator = prepare();
             this.authenticatorCert = idJwsSigner.getSignerCertificate();
+            this.sidRpV3SignatureParameters = idJwsSigner.getSignatureValidationParamsBase64Url();
         } catch (ApiException | JOSEException | ParseException ex) {
             throw new AuthSignatureCreationException(ex);
         }
     }
 
+    public SessionToken getSessionToken() {
+        return this.sessionToken;
+    }
+
+    /**
+     * Additional parameters needed to verify a SID RpV3 ACSP_V2 signature.
+     * {@code null} for MID-signed tokens
+     *
+     * @return Base64Url-encoded JSON structure or {@code null} for MID
+     */
+    public String getSidRpV3SignatureParameters() {
+        return this.sidRpV3SignatureParameters;
+    }
+
     /**
      * Create token (sdjwt) for share id
+     *
      * @param shareID shareId from signed shareAccessData
      * @return ticket as SDJWT
      * @throws IllegalArgumentException if shareId was not part signed payload
@@ -75,6 +94,7 @@ public class SidMidAuthTokenCreator {
 
     /**
      * Authenticator certificate that was used to sign the token
+     *
      * @return certificate that was used to sign the SDJWT
      */
     public X509Certificate getAuthenticatorCert() {
@@ -82,32 +102,32 @@ public class SidMidAuthTokenCreator {
     }
 
     /**
-     * Authenticator certificate that was used to sign the token as single line PEM
-     * @return base64 encoded PEM certificate
+     * Authenticator certificate that was used to sign the token as Base64Url encoded DER
+     *
+     * @return base64url encoded DER certificate
      * @throws CertificateEncodingException if certificate encoding fails
      */
-    public String getAuthenticatorCertPEM() throws CertificateEncodingException {
+    public String getAuthenticatorCertBase64Url() throws CertificateEncodingException {
 
-        X509Certificate certificate = getAuthenticatorCert();
+        X509Certificate certificate = this.authenticatorCert;
         return (certificate == null) ? null
-            : "-----BEGIN CERTIFICATE-----"
-              + Base64.getEncoder().encodeToString(certificate.getEncoded())
-              + "-----END CERTIFICATE-----";
+            : Base64.getUrlEncoder().encodeToString(certificate.getEncoded());
     }
 
     /**
      * Prepare data to be signed and sign the data with the SIDAuthJWSSigner.
      * {@link SIDAuthJWSSigner#getSignerCertificate()} will get public certificate instance that
      * was used for signing
+     *
      * @return signed AuthTokenCreator (data is signed)
-     * @throws ApiException if server nonce creation fails
+     * @throws ApiException   if server nonce creation fails
      * @throws ParseException if server nonce creation fails
-     * @throws JOSEException if server nonce creation fails
+     * @throws JOSEException  if server nonce creation fails
      */
     AuthTokenCreator prepare() throws ApiException, ParseException, JOSEException {
         List<ShareAccessData> audArray = new LinkedList<>();
 
-        for (KeyShareUri shareUri: shareUris) {
+        for (KeyShareUri shareUri : shareUris) {
             ShareAccessData accessData = createNonce(shareUri, sharesClientFac);
             audArray.add(accessData);
         }
@@ -124,8 +144,9 @@ public class SidMidAuthTokenCreator {
 
     /**
      * Create nonce for shareId using keyShareClient that will be signed as part of SDJWT.
+     *
      * @param shareUri shareId in server
-     * @param fac to get reference to KeyShareClient specific to shares server
+     * @param fac      to get reference to KeyShareClient specific to shares server
      * @return nonce created for shareId by shares-server
      * @throws ApiException if server nonce creation fails
      */
@@ -136,7 +157,7 @@ public class SidMidAuthTokenCreator {
         //  remove this once session token is implemented for MiD
         if (sessionToken != null) {
             disclosedSessionToken = this.sessionToken.getSessionToken(shareUri);
-            signingCertificate = this.sessionToken.signingCertificate;
+            signingCertificate = this.sessionToken.getSigningCertificate();
         }
 
         KeySharesClient shareClient = fac.getClientForServerUrl(shareUri.serverBaseUrl());

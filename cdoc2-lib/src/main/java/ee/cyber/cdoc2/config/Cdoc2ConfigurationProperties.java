@@ -119,6 +119,14 @@ public final class Cdoc2ConfigurationProperties {
     public static final String AUTH_SERVER_PROPERTIES = "auth-server.properties";
     public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth-server.client.hostUrl";
 
+    /** Defines CDOC2 Authentication Server client properties file location */
+    public static final String RP_SERVER_PROPERTIES = "rp-server.properties";
+    public static final String RP_SERVER_CLIENT_HOST_URL = "rp-server.client.hostUrl";
+    public static final String RP_SERVER_CLIENT_CERT_LEVEL = "rp-server.client.certificateLevel";
+    public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
+    public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
+        = "rp-server.client.ssl.trust-store-password";
+
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 
     public static boolean isOverWriteAllowed() {

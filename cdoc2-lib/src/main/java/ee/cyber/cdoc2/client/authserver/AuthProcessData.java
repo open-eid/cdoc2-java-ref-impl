@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.client.authServer;
+package ee.cyber.cdoc2.client.authserver;
 
 import java.util.UUID;
 

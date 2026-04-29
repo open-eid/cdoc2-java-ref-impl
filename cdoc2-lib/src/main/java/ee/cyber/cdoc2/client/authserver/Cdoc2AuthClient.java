@@ -1,10 +1,11 @@
-package ee.cyber.cdoc2.client.authServer;
+package ee.cyber.cdoc2.client.authserver;
 
 import jakarta.annotation.Nonnull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,6 +22,9 @@ import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 
 public class Cdoc2AuthClient {
+    private static final TimeUnit STATUS_POLL_SLEEP_TIMEUNIT = TimeUnit.SECONDS;
+    private static final long STATUS_POLL_SLEEP_QUANTITY = 1L;
+    private static final String AUTH_PROCESS_STATUS_STARTED = "STARTED";
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2AuthClient.class);
 
@@ -80,16 +84,26 @@ public class Cdoc2AuthClient {
 
         log.debug("Polling auth process status for UUID: {}", authProcessUuid);
 
-        AuthProcessStatusResponse status;
+        AuthProcessStatusResponse status = null;
         try {
-            status = authApi.getAuthProcessStatus(String.valueOf(authProcessUuid));
-            log.debug("Auth process {} status: {}", authProcessUuid, status);
+            while (status == null || AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
+                status = authApi.getAuthProcessStatus(String.valueOf(authProcessUuid));
+
+                if (status != null && !AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
+                    break;
+                }
+                log.debug("Incomplete auth process {} status: {}", authProcessUuid, status);
+                log.debug("Sleeping for {} {}", STATUS_POLL_SLEEP_QUANTITY,
+                    STATUS_POLL_SLEEP_TIMEUNIT);
+                STATUS_POLL_SLEEP_TIMEUNIT.sleep(STATUS_POLL_SLEEP_QUANTITY);
+            }
         } catch (ApiException ex) {
             throw wrapApiException(
                 "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
-        // TODO: Should we check the status and do some retrying?
         return status;
     }
 

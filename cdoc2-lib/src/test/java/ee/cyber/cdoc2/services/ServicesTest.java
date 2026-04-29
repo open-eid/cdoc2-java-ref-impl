@@ -1,21 +1,18 @@
 package ee.cyber.cdoc2.services;
 
-import ee.cyber.cdoc2.ClientConfigurationUtil;
-import ee.cyber.cdoc2.client.KeySharesClientFactory;
-import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.smartid.SmartIdClient;
-import ee.cyber.cdoc2.config.KeySharesConfiguration;
-import ee.cyber.cdoc2.config.SmartIdClientConfiguration;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.ClientConfigurationUtil;
+import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
+import ee.cyber.cdoc2.config.KeySharesConfiguration;
 
 import static ee.cyber.cdoc2.services.ThrowingFunction.suppressEx;
-import static ee.cyber.cdoc2.smartid.SmartIdClientTest.getDemoEnvConfiguration;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class ServicesTest {
@@ -23,33 +20,22 @@ class ServicesTest {
     private static final Logger log = LoggerFactory.getLogger(ServicesTest.class);
 
     @Test
-    void testServicesSimple() {
-        ServiceConfiguration<SmartIdClient, SmartIdClientConfiguration> conf =
-            new SIDServiceConfiguration(getDemoEnvConfiguration());
-        ServiceFac<SmartIdClient, SmartIdClientConfiguration> fac = conf.factory();
-        Service<SmartIdClient, SmartIdClientConfiguration> service = fac.create(conf);
-        SmartIdClient client = service.getDelegate();
-
-        assertNotNull(client);
-    }
-
-    @Test
     void testServicesRegisterService() {
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
-
-        Service<SmartIdClient, SmartIdClientConfiguration> sidService =
-            ServiceTemplate.service(sidConf, SmartIdClient::new);
+        Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> rpService =
+            ServiceTemplate.service(rpConf, Cdoc2RpClient::new);
 
         Service<KeySharesClientFactory, KeySharesConfiguration> keySharesFactoryService =
             ServiceTemplate.service(ClientConfigurationUtil.initKeySharesTestEnvConfiguration(),
                 suppressEx(config -> KeySharesClientHelper.createFactory(config)));
 
         Services services = new ServicesBuilder()
-            .registerService(SmartIdClient.class, sidService, null)
+            .registerService(Cdoc2RpClient.class, rpService, null)
             .registerService(KeySharesClientFactory.class, keySharesFactoryService, null)
             .build();
-        SmartIdClient client = services.get(SmartIdClient.class); //throws IllegalArgumentException if not found
+        Cdoc2RpClient client = services.get(Cdoc2RpClient.class); //throws IllegalArgumentException if not found
 
         // if no exception, we have a client. Keep linters happy
         assertNotNull(client);
@@ -58,69 +44,71 @@ class ServicesTest {
 
     @Test
     void shouldThrowWithNonMatchingParams() {
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
-        Service<SmartIdClient, SmartIdClientConfiguration> sidService =
-            ServiceTemplate.service(sidConf, SmartIdClient::new);
+        Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> sidService =
+            ServiceTemplate.service(rpConf, Cdoc2RpClient::new);
 
         // Service must be registered with registerService
         assertThrows(IllegalArgumentException.class, () -> new ServicesBuilder()
-            .register(SmartIdClient.class, sidService, null));
+            .register(Cdoc2RpClient.class, sidService, null));
 
         new ServicesBuilder()
-            .registerService(SmartIdClient.class, sidService, null);
+            .registerService(Cdoc2RpClient.class, sidService, null);
     }
 
     @Test
     void testServiceDecoratorConfiguration() {
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
-        ServiceConfiguration<SmartIdClient, SmartIdClientConfiguration> serviceConf =
-            ServiceTemplate.configuration(sidConf, conf -> new Service<SmartIdClient, SmartIdClientConfiguration>() {
+        ServiceConfiguration<Cdoc2RpClient, Cdoc2RpClientConfiguration> serviceConf =
+            ServiceTemplate.configuration(rpConf, conf -> new Service<Cdoc2RpClient, Cdoc2RpClientConfiguration>() {
 
                 @Override
-                public SmartIdClientConfiguration getConfiguration() {
+                public Cdoc2RpClientConfiguration getConfiguration() {
                     log.info("getConfiguration()");
                     return conf.getConfiguration();
                 }
 
                 @Override
-                public SmartIdClient getDelegate() {
+                public Cdoc2RpClient getDelegate() {
                     log.info("getDelegate()");
-                    return new SmartIdClient(conf.getConfiguration());
+                    return new Cdoc2RpClient(conf.getConfiguration());
                 }
             });
 
         assertNotNull(serviceConf);
 
-        SmartIdClientConfiguration smartIdClientConfiguration = serviceConf.getConfiguration();
-        assertNotNull(smartIdClientConfiguration);
-        assertNotNull(smartIdClientConfiguration.getHostUrl());
+        Cdoc2RpClientConfiguration rpClientConfiguration = serviceConf.getConfiguration();
+        assertNotNull(rpClientConfiguration);
+        assertNotNull(rpClientConfiguration.getHostUrl());
 
-        log.debug("SID URL: {}", smartIdClientConfiguration.getHostUrl());
+        log.debug("SID URL: {}", rpClientConfiguration.getHostUrl());
     }
 
     @Test
     void testServiceDecoratorServiceFromFactory() {
-
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
         // lambda to implement ServiceFac::create method
         // full signature: Service<S, C> create(ServiceConfigurationExt<S,C> config)
-        Service<SmartIdClient, SmartIdClientConfiguration> service =
-            ServiceTemplate.serviceFromFactory(sidConf, config -> new Service<>() { //implement
+        Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> service =
+            ServiceTemplate.serviceFromFactory(rpConf, config -> new Service<>() { //implement
 
-                // initialize SmartIdClient once
-                private final SmartIdClient smartIdClient = new SmartIdClient(sidConf);
+                // initialize Cdoc2RpClient once
+                private final Cdoc2RpClient rpClient = new Cdoc2RpClient(rpConf);
 
                 @Override
-                public SmartIdClientConfiguration getConfiguration() {
-                    return sidConf;
+                public Cdoc2RpClientConfiguration getConfiguration() {
+                    return rpConf;
                 }
 
                 @Override
-                public SmartIdClient getDelegate() {
-                    return smartIdClient;
+                public Cdoc2RpClient getDelegate() {
+                    return rpClient;
                 }
             });
 
@@ -129,39 +117,40 @@ class ServicesTest {
 
     @Test
     void testServiceDecoratorGenericService() {
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
-
-        Service<SmartIdClient, SmartIdClientConfiguration> service =
-            ServiceTemplate.serviceFromFactory(sidConf,
-                config -> new ServiceTemplate.GenericService<>(config, SmartIdClient::new));
+        Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> service =
+            ServiceTemplate.serviceFromFactory(rpConf,
+                config -> new ServiceTemplate.GenericService<>(config, Cdoc2RpClient::new));
 
         checkService(service);
     }
 
     @Test
     void testServiceDecoratorService() {
+        Cdoc2RpClientConfiguration rpConf =
+            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
 
-        SmartIdClientConfiguration sidConf = getDemoEnvConfiguration();
-
-        Service<SmartIdClient, SmartIdClientConfiguration> service =
-            ServiceTemplate.service(sidConf, SmartIdClient::new);
+        Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> service =
+            ServiceTemplate.service(rpConf, Cdoc2RpClient::new);
 
         checkService(service);
     }
 
-    private static void checkService(Service<SmartIdClient, SmartIdClientConfiguration> service) {
+    private static void checkService(Service<Cdoc2RpClient, Cdoc2RpClientConfiguration> service) {
         assertNotNull(service);
 
-        SmartIdClientConfiguration smartIdClientConfiguration = service.getConfiguration();
-        assertNotNull(smartIdClientConfiguration);
-        assertNotNull(smartIdClientConfiguration.getHostUrl());
-        log.debug("SID URL: {}", smartIdClientConfiguration.getHostUrl());
+        Cdoc2RpClientConfiguration rpClientConfiguration = service.getConfiguration();
+        assertNotNull(rpClientConfiguration);
+        assertNotNull(rpClientConfiguration.getHostUrl());
+        assertNotNull(rpClientConfiguration.getCertificateLevel());
+        log.debug("SID URL: {}", rpClientConfiguration.getHostUrl());
 
-        SmartIdClient smartIdClient = service.getDelegate();
-        assertNotNull(smartIdClient);
+        Cdoc2RpClient rpClient = service.getDelegate();
+        assertNotNull(rpClient);
 
         // check that client is not created twice, but cached client is used
-        assertSame(smartIdClient, service.getDelegate());
+        assertSame(rpClient, service.getDelegate());
     }
 }

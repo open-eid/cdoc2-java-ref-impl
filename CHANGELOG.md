@@ -4,6 +4,21 @@
 
 ### Internal
 * Created new client Cdoc2AuthClient for the cdoc2 authentication server.
+* Created new client Cdoc2RpClient for cdoc2 rp server
+* SID interaction changed to use Cdoc2RpClient, SmartIdClient removed
+* Auth token signature implementation in SIDAuthJWSSigner changed to use SID RPv3 protocol.
+* Session token creation and usage
+* Auth token certificate header `x-cdoc2-auth-x5c` format changed from single-line PEM with header 
+  and footer to Base64Url-encoded DER
+
+### Maven package versions:
+```
+cdoc2 3.2.0
+cdoc2-schema 2.1.0
+cdoc2-lib 3.4.0
+cdoc2-client 2.2.1
+cdoc2-cli 1.9.0
+```
 
 ## [3.1.2] Adding support for `secp521r1` elliptic curve (2026-03-06)
 

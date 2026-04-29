@@ -109,6 +109,16 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         return signerCertificate;
     }
 
+    /**
+     * Not used for MID signatures
+     * @return null
+     */
+    @Nullable
+    @Override
+    public String getSignatureValidationParamsBase64Url() {
+        return null;
+    }
+
     public static MidAuthenticationHashToSign calcHash(final byte[] bytesToSign, MidHashType hashType) {
 
         MidHashToSign hashToSign = MidHashToSign.newBuilder()
