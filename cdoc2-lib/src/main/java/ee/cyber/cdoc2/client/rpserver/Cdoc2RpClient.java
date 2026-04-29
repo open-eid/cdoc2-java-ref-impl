@@ -1,8 +1,15 @@
 package ee.cyber.cdoc2.client.rpserver;
 
 import jakarta.annotation.Nonnull;
+import jakarta.ws.rs.client.ClientBuilder;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
+import javax.net.ssl.SSLContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +20,7 @@ import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.exceptions.CdocRpClientException;
+import ee.cyber.cdoc2.util.ApiClientUtil;
 
 public class Cdoc2RpClient {
     private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClient.class);
@@ -26,7 +34,12 @@ public class Cdoc2RpClient {
      * @param conf client configuration
      */
     public Cdoc2RpClient(@Nonnull Cdoc2RpClientConfiguration conf) {
-        this.cdoc2RpApi = buildApi(conf);
+        try {
+            this.cdoc2RpApi = buildApi(conf);
+        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | KeyStoreException
+                 | KeyManagementException e) {
+            throw new RuntimeException(e);
+        }
         this.certificateLevel = CertificateLevel.valueOf(conf.getCertificateLevel());
     }
 
@@ -66,8 +79,25 @@ public class Cdoc2RpClient {
         return certificateLevel.name();
     }
 
-    private static Cdoc2RpApi buildApi(Cdoc2RpClientConfiguration conf) {
-        ee.cyber.cdoc2.client.api.ApiClient apiClient = new ee.cyber.cdoc2.client.api.ApiClient();
+    private static Cdoc2RpApi buildApi(Cdoc2RpClientConfiguration conf)
+        throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+
+        KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
+            conf.getTrustStore(),
+            "JKS",
+            conf.getTrustStorePassword()
+        );
+        SSLContext sslContext = ApiClientUtil.createSslContext(trustStore, log);
+
+        ee.cyber.cdoc2.client.api.ApiClient apiClient = new ee.cyber.cdoc2.client.api.ApiClient() {
+            @Override
+            protected void customizeClientBuilder(ClientBuilder clientBuilder) {
+                if (sslContext != null) {
+                    clientBuilder.sslContext(sslContext);
+                }
+            }
+        };
+
         apiClient.setBasePath(conf.getHostUrl());
 
         log.info("Cdoc2AuthClient configured with base URL: {}", conf.getHostUrl());

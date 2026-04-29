@@ -1,18 +1,23 @@
 package ee.cyber.cdoc2.client.authserver;
 
 import jakarta.annotation.Nonnull;
+import jakarta.ws.rs.client.ClientBuilder;
 
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.SSLContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.client.api.ApiClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.api.Cdoc2AuthApi;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
@@ -20,6 +25,7 @@ import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.client.model.WellKnownResponse;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
+import ee.cyber.cdoc2.util.ApiClientUtil;
 
 public class Cdoc2AuthClient {
     private static final TimeUnit STATUS_POLL_SLEEP_TIMEUNIT = TimeUnit.SECONDS;
@@ -28,7 +34,9 @@ public class Cdoc2AuthClient {
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2AuthClient.class);
 
-    /** Matches the UUID at the end of a Location header like /auth/status/{authProcessUuid} */
+    /**
+     * Matches the UUID at the end of a Location header like /auth/status/{authProcessUuid}
+     */
     private static final Pattern AUTH_PROCESS_UUID_PATTERN =
         Pattern.compile("/auth/status/([^/]+)$");
 
@@ -40,16 +48,39 @@ public class Cdoc2AuthClient {
      * @param conf client configuration
      */
     public Cdoc2AuthClient(@Nonnull Cdoc2AuthClientConfiguration conf) {
-        this.authApi = buildApi(conf);
+        try {
+            KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
+                conf.getTrustStore(),
+                "JKS",
+                conf.getTrustStorePassword()
+            );
+            this.authApi = buildApi(conf, trustStore);
+        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    /**
+     * Constructs a {@code Cdoc2AuthClient} from the supplied configuration, but using the
+     * provided truststore instead
+     *
+     * @param conf       client configuration
+     * @param trustStore truststore
+     */
+    public Cdoc2AuthClient(@Nonnull Cdoc2AuthClientConfiguration conf, KeyStore trustStore) {
+        try {
+            this.authApi = buildApi(conf, trustStore);
+        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Starts an authentication process for the given identity.
      *
      * @param authIdentity the identity to authenticate
      * @return the {@code authProcessUuid} extracted from the {@code Location} response header
-     *         and the verification code from the requests body.
+     * and the verification code from the requests body.
      * @throws CdocAuthClientException if the API call fails or the UUID cannot be extracted
      */
     public AuthProcessData startAuth(@Nonnull AuthIdentity authIdentity) throws CdocAuthClientException {
@@ -126,8 +157,20 @@ public class Cdoc2AuthClient {
         }
     }
 
-    private static Cdoc2AuthApi buildApi(Cdoc2AuthClientConfiguration conf) {
-        ApiClient apiClient = new ApiClient();
+    private static Cdoc2AuthApi buildApi(Cdoc2AuthClientConfiguration conf, KeyStore trustStore)
+        throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+
+        SSLContext sslContext = ApiClientUtil.createSslContext(trustStore, log);
+
+        ee.cyber.cdoc2.client.api.ApiClient apiClient = new ee.cyber.cdoc2.client.api.ApiClient() {
+            @Override
+            protected void customizeClientBuilder(ClientBuilder clientBuilder) {
+                if (sslContext != null) {
+                    clientBuilder.sslContext(sslContext);
+                }
+            }
+        };
+
         apiClient.setBasePath(conf.getHostUrl());
 
         log.info("Cdoc2AuthClient configured with base URL: {}", conf.getHostUrl());
@@ -179,7 +222,7 @@ public class Cdoc2AuthClient {
             case 401 -> "Unauthorized — missing or invalid auth ticket";
             case 403 -> "Forbidden — authentication failed";
             case 404 -> "Not found — record missing or recipient ID mismatch";
-            default  -> "Unexpected server response";
+            default -> "Unexpected server response";
         };
         log.error("{}: {} (HTTP {})", context, detail, ex.getCode());
         return new CdocAuthClientException(context + ": " + detail + " (HTTP " + ex.getCode() + ")", ex);

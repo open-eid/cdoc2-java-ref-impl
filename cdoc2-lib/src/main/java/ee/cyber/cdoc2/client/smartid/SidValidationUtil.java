@@ -92,13 +92,16 @@ public final class SidValidationUtil {
         throws ConfigurationLoadingException {
 
         try (InputStream is = Resources.getResourceAsStream(
-            rpServerClientConfig.getTrustStore(), SidValidationUtil.class.getClassLoader())
+            rpServerClientConfig.getAuthenticationTrustStore(), SidValidationUtil.class.getClassLoader())
         ) {
             if (null == is) {
                 throw new ConfigurationLoadingException(CERT_NOT_FOUND);
             } else {
                 KeyStore trustStore = KeyStore.getInstance("JKS");
-                trustStore.load(is, rpServerClientConfig.getTrustStorePassword().toCharArray());
+                trustStore.load(
+                    is,
+                    rpServerClientConfig.getAuthenticationTrustStorePassword().toCharArray()
+                );
                 return trustStore;
             }
         } catch (CertificateException

@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.authServer;
 
+import java.security.KeyStore;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
+import ee.cyber.cdoc2.util.ApiClientUtil;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
@@ -21,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Cdoc2AuthClientTest {
 
-    private static final int WIREMOCK_PORT = 8080;
+    private static final int WIREMOCK_PORT = 7500;
 
     private static final String DEFAULT_IDENTIFIER = "etsi/";
-    private static final String IDENTIFIER_OK = "PNOEE-40504040001-DEM0-Q";
+    private static final String IDENTIFIER_OK = "PNOEE-40504040001";
     private static final String DEFAULT_MOBILE_NR = "1234567890";
     private static final String DEFAULT_VERIFICATION_CODE = "1234";
 
@@ -33,12 +35,24 @@ public class Cdoc2AuthClientTest {
 
 
     Cdoc2AuthClientTest() throws ConfigurationLoadingException {
-        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
+        KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
+            "classpath:wiremock_truststore.jks",
+            "JKS",
+            "changeit"
+        );
+
+        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration(), trustStore);
     }
 
     @RegisterExtension
     static WireMockExtension wiremock = WireMockExtension.newInstance()
-        .options(wireMockConfig().port(WIREMOCK_PORT))
+        .options(wireMockConfig()
+            .httpsPort(WIREMOCK_PORT)
+            .keystorePath("wiremock_keystore.p12")
+            .keystorePassword("changeit")
+            .keyManagerPassword("changeit")
+            .keystoreType("PKCS12")
+        )
         .build();
 
     @BeforeEach
