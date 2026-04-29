@@ -164,8 +164,6 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
             SidAuthenticateRequest request = new SidAuthenticateRequest()
                 .semanticsIdentifier(signerId.getSemanticsIdentifier())
-                .relyingPartyName("DigiDoc4")
-                .relyingPartyUUID(UUID.randomUUID())
                 .certificateLevel(AuthCertificateLevel.fromValue(rpClient.getCertificateLevel()))
                 .signatureProtocol(AuthSignatureProtocol.ACSP_V2)
                 .signatureProtocolParameters(new AuthSignatureProtocolParameters()
