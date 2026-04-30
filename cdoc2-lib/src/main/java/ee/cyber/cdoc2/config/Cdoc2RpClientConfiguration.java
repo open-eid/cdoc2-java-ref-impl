@@ -15,4 +15,6 @@ public interface Cdoc2RpClientConfiguration {
     String getCertificateLevel();
     String getTrustStore();
     String getTrustStorePassword();
+    String getAuthenticationTrustStore();
+    String getAuthenticationTrustStorePassword();
 }

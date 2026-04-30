@@ -12,4 +12,6 @@ public interface Cdoc2AuthClientConfiguration {
     }
 
     String getHostUrl();
+    String getTrustStore();
+    String getTrustStorePassword();
 }

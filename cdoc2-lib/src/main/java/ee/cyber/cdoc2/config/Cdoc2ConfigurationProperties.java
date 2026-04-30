@@ -118,6 +118,10 @@ public final class Cdoc2ConfigurationProperties {
     /** Defines CDOC2 Authentication Server client properties file location */
     public static final String AUTH_SERVER_PROPERTIES = "auth-server.properties";
     public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth-server.client.hostUrl";
+    public static final String AUTH_SERVER_CLIENT_TRUST_STORE =
+        "auth-server.client.ssl.trust-store";
+    public static final String AUTH_SERVER_CLIENT_TRUST_STORE_PWD
+        = "auth-server.client.ssl.trust-store-password";
 
     /** Defines CDOC2 Authentication Server client properties file location */
     public static final String RP_SERVER_PROPERTIES = "rp-server.properties";
@@ -126,6 +130,9 @@ public final class Cdoc2ConfigurationProperties {
     public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
+    public static final String RP_SERVER_AUTHENTICATION_TRUST_STORE = "rp-server.authentication.trust-store";
+    public static final String RP_SERVER_AUTHENTICATION_TRUST_STORE_PWD
+        = "rp-server.authentication.trust-store-password";
 
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 

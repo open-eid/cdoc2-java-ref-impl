@@ -1,10 +1,18 @@
 package ee.cyber.cdoc2.util;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.CertificateException;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
+import org.slf4j.Logger;
 
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.ExtApiException;
@@ -53,4 +61,27 @@ public final class ApiClientUtil {
         }
     }
 
+    public static SSLContext createSslContext(KeyStore trustStore, Logger log)
+        throws NoSuchAlgorithmException,
+        KeyStoreException,
+        KeyManagementException {
+
+        SSLContext sslContext;
+        try {
+            TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(trustStore);
+
+            sslContext = SSLContext.getInstance("TLSv1.3");
+            sslContext.init(
+                null,
+                trustManagerFactory.getTrustManagers(),
+                SecureRandom.getInstanceStrong()
+            );
+        } catch (GeneralSecurityException gse) {
+            log.error("Error initializing SSLContext", gse);
+            throw gse;
+        }
+        return sslContext;
+    }
 }

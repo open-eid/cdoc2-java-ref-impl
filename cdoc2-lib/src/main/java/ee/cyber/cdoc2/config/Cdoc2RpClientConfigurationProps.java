@@ -19,7 +19,9 @@ public record Cdoc2RpClientConfigurationProps(
     String hostUrl,
     String certificateLevel,
     String trustStore,
-    String trustStorePassword
+    String trustStorePassword,
+    String authenticationTrustStore,
+    String authenticationTrustStorePassword
 ) implements Cdoc2RpClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClientConfigurationProps.class);
@@ -33,9 +35,15 @@ public record Cdoc2RpClientConfigurationProps(
         String certificateLevel = getRequiredProperty(properties, RP_SERVER_CLIENT_CERT_LEVEL);
         String trustStore = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE);
         String trustStorePassword = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE_PWD);
+        String authenticationTrustStore =
+            getRequiredProperty(properties, RP_SERVER_AUTHENTICATION_TRUST_STORE);
+        String authenticationTrustStorePassword =
+            getRequiredProperty(properties, RP_SERVER_AUTHENTICATION_TRUST_STORE_PWD);
+
 
         return new Cdoc2RpClientConfigurationProps(
-            hostUrl, certificateLevel, trustStore, trustStorePassword
+            hostUrl, certificateLevel, trustStore, trustStorePassword,
+            authenticationTrustStore, authenticationTrustStorePassword
         );
     }
 
@@ -57,5 +65,15 @@ public record Cdoc2RpClientConfigurationProps(
     @Override
     public String getTrustStorePassword() {
         return trustStorePassword;
+    }
+
+    @Override
+    public String getAuthenticationTrustStore() {
+        return authenticationTrustStore;
+    }
+
+    @Override
+    public String getAuthenticationTrustStorePassword() {
+        return authenticationTrustStorePassword;
     }
 }

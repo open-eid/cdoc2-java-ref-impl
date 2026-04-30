@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 class Cdoc2RpClientConfigurationTest {
-    private static final String HOST_URL = "http://localhost:9080";
+    private static final String HOST_URL = "https://localhost:7600";
     private static final String CERTIFICATE_LEVEL = "QUALIFIED";
 
     @Test

@@ -21,16 +21,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Cdoc2AuthClientTest {
 
-    private static final int WIREMOCK_PORT = 8080;
+    private static final int WIREMOCK_PORT = 7500;
 
     private static final String DEFAULT_IDENTIFIER = "etsi/";
-    private static final String IDENTIFIER_OK = "PNOEE-40504040001-DEM0-Q";
+    private static final String IDENTIFIER_OK = "PNOEE-40504040001";
     private static final String DEFAULT_MOBILE_NR = "1234567890";
     private static final String DEFAULT_VERIFICATION_CODE = "1234";
 
     private final Cdoc2AuthClient cdoc2AuthClient;
     private Cdoc2AuthClientMock cdoc2AuthClientMock;
-
 
     Cdoc2AuthClientTest() throws ConfigurationLoadingException {
         this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
@@ -38,7 +37,13 @@ public class Cdoc2AuthClientTest {
 
     @RegisterExtension
     static WireMockExtension wiremock = WireMockExtension.newInstance()
-        .options(wireMockConfig().port(WIREMOCK_PORT))
+        .options(wireMockConfig()
+            .httpsPort(WIREMOCK_PORT)
+            .keystorePath("wiremock_keystore.p12")
+            .keystorePassword("changeit")
+            .keyManagerPassword("changeit")
+            .keystoreType("PKCS12")
+        )
         .build();
 
     @BeforeEach

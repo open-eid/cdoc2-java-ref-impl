@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.AUTH_SERVER_CLIENT_HOST_URL;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 
 /**
@@ -16,7 +16,9 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param hostUrl client host URL
  */
 public record Cdoc2AuthClientConfigurationProps(
-    String hostUrl
+    String hostUrl,
+    String trustStore,
+    String trustStorePassword
 ) implements Cdoc2AuthClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2AuthClientConfigurationProps.class);
@@ -27,14 +29,27 @@ public record Cdoc2AuthClientConfigurationProps(
         log.debug("Loading CDOC2 authentication server client configuration.");
 
         String hostUrl = getRequiredProperty(properties, AUTH_SERVER_CLIENT_HOST_URL);
+        String trustStore = getRequiredProperty(properties, AUTH_SERVER_CLIENT_TRUST_STORE);
+        String trustStorePassword = getRequiredProperty(properties,
+            AUTH_SERVER_CLIENT_TRUST_STORE_PWD);
 
         return new Cdoc2AuthClientConfigurationProps(
-            hostUrl
+            hostUrl, trustStore, trustStorePassword
         );
     }
 
     @Override
     public String getHostUrl() {
         return hostUrl;
+    }
+
+    @Override
+    public String getTrustStore() {
+        return trustStore;
+    }
+
+    @Override
+    public String getTrustStorePassword() {
+        return trustStorePassword;
     }
 }
