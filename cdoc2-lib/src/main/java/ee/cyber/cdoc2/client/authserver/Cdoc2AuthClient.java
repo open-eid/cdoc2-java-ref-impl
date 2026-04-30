@@ -61,21 +61,6 @@ public class Cdoc2AuthClient {
     }
 
     /**
-     * Constructs a {@code Cdoc2AuthClient} from the supplied configuration, but using the
-     * provided truststore instead
-     *
-     * @param conf       client configuration
-     * @param trustStore truststore
-     */
-    public Cdoc2AuthClient(@Nonnull Cdoc2AuthClientConfiguration conf, KeyStore trustStore) {
-        try {
-            this.authApi = buildApi(conf, trustStore);
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * Starts an authentication process for the given identity.
      *
      * @param authIdentity the identity to authenticate

@@ -1,6 +1,5 @@
 package ee.cyber.cdoc2.authServer;
 
-import java.security.KeyStore;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
-import ee.cyber.cdoc2.util.ApiClientUtil;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
@@ -33,15 +31,8 @@ public class Cdoc2AuthClientTest {
     private final Cdoc2AuthClient cdoc2AuthClient;
     private Cdoc2AuthClientMock cdoc2AuthClientMock;
 
-
     Cdoc2AuthClientTest() throws ConfigurationLoadingException {
-        KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
-            "classpath:wiremock_truststore.jks",
-            "JKS",
-            "changeit"
-        );
-
-        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration(), trustStore);
+        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
     }
 
     @RegisterExtension
