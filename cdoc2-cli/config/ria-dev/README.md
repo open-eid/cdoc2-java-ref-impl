@@ -40,19 +40,20 @@ java -jar target/cdoc2-cli-*.jar decrypt --server=config/ria-dev/ria-dev_pkcs12.
 ```
 java -jar target/cdoc2-cli-*.jar create \
 -Dkey-shares.properties=config/ria-dev/key-shares.properties \
--Dsmart-id.properties=config/smart-id/smart-id.properties \
---smart-id=30303039914 \
--f /tmp/SID_30303039914.cdoc2 \
+--smart-id=40504040001 \
+-f /tmp/40504040001.cdoc2 \
 README.md
 ```
 
 ### Decrypt with Smart-ID
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt \
+java \
 -Dkey-shares.properties=config/ria-dev/key-shares.properties \
--Dsmart-id.properties=config/smart-id/smart-id.properties \
---smart-id=30303039914 \
--f /tmp/SID_30303039914.cdoc2 \
--o /tmp
+-Dauth-server.properties=config/ria-dev/auth-server.properties \
+-Drp-server.properties=config/ria-dev/rp-server.properties \
+-jar target/cdoc2-cli-*.jar decrypt \
+-sid=40504040001 \
+-f /tmp/40504040001.cdoc2 \
+--output /tmp
 ```
