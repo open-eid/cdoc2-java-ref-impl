@@ -25,4 +25,6 @@ public interface KeySharesConfiguration {
 
     KeyStore getClientTrustStore();
 
+    boolean getClientServerDebug();
+
 }

@@ -157,6 +157,7 @@ public class Cdoc2AuthClient {
         };
 
         apiClient.setBasePath(conf.getHostUrl());
+        apiClient.setDebugging(conf.getClientServerDebug());
 
         log.info("Cdoc2AuthClient configured with base URL: {}", conf.getHostUrl());
         return new Cdoc2AuthApi(apiClient);

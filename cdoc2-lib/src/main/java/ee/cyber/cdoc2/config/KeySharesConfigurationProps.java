@@ -12,6 +12,7 @@ import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
+import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 
 
 /**
@@ -22,13 +23,15 @@ import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
  * @param keySharesServersMinNum minimum quantity of key shares servers
  * @param keySharesAlgorithm key shares algorithm
  * @param clientTrustStore client trust store
+ * @param clientServerDebug turn on debug logs for client
  */
 public record KeySharesConfigurationProps(
     int keySharesServersNum,
     Set<String> keySharesServersUrls,
     int keySharesServersMinNum,
     String keySharesAlgorithm,
-    KeyStore clientTrustStore
+    KeyStore clientTrustStore,
+    boolean clientServerDebug
 ) implements KeySharesConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(KeySharesConfigurationProps.class);
@@ -67,13 +70,15 @@ public record KeySharesConfigurationProps(
             clientTrustStoreType,
             clientTrustStorePw
         );
+        Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
         return new KeySharesConfigurationProps(
             keySharesServersNum,
             keySharesServersUrls,
             keySharesServersMinNum,
             keySharesAlgorithm,
-            clientTrustStore
+            clientTrustStore,
+            clientServerDebug
         );
     }
 
@@ -113,6 +118,11 @@ public record KeySharesConfigurationProps(
     @Override
     public KeyStore getClientTrustStore() {
         return clientTrustStore;
+    }
+
+    @Override
+    public boolean getClientServerDebug() {
+        return clientServerDebug;
     }
 
 }
