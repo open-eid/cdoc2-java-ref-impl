@@ -8,12 +8,19 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 
 /**
  * CDOC2 Authentication Server Client configuration properties.
  *
  * @param hostUrl client host URL
+ * @param certificateLevel Certificate level to use for SiD
+ * @param trustStore client trust store
+ * @param trustStorePassword client trust store password
+ * @param authenticationTrustStore authentication trust store
+ * @param authenticationTrustStorePassword authentication trust store password
+ * @param clientServerDebug turn on debug logs for client
  */
 public record Cdoc2RpClientConfigurationProps(
     String hostUrl,
@@ -21,7 +28,8 @@ public record Cdoc2RpClientConfigurationProps(
     String trustStore,
     String trustStorePassword,
     String authenticationTrustStore,
-    String authenticationTrustStorePassword
+    String authenticationTrustStorePassword,
+    boolean clientServerDebug
 ) implements Cdoc2RpClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClientConfigurationProps.class);
@@ -39,11 +47,11 @@ public record Cdoc2RpClientConfigurationProps(
             getRequiredProperty(properties, RP_SERVER_AUTHENTICATION_TRUST_STORE);
         String authenticationTrustStorePassword =
             getRequiredProperty(properties, RP_SERVER_AUTHENTICATION_TRUST_STORE_PWD);
-
+        Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
         return new Cdoc2RpClientConfigurationProps(
             hostUrl, certificateLevel, trustStore, trustStorePassword,
-            authenticationTrustStore, authenticationTrustStorePassword
+            authenticationTrustStore, authenticationTrustStorePassword, clientServerDebug
         );
     }
 
@@ -75,5 +83,10 @@ public record Cdoc2RpClientConfigurationProps(
     @Override
     public String getAuthenticationTrustStorePassword() {
         return authenticationTrustStorePassword;
+    }
+
+    @Override
+    public boolean getClientServerDebug() {
+        return clientServerDebug;
     }
 }
