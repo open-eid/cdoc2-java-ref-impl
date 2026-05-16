@@ -1,19 +1,20 @@
 package ee.cyber.cdoc2.mobileid;
 
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
 import java.util.List;
+import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.X509CertUtils;
@@ -21,25 +22,58 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
-import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
+import ee.cyber.cdoc2.crypto.jwt.SessionToken;
+import ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static ee.cyber.cdoc2.authServer.Cdoc2AuthClientMock.SESSION_TOKEN_NONCE_LOCALHOST_7600_BASE64URL;
+import static ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock.MID_SIGNING_CERTIFICATE_BASE64URL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class MIDAuthJWSSignerTest {
-
     private static final Logger log = LoggerFactory.getLogger(MIDAuthJWSSignerTest.class);
-
     private static final String AUD = "https://junit.cdoc2.ria.ee/key-shares/12345/nonce/6789";
+    private static final int RP_WIREMOCK_PORT = 7600;
+    private static final UUID SESSION_ID = UUID.fromString("3fa85f64-5717-4562-b3fc-2c963f66afa6");
+
+    private Cdoc2RpClientMock cdoc2RpClientMock;
+
+    @RegisterExtension
+    static WireMockExtension rpWiremock = WireMockExtension.newInstance()
+        .options(wireMockConfig()
+            .httpDisabled(true)
+            .httpsPort(RP_WIREMOCK_PORT)
+            .keystorePath("wiremock_keystore.p12")
+            .keystorePassword("changeit")
+            .keyManagerPassword("changeit")
+            .keystoreType("PKCS12")
+        )
+        .build();
+
+    @BeforeEach
+    void setUp() {
+        cdoc2RpClientMock = new Cdoc2RpClientMock(rpWiremock);
+    }
 
     @Tag("net")
     @Test
-    void testGenerateJWTWithMIDSignature() throws JOSEException, ParseException {
-        MobileIdClient mobileIdClient = MIDTestData.getDemoEnvClient();
-        assertNotNull(mobileIdClient);
+    void testGenerateJWTWithMIDSignature() throws Exception {
+        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
+        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+
+        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
+        assertNotNull(rpClient);
+
+        SessionToken sessionToken = new SessionToken(
+            SESSION_TOKEN_NONCE_LOCALHOST_7600_BASE64URL,
+            MID_SIGNING_CERTIFICATE_BASE64URL
+        );
 
         String phoneNumber = MIDTestData.OK_1_PHONE_NUMBER;
         String identityCode = MIDTestData.OK_1_IDENTITY_CODE;
@@ -53,9 +87,10 @@ public class MIDAuthJWSSignerTest {
                 log.debug("Verification code: {}", verificationCode[0]);
             });
 
-
         MIDAuthJWSSigner midJWSSigner
-            = new MIDAuthJWSSigner(etsiIdentifier, phoneNumber, mobileIdClient, interactionParams);
+            = new MIDAuthJWSSigner(etsiIdentifier, phoneNumber, rpClient, interactionParams,
+            sessionToken
+        );
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
             .audience(List.of(AUD))
@@ -84,20 +119,23 @@ public class MIDAuthJWSSignerTest {
         log.debug("cert issuer {}", signerCert.getIssuerX500Principal());
         log.debug("pub key: {}", getECPublicKeyJWK(signerCert));
 
-        var signerPubKey = ECKey.parse(signerCert).toECPublicKey();
+        // TODO since the Cdoc2RpApi response is mocked, we would need to implement MID signing
+        //  in the mock for the signature verification to work. However, then we would
+        //  essentially be testing a test implementation. Consider if that makes sense, else remove.
+//        var signerPubKey = ECKey.parse(signerCert).toECPublicKey();
 
-        SignedJWT parsedJWT = SignedJWT.parse(jwtStr);
-        JWSVerifier jwsVerifier = new ECDSAVerifier(signerPubKey);
+//        SignedJWT parsedJWT = SignedJWT.parse(jwtStr);
+//        JWSVerifier jwsVerifier = new ECDSAVerifier(signerPubKey);
 
-        assertTrue(parsedJWT.verify(jwsVerifier));
+//        assertTrue(parsedJWT.verify(jwsVerifier));
 
-//        SIDAuthCertData certData = SIDAuthCertData.parse(signerCert);
-
-//        assertEquals(etsiIdentifier.getSemanticsIdentifier(), certData.getSemanticsIdentifier());
+        String signerCertSemanticsIdentifier = SIDAuthCertData.parseSemanticsIdentifier(signerCert);
+        assertEquals(etsiIdentifier.getSemanticsIdentifier(), signerCertSemanticsIdentifier);
     }
 
     /**
      * Extract EC public key from certificate
+     *
      * @param certificate containing EC public key
      * @return EC public from certificate as JWK
      * @throws JOSEException If an error occurs during encoding or writing

@@ -64,10 +64,11 @@ import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
+import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
+import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
@@ -82,6 +83,7 @@ import ee.cyber.cdoc2.crypto.RsaUtils;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.encrypt.EstEncKeyMaterialBuilder;
+import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.fbs.header.Header;
 import ee.cyber.cdoc2.fbs.header.RecipientRecord;
 import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
@@ -89,11 +91,12 @@ import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
 import ee.cyber.cdoc2.mobileid.MIDTestData;
+import ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock;
 import ee.cyber.cdoc2.services.Services;
 import ee.cyber.cdoc2.services.ServicesBuilder;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.*;
 import static ee.cyber.cdoc2.KeyUtil.*;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.*;
@@ -111,21 +114,45 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EnvelopeTest implements TestLifecycleLogger {
     private static final Logger log = LoggerFactory.getLogger(EnvelopeTest.class);
+    private static final UUID SESSION_ID = UUID.fromString("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
     private static KeyLabelParams bobKeyLabelParams;
 
     private Cdoc2AuthClientMock cdoc2AuthClientMock;
+    private Cdoc2RpClientMock cdoc2RpClientMock;
+    private final Cdoc2AuthClient cdoc2AuthClient;
 
-    private static final int WIREMOCK_PORT = 8080;
+    private static final int AUTH_WIREMOCK_PORT = 7500;
+    private static final int RP_WIREMOCK_PORT = 7600;
 
     @RegisterExtension
-    static WireMockExtension wiremock = WireMockExtension.newInstance()
-        .options(wireMockConfig().port(WIREMOCK_PORT))
+    static WireMockExtension authWiremock = WireMockExtension.newInstance()
+        .options(wireMockConfig()
+            .httpDisabled(true)
+            .httpsPort(AUTH_WIREMOCK_PORT)
+            .keystorePath("wiremock_keystore.p12")
+            .keystorePassword("changeit")
+            .keyManagerPassword("changeit")
+            .keystoreType("PKCS12")
+        )
+        .build();
+
+    @RegisterExtension
+    static WireMockExtension rpWiremock = WireMockExtension.newInstance()
+        .options(wireMockConfig()
+            .httpDisabled(true)
+            .httpsPort(RP_WIREMOCK_PORT)
+            .keystorePath("wiremock_keystore.p12")
+            .keystorePassword("changeit")
+            .keyManagerPassword("changeit")
+            .keystoreType("PKCS12")
+        )
         .build();
 
     @BeforeEach
     void setUp() {
-        cdoc2AuthClientMock = new Cdoc2AuthClientMock(wiremock);
+        cdoc2AuthClientMock = new Cdoc2AuthClientMock(authWiremock);
+        cdoc2RpClientMock = new Cdoc2RpClientMock(rpWiremock);
     }
 
     @Mock
@@ -146,6 +173,10 @@ class EnvelopeTest implements TestLifecycleLogger {
     KeySharesClientFactory sharesClientFactory;
 
     Capsule capsuleData;
+
+    EnvelopeTest() throws ConfigurationLoadingException {
+        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
+    }
 
     @BeforeAll
     static void init() {
@@ -616,58 +647,60 @@ class EnvelopeTest implements TestLifecycleLogger {
         );
     }
 
+    @Test
+    void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
+        var authProccessUuid = UUID.randomUUID();
+        var sidSessionId = UUID.randomUUID();
+        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        cdoc2RpClientMock.stubSidAuthenticate(sidSessionId);
+        cdoc2RpClientMock.stubSidSession(sidSessionId);
 
-    //TODO Equivalent tests using cdoc2-rp-api. Probably mocked.
+        setupKeyShareClientMocks();
 
-//    @Disabled // TODO: Currently fails because of the Smart-ID demo API issues
-//    @Test
-//    void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
-//        var authProccessUuid = UUID.randomUUID();
-//        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
-//        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
-//
-//        // SID demo env that authenticates automatically
-//        setupKeyShareClientMocks();
-//
-//        AuthenticationIdentifier.AuthenticationType authType
-//            = AuthenticationIdentifier.AuthenticationType.SID;
-//        String idCode = "50001029996";
-//
-//        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
-//            createSemanticsIdentifier(idCode), authType
-//        );
-//
-//        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
-//            tempDir,
-//            authIdentifier,
-//            authIdentifier,
-//            sharesClientFactory
-//        );
-//
-//        verifyMockedKeyShareClients();
-//
-//        //TODO: RM-4756, mock SmartIdClient
-//        SmartIdClient smartIdClient = new SmartIdClient(getDemoEnvConfiguration());
-//        Cdoc2AuthClient cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
-//        Services services = new ServicesBuilder()
-//            .register(KeySharesClientFactory.class, sharesClientFactory, null)
-//            .register(SmartIdClient.class, smartIdClient, null)
-//            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
-//            .build();
-//
-//        checkContainerDecrypt(
-//            decryptionData.cdocContainerBytes(),
-//            decryptionData.outDir(),
-//            decryptionData.decryptionKeyMaterial(),
-//            List.of(decryptionData.payloadFileName()),
-//            decryptionData.payloadFileName(),
-//            decryptionData.payloadData(),
-//            services
-//        );
-//    }
+        AuthenticationIdentifier.AuthenticationType authType
+            = AuthenticationIdentifier.AuthenticationType.SID;
+        String idCode = "50001029996";
+
+        AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
+            createSemanticsIdentifier(idCode), authType
+        );
+
+        EnvelopeTestUtils.DecryptionData decryptionData = testContainerWithKeyShares(
+            tempDir,
+            authIdentifier,
+            authIdentifier,
+            sharesClientFactory
+        );
+
+        verifyMockedKeyShareClients();
+
+        Cdoc2RpClient rpClient = new Cdoc2RpClient(getCdoc2RpClientDemoEnvConfiguration());
+        Services services = new ServicesBuilder()
+            .register(KeySharesClientFactory.class, sharesClientFactory, null)
+            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
+            .build();
+
+        checkContainerDecrypt(
+            decryptionData.cdocContainerBytes(),
+            decryptionData.outDir(),
+            decryptionData.decryptionKeyMaterial(),
+            List.of(decryptionData.payloadFileName()),
+            decryptionData.payloadFileName(),
+            decryptionData.payloadData(),
+            services
+        );
+    }
 
     @Test
     void testKeySharesScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        var authProccessUuid = UUID.randomUUID();
+        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
+        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+
         // MID demo env that authenticates automatically
         setupKeyShareClientMocks();
         String idCode = "51307149560";
@@ -689,12 +722,12 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         verifyMockedKeyShareClients();
 
-        //  TODO: RM-4756, mock MobileIdClient
-        MobileIdClient midClient = MIDTestData.getDemoEnvClient();
+        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
-            .register(MobileIdClient.class, midClient, null)
+            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
             .build();
 
         checkContainerDecrypt(
@@ -759,7 +792,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         // ensure that re-encrypted container is decipherable
         assertDoesNotThrow(
-            () ->  checkContainerDecrypt(
+            () -> checkContainerDecrypt(
                 Files.readAllBytes(outputCDocFile.toPath()),
                 destinationDir,
                 DecryptionKeyMaterial.fromPassword(password.toCharArray(), passwordKeyLabel),
@@ -773,6 +806,12 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @Test
     void testReEncryptionScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
+        var authProccessUuid = UUID.randomUUID();
+        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
+        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+
         // encrypt initial cdoc2 document
         setupKeyShareClientMocks();
         String idCode = "60001017869";
@@ -812,12 +851,12 @@ class EnvelopeTest implements TestLifecycleLogger {
         when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
         when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
 
-        //  TODO: RM-4756, mock MobileIdClient
-        MobileIdClient midClient = MIDTestData.getDemoEnvClient();
+        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
-            .register(MobileIdClient.class, midClient, null)
+            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
             .build();
 
         // run re-encryption flow
@@ -890,13 +929,13 @@ class EnvelopeTest implements TestLifecycleLogger {
         assertEquals(Capsule.CapsuleTypeEnum.RSA, capsuleData.getCapsuleType());
 
         assertEquals(rsaKeyPair.getPublic(), RsaUtils.decodeRsaPubKey(capsuleData.getRecipientId()));
-        assertEquals(((RSAPublicKey)rsaKeyPair.getPublic()).getModulus().bitLength(),
+        assertEquals(((RSAPublicKey) rsaKeyPair.getPublic()).getModulus().bitLength(),
             capsuleData.getEphemeralKeyMaterial().length * 8);
     }
 
-
     /**
      * Disable on Windows, because deleting the temp file by cdoc2 and junit concurrently fails
+     *
      * @param tempDir
      * @throws Exception
      */
@@ -954,6 +993,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     /**
      * This test fails under Windows because creating file with this invalid file name fails first
+     *
      * @param tempDir
      * @throws Exception
      */
@@ -1122,6 +1162,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         assertEquals(newCdocBytes.length, wrongMacIs.getByteCount());
     }
 
+    // TODO This test is a bit flaky, causing rare build failures
     @Test
     void testIllegalTarEntryType(@TempDir Path tempDir) throws Exception {
 
@@ -1263,7 +1304,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         Map<PublicKey, String> keyLabelMap = new HashMap<>();
         Instant start = Instant.now();
-        for  (int i = 1; i < maxRecipientsNum; i++) {
+        for (int i = 1; i < maxRecipientsNum; i++) {
             keyLabelMap.put(ECKeys.generateEcKeyPair(SECP384R1).getPublic(), "longHeader");
         }
         keyLabelMap.put(bobPubKey, "_bob_key_");

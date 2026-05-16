@@ -6,9 +6,11 @@ import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.KeyLabelParams;
 import ee.cyber.cdoc2.crypto.KeyLabelTools;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyPairDecryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.PasswordDecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.SecretDecryptionKeyMaterial;
 import ee.cyber.cdoc2.CDocBuilder;
@@ -353,11 +355,21 @@ public final class EnvelopeTestUtils {
         );
 
         assertTrue(cdocContainerBytes.length > 0);
+        KeyShareDecryptionKeyMaterial keyMaterial =
+            (KeyShareDecryptionKeyMaterial) DecryptionKeyMaterial.fromAuthMeans(
+            decryptAuthIdentifier
+        );
+
+        InteractionParams interactionParams = InteractionParams.displayTextAndPin().addAuthListener(
+            e -> System.out.println("Verification code:" + e.getVerificationCode())
+        );
+
+        keyMaterial.init(interactionParams);
 
         return new DecryptionData(
             cdocContainerBytes,
             outDir,
-            DecryptionKeyMaterial.fromAuthMeans(decryptAuthIdentifier),
+            keyMaterial,
             payloadFileName,
             payloadData
         );

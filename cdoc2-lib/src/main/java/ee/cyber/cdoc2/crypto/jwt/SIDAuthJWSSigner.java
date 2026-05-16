@@ -177,7 +177,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
                 .interactions(interactionsBase64Bytes)
                 .vcType(VerificationCodeType.NUMERIC4);
 
-            UUID sessionId = rpClient.authenticate(
+            UUID sessionId = rpClient.sidAuthenticate(
                 disclosedSessionToken,
                 sessionToken.getSigningCertificate(),
                 request
@@ -267,7 +267,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
     ) throws InterruptedException, CdocRpClientException {
         SessionStatusResponse sessionStatus = null;
         while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState().getValue())) {
-            sessionStatus = rpClient.session(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+            sessionStatus = rpClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
             if (sessionStatus != null && "COMPLETE".equalsIgnoreCase(sessionStatus.getState().getValue())) {
                 break;
             }

@@ -62,29 +62,6 @@ public final class Cdoc2ConfigurationProperties {
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_TYPE
         = "cdoc2.key-shares.client.ssl.trust-store.type";
 
-    /** Defines Mobile-ID client properties file location */
-    public static final String MOBILE_ID_PROPERTIES = "mobile-id.properties";
-    public static final String MOBILE_ID_CLIENT_HOST_URL = "mobileid.client.hostUrl";
-    public static final String MOBILE_ID_CLIENT_RELYING_PARTY_UUID
-        = "mobileid.client.relyingPartyUuid";
-    public static final String MOBILE_ID_CLIENT_RELYING_PARTY_NAME
-        = "mobileid.client.relyingPartyName";
-    public static final String MOBILE_ID_CLIENT_TRUST_STORE = "mobileid.client.ssl.trust-store";
-    public static final String MOBILE_ID_CLIENT_TRUST_STORE_TYPE
-        = "mobileid.client.ssl.trust-store.type";
-    public static final String MOBILE_ID_CLIENT_TRUST_STORE_PWD
-        = "mobileid.client.ssl.trust-store-password";
-    public static final String MOBILE_ID_CLIENT_POLLING_TIMEOUT_SEC
-        = "mobileid.client.long-polling-timeout-seconds";
-    public static final String MOBILE_ID_CLIENT_POLLING_SLEEP_TIMEOUT_SEC
-        = "mobileid.client.polling-sleep-timeout-seconds";
-    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT
-        = "mobileid.client.display-text";
-    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT_FORMAT
-        = "mobileid.client.display-text-format";
-    public static final String MOBILE_ID_CLIENT_DISPLAY_TEXT_LANG
-        = "mobileid.client.display-text-language";
-
     /** If files overwrite is allowed */
     public static final String OVERWRITE_PROPERTY = "ee.cyber.cdoc2.overwrite";
     // by default files overwrite is not allowed
@@ -104,17 +81,6 @@ public final class Cdoc2ConfigurationProperties {
     /** The key alias to choose the key form pkcs11 keystore, if not set, then the first key is used */
     public static final String PKCS11_ALIAS = "ee.cyber.cdoc2.pkcs11.alias";
 
-    /** Defines Smart-ID client properties file location */
-    public static final String SMART_ID_PROPERTIES = "smart-id.properties";
-    public static final String SMART_ID_CLIENT_HOST_URL = "smartid.client.hostUrl";
-    public static final String SMART_ID_CLIENT_RELYING_PARTY_UUID
-        = "smartid.client.relyingPartyUuid";
-    public static final String SMART_ID_CLIENT_RELYING_PARTY_NAME
-        = "smartid.client.relyingPartyName";
-    public static final String SMART_ID_CLIENT_TRUST_STORE = "smartid.client.ssl.trust-store";
-    public static final String SMART_ID_CLIENT_TRUST_STORE_PWD
-        = "smartid.client.ssl.trust-store-password";
-
     /** Defines CDOC2 Authentication Server client properties file location */
     public static final String AUTH_SERVER_PROPERTIES = "auth-server.properties";
     public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth-server.client.hostUrl";
@@ -123,16 +89,28 @@ public final class Cdoc2ConfigurationProperties {
     public static final String AUTH_SERVER_CLIENT_TRUST_STORE_PWD
         = "auth-server.client.ssl.trust-store-password";
 
-    /** Defines CDOC2 Authentication Server client properties file location */
+    /** Defines CDOC2 RP Server properties file location */
     public static final String RP_SERVER_PROPERTIES = "rp-server.properties";
     public static final String RP_SERVER_CLIENT_HOST_URL = "rp-server.client.hostUrl";
     public static final String RP_SERVER_CLIENT_CERT_LEVEL = "rp-server.client.certificateLevel";
     public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
-    public static final String RP_SERVER_AUTHENTICATION_TRUST_STORE = "rp-server.authentication.trust-store";
-    public static final String RP_SERVER_AUTHENTICATION_TRUST_STORE_PWD
-        = "rp-server.authentication.trust-store-password";
+    public static final String RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE
+        = "rp-server.sid.signing-certificate.trust-store";
+    public static final String RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE_PWD
+        = "rp-server.sid.signing-certificate.trust-store-password";
+    public static final String RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE
+        = "rp-server.mid.signing-certificate.trust-store";
+    public static final String RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE_PWD
+        = "rp-server.mid.signing-certificate.trust-store-password";
+
+    public static final String RP_SERVER_MOBILE_ID_DISPLAY_TEXT
+        = "rp-server.mid.display-text";
+    public static final String RP_SERVER_MOBILE_ID_DISPLAY_TEXT_FORMAT
+        = "rp-server.mid.display-text-format";
+    public static final String RP_SERVER_MOBILE_ID_DISPLAY_LANG
+        = "rp-server.mid.display-text-language";
 
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 
