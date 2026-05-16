@@ -151,8 +151,9 @@ public class Cdoc2RpClient {
         };
 
         apiClient.setBasePath(conf.getHostUrl());
+        apiClient.setDebugging(conf.getClientServerDebug());
 
-        log.info("Cdoc2AuthClient configured with base URL: {}", conf.getHostUrl());
+        log.info("Cdoc2RpClient configured with base URL: {}", conf.getHostUrl());
         return new Cdoc2RpApi(apiClient);
     }
 

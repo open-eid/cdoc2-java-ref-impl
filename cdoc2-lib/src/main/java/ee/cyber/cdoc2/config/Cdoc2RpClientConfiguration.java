@@ -37,4 +37,6 @@ public interface Cdoc2RpClientConfiguration {
     MidDisplayTextFormat getDefaultDisplayTextFormat();
 
     MidLanguage getDefaultDisplayTextLanguage();
+
+    boolean getClientServerDebug();
 }

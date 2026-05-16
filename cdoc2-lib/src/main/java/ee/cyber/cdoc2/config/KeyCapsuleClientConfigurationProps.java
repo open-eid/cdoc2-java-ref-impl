@@ -27,7 +27,7 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
  * @param clientServerId number of key shares servers
  * @param clientServerConnectTimeout client trust store password
  * @param clientServerReadTimeout client trust store password
- * @param clientServerDebug client trust store password
+ * @param clientServerDebug turn on debug logs for client
  * @param clientServerBaseUrlGet client trust store password
  * @param clientServerBaseUrlPost client trust store password
  * @param clientTrustStore client trust store password
