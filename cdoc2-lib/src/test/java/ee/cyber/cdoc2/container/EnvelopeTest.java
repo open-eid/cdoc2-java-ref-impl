@@ -650,11 +650,10 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
         var authProccessUuid = UUID.randomUUID();
-        var sidSessionId = UUID.randomUUID();
         cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
         cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
-        cdoc2RpClientMock.stubSidAuthenticate(sidSessionId);
-        cdoc2RpClientMock.stubSidSession(sidSessionId);
+        cdoc2RpClientMock.stubSidAuthenticate(SESSION_ID);
+        cdoc2RpClientMock.stubSidSession(SESSION_ID);
 
         setupKeyShareClientMocks();
 
