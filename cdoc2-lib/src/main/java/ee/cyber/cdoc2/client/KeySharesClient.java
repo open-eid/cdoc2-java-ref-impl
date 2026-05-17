@@ -54,7 +54,8 @@ public interface KeySharesClient extends ServerClient {
         String authTicketSignerCert,
         String sessionToken,
         String sessionCertificate,
-        String sidRpv3SignatureParameters
+        String sidRpv3SignatureParameters,
+        Cdoc2KeySharesApiClient.RpCountersignatureParams countersignatureParams
     )
         throws ExtApiException;
 

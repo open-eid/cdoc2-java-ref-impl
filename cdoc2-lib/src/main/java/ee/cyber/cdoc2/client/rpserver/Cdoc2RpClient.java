@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.client.api.ApiException;
+import ee.cyber.cdoc2.client.api.ApiResponse;
 import ee.cyber.cdoc2.client.api.Cdoc2RpApi;
 import ee.cyber.cdoc2.client.model.MidAuthenticateRequest;
 import ee.cyber.cdoc2.client.model.MidDisplayTextFormat;
@@ -111,13 +112,14 @@ public class Cdoc2RpClient {
         }
     }
 
-    public MidSessionStatusResponse midSession(
+    public ApiResponse<MidSessionStatusResponse> midSession(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
         @Nonnull UUID sessionId
     ) throws CdocRpClientException {
         try {
-            return cdoc2RpApi.midSession(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
+            return cdoc2RpApi
+                .midSessionWithHttpInfo(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
         } catch (ApiException e) {
             throw wrapApiException("RP MID session request error. ", e);
         }

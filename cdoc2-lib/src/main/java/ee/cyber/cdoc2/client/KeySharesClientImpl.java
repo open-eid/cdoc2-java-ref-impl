@@ -75,7 +75,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
         String authTicketSignerCert,
         String sessionToken,
         String sessionCertificate,
-        String sidRpv3SignatureParameters
+        String sidRpv3SignatureParameters,
+        Cdoc2KeySharesApiClient.RpCountersignatureParams countersignatureParams
     )
         throws ExtApiException {
 
@@ -87,7 +88,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
                 authTicketSignerCert,
                 sessionToken,
                 sessionCertificate,
-                sidRpv3SignatureParameters
+                sidRpv3SignatureParameters,
+                countersignatureParams
             );
         } catch (Exception e) {
             log.error("Failed to get key share", e);

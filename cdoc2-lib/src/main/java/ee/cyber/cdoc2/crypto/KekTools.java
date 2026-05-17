@@ -381,7 +381,6 @@ public final class KekTools {
         KeySharesClientFactory keySharesClientFactory,
         Services services,
         SessionToken sessionToken
-
     ) throws CDocException, AuthSignatureCreationException {
 
         AuthenticationIdentifier.AuthenticationType authType =
@@ -471,7 +470,8 @@ public final class KekTools {
             tokenCreator.getAuthenticatorCertBase64Url(),
             sessionToken.getSessionToken(share),
             sessionToken.getSigningCertificate(),
-            tokenCreator.getSidRpV3SignatureParameters()
+            tokenCreator.getSidRpV3SignatureParameters(),
+            tokenCreator.getCountersignatureParams()
         );
         if (keyShare.isEmpty()) {
             throw new GeneralSecurityException(

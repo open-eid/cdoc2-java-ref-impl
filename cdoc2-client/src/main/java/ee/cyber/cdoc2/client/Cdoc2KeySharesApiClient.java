@@ -62,8 +62,8 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
     }
 
     /**
-     * @param shareId key share ID
-     * @param sessionToken CDOC2 session token (SDJWT)
+     * @param shareId            key share ID
+     * @param sessionToken       CDOC2 session token (SDJWT)
      * @param signingCertificate PEM encoded certificate that signed the sessionToken
      * @return NonceResponse created server nonce response
      * @throws ApiException if server nonce creation fails
@@ -84,12 +84,12 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
     }
 
     /**
-     * @param shareId key share ID
-     * @param xAuthTicket CDOC2 Auth token (SDJWT)
-     * @param xAuthCertificate PEM encoded certificate that signed the xAuthTicket
-     * @param xSessionToken CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
-     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param shareId                     key share ID
+     * @param xAuthTicket                 CDOC2 Auth token (SDJWT)
+     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthTicket
+     * @param xSessionToken               CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate         PEM encoded X509 certificate (without newlines) that was used to
+     *                                    generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param xSidRpv3SignatureParameters Base64Url-encoded JSON structure containing additional
      *                                    parameters necessary to verify the signature of
      *                                    an auth token (x-cdoc2-auth-token).
@@ -104,7 +104,8 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         String xAuthCertificate,
         String xSessionToken,
         String xSessionCertificate,
-        String xSidRpv3SignatureParameters
+        String xSidRpv3SignatureParameters,
+        RpCountersignatureParams countersignatureParams
     )
         throws ApiException {
 
@@ -115,8 +116,12 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         try {
             ApiResponse<KeyShare> response
                 = sharesApi.getKeyShareByShareIdWithHttpInfo(
-                    shareId, xAuthTicket, xAuthCertificate,
-                xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters
+                shareId, xAuthTicket, xAuthCertificate,
+                xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters,
+                countersignatureParams.rpSignedHash,
+                countersignatureParams.rpName,
+                countersignatureParams.signingInput,
+                countersignatureParams.signature
             );
             return Optional.of(response.getData());
         } catch (ApiException ex) {
@@ -131,4 +136,11 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         }
     }
 
+    public record RpCountersignatureParams(
+        String rpSignedHash,
+        String rpName,
+        String signingInput,
+        String signature
+    ) {
+    }
 }

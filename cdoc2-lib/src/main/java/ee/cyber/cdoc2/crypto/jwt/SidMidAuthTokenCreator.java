@@ -11,6 +11,7 @@ import com.nimbusds.jose.JOSEException;
 
 import ee.cyber.cdoc2.auth.AuthTokenCreator;
 import ee.cyber.cdoc2.auth.ShareAccessData;
+import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.api.ApiException;
@@ -32,7 +33,8 @@ public class SidMidAuthTokenCreator {
     AuthTokenCreator authTokenCreator;
     X509Certificate authenticatorCert;
     SessionToken sessionToken;
-    String sidRpV3SignatureParameters;
+    private final String sidRpV3SignatureParameters;
+    private final Cdoc2KeySharesApiClient.RpCountersignatureParams countersignatureParams;
 
     /**
      * Create signature for key shares auth token. Uses {@link IdentityJWSSigner} to create
@@ -62,6 +64,7 @@ public class SidMidAuthTokenCreator {
             this.authTokenCreator = prepare();
             this.authenticatorCert = idJwsSigner.getSignerCertificate();
             this.sidRpV3SignatureParameters = idJwsSigner.getSignatureValidationParamsBase64Url();
+            this.countersignatureParams = idJwsSigner.getRpCountersignatureParams();
         } catch (ApiException | JOSEException | ParseException ex) {
             throw new AuthSignatureCreationException(ex);
         }
@@ -79,6 +82,17 @@ public class SidMidAuthTokenCreator {
      */
     public String getSidRpV3SignatureParameters() {
         return this.sidRpV3SignatureParameters;
+    }
+
+    /**
+     * RFC9421 HTTP signature headers provided by RP server for MID signature requests. Required
+     * by CDOC2 shares server GET /key-shares/{shareId} endpoint when the authentication token is
+     * created with MID authentication
+     *
+     * @return structure containing values for headers to pass on to shares server
+     */
+    public Cdoc2KeySharesApiClient.RpCountersignatureParams getCountersignatureParams() {
+        return countersignatureParams;
     }
 
     /**
@@ -168,5 +182,4 @@ public class SidMidAuthTokenCreator {
 
         return new ShareAccessData(shareUri.serverBaseUrl(), shareUri.shareId(), nonce);
     }
-
 }

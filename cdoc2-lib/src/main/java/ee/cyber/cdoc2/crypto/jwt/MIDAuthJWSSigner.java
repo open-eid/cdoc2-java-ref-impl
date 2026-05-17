@@ -8,6 +8,8 @@ import ee.sk.mid.exception.MidInvalidPhoneNumberException;
 import jakarta.annotation.Nullable;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +27,8 @@ import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jose.util.X509CertUtils;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
+import ee.cyber.cdoc2.client.api.ApiResponse;
 import ee.cyber.cdoc2.client.mobileid.MobileIdUserData;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
@@ -51,6 +55,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     private final @Nullable InteractionParams interactionParams;
 
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
+    private Cdoc2KeySharesApiClient.RpCountersignatureParams countersignatureParams = null;
 
     /**
      * Initialize JWSSigner with MobileIdClient and signer identified by identity code and phone number
@@ -116,13 +121,15 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
                 interactionParams
             );
 
-            MidSessionStatusResponse response = pollForFinalSessionStatus(
+            ApiResponse<MidSessionStatusResponse> apiResponse = pollForFinalSessionStatus(
                 disclosedSessionToken,
                 sessionToken.getSigningCertificate(),
                 sessionId
             );
 
-            String result = Optional.ofNullable(response.getResult())
+            MidSessionStatusResponse responseBody = apiResponse.getData();
+
+            String result = Optional.ofNullable(responseBody.getResult())
                 .map(MidSessionStatusResponse.ResultEnum::getValue)
                 .orElse(null);
 
@@ -132,9 +139,11 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
                 throw new CdocRpClientException(message);
             }
 
-            this.signerCertificate = X509CertUtils.parse(response.getCert());
+            this.countersignatureParams = mapCountersignatureHeaders(apiResponse);
 
-            return Base64URL.encode(response.getSignature().getValue());
+            this.signerCertificate = X509CertUtils.parse(responseBody.getCert());
+
+            return Base64URL.encode(responseBody.getSignature().getValue());
         } catch (CdocRpClientException ex) {
             throw new JOSEException(ex);
         } catch (InterruptedException e) {
@@ -142,15 +151,32 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         }
     }
 
-    private MidSessionStatusResponse pollForFinalSessionStatus(
+    private Cdoc2KeySharesApiClient.RpCountersignatureParams mapCountersignatureHeaders(
+        ApiResponse<MidSessionStatusResponse> apiResponse
+    ) {
+        Map<String, List<String>> headers = apiResponse.getHeaders();
+        return new Cdoc2KeySharesApiClient.RpCountersignatureParams(
+            Optional.ofNullable(headers.get("x-rp-signed-hash").get(0))
+                .orElseThrow(),
+            Optional.ofNullable(headers.get("x-rp-name").get(0))
+                .orElseThrow(),
+            Optional.ofNullable(headers.get("Signature-Input").get(0))
+                .orElseThrow(),
+            Optional.ofNullable(headers.get("Signature").get(0))
+                .orElseThrow()
+        );
+    }
+
+    private ApiResponse<MidSessionStatusResponse> pollForFinalSessionStatus(
         String xCdoc2SessionToken,
         String xCdoc2SessionX5c,
         UUID sessionId
     ) throws InterruptedException, CdocRpClientException {
-        MidSessionStatusResponse sessionStatus = null;
-        while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState().getValue())) {
-            sessionStatus = rpClient.midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
-            if (sessionStatus != null && "COMPLETE".equalsIgnoreCase(sessionStatus.getState().getValue())) {
+        ApiResponse<MidSessionStatusResponse> response = null;
+        while (response == null || "RUNNING".equalsIgnoreCase(response.getData().getState().getValue())) {
+            response =
+                rpClient.midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+            if (response != null && "COMPLETE".equalsIgnoreCase(response.getData().getState().getValue())) {
                 break;
             }
             log.debug("Sleeping for {} {}", SESSION_POLL_SLEEP_QUANTITY,
@@ -158,7 +184,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
             SESSION_POLL_SLEEP_TIMEUNIT.sleep(SESSION_POLL_SLEEP_QUANTITY);
         }
         log.debug("Got final session status response");
-        return sessionStatus;
+        return response;
     }
 
     @Override
@@ -184,6 +210,12 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     @Override
     public String getSignatureValidationParamsBase64Url() {
         return null;
+    }
+
+    @Nullable
+    @Override
+    public Cdoc2KeySharesApiClient.RpCountersignatureParams getRpCountersignatureParams() {
+        return countersignatureParams;
     }
 
     public static MidAuthenticationHashToSign calcHash(final byte[] bytesToSign, MidHashType hashType) {
