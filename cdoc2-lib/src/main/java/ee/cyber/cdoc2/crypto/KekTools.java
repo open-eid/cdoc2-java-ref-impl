@@ -465,16 +465,12 @@ public final class KekTools {
     ) throws ExtApiException, GeneralSecurityException {
         SessionToken sessionToken = tokenCreator.getSessionToken();
 
-        //TODO sessionToken is currently null in the MID case -
-        // fix when MID is implemented
         Optional<KeyShare> keyShare = client.getKeyShare(
             share.shareId(),
             tokenCreator.getTokenForShareID(share.shareId()),
             tokenCreator.getAuthenticatorCertBase64Url(),
-            sessionToken != null ? sessionToken.getSessionToken(share)
-                : "",
-            sessionToken != null ? sessionToken.getSigningCertificate()
-                : "",
+            sessionToken.getSessionToken(share),
+            sessionToken.getSigningCertificate(),
             tokenCreator.getSidRpV3SignatureParameters()
         );
         if (keyShare.isEmpty()) {
