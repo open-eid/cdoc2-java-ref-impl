@@ -32,6 +32,7 @@ import com.nimbusds.jose.util.X509CertUtils;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier;
 import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier.AuthTokenSignatureValidationParams;
+import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
 import ee.cyber.cdoc2.client.model.AcspV2Signature;
 import ee.cyber.cdoc2.client.model.AuthCertificateLevel;
 import ee.cyber.cdoc2.client.model.AuthSignatureProtocol;
@@ -285,8 +286,15 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
     }
 
     @Nullable
+    @Override
     public String getSignatureValidationParamsBase64Url() {
         return signatureValidationParamsBase64Url;
+    }
+
+    @Nullable
+    @Override
+    public Cdoc2KeySharesApiClient.RpCountersignatureParams getRpCountersignatureParams() {
+        return null; // Not used for SID
     }
 
     /**

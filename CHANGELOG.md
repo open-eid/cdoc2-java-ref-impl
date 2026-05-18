@@ -4,6 +4,7 @@
 
 ### Internal
 * MID interaction changed to use Cdoc2RpClient, MobileIdClient removed
+* HTTP signatures from rp-server forwarded to shares server on GET /key-shares/{shareId} requests
 
 ### Maven package versions:
 ```

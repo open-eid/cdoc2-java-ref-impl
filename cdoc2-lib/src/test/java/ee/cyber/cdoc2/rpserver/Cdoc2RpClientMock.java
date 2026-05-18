@@ -9,8 +9,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.HttpHeader;
+import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -119,13 +120,22 @@ public class Cdoc2RpClientMock {
         );
     }
 
+    @SuppressWarnings("checkstyle:LineLength")
     public void stubMidSession(UUID sessionId) {
+        HttpHeaders headers = new HttpHeaders(
+            new HttpHeader("Content-Type", "application/json"),
+            new HttpHeader("x-rp-signed-hash", "sj2RtSo7c1tx+J00KWWkzyv4iQ2L2cuX0InnFFi+GAQ="),
+            new HttpHeader("x-rp-name", "DEMO"),
+            new HttpHeader("Signature-Input", "rp-sig=(\"x-rp-signed-hash\" \"x-rp-name\");created=1779011296;keyid=\"rp-server-ec-key-2026\""),
+            new HttpHeader("Signature", "rp-sig=:nt5aITnpc8JjVrOYw8q46bNieq9L7y8gBjw+rJJ7BoY4X3h8BL5PwwcUBzl70iTOvikGCBOmpjbDY1661EqMMA==:")
+        );
+
         wiremock.stubFor(
             WireMock.get(
                 urlEqualTo("/mid/session/" + sessionId)
             ).willReturn(aResponse()
                 .withStatus(HttpStatus.OK_200)
-                .withHeader("Content-Type", "application/json")
+                .withHeaders(headers)
                 .withBody(MID_SESSION_RESPONSE_OK)
             )
         );

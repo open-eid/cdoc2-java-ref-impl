@@ -3,6 +3,8 @@ package ee.cyber.cdoc2.crypto.jwt;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
+
 import jakarta.annotation.Nullable;
 
 import java.security.cert.X509Certificate;
@@ -27,4 +29,6 @@ public interface IdentityJWSSigner extends JWSSigner {
      */
     @Nullable X509Certificate getSignerCertificate();
     @Nullable String getSignatureValidationParamsBase64Url();
+    @Nullable
+    Cdoc2KeySharesApiClient.RpCountersignatureParams getRpCountersignatureParams();
 }
