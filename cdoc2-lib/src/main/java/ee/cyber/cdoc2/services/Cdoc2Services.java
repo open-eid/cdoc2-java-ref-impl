@@ -12,14 +12,12 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
-import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
-import ee.cyber.cdoc2.config.MobileIdClientConfiguration;
 import ee.cyber.cdoc2.config.PropertiesLoader;
 
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
@@ -31,8 +29,8 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
  *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_POST_PROPERTIES}</li>
  *     <li>{@link Cdoc2ConfigurationProperties#KEY_SHARES_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#MOBILE_ID_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#SMART_ID_PROPERTIES}</li>
+ *     <li>{@link Cdoc2ConfigurationProperties#AUTH_SERVER_PROPERTIES}</li>
+ *     <li>{@link Cdoc2ConfigurationProperties#RP_SERVER_PROPERTIES}</li>
  * </ul>
  * <p>
  * For example define following properties:
@@ -115,13 +113,6 @@ public final class Cdoc2Services {
                 propertiesLocations.getProperty(KEY_SHARES_PROPERTIES));
             var config = KeySharesConfiguration.load(loadFromPropertyValue(KEY_SHARES_PROPERTIES));
             services.register(KeySharesClientFactory.class, KeySharesClientHelper.createFactory(config), null);
-        }
-
-        if (isPropertyDefined(MOBILE_ID_PROPERTIES)) {
-            log.info("Initializing Mobile-ID client from {}", propertiesLocations.getProperty(MOBILE_ID_PROPERTIES));
-            var config = MobileIdClientConfiguration.load(loadFromPropertyValue(MOBILE_ID_PROPERTIES));
-            services.registerService(MobileIdClient.class,
-                ServiceTemplate.service(config, MobileIdClient::new), null);
         }
 
         if (isPropertyDefined(AUTH_SERVER_PROPERTIES)) {

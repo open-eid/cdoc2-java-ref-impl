@@ -422,7 +422,7 @@ public final class RecipientFactory {
      * @param keyShareMaterial key share encryption key material
      * @return KeySharesRecipient that can be serialized into FBS {@link KeySharesCapsule}
      */
-    public static KeySharesRecipient buildKeySharesRecipient(
+    private static KeySharesRecipient buildKeySharesRecipient(
         @Nullable KeySharesClientFactory keySharesClientFactory,
         byte[] fileMasterKey,
         KeyShareEncryptionKeyMaterial keyShareMaterial

@@ -1,6 +1,20 @@
 # Changelog
 
-## [3.2.0] Support for updated Smart-ID usage (2026-04-xx)
+## [3.3.0] Updates for Mobile-ID (2026-05-18)
+
+### Internal
+* MID interaction changed to use Cdoc2RpClient, MobileIdClient removed
+
+### Maven package versions:
+```
+cdoc2 3.2.0
+cdoc2-schema 2.1.0
+cdoc2-lib 3.5.0
+cdoc2-client 2.2.1
+cdoc2-cli 1.9.0
+```
+
+## [3.2.0] Support for updated Smart-ID usage (2026-04-29)
 
 ### Internal
 * Created new client Cdoc2AuthClient for the cdoc2 authentication server.

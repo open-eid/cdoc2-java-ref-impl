@@ -26,7 +26,6 @@ import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.RsaCapsuleClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
-import ee.cyber.cdoc2.client.mobileid.MobileIdClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.container.CDocParseException;
@@ -306,7 +305,7 @@ public final class KekTools {
             "Expected key shares for KeySharesRecipient"
         );
 
-        var sessionTokenCreator = fetchSessionToken(keySharesRecipient, keyMaterial, services);
+        var sessionTokenCreator = fetchSessionToken(keySharesRecipient, services);
 
         try {
             List<byte[]> listOfShares = fetchKeyShares(
@@ -330,14 +329,8 @@ public final class KekTools {
 
     private static SessionToken fetchSessionToken(
         KeySharesRecipient keySharesRecipient,
-        KeyShareDecryptionKeyMaterial keyMaterial,
         Services services
     ) {
-        // TODO: Currently only implemented for SiD
-        if (keyMaterial.getAuthIdentifier().getAuthType().equals(MID)) {
-            return null;
-        }
-
         Cdoc2AuthClient cdoc2AuthClient = services.get(Cdoc2AuthClient.class);
         return new SessionToken(
             cdoc2AuthClient,
@@ -396,12 +389,13 @@ public final class KekTools {
 
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
 
+        if (!services.hasService(Cdoc2RpClient.class)) {
+            throw new CDocException("Cdoc2RpClient not configured");
+        }
+        Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
+
         switch (authType) {
             case SID -> {
-                if (!services.hasService(Cdoc2RpClient.class)) {
-                    throw new CDocException("Cdoc2RpClient not configured");
-                }
-                Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
                 return new SidMidAuthTokenCreator(
                     new SIDAuthJWSSigner(etsiIdentifier, rpClient,
                         decryptKeyMaterial.getInteractionParams(),
@@ -413,13 +407,9 @@ public final class KekTools {
                 );
             }
             case MID -> {
-                if (!services.hasService(MobileIdClient.class)) {
-                    throw new CDocException("MobileIdClient not configured");
-                }
-                MobileIdClient midClient = services.get(MobileIdClient.class);
                 String mobileNumber = decryptKeyMaterial.getAuthIdentifier().getMobileNumber();
                 IdentityJWSSigner jwsSigner = new MIDAuthJWSSigner(etsiIdentifier, mobileNumber,
-                    midClient, decryptKeyMaterial.getInteractionParams());
+                    rpClient, decryptKeyMaterial.getInteractionParams(), sessionToken);
 
                 // constructor gets nonce for each share from shares-server and signs shareUris and their nonces
                 // with jwsSigner
@@ -475,16 +465,12 @@ public final class KekTools {
     ) throws ExtApiException, GeneralSecurityException {
         SessionToken sessionToken = tokenCreator.getSessionToken();
 
-        //TODO sessionToken is currently null in the MID case -
-        // fix when MID is implemented
         Optional<KeyShare> keyShare = client.getKeyShare(
             share.shareId(),
             tokenCreator.getTokenForShareID(share.shareId()),
             tokenCreator.getAuthenticatorCertBase64Url(),
-            sessionToken != null ? sessionToken.getSessionToken(share)
-                : "",
-            sessionToken != null ? sessionToken.getSigningCertificate()
-                : "",
+            sessionToken.getSessionToken(share),
+            sessionToken.getSigningCertificate(),
             tokenCreator.getSidRpV3SignatureParameters()
         );
         if (keyShare.isEmpty()) {
