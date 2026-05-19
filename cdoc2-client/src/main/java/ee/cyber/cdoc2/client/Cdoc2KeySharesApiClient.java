@@ -118,10 +118,10 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
                 = sharesApi.getKeyShareByShareIdWithHttpInfo(
                 shareId, xAuthTicket, xAuthCertificate,
                 xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters,
-                countersignatureParams.rpSignedHash,
-                countersignatureParams.rpName,
-                countersignatureParams.signingInput,
-                countersignatureParams.signature
+                countersignatureParams != null ? countersignatureParams.rpSignedHash : null,
+                countersignatureParams != null ? countersignatureParams.rpName : null,
+                countersignatureParams != null ? countersignatureParams.signingInput : null,
+                countersignatureParams != null ? countersignatureParams.signature : null
             );
             return Optional.of(response.getData());
         } catch (ApiException ex) {

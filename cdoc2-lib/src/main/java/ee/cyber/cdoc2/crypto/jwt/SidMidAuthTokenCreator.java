@@ -165,14 +165,8 @@ public class SidMidAuthTokenCreator {
      * @throws ApiException if server nonce creation fails
      */
     ShareAccessData createNonce(KeyShareUri shareUri, KeySharesClientFactory fac) throws ApiException {
-        String disclosedSessionToken = "";
-        String signingCertificate = "";
-        // TODO: This is not implemented for MiD yet, so the token might be null,
-        //  remove this once session token is implemented for MiD
-        if (sessionToken != null) {
-            disclosedSessionToken = this.sessionToken.getSessionToken(shareUri);
-            signingCertificate = this.sessionToken.getSigningCertificate();
-        }
+        String disclosedSessionToken = this.sessionToken.getSessionToken(shareUri);
+        String signingCertificate = this.sessionToken.getSigningCertificate();
 
         KeySharesClient shareClient = fac.getClientForServerUrl(shareUri.serverBaseUrl());
         NonceResponse nonceResponse = shareClient.createKeyShareNonce(

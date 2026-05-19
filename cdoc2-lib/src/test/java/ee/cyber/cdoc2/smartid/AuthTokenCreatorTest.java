@@ -232,12 +232,20 @@ public class AuthTokenCreatorTest {
         String certBase64Url = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(issCert.getEncoded());
 
-        TokenVerificationResponse response = authTokenVerifier.verify(
-            token1,
-            certBase64Url,
+        var sidAuthTokenVerificationParams = new AuthTokenVerifier.SidAuthTokenVerificationParams(
             tokenCreator.getSidRpV3SignatureParameters(),
             "DEMO",
             "smart-id-demo"
+        );
+
+        // TODO: create rpCounterSignatureParams if tokenCreator.getSidRpV3SignatureParameters()
+        //  is missing
+
+        TokenVerificationResponse response = authTokenVerifier.verify(
+            token1,
+            certBase64Url,
+            sidAuthTokenVerificationParams,
+            null
         );
 
         String expectedSemanticsId = tokenCreator.getSidRpV3SignatureParameters() == null
