@@ -123,7 +123,12 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
             throw new JOSEException("JWSAlgorithm " + header.getAlgorithm() + " not supported");
         }
 
-        String verificationCode = VerificationCodeCalculator.calculate(signingInput);
+        byte[] rpChallenge = DigestCalculator.calculateDigest(
+            signingInput,
+            ee.sk.smartid.HashAlgorithm.SHA_256
+        );
+
+        String verificationCode = VerificationCodeCalculator.calculate(rpChallenge);
 
         if (interactionParams != null) {
             AuthEvent authEvent = new AuthEvent(this, verificationCode,
@@ -134,10 +139,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
             log.error(message);
             throw new IllegalStateException(message);
         }
-        byte[] rpChallenge = DigestCalculator.calculateDigest(
-            signingInput,
-            ee.sk.smartid.HashAlgorithm.SHA_256
-        );
+
 
         NotificationInteraction interaction;
         switch (interactionParams.interactionType) {
