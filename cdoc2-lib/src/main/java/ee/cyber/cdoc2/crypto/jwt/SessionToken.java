@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.crypto.jwt;
 
+import jakarta.annotation.Nullable;
+
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -24,11 +26,12 @@ public class SessionToken {
 
     public SessionToken(
         Cdoc2AuthClient cdoc2AuthClient,
-        String recipient
+        String recipient,
+        @Nullable String mobileNumber
     ) {
         this.cdoc2AuthClient = cdoc2AuthClient;
 
-        create(recipient);
+        create(recipient, mobileNumber);
     }
 
     // package-private, for tests only
@@ -48,9 +51,13 @@ public class SessionToken {
         return discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
     }
 
-    private void create(String recipient) {
+    private void create(
+        String recipient,
+        @Nullable String mobileNumber
+    ) {
         var identity = new AuthIdentity();
         identity.setIdentifier(recipient);
+        identity.setMobileNr(mobileNumber);
 
         AuthProcessData authProcess = startAuth(identity);
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());

@@ -11,7 +11,7 @@
 cdoc2 3.3.0
 cdoc2-schema 2.1.0
 cdoc2-lib 3.5.0
-cdoc2-client 2.2.1
+cdoc2-client 2.2.2
 cdoc2-cli 1.9.0
 ```
 

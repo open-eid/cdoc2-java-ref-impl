@@ -1,5 +1,7 @@
 package ee.cyber.cdoc2.crypto;
 
+import jakarta.annotation.Nullable;
+
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -305,7 +307,11 @@ public final class KekTools {
             "Expected key shares for KeySharesRecipient"
         );
 
-        var sessionTokenCreator = fetchSessionToken(keySharesRecipient, services);
+        var sessionTokenCreator = fetchSessionToken(
+            keySharesRecipient,
+            keyMaterial.getAuthIdentifier().getMobileNumber(),
+            services
+        );
 
         try {
             List<byte[]> listOfShares = fetchKeyShares(
@@ -329,12 +335,14 @@ public final class KekTools {
 
     private static SessionToken fetchSessionToken(
         KeySharesRecipient keySharesRecipient,
+        @Nullable String mobileNumber,
         Services services
     ) {
         Cdoc2AuthClient cdoc2AuthClient = services.get(Cdoc2AuthClient.class);
         return new SessionToken(
             cdoc2AuthClient,
-            (String) keySharesRecipient.getRecipientId()
+            (String) keySharesRecipient.getRecipientId(),
+            mobileNumber
         );
     }
 
