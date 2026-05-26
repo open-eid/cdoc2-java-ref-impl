@@ -268,18 +268,18 @@ public class AuthTokenCreatorTest {
         String certBase64Url = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(issCert.getEncoded());
 
-        var sidAuthTokenVerificationParams = new AuthTokenVerifier.SidAuthTokenVerificationParams(
+        var sidAuthTokenVerificationParams = tokenCreator.getSidRpV3SignatureParameters() != null
+            ? new AuthTokenVerifier.SidAuthTokenVerificationParams(
             tokenCreator.getSidRpV3SignatureParameters(),
             "DEMO",
             "smart-id-demo"
-        );
+        )
+            : null;
 
         TokenVerificationResponse response = authTokenVerifier.verify(
             token1,
             certBase64Url,
-            tokenCreator.getSidRpV3SignatureParameters() != null
-                ? sidAuthTokenVerificationParams
-                : null,
+            sidAuthTokenVerificationParams,
             tokenCreator.getSidRpV3SignatureParameters() == null
                 ? MIDTestData.getDefaultHttpSignatureParams()
                 : null
