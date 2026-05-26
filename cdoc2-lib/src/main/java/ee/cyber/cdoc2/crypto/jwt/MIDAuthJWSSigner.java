@@ -8,6 +8,7 @@ import ee.sk.mid.exception.MidInvalidPhoneNumberException;
 import jakarta.annotation.Nullable;
 
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +36,8 @@ import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.exceptions.CdocRpClientException;
 
 /**
- * JWSSigner that implements signing using Mobile-ID authentication key/certificate. Supports only ES256 algorithm.
+ * JWSSigner that implements signing using Mobile-ID authentication key/certificate. Supports
+ * ES256, RS256 algorithms.
  * At REST API level signer is identified by "phone number" and "identity code" which is not SematicsIdentifier.
  *
  * @ see <a href="https://github.com/SK-EID/MID">Mobile ID (MID) REST API</a>
@@ -51,6 +53,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     private final EtsiIdentifier signerEtsiIdentifier;
     private final MobileIdUserData mobileIdUserData;
     private final SessionToken sessionToken;
+    private final String sessionTokenCertAlgorithm;
 
     private final @Nullable InteractionParams interactionParams;
 
@@ -84,6 +87,8 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         this.mobileIdUserData = new MobileIdUserData(phoneNumber, signer.getIdentifier());
         this.interactionParams = interactionParams;
         this.sessionToken = sessionToken;
+        this.sessionTokenCertAlgorithm = X509CertUtils.parse(Base64.getUrlDecoder()
+                .decode(sessionToken.getSigningCertificate())).getPublicKey().getAlgorithm();
     }
 
     @Override
@@ -237,7 +242,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         // Mobile-ID can use any hash size, but in
         // JWS ES256 is defined as P-256 (secp256r1) curve and SHA-256 hash
         // set hash type so it matches to hash defined in JWT algorithm
-        if (JWSAlgorithm.ES256.equals(jwsAlg)) {
+        if (List.of(JWSAlgorithm.ES256, JWSAlgorithm.RS256).contains(jwsAlg)) {
             return MidHashType.SHA256;
         } else {
             throw new JOSEException("Unsupported JWSAlgorithm " + jwsAlg);
@@ -246,9 +251,18 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
 
     @Override
     public Set<JWSAlgorithm> supportedJWSAlgorithms() {
-        // no way to actually check supported algorithms, but in practice MID uses P256
+        // no good way to actually check supported algorithms, since the JWT header with alg
+        // needs to be constructed before we receive the certificate with the public key.
+        // in practice MID uses P256
         // some old Mobile-ID certs are in SK LDAP, but latest ones are not
         // some old Mobile-ID accounts also supported additionally RSA with 2K keys size, but EC should be default
+        // as a workaround we can check the session token cert algorithm and make
+        // the assumption that an RSA pub key there will also mean an RSA key for the auth token.
+
+        if ("RSA".equals(sessionTokenCertAlgorithm)) {
+            return Set.of(JWSAlgorithm.RS256);
+        }
+
         return Set.of(JWSAlgorithm.ES256);
     }
 

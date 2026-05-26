@@ -17,6 +17,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -142,5 +143,9 @@ public class MIDAuthJWSSignerTest {
      */
     public static JWK getECPublicKeyJWK(X509Certificate certificate) throws JOSEException {
         return ECKey.parse(certificate).toPublicJWK();
+    }
+
+    public static JWK getRSAPublicKeyJWK(X509Certificate certificate) throws JOSEException {
+        return RSAKey.parse(certificate).toPublicJWK();
     }
 }
