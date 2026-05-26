@@ -64,4 +64,14 @@ public interface TarEntryProcessingDelegate {
      */
     @Nullable File getOutputDir();
 
+    /**
+     * Release any resources (e.g. open output streams) held by this delegate.
+     * Called by {@link TarDeflate#close()} before attempting to delete partially-written files,
+     * so that file handles are freed first (required on Windows).
+     * @throws IOException if an I/O error occurs
+     */
+    default void close() throws IOException {
+        // no-op by default
+    }
+
 }

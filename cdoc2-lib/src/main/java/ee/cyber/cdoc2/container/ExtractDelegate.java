@@ -71,6 +71,14 @@ public class ExtractDelegate implements TarEntryProcessingDelegate {
         return null;
     }
 
+    @Override
+    public void close() throws IOException {
+        if (fileOutputStream != null) {
+            fileOutputStream.close();
+            fileOutputStream = null;
+        }
+    }
+
     private boolean isDirectoryWritable(Path outputDir) {
         return (outputDir != null) && Files.isDirectory(outputDir) && Files.isWritable(outputDir);
     }
