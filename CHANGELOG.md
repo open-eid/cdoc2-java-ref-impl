@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.4.0]
+
+### Improvements
+* Support for legacy MID accounts with RSA certificates
+
+### Maven package versions:
+```
+cdoc2 3.3.0
+cdoc2-schema 2.1.0
+cdoc2-lib 3.6.0
+cdoc2-client 2.2.2
+cdoc2-cli 1.9.0
+```
+
 ## [3.3.0] Updates for Mobile-ID (2026-05-18)
 
 ### Internal

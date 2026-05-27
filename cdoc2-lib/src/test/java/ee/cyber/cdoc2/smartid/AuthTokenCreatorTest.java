@@ -17,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.nimbusds.jose.JOSEException;
+
 import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.TrustStoreUtil;
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
@@ -51,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-
 @ExtendWith(MockitoExtension.class)
 public class AuthTokenCreatorTest {
 
@@ -64,14 +65,18 @@ public class AuthTokenCreatorTest {
     @SuppressWarnings("checkstyle:LineLength")
     private static final String SID_SIGNING_CERTIFICATE_BASE64URL =
         "MIIGpzCCBi6gAwIBAgIQGcJUbe6JHI6jJyV-42vjnTAKBggqhkjOPQQDAzBxMSwwKgYDVQQDDCNURVNUIG9mIFNLIElEIFNvbHV0aW9ucyBFSUQtUSAyMDI0RTEXMBUGA1UEYQwOTlRSRUUtMTA3NDcwMTMxGzAZBgNVBAoMElNLIElEIFNvbHV0aW9ucyBBUzELMAkGA1UEBhMCRUUwHhcNMjYwMTA2MTQyNTAxWhcNMjkwMTA1MTQyNTAwWjBXMQswCQYDVQQGEwJFRTEQMA4GA1UEAwwHVEVTVCxPSzENMAsGA1UEBAwEVEVTVDELMAkGA1UEKgwCT0sxGjAYBgNVBAUTEVBOT0VFLTQwNTA0MDQwMDAxMIIDIjANBgkqhkiG9w0BAQEFAAOCAw8AMIIDCgKCAwEAkI98VzyaeSueyaUQYIXMMf-1VY10Gw-b8Q13Rb9N62ROZY97wMIB__f8_PuOIoqkAPM6Tn_t4lp1R_rHrbuqs0hl2dgLlOcR5wmWmp7YfKPDvRndVLl_doIHruxY8O60rFGskSnqt4coHN4xGcmCyPkJoB8Rfm8-Y9poVKAreS0Ta32p5OSME0HjSs7-ahB2erWfb2GulFw1vyeH42d3XDpCCfd6CByvSsi4oByUqs5G-kjSrGUglflgWXK3MxBYto0swgsbD1nrW5doU_cMCfRoFURun4XguX8dTt9VeyqeJitxRfub2Hj18RbsKuoFNHQNOxAxRK4oTVCtUrYbVqBHDmoOm8r3CsSuqjuZ2njQybiUhBofpTVMCZ6lB6VgoLphmEwSEOQXIumpmpb2qJZqbZaBoyyWb4f5AQjw3Q5lwPSao5215hIgSuuENRezpP9rTzIwyOMbnV2nMSMInAuaXIXskB2NdpMsROsvOqBC0h5azTj9naCS-5EW-9eI7GGK03Du5JoKD5wYajJxfcxFwBAl8Ko71OvhGFtYiu-hqzz-CyG6NswB87KvzDYUCQ-0qOfgRBNCgYnbjnuYVJb3CGLp_cP5GmKtUC3wHX1WnPGyK4bD19Rcy-FhG6mD_ZrAPcmZ3s4FLLErpRJ3ui-fiMPLQl2bpCKTWoaEZoPg6Grnhr3bE2ZiKWmqdVwf30bG3-GnvTBTuF0T1lzt6NeBlB23SJsffCmzSFSNcFJHHYI1FYdZu2p0gL6KAabEmnE8GrTrCn93DFNBtoKu9vG30QrRzyh-itPvtn9w-9t-nDkhaVHmNCjWD1xcMeXsyK8ek0rbz5aVe_RPvCifhIpgjqNsDHh9q1QT9KIFsd6RD2XPMlekL9c6YiVY9H7uRyIQWqJwtrvNvBKj4ZT9745zTfkhCJTPvnLy-4iKeINVZ2f98BblsGAEHKGol8YA-3SRkPh9BVnVhSdI3lxCDEbmHuk21GIPE9689efSvbcDEHpqeYoxo3tXjl_hqfzPAgMBAAGjggH1MIIB8TAJBgNVHRMEAjAAMB8GA1UdIwQYMBaAFLAkFxmI42b4zShYZXtNFNiSZk9rMHAGCCsGAQUFBwEBBGQwYjAzBggrBgEFBQcwAoYnaHR0cDovL2Muc2suZWUvVEVTVF9FSUQtUV8yMDI0RS5kZXIuY3J0MCsGCCsGAQUFBzABhh9odHRwOi8vYWlhLmRlbW8uc2suZWUvZWlkcTIwMjRlMDAGA1UdEQQpMCekJTAjMSEwHwYDVQQDDBhQTk9FRS00MDUwNDA0MDAwMS1ERU0wLVEweAYDVR0gBHEwbzBjBgkrBgEEAc4fEQIwVjBUBggrBgEFBQcCARZIaHR0cHM6Ly93d3cuc2tpZHNvbHV0aW9ucy5ldS9yZXNvdXJjZXMvY2VydGlmaWNhdGlvbi1wcmFjdGljZS1zdGF0ZW1lbnQvMAgGBgQAj3oBAjAoBgNVHQkEITAfMB0GCCsGAQUFBwkBMREYDzE5MDUwNDA0MTIwMDAwWjAWBgNVHSUEDzANBgsrBgEEAYPmYgUHADA0BgNVHR8ELTArMCmgJ6AlhiNodHRwOi8vYy5zay5lZS90ZXN0X2VpZC1xXzIwMjRlLmNybDAdBgNVHQ4EFgQUX9YaVGlPdUOO2J6rzNc4sljBQBAwDgYDVR0PAQH_BAQDAgeAMAoGCCqGSM49BAMDA2cAMGQCMHhYJCeKceJv_m0xcFRssS4WVFnnCryDiuSEpjDZu0irJ_XurXXIFDr-9hhl2x7GMwIwbiD5GALRtwzUaEh-SV9jigT9Oc336f6QYf8YaSA0-Un8eRQPa9wTK0cSQrM_CUIu";
-
     @SuppressWarnings("checkstyle:LineLength")
     private static final String MID_SESSION_TOKEN_WITH_FILTERED_DISCLOSURES_BASE64URL =
         "eyJraWQiOiJlYy1rZXktMjAyNiIsInR5cCI6InZuZC5jZG9jMi5zZXNzaW9uLXRva2VuLnYyK3NkLWp3dCIsImFsZyI6IkVTMjU2In0.eyJpc3MiOiJodHRwczovL2Nkb2MyLWF1dGgtc2VydmVyLmVlIiwiX3NkIjpbIndPUFNKSXpFUVJTakpuQ1ljOXpGZE55Ql9Od2ljTlNHMzZDTVp3RmJYeTAiXSwic3ViIjoiZXRzaS9QTk9FRS01MTMwNzE0OTU2MCIsImV4cCI6MTc3OTAyODk0NSwiaWF0IjoxNzc4OTQyNTQ1LCJfc2RfYWxnIjoic2hhLTI1NiJ9.muCkLBhMsiW7dvTuZrdPqQ_wxTtbZoy-iW79sqZ7iGG4omjRE8ZMxZPXM9_ONIF3v9qB7GHoevyfxYNF1uWBBg~WyJVRk1oRXkwUDkyZXlMTFVKRUtwWnJBIiwiYXVkIixbeyIuLi4iOiJxNkdySUl3clp5VndmeFdock9vVDd3RXV2WDlJQ0MzMXl1Q19DN3BlRUtNIn1dXQ~WyJHUl9xS3R6a3FSR0dUQjF5R3Jicl9RIiwiaHR0cHM6Ly9sb2NhbGhvc3Q6NzYwMC9zZXNzaW9uX25vbmNlLzNTbHZOdmRNRXE1cU1JbjFPRW8wdXciXQ~";
-
     @SuppressWarnings("checkstyle:LineLength")
     private static final String MID_SIGNING_CERTIFICATE_BASE64URL =
         "MIIDqDCCAy6gAwIBAgIQB9W11BzBABj-0d_AZx6UHzAKBggqhkjOPQQDAjBxMQswCQYDVQQGEwJFRTEbMBkGA1UECgwSU0sgSUQgU29sdXRpb25zIEFTMRcwFQYDVQRhDA5OVFJFRS0xMDc0NzAxMzEsMCoGA1UEAwwjVEVTVCBvZiBTSyBJRCBTb2x1dGlvbnMgRUlELVEgMjAyMUUwHhcNMjQwNjEyMDY0NTI4WhcNMjkwNjE2MDY0NTI3WjCBlTELMAkGA1UEBhMCRUUxLzAtBgNVBAMMJk1BUlkgw4ROTixPJ0NPTk5Fxb0txaBVU0xJSyBURVNUTlVNQkVSMSUwIwYDVQQEDBxPJ0NPTk5Fxb0txaBVU0xJSyBURVNUTlVNQkVSMRIwEAYDVQQqDAlNQVJZIMOETk4xGjAYBgNVBAUTEVBOT0VFLTUxMzA3MTQ5NTYwMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWlV1aVSXw6WhagWmFmXE_oe-0R1xZzrHyoiVlgKpGiJ8cwIQLogRGQnWY7NwgQvRHCBmsl99bj57h7SWnd03m6OCAYEwggF9MAkGA1UdEwQCMAAwHwYDVR0jBBgwFoAUScfc7QYUosdtnKbP11L9aOXoBBQwcAYIKwYBBQUHAQEEZDBiMDMGCCsGAQUFBzAChidodHRwOi8vYy5zay5lZS9URVNUX0VJRC1RXzIwMjFFLmRlci5jcnQwKwYIKwYBBQUHMAGGH2h0dHA6Ly9haWEuZGVtby5zay5lZS9laWRxMjAyMWUweAYDVR0gBHEwbzAIBgYEAI96AQIwYwYJKwYBBAHOHxIBMFYwVAYIKwYBBQUHAgEWSGh0dHBzOi8vd3d3LnNraWRzb2x1dGlvbnMuZXUvcmVzb3VyY2VzL2NlcnRpZmljYXRpb24tcHJhY3RpY2Utc3RhdGVtZW50LzA0BgNVHR8ELTArMCmgJ6AlhiNodHRwOi8vYy5zay5lZS90ZXN0X2VpZC1xXzIwMjFlLmNybDAdBgNVHQ4EFgQUj8KjnXvGQJCRYOd5LVfPku7QsZwwDgYDVR0PAQH_BAQDAgeAMAoGCCqGSM49BAMCA2gAMGUCMQCocXWDbBnkM3WEyBdv9Vm0A1MNRv08WrR192dRBcX42Kz5oiH0SdHRJv2ffeuEeSwCMEw2tSA3ClJv233Dl7rIYU_T6UG2NQhvDD5FhnP0umZRmVfAUQ6eVcmU8AhFtNJjwg==";
+    @SuppressWarnings("checkstyle:LineLength")
+    private static final String MID_SESSION_TOKEN_WITH_FILTERED_DISCLOSURES_FOR_RSA_CERT_BASE64URL =
+        "eyJraWQiOiJMM1JyWTVZVnFuN2ZDRWc2aGZfLWxzR1VuaFBjOWRjS3VUZVR2SkhPOVc4IiwidHlwIjoidm5kLmNkb2MyLnNlc3Npb24tdG9rZW4udjIrc2Qtand0IiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2Nkb2MyLWF1dGgtc2VydmVyLmVlIiwiX3NkIjpbImNvREpsTGJ6OHVaOHRSWVFaTUhYWEdqVGN4eUNyamoxR1JDZmVyTXM5cHciXSwic3ViIjoiZXRzaS9QTk9FRS0zOTkwMTAxOTk5MiIsImV4cCI6MTc3OTg2MTQ5OSwiaWF0IjoxNzc5Nzc1MDk5LCJfc2RfYWxnIjoic2hhLTI1NiJ9.B7iwVcY6yaZDIQBkV-ZNYjXZ2k4lxPQO72FhhBzG9F2fJ3GFcfsct6bHS453Pzw6ir_ufuPC8ZKEN7K3uJbyQQ~WyIwRHJsZV9MOE5seWRFX21FbUNIZDRRIiwiYXVkIixbeyIuLi4iOiI3dk9FVnJxeHQ4Z2JQNmc5MmVmaE5QbkJ4OXBibVJTVlk4SHROdkJPWlVvIn1dXQ~WyIySGY4c1dXbUtBZmNwOHBoUVEzWHl3IiwiaHR0cHM6Ly9sb2NhbGhvc3Q6NzYwMC9zZXNzaW9uX25vbmNlL0k5UzF5cmtOeUdJMWxlSnJibHV4d2ciXQ~";
+    @SuppressWarnings("checkstyle:LineLength")
+    private static final String MID_SIGNING_CERTIFICATE_RSA_BASE64URL =
+        "MIIESTCCA9CgAwIBAgIQYoxNTpjf-fpF9YJoFuzfXDAKBggqhkjOPQQDAjBxMQswCQYDVQQGEwJFRTEbMBkGA1UECgwSU0sgSUQgU29sdXRpb25zIEFTMRcwFQYDVQRhDA5OVFJFRS0xMDc0NzAxMzEsMCoGA1UEAwwjVEVTVCBvZiBTSyBJRCBTb2x1dGlvbnMgRUlELVEgMjAyMUUwHhcNMjUwNTA1MTAzMTAzWhcNMzAwNTA5MTAzMTAyWjBwMQswCQYDVQQGEwJFRTEiMCAGA1UEAwwZVEVTVE5VTUJFUixSU0EsMzk5MDEwOTk5MjETMBEGA1UEBAwKVEVTVE5VTUJFUjEMMAoGA1UEKgwDUlNBMRowGAYDVQQFExFQTk9FRS0zOTkwMTAxOTk5MjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMPtigPkrty3_gJXsvsmDkAAYFwiHpRIAKrhqnbwZ6YpF-qsQZQc-8wdZxb6pPVCGGPI4c_nC2Q223Dqt9wOkcL9drwGbLKX3Vlr1pOAaBLYDZ8ci1MW0a91_IAStgS7ieUsUT51xll_J0l79B0MMuV3Op5ZGa3O9XzsVO3OLrY9PkiFWrNjAgydcVKCp3PEoMYRpC0fMNGImRloJa9tltR2yYwIXXKFLP1_OzfJYOcMYcn09fZNjx03HeSiA_W1P3SmRxP8XmpZTPJUxiags2Hwl2KP3VZlOi9_eCBW2-3dvVa3eAmK5tR4Bb0WYzcPE9NEG8uftKcU1LSrqZ4eC_8CAwEAAaOCAX4wggF6MAkGA1UdEwQCMAAwHwYDVR0jBBgwFoAUScfc7QYUosdtnKbP11L9aOXoBBQwcAYIKwYBBQUHAQEEZDBiMDMGCCsGAQUFBzAChidodHRwOi8vYy5zay5lZS9URVNUX0VJRC1RXzIwMjFFLmRlci5jcnQwKwYIKwYBBQUHMAGGH2h0dHA6Ly9haWEuZGVtby5zay5lZS9laWRxMjAyMWUweAYDVR0gBHEwbzAIBgYEAI96AQIwYwYJKwYBBAHOHxIBMFYwVAYIKwYBBQUHAgEWSGh0dHBzOi8vd3d3LnNraWRzb2x1dGlvbnMuZXUvcmVzb3VyY2VzL2NlcnRpZmljYXRpb24tcHJhY3RpY2Utc3RhdGVtZW50LzA0BgNVHR8ELTArMCmgJ6AlhiNodHRwOi8vYy5zay5lZS90ZXN0X2VpZC1xXzIwMjFlLmNybDAdBgNVHQ4EFgQU47SEND7ponm7GcYaTxJkydVBQKcwCwYDVR0PBAQDAgeAMAoGCCqGSM49BAMCA2cAMGQCMF8CysKa-wUz8DtLXpaMOozw2_3X2sxC7AgkKbE7iRqZ9RRL9t9K1RBHSwz7YW71YwIwVZWlg2MhdqODcbWTOF4uqS29o9ETkPflLwrqiaCW5qQj2qEffILiNpgY7Adyq366";
 
     public static final String SERVER1 = "https://localhost:8442";
     public static final String SERVER2 = "https://localhost:8443";
@@ -190,11 +195,42 @@ public class AuthTokenCreatorTest {
             sessionToken
         );
 
-        testCreateAuthToken(idJwsSigner, loadMIDTestTrustStore(), null);
+        testCreateAuthToken(idJwsSigner, loadMIDTestTrustStore(), sessionToken);
 
         //for validating at sdjwt.org
-        log.debug("EC jwk {}", MIDAuthJWSSignerTest.getECPublicKeyJWK(idJwsSigner.getSignerCertificate()));
+        logCert(idJwsSigner.getSignerCertificate());
+    }
 
+    // requires a running and accessible cdoc2-rp-server with net access (or mobile-id mocks) and
+    // the session nonce disclosed by the session token present its database
+    @Test
+    @Tag("net")
+    @Disabled
+    void testCreateAuthTokenWithMIDAndRSACertificate() throws Exception {
+        String phoneNumber = MIDTestData.OK_RSA_PHONE_NUMBER;
+        String identityCode = MIDTestData.OK_RSA_IDENTITY_CODE;
+
+        SessionToken sessionToken = new SessionToken(
+            MID_SESSION_TOKEN_WITH_FILTERED_DISCLOSURES_FOR_RSA_CERT_BASE64URL,
+            MID_SIGNING_CERTIFICATE_RSA_BASE64URL
+        );
+
+        EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
+
+        Cdoc2RpClient demoEnvClient = MIDTestData.getDemoEnvClient();
+
+        IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(
+            etsiIdentifier,
+            phoneNumber,
+            demoEnvClient,
+            null,
+            sessionToken
+        );
+
+        testCreateAuthToken(idJwsSigner, loadMIDTestTrustStore(), sessionToken);
+
+        //for validating at sdjwt.org
+        logCert(idJwsSigner.getSignerCertificate());
     }
 
     void testCreateAuthToken(
@@ -232,20 +268,21 @@ public class AuthTokenCreatorTest {
         String certBase64Url = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(issCert.getEncoded());
 
-        var sidAuthTokenVerificationParams = new AuthTokenVerifier.SidAuthTokenVerificationParams(
+        var sidAuthTokenVerificationParams = tokenCreator.getSidRpV3SignatureParameters() != null
+            ? new AuthTokenVerifier.SidAuthTokenVerificationParams(
             tokenCreator.getSidRpV3SignatureParameters(),
             "DEMO",
             "smart-id-demo"
-        );
-
-        // TODO: create rpCounterSignatureParams if tokenCreator.getSidRpV3SignatureParameters()
-        //  is missing
+        )
+            : null;
 
         TokenVerificationResponse response = authTokenVerifier.verify(
             token1,
             certBase64Url,
             sidAuthTokenVerificationParams,
-            null
+            tokenCreator.getSidRpV3SignatureParameters() == null
+                ? MIDTestData.getDefaultHttpSignatureParams()
+                : null
         );
 
         String expectedSemanticsId = tokenCreator.getSidRpV3SignatureParameters() == null
@@ -259,6 +296,17 @@ public class AuthTokenCreatorTest {
         assertEquals(SHARE_ID1, data.getShareId());
         assertEquals(NONCE01, data.getNonce());
         assertEquals(SERVER1, data.getServerBaseUrl());
+    }
+
+    private void logCert(X509Certificate certificate) throws JOSEException {
+        String certPubAlgorithm = certificate.getPublicKey().getAlgorithm();
+        if ("EC".equals(certPubAlgorithm)) {
+            log.debug("EC jwk {}", MIDAuthJWSSignerTest.getECPublicKeyJWK(certificate));
+        } else if ("RSA".equals(certPubAlgorithm)) {
+            log.debug("RSA jwk {}", MIDAuthJWSSignerTest.getRSAPublicKeyJWK(certificate));
+        } else {
+            log.debug("Unexpected signer certificate public key algorithm: " + certPubAlgorithm);
+        }
     }
 
 }

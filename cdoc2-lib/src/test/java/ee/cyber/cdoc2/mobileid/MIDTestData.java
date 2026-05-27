@@ -1,6 +1,12 @@
 package ee.cyber.cdoc2.mobileid;
 
+import java.text.ParseException;
+import java.util.List;
+
+import com.nimbusds.jose.jwk.JWK;
+
 import ee.cyber.cdoc2.ClientConfigurationUtil;
+import ee.cyber.cdoc2.auth.RpHttpSignatureVerifier;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
@@ -10,6 +16,8 @@ public final class MIDTestData {
     // OK for "TEST of SK ID Solutions EID-Q 2021E" certificate
     public static final String OK_1_IDENTITY_CODE = "51307149560";
     public static final String OK_1_PHONE_NUMBER = "+37269930366";
+    public static final String OK_RSA_IDENTITY_CODE = "39901019992";
+    public static final String OK_RSA_PHONE_NUMBER = "+37200001566";
 
     public static final String OK_1_CERT_PEM = """
         -----BEGIN CERTIFICATE-----
@@ -35,13 +43,41 @@ public final class MIDTestData {
     public static final String OK_2_IDENTITY_CODE = "60001017869";
     public static final String OK_2_PHONE_NUMBER = "+37268000769";
 
-    private MIDTestData() {
+    private static final String CS_RP_SIGNED_HASH = "sj2RtSo7c1tx+J00KWWkzyv4iQ2L2cuX0InnFFi+GAQ=";
+    private static final String CS_RP_NAME = "DEMO";
+    private static final String CS_SIGNATURE_INPUT =
+        "rp-sig=(\"x-rp-signed-hash\" \"x-rp-name\");created=1779011296;keyid=\"rp-server-ec-key-2026\"";
+    private static final String CS_SIGNATURE =
+        "rp-sig=:nt5aITnpc8JjVrOYw8q46bNieq9L7y8gBjw+rJJ7BoY4X3h8BL5PwwcUBzl70iTOvikGCBOmpjbDY1661EqMMA==:";
 
+    private static final String RP_SERVER_WELL_KNOWN_JWK_JSON = """
+        {
+          "kty": "EC",
+          "crv": "P-256",
+          "x": "SIsDcu6c2CjOEIxZyh4ctZZA-zz4pFYv0duHPlNWinU",
+          "y": "50dC54PpOVtBHBGyzW1S6DgaBts-ywY3KgOclSIV97M",
+          "use": "enc",
+          "kid": "rp-server-ec-key-2026"
+        }
+        """;
+
+    private MIDTestData() {
     }
 
     public static Cdoc2RpClient getDemoEnvClient() throws ConfigurationLoadingException {
         Cdoc2RpClientConfiguration demoEnvConfiguration =
             ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
         return new Cdoc2RpClient(demoEnvConfiguration);
+    }
+
+    public static RpHttpSignatureVerifier.RpHttpSignatureParams getDefaultHttpSignatureParams()
+        throws ParseException {
+        return new RpHttpSignatureVerifier.RpHttpSignatureParams(
+            CS_RP_SIGNED_HASH,
+            CS_RP_NAME,
+            CS_SIGNATURE_INPUT,
+            CS_SIGNATURE,
+            List.of(JWK.parse(RP_SERVER_WELL_KNOWN_JWK_JSON))
+        );
     }
 }
