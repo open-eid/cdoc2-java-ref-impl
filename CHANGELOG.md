@@ -16,6 +16,9 @@ cdoc2-cli 1.9.0
 
 ## [3.3.0] Updates for Mobile-ID (2026-05-18)
 
+### Bug Fixes
+* Fix file not being deleted if the decryption fails on windows
+
 ### Internal
 * MID interaction changed to use Cdoc2RpClient, MobileIdClient removed
 * HTTP signatures from rp-server forwarded to shares server on GET /key-shares/{shareId} requests

@@ -53,6 +53,13 @@ public class TarDeflate implements AutoCloseable {
     private Exception exception;
 
     /**
+     * The delegate currently (or most recently) used in {@link #process(TarEntryProcessingDelegate)}.
+     * Kept so that {@link #close()} can close its open output streams before deleting files —
+     * necessary on Windows, which prevents deletion of files with open handles.
+     */
+    private TarEntryProcessingDelegate currentDelegate;
+
+    /**
      *
      * @param tarDeflateIs tar compressed with deflate
      */
@@ -68,7 +75,7 @@ public class TarDeflate implements AutoCloseable {
      * @throws IOException
      */
     public List<ArchiveEntry> extractToDir(Path outputDir) throws IOException {
-            return process(new ExtractDelegate(outputDir, null));
+        return process(new ExtractDelegate(outputDir, null));
     }
 
     /**
@@ -108,6 +115,7 @@ public class TarDeflate implements AutoCloseable {
         TarEntryProcessingDelegate tarEntryProcessingDelegate
     ) throws IOException {
 
+        currentDelegate = tarEntryProcessingDelegate;
         // wrap doProcess to record any thrown exception,
         // so that close() can delete created files or do other clean up when exception was thrown
         try {
@@ -194,7 +202,7 @@ public class TarDeflate implements AutoCloseable {
      * @throws IOException if path cannot be created from tarArchiveEntry under outputDir
      */
     public static Path pathFromTarEntry(Path outputDir, TarArchiveEntry tarArchiveEntry, boolean createFile)
-            throws IOException {
+        throws IOException {
 
         if (tarArchiveEntry.getName() == null) {
             throw new IOException("Invalid tarEntry without name");
@@ -204,7 +212,7 @@ public class TarDeflate implements AutoCloseable {
         if (null != tarPath.getParent()) {
             log.debug("Entries with directories are not supported {}", tarArchiveEntry.getName());
             throw new IOException("Entries with directories are not supported ("
-                    + tarArchiveEntry.getName() + ")");
+                + tarArchiveEntry.getName() + ")");
         }
 
         Path absOutDir = outputDir.normalize().toAbsolutePath();
@@ -238,10 +246,10 @@ public class TarDeflate implements AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     private boolean processTarEntry(
-                                  TarEntryProcessingDelegate delegate,
-                                  TarArchiveEntry tarArchiveEntry,
-                                  TarArchiveInputStream fromTarInputStream,
-                                  InputStreamStatistics inputStreamStatistics
+        TarEntryProcessingDelegate delegate,
+        TarArchiveEntry tarArchiveEntry,
+        TarArchiveInputStream fromTarInputStream,
+        InputStreamStatistics inputStreamStatistics
     ) throws IOException {
 
         double diskUsageThreshold = Tar.getDiskUsedPercentageThreshold();
@@ -333,8 +341,8 @@ public class TarDeflate implements AutoCloseable {
 
         if ((zLibIs.available() > 0)
             && (zLibIs.read() != -1) // DeflateCompressorInputStream.available() sometimes
-                                     // incorrectly reports that bytes available for reading,
-                                     // check that bytes can actually read
+            // incorrectly reports that bytes available for reading,
+            // check that bytes can actually read
         ) {
             log.warn("Unexpected data after tar {}B.", zLibIs.available());
             throw new IOException("Unexpected data after tar");
@@ -381,8 +389,19 @@ public class TarDeflate implements AutoCloseable {
                 log.debug("TarDeflate::close() {}", exStr);
             }
         }
-        if ((exception != null) && !createdFiles.isEmpty()) {
-            deleteFiles(createdFiles);
+        if (exception != null) {
+            // Close the delegate first to release any open output file handles.
+            // On Windows an open handle prevents deletion of the file.
+            if (currentDelegate != null) {
+                try {
+                    currentDelegate.close();
+                } catch (IOException e) {
+                    log.warn("Error closing delegate after exception", e);
+                }
+            }
+            if (!createdFiles.isEmpty()) {
+                deleteFiles(createdFiles);
+            }
         }
         tarIs.close();
         zLibIs.close();
