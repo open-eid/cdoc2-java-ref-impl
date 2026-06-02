@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.1]
+* Improve error messages for encryption and decryption with SiD/MiD
+
 ## [3.4.0]
 
 ### Improvements
