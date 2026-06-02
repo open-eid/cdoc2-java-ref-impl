@@ -142,8 +142,10 @@ public class CDocReEncryptCmd implements Callable<Void> {
     private File getDestinationFile() {
         Path outDir = this.outputPath.toPath().resolve(cdocFile.getName()).normalize();
         if (outDir.toString().equals(cdocFile.toPath().toString())) {
-            throw new IllegalArgumentException("Output path has to differ from the "
-                + "initial document location");
+            throw new IllegalArgumentException(
+                "Output path '" + outDir + "' must differ from the input file location '"
+                    + cdocFile.toPath() + "'. Use a different output directory (-o)."
+            );
         }
         return outDir.toFile();
     }

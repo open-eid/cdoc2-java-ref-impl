@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.1] Bug fixes
+* Improve re-encryption error messages
+
 ## [3.4.0]
 
 ### Improvements
