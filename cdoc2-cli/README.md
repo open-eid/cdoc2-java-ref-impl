@@ -141,14 +141,10 @@ java -jar target/cdoc2-cli-*.jar create -sid=38001085718 -sid=47101010033 \
  -f /tmp/smartid.cdoc2 README.md
 ```
 
-Key shares or Smart-ID properties can be sent externally by adding following options (the same 
+Key shares properties can be sent externally by adding following options (the same 
 for decryption):
 
 `-Dkey-shares.properties=config/localhost/key-shares.properties`
-
-and/or
-
-`-Dsmart-id.properties=config/smart-id/smart-id.properties`
 
 
 ### Encryption with Mobile ID
@@ -163,18 +159,16 @@ java -jar target/cdoc2-cli-*.jar create --mobile-id=51307149560 -f /tmp/mobileid
 Multiple ID codes are allowed to be sent for encryption:
 
 ```
-java -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 \
- -f /tmp/mobileid.cdoc2 README.md
+java \
+  `-Dkey-shares.properties=config/localhost/key-shares.properties` \
+  -jar target/cdoc2-cli-*.jar create -mid=51307149560 -mid=60001017869 \
+  -f /tmp/mobileid.cdoc2 README.md
 ```
 
-Key shares or Mobile-ID properties can be sent externally by adding following options (the same
+Key shares properties can be sent externally by adding following options (the same
 for decryption):
 
 `-Dkey-shares.properties=config/localhost/key-shares.properties`
-
-and/or
-
-`-Dmobile-id.properties=config/mobile-id/mobile-id.properties`
 
 
 ### Decryption
@@ -204,8 +198,15 @@ java \
 or with Mobile-ID for Estonian personal ID code and Estonian phone number with country code `+372`:
 
 ```
-java -jar target/cdoc2-cli-*.jar decrypt -mid=51307149560  -mid-phone=+37269930366 \
- -f /tmp/mobileid.cdoc2 --output /tmp
+java \
+  -Dkey-shares.properties=config/localhost/key-shares.properties \
+  -Dauth-server.properties=config/localhost/auth-server.properties \
+  -Drp-server.properties=config/localhost/rp-server.properties \
+  -jar target/cdoc2-cli-*.jar \
+  decrypt \
+  -mid=51307149560 -mid-phone=+37269930366 \
+  -f /tmp/mobileid.cdoc2 \
+  --output /tmp
 ```
 
 ### Decrypting with server scenario

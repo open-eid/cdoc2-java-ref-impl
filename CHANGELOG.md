@@ -1,6 +1,8 @@
 # Changelog
 
-## [3.4.1]
+## [3.4.1] Bug fixes
+* Improve re-encryption error messages
+* Improve error messages for missing services needed for SID/MID
 * Improve error messages for encryption and decryption with SiD/MiD
 
 ## [3.4.0]
