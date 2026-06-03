@@ -3,6 +3,7 @@ package ee.cyber.cdoc2.client.authserver;
 import jakarta.annotation.Nonnull;
 import jakarta.ws.rs.client.ClientBuilder;
 
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -85,6 +86,8 @@ public class Cdoc2AuthClient {
         } catch (ApiException ex) {
             throw new CdocAuthClientException(
                 "Failed to start authentication process (HTTP " + ex.getCode() + ")", ex);
+        } catch (Exception ex) {
+            throw wrapNetworkException(ex);
         }
     }
 
@@ -118,6 +121,8 @@ public class Cdoc2AuthClient {
                 "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } catch (Exception ex) {
+            throw wrapNetworkException(ex);
         }
 
         return status;
@@ -139,6 +144,8 @@ public class Cdoc2AuthClient {
 
         } catch (ApiException ex) {
             throw wrapApiException("Failed to retrieve well-known JWKS", ex);
+        } catch (Exception ex) {
+            throw wrapNetworkException(ex);
         }
     }
 
@@ -200,6 +207,15 @@ public class Cdoc2AuthClient {
             throw new CdocAuthClientException(
                 "Extracted authProcessUuid is not a valid UUID: " + uuidString, e);
         }
+    }
+
+    private CdocAuthClientException wrapNetworkException(Exception ex) {
+        String baseUrl = authApi.getApiClient().getBasePath();
+        log.error("{} {}: {}", "Failed to connect to authentication server", baseUrl, ex.getMessage(), ex);
+        String detail = (ex.getCause() instanceof IOException)
+            ? ex.getCause().getMessage()
+            : ex.getMessage();
+        return new CdocAuthClientException("Failed to connect to authentication server" + " " + baseUrl + ": " + detail, ex);
     }
 
     private static CdocAuthClientException wrapApiException(String context, ApiException ex) {

@@ -4,6 +4,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.ws.rs.client.ClientBuilder;
 
+import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -65,6 +66,8 @@ public class Cdoc2RpClient {
             ).getData().getSessionID();
         } catch (ApiException e) {
             throw wrapApiException("RP SID authenticate request error. ", e);
+        } catch (Exception e) {
+            throw wrapNetworkException(e);
         }
     }
 
@@ -77,6 +80,8 @@ public class Cdoc2RpClient {
             return cdoc2RpApi.sidSession(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
         } catch (ApiException e) {
             throw wrapApiException("RP SID session request error. ", e);
+        } catch (Exception e) {
+            throw wrapNetworkException(e);
         }
     }
 
@@ -109,6 +114,8 @@ public class Cdoc2RpClient {
             ).getData().getSessionID();
         } catch (ApiException e) {
             throw wrapApiException("RP MID authenticate request error. ", e);
+        } catch (Exception e) {
+            throw wrapNetworkException(e);
         }
     }
 
@@ -122,6 +129,8 @@ public class Cdoc2RpClient {
                 .midSessionWithHttpInfo(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
         } catch (ApiException e) {
             throw wrapApiException("RP MID session request error. ", e);
+        } catch (Exception e) {
+            throw wrapNetworkException(e);
         }
     }
 
@@ -212,6 +221,15 @@ public class Cdoc2RpClient {
                 : interactionParams.getDisplayText(50); // UCS2
         }
         return textAndPIN;
+    }
+
+    private CdocRpClientException wrapNetworkException(Exception ex) {
+        String baseUrl = cdoc2RpApi.getApiClient().getBasePath();
+        log.error("{} {}: {}", "Failed to connect to RP server", baseUrl, ex.getMessage(), ex);
+        String detail = (ex.getCause() instanceof IOException)
+            ? ex.getCause().getMessage()
+            : ex.getMessage();
+        return new CdocRpClientException("Failed to connect to RP server" + " " + baseUrl + ": " + detail, ex);
     }
 
     private static CdocRpClientException wrapApiException(String context, ApiException ex) {
