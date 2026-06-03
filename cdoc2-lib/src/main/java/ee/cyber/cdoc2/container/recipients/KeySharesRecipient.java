@@ -13,8 +13,8 @@ import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.decrypt.KeyShareDecryptionKeyMaterial;
 import ee.cyber.cdoc2.exceptions.CDocException;
-import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.KeyShareRecipientType;
+import ee.cyber.cdoc2.fbs.recipients.KeySharesCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SharesScheme;
 import ee.cyber.cdoc2.services.Services;
 
@@ -33,11 +33,12 @@ public class KeySharesRecipient extends Recipient {
 
     /**
      * Constructor
-     * @param encFmk encrypted FMK key
-     * @param keyLabel formatted key label
+     *
+     * @param encFmk      encrypted FMK key
+     * @param keyLabel    formatted key label
      * @param recipientId recipient ID as ETSI identifier (eg. 'etsi/PNOEE-48010010101')
-     * @param shares list of share server URL and share ID
-     * @param salt encryption salt
+     * @param shares      list of share server URL and share ID
+     * @param salt        encryption salt
      */
     public KeySharesRecipient(
         byte[] encFmk,

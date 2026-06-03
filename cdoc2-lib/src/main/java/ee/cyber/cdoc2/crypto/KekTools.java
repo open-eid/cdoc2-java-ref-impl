@@ -337,8 +337,8 @@ public final class KekTools {
         Services services
     ) throws CDocException {
         if (!services.hasService(Cdoc2AuthClient.class)) {
-            throw new CDocException("Cdoc2AuthClient not initialized. " +
-                "Make sure you have provided the -Dauth-server.properties option.");
+            throw new CDocException("Cdoc2AuthClient not initialized. "
+                + "Make sure you have provided the -Dauth-server.properties option.");
         }
 
         Cdoc2AuthClient cdoc2AuthClient = services.get(Cdoc2AuthClient.class);
@@ -400,8 +400,8 @@ public final class KekTools {
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
 
         if (!services.hasService(Cdoc2RpClient.class)) {
-            throw new CDocException("Cdoc2RpClient not initialized. " +
-                "Make sure you have provided the -Drp-server.properties option.");
+            throw new CDocException("Cdoc2RpClient not initialized. "
+                + "Make sure you have provided the -Drp-server.properties option.");
         }
         Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
 
