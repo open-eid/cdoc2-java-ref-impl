@@ -44,18 +44,18 @@ public class SessionToken {
     }
 
     public String getSessionToken(KeyShareUri shareUri) {
-        return discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+        var sessionToken =
+            discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+        if (sessionToken == null) {
+            throwSessionTokenDisclosureError(shareUri.serverBaseUrl());
+        }
+        return sessionToken;
     }
 
     public String getSessionToken(String claimValue) {
         var sessionToken = discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
         if (sessionToken == null) {
-            var message = String.format(
-                "Failed to create the disclosed session token, the claim value '%s' is missing from the session token",
-                claimValue
-            );
-            log.error(message);
-            throw new RuntimeException(message);
+            throwSessionTokenDisclosureError(claimValue);
         }
         return sessionToken;
     }
@@ -97,5 +97,14 @@ public class SessionToken {
 
     public String getSigningCertificate() {
         return signingCertificate;
+    }
+
+    private void throwSessionTokenDisclosureError(String claimValue) {
+        var message = String.format(
+            "Failed to create the disclosed session token, the claim value '%s' is missing from the session token",
+            claimValue
+        );
+        log.error(message);
+        throw new RuntimeException(message);
     }
 }
