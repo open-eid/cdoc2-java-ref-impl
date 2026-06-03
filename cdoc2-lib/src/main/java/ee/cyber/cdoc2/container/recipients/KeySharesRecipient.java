@@ -87,8 +87,8 @@ public class KeySharesRecipient extends Recipient {
 
         if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial) {
             if (services == null || !services.hasService(KeySharesClientFactory.class)) {
-                throw new CDocException("KeyShares service not initialized. Make sure"
-                    + "you have provided the -Dkey-shares.properties option.");
+                throw new CDocException("KeyShares service not initialized. "
+                    + "Make sure you have provided the -Dkey-shares.properties option.");
             }
 
             return KekTools.deriveKekFromShares(
