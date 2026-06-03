@@ -48,7 +48,16 @@ public class SessionToken {
     }
 
     public String getSessionToken(String claimValue) {
-        return discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
+        var sessionToken = discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
+        if (sessionToken == null) {
+            var message = String.format(
+                "Failed to create the disclosed session token, the claim value '%s' is missing from the session token",
+                claimValue
+            );
+            log.error(message);
+            throw new RuntimeException(message);
+        }
+        return sessionToken;
     }
 
     private void create(
