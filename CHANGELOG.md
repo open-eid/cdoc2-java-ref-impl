@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.1] Bug fixes
+* Improve error messages for missing services needed for SID/MID
+
 ## [3.4.0]
 
 ### Improvements

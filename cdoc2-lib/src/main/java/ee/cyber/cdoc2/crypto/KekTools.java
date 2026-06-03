@@ -53,8 +53,6 @@ import ee.cyber.cdoc2.exceptions.CDocUserException;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.services.Services;
 
-import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.AuthenticationType.MID;
-
 
 /**
  * Functions for deriving KEK in different scenarios
@@ -337,7 +335,12 @@ public final class KekTools {
         KeySharesRecipient keySharesRecipient,
         @Nullable String mobileNumber,
         Services services
-    ) {
+    ) throws CDocException {
+        if (!services.hasService(Cdoc2AuthClient.class)) {
+            throw new CDocException("Cdoc2AuthClient not initialized. " +
+                "Make sure you have provided the -Dauth-server.properties option.");
+        }
+
         Cdoc2AuthClient cdoc2AuthClient = services.get(Cdoc2AuthClient.class);
         return new SessionToken(
             cdoc2AuthClient,
@@ -397,7 +400,8 @@ public final class KekTools {
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
 
         if (!services.hasService(Cdoc2RpClient.class)) {
-            throw new CDocException("Cdoc2RpClient not configured");
+            throw new CDocException("Cdoc2RpClient not initialized. " +
+                "Make sure you have provided the -Drp-server.properties option.");
         }
         Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
 

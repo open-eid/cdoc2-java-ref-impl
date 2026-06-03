@@ -84,8 +84,12 @@ public class KeySharesRecipient extends Recipient {
         Services services
     ) throws GeneralSecurityException, CDocException {
 
-        if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial
-        && services != null && services.hasService(KeySharesClientFactory.class)) {
+        if (keyMaterial instanceof KeyShareDecryptionKeyMaterial keyShareKeyMaterial) {
+            if (services == null || !services.hasService(KeySharesClientFactory.class)) {
+                throw new CDocException("KeyShares service not initialized. Make sure"
+                    + "you have provided the -Dkey-shares.properties option.");
+            }
+
             return KekTools.deriveKekFromShares(
                 this,
                 keyShareKeyMaterial,
