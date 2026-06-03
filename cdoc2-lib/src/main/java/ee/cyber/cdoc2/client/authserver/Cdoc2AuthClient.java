@@ -215,7 +215,10 @@ public class Cdoc2AuthClient {
         String detail = (ex.getCause() instanceof IOException)
             ? ex.getCause().getMessage()
             : ex.getMessage();
-        return new CdocAuthClientException("Failed to connect to authentication server" + " " + baseUrl + ": " + detail, ex);
+        return new CdocAuthClientException(
+            "Failed to connect to authentication server" + " " + baseUrl + ": " + detail,
+            ex
+        );
     }
 
     private static CdocAuthClientException wrapApiException(String context, ApiException ex) {
