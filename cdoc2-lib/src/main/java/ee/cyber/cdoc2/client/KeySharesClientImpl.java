@@ -75,7 +75,15 @@ public final class KeySharesClientImpl implements KeySharesClient {
         String sessionToken,
         String signingCertificate
     ) throws ApiException {
-        return apiClient.createNonce(shareId, sessionToken, signingCertificate);
+        try {
+            return apiClient.createNonce(shareId, sessionToken, signingCertificate);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to connect to key share server {}", serverUrl, e);
+            throw new CDocUserException(UserErrorCode.NETWORK_ERROR,
+                "Failed to connect to key share server " + serverUrl);
+        }
     }
 
     @Override
