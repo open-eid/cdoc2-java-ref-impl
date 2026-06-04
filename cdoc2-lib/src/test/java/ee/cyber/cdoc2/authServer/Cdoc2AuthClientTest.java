@@ -54,7 +54,7 @@ public class Cdoc2AuthClientTest {
     @Test
     void successfulStartAuth() throws CdocAuthClientException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthWithServerError();
+        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
