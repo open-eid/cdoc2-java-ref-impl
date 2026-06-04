@@ -7,12 +7,12 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.authserver.AuthProcessData;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 
 import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClaimValue;
 
@@ -82,7 +82,7 @@ public class SessionToken {
     private AuthProcessData startAuth(AuthIdentity identity) {
         try {
             return cdoc2AuthClient.startAuth(identity);
-        } catch (CdocAuthClientException e) {
+        } catch (ExtApiException e) {
             throw new RuntimeException("Failed to start authentication process", e);
         }
     }
@@ -90,7 +90,7 @@ public class SessionToken {
     private AuthProcessStatusResponse getAuthStatus(UUID uuid) {
         try {
             return cdoc2AuthClient.getAuthProcessStatus(uuid);
-        } catch (CdocAuthClientException e) {
+        } catch (ExtApiException e) {
             throw new RuntimeException("Failed to retrieve authentication process status", e);
         }
     }

@@ -29,11 +29,11 @@ import com.nimbusds.jose.util.X509CertUtils;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.api.ApiResponse;
 import ee.cyber.cdoc2.client.mobileid.MobileIdUserData;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
-import ee.cyber.cdoc2.exceptions.CdocRpClientException;
 
 /**
  * JWSSigner that implements signing using Mobile-ID authentication key/certificate. Supports
@@ -141,7 +141,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
             if (!"OK".equals(result)) {
                 String message = "SID session endResult: " + result;
                 log.error(message);
-                throw new CdocRpClientException(message);
+                throw new ExtApiException(message);
             }
 
             this.countersignatureParams = mapCountersignatureHeaders(apiResponse);
@@ -149,7 +149,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
             this.signerCertificate = X509CertUtils.parse(responseBody.getCert());
 
             return Base64URL.encode(responseBody.getSignature().getValue());
-        } catch (CdocRpClientException ex) {
+        } catch (ExtApiException ex) {
             throw new JOSEException(ex);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -176,7 +176,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         String xCdoc2SessionToken,
         String xCdoc2SessionX5c,
         UUID sessionId
-    ) throws InterruptedException, CdocRpClientException {
+    ) throws InterruptedException, ExtApiException {
         ApiResponse<MidSessionStatusResponse> response = null;
         while (response == null || "RUNNING".equalsIgnoreCase(response.getData().getState().getValue())) {
             response =

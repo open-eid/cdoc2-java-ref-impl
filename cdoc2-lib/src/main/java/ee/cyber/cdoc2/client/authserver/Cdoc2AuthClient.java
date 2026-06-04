@@ -19,13 +19,13 @@ import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.api.Cdoc2AuthApi;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.client.model.WellKnownResponse;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
-import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 import ee.cyber.cdoc2.util.ApiClientUtil;
 
 public class Cdoc2AuthClient {
@@ -67,9 +67,9 @@ public class Cdoc2AuthClient {
      * @param authIdentity the identity to authenticate
      * @return the {@code authProcessUuid} extracted from the {@code Location} response header
      * and the verification code from the requests body.
-     * @throws CdocAuthClientException if the API call fails or the UUID cannot be extracted
+     * @throws ExtApiException if the API call fails or the UUID cannot be extracted
      */
-    public AuthProcessData startAuth(@Nonnull AuthIdentity authIdentity) throws CdocAuthClientException {
+    public AuthProcessData startAuth(@Nonnull AuthIdentity authIdentity) throws ExtApiException {
         log.debug("Starting authentication process for identity: {}", authIdentity);
 
         try {
@@ -95,10 +95,10 @@ public class Cdoc2AuthClient {
      *
      * @param authProcessUuid the UUID returned by {@link #startAuth(AuthIdentity)}
      * @return the current {@link AuthProcessStatusResponse}
-     * @throws CdocAuthClientException if the API call fails (e.g. 400, 401, 404)
+     * @throws ExtApiException if the API call fails (e.g. 400, 401, 404)
      */
     public AuthProcessStatusResponse getAuthProcessStatus(@Nonnull UUID authProcessUuid)
-        throws CdocAuthClientException {
+        throws ExtApiException {
 
         log.debug("Polling auth process status for UUID: {}", authProcessUuid);
 
@@ -131,9 +131,9 @@ public class Cdoc2AuthClient {
      * Retrieves the server's well-known JWKS signing-key information.
      *
      * @return {@link WellKnownResponse} containing the server's signing keys
-     * @throws CdocAuthClientException if the API call fails
+     * @throws ExtApiException if the API call fails
      */
-    public WellKnownResponse getWellKnown() throws CdocAuthClientException {
+    public WellKnownResponse getWellKnown() throws ExtApiException {
         log.debug("Fetching well-known JWKS");
 
         try {
@@ -170,7 +170,7 @@ public class Cdoc2AuthClient {
     }
 
     private static String extractLocation(
-        Map<String, List<String>> headers) throws CdocAuthClientException {
+        Map<String, List<String>> headers) throws ExtApiException {
 
         for (var entry : headers.entrySet()) {
             if ("Location".equalsIgnoreCase(entry.getKey())) {
@@ -180,20 +180,20 @@ public class Cdoc2AuthClient {
                 }
             }
         }
-        throw new CdocAuthClientException(
+        throw new ExtApiException(
             "Response did not contain 'Location' header"
         );
     }
 
-    private static UUID extractUuidFromLocation(String location) throws CdocAuthClientException {
+    private static UUID extractUuidFromLocation(String location) throws ExtApiException {
         if (location == null || location.isBlank()) {
-            throw new CdocAuthClientException(
+            throw new ExtApiException(
                 "Location header is blank; cannot extract authProcessUuid");
         }
 
         Matcher matcher = AUTH_PROCESS_UUID_PATTERN.matcher(location);
         if (!matcher.find()) {
-            throw new CdocAuthClientException(
+            throw new ExtApiException(
                 "Location header does not match expected pattern "
                     + AUTH_PROCESS_UUID_PATTERN.pattern() + ": " + location);
         }
@@ -203,24 +203,24 @@ public class Cdoc2AuthClient {
         try {
             return UUID.fromString(uuidString);
         } catch (IllegalArgumentException e) {
-            throw new CdocAuthClientException(
+            throw new ExtApiException(
                 "Extracted authProcessUuid is not a valid UUID: " + uuidString, e);
         }
     }
 
-    private CdocAuthClientException wrapNetworkException(Exception ex) {
+    private ExtApiException wrapNetworkException(Exception ex) {
         String baseUrl = authApi.getApiClient().getBasePath();
         log.error("{} {}: {}", "Failed to connect to authentication server", baseUrl, ex.getMessage(), ex);
         String detail = (ex.getCause() instanceof IOException)
             ? ex.getCause().getMessage()
             : ex.getMessage();
-        return new CdocAuthClientException(
+        return new ExtApiException(
             "Failed to connect to authentication server" + " " + baseUrl + ": " + detail,
             ex
         );
     }
 
-    private static CdocAuthClientException wrapApiException(String context, ApiException ex) {
+    private static ExtApiException wrapApiException(String context, ApiException ex) {
         String detail = switch (ex.getCode()) {
             case 400 -> "Bad request — check the parameters";
             case 401 -> "Unauthorized — missing or invalid auth ticket";
@@ -229,6 +229,6 @@ public class Cdoc2AuthClient {
             default -> "Unexpected server response";
         };
         log.error("{}: {} (HTTP {})", context, detail, ex.getCode());
-        return new CdocAuthClientException(context + ": " + detail + " (HTTP " + ex.getCode() + ")", ex);
+        return new ExtApiException(context + ": " + detail + " (HTTP " + ex.getCode() + ")", ex);
     }
 }

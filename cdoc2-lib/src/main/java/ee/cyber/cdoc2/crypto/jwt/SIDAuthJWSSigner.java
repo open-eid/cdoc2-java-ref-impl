@@ -33,6 +33,7 @@ import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier;
 import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier.AuthTokenSignatureValidationParams;
 import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.model.AcspV2Signature;
 import ee.cyber.cdoc2.client.model.AuthCertificateLevel;
 import ee.cyber.cdoc2.client.model.AuthSignatureProtocol;
@@ -45,7 +46,6 @@ import ee.cyber.cdoc2.client.model.SignatureAlgorithm;
 import ee.cyber.cdoc2.client.model.SignatureAlgorithmParametersInRequest;
 import ee.cyber.cdoc2.client.model.VerificationCodeType;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
-import ee.cyber.cdoc2.exceptions.CdocRpClientException;
 
 
 /**
@@ -200,7 +200,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
                     .orElse("<none>");
 
                 log.error(message);
-                throw new CdocRpClientException(message);
+                throw new ExtApiException(message);
             }
 
             this.signerCertificate = X509CertUtils.parse(response.getCert().getValue());
@@ -211,7 +211,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
             );
 
             return Base64URL.encode(response.getSignature().getValue());
-        } catch (CdocRpClientException | InterruptedException | JsonProcessingException e) {
+        } catch (ExtApiException | InterruptedException | JsonProcessingException e) {
             throw new JOSEException(e);
         }
     }
@@ -266,7 +266,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
         String xCdoc2SessionToken,
         String xCdoc2SessionX5c,
         UUID sessionId
-    ) throws InterruptedException, CdocRpClientException {
+    ) throws InterruptedException, ExtApiException {
         SessionStatusResponse sessionStatus = null;
         while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState().getValue())) {
             sessionStatus = rpClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
