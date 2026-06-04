@@ -54,7 +54,7 @@ public class Cdoc2AuthClientTest {
     @Test
     void successfulStartAuth() throws CdocAuthClientException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        cdoc2AuthClientMock.stubStartAuthWithServerError();
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -85,5 +85,42 @@ public class Cdoc2AuthClientTest {
 
         assertNotNull(wellKnownResponse);
         assertFalse(wellKnownResponse.getKeys().isEmpty());
+    }
+
+    @Test
+    void networkFaultStartAuth() {
+        cdoc2AuthClientMock.stubStartAuthWithNetworkFault();
+
+        AuthIdentity authIdentity = new AuthIdentity()
+            .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
+            .mobileNr(DEFAULT_MOBILE_NR);
+
+        Exception ex = assertThrows(
+            CdocAuthClientException.class,
+            () -> cdoc2AuthClient.startAuth(authIdentity)
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+            "actual message: " + ex.getMessage());
+    }
+
+    @Test
+    void serverErrorStartAuth() {
+        cdoc2AuthClientMock.stubStartAuthWithServerError();
+
+        AuthIdentity authIdentity = new AuthIdentity()
+            .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
+            .mobileNr(DEFAULT_MOBILE_NR);
+
+        Exception ex = assertThrows(
+            CdocAuthClientException.class,
+            () -> cdoc2AuthClient.startAuth(authIdentity)
+        );
+
+        assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
+            "actual message: " + ex.getMessage());
+        assertTrue(ex.getCause().getMessage().contains("AUTH_SERVER_ERROR_CODE"),
+            "actual cause message: " + ex.getCause().getMessage());
+
     }
 }

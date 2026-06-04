@@ -84,8 +84,7 @@ public class Cdoc2AuthClient {
             return new AuthProcessData(uuid, vc);
 
         } catch (ApiException ex) {
-            throw new CdocAuthClientException(
-                "Failed to start authentication process (HTTP " + ex.getCode() + ")", ex);
+            throw wrapApiException("Failed to start authentication process", ex);
         } catch (Exception ex) {
             throw wrapNetworkException(ex);
         }

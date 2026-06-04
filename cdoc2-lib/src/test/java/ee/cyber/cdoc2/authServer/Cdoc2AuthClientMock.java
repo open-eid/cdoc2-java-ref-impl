@@ -9,11 +9,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
-
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 
 public class Cdoc2AuthClientMock {
@@ -52,6 +51,26 @@ public class Cdoc2AuthClientMock {
                     Map.of("vc", DEFAULT_VERIFICATION_CODE)
                 ))
             )
+        );
+    }
+
+    public void stubStartAuthWithNetworkFault() {
+        wiremock.stubFor(
+            WireMock.post(
+                urlEqualTo("/auth/start")
+            ).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER))
+        );
+    }
+
+    public void stubStartAuthWithServerError() {
+        wiremock.stubFor(
+            WireMock.post(
+                urlEqualTo("/auth/start")
+            ).willReturn(serverError().withBody(
+                """
+                    {"errorCode":"AUTH_SERVER_ERROR_CODE"}
+                    """
+            ))
         );
     }
 
