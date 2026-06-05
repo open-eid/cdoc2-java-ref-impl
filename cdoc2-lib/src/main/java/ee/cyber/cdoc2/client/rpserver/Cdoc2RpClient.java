@@ -240,8 +240,10 @@ public class Cdoc2RpClient {
             case 404 -> "Not found — record missing or recipient ID mismatch";
             default -> "Unexpected server response";
         };
-        log.error("{}: {} (HTTP {})", context, detail, ex.getCode());
-        return new ExtApiException(context + ": " + detail + " (HTTP " + ex.getCode() + ")", ex);
+        log.error("{}: {} (HTTP {}) — {}", context, detail, ex.getCode(), ex.getMessage());
+        return new ExtApiException(
+            context + ": " + detail + " (HTTP " + ex.getCode() + ") — " + ex.getMessage(), ex
+        );
     }
 
     enum CertificateLevel {

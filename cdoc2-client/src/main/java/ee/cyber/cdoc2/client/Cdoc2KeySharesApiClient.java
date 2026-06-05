@@ -125,8 +125,12 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
             );
             return Optional.of(response.getData());
         } catch (ApiException ex) {
-            log.error("Key share get request with share ID {} has failed with error code {}",
-                shareId, ex.getCode());
+            log.error(
+                "Key share get request with share ID {} has failed with error code {}, message {}",
+                shareId,
+                ex.getCode(),
+                ex.getMessage()
+            );
             if (ex.getCode() == STATUS_CODE_NOT_FOUND) {
                 return Optional.empty();
             } else {
