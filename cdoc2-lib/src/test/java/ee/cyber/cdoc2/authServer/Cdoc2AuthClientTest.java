@@ -119,8 +119,8 @@ public class Cdoc2AuthClientTest {
 
         assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
             "actual message: " + ex.getMessage());
-        assertTrue(ex.getCause().getMessage().contains("AUTH_SERVER_ERROR_CODE"),
-            "actual cause message: " + ex.getCause().getMessage());
+        assertTrue(ex.getMessage().contains("AUTH_SERVER_ERROR_CODE"),
+            "actual cause message: " + ex.getMessage());
 
     }
 }
