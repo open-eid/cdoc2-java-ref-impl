@@ -341,6 +341,7 @@ public final class Envelope {
         for (Recipient recipient : recipients) {
             if (recipient.getRecipientId().equals(keyMaterial.getRecipientId())) {
                 byte[] kek = recipient.deriveKek(keyMaterial, services);
+                long decryptionStartNs = System.nanoTime();
                 byte[] fmk = decryptRecipientFmk(recipient, kek);
 
                 SecretKey hmacKey = Crypto.deriveHeaderHmacKey(fmk);
@@ -352,9 +353,12 @@ public final class Envelope {
                 log.debug("payload available (at least) {}", containerIs.available());
 
                 if (header.payloadEncryptionMethod() == PayloadEncryptionMethod.CHACHA20POLY1305) {
-                    return processPayload(
+                    List<ArchiveEntry> result = processPayload(
                         containerIs, cekKey, getAdditionalData(fbsHeaderBytes, hmac), tarProcessingDelegate
                     );
+                    log.info("Decryption completed in {} ms",
+                        (System.nanoTime() - decryptionStartNs) / 1_000_000);
+                    return result;
                 } else {
                     throw new CDocParseException("Unknown payload encryption method "
                         + header.payloadEncryptionMethod());

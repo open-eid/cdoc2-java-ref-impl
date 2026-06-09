@@ -5,6 +5,7 @@
 ### Improvements
 * Improve re-encryption error messages
 * Improve error messages for missing services needed for SID/MID
+* Improve decryption time
 * Remove unused properties from rp-server configuration
 
 ## [3.4.0]
