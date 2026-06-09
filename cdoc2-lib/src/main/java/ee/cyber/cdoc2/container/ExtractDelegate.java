@@ -3,9 +3,11 @@ package ee.cyber.cdoc2.container;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
 import javax.annotation.Nullable;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,7 +19,7 @@ public class ExtractDelegate implements TarEntryProcessingDelegate {
     @Nullable
     private List<String> filesToExtract; // null means all files
 
-    private FileOutputStream fileOutputStream;
+    private OutputStream fileOutputStream;
 
     public ExtractDelegate(
         Path destDir,
@@ -41,7 +43,7 @@ public class ExtractDelegate implements TarEntryProcessingDelegate {
     public File onTarEntry(TarArchiveEntry tarEntry) throws IOException {
         if ((filesToExtract == null) || filesToExtract.contains(tarEntry.getName())) {
             File outFile = TarDeflate.pathFromTarEntry(destDir, tarEntry, true).toFile();
-            fileOutputStream = new FileOutputStream(outFile);
+            fileOutputStream = new BufferedOutputStream(new FileOutputStream(outFile), 64 * 1024);
             return outFile;
         }
         return null;
