@@ -1,8 +1,11 @@
 # Changelog
 
-## [3.4.1] Bug fixes
+## [3.4.1] 
+
+### Improvements
 * Improve re-encryption error messages
 * Improve error messages for missing services needed for SID/MID
+* Remove unused properties from rp-server configuration
 
 ## [3.4.0]
 

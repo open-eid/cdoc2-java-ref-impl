@@ -7,27 +7,29 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.Resources;
 
 
 public final class TrustStoreUtil {
     private static final String CERT_NOT_FOUND = "Rp Server trusted SSL certificates not found";
-    private static final Logger log = LoggerFactory.getLogger(TrustStoreUtil.class);
+    private static final String SID_ISSUER_TRUSTSTORE =
+        "classpath:smart-id/smartid_demo_server_trusted_ssl_certs.jks";
+    private static final String SID_ISSUER_TRUSTSTORE_PW = "passwd";
+    private static final String MID_ISSUER_TRUSTSTORE =
+        "classpath:mobile-id/mobileid_demo_server_trusted_ssl_certs.p12";
+    private static final String MID_ISSUER_TRUSTSTORE_PW = "passwd";
+
 
     private TrustStoreUtil() {
         // utility class
     }
 
-    public static KeyStore readSidSigningCertificateTrustStore(Cdoc2RpClientConfiguration rpServerClientConfig)
+    public static KeyStore readSidSigningCertificateTrustStore()
         throws ConfigurationLoadingException {
 
         try (InputStream is = Resources.getResourceAsStream(
-            rpServerClientConfig.getSidSigningCertificateTrustStore(), TrustStoreUtil.class.getClassLoader())
+            SID_ISSUER_TRUSTSTORE, TrustStoreUtil.class.getClassLoader())
         ) {
             if (null == is) {
                 throw new ConfigurationLoadingException(CERT_NOT_FOUND);
@@ -35,7 +37,7 @@ public final class TrustStoreUtil {
                 KeyStore trustStore = KeyStore.getInstance("JKS");
                 trustStore.load(
                     is,
-                    rpServerClientConfig.getSidSigningCertificateTrustStorePassword().toCharArray()
+                    SID_ISSUER_TRUSTSTORE_PW.toCharArray()
                 );
                 return trustStore;
             }
@@ -50,11 +52,11 @@ public final class TrustStoreUtil {
         }
     }
 
-    public static KeyStore readMidSidSigningCertificateTrustStore(Cdoc2RpClientConfiguration rpServerClientConfig)
+    public static KeyStore readMidSidSigningCertificateTrustStore()
         throws ConfigurationLoadingException {
 
         try (InputStream is = Resources.getResourceAsStream(
-            rpServerClientConfig.getMidSigningCertificateTrustStore(), TrustStoreUtil.class.getClassLoader())
+            MID_ISSUER_TRUSTSTORE, TrustStoreUtil.class.getClassLoader())
         ) {
             if (null == is) {
                 throw new ConfigurationLoadingException(CERT_NOT_FOUND);
@@ -62,7 +64,7 @@ public final class TrustStoreUtil {
                 KeyStore trustStore = KeyStore.getInstance("JKS");
                 trustStore.load(
                     is,
-                    rpServerClientConfig.getMidSigningCertificateTrustStorePassword().toCharArray()
+                    MID_ISSUER_TRUSTSTORE_PW.toCharArray()
                 );
                 return trustStore;
             }
