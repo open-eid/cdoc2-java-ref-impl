@@ -29,6 +29,10 @@ public final class Tar {
 
     public static final int DEFAULT_BUFFER_SIZE  = 8192;
 
+    // Check disk space at most once per MB to avoid thousands of expensive filesystem stat calls
+    // (getUsableSpace/getTotalSpace are slow on Windows) for large files.
+    public static final long DISK_CHECK_INTERVAL_BYTES = 1024 * 1024;
+
     // gzip compression ratio threshold, normally less than 3, consider over 10 as zip bomb
     public static final double DEFAULT_COMPRESSION_RATIO_THRESHOLD = 10;
 

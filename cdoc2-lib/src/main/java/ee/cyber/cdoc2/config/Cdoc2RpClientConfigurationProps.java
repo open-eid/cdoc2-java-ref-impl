@@ -16,28 +16,20 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 /**
  * CDOC2 Authentication Server Client configuration properties.
  *
- * @param hostUrl client host URL
- * @param certificateLevel Certificate level to use for SiD
- * @param trustStore client trust store
+ * @param hostUrl            client host URL
+ * @param certificateLevel   Certificate level to use for SiD
+ * @param trustStore         client trust store
  * @param trustStorePassword client trust store password
- * @param sidSigningCertificateTrustStore SID signing cert trust store
- * @param sidSigningCertificateTrustStorePassword SID signing cert trust store password
- * @param midSigningCertificateTrustStore MID signing cert trust store
- * @param midSigningCertificateTrustStorePassword MID signing cert trust store password
- * @param displayText displayText
- * @param displayTextFormat displayText format
- * @param language displayText language
- * @param clientServerDebug turn on debug logs for client
+ * @param displayText        displayText
+ * @param displayTextFormat  displayText format
+ * @param language           displayText language
+ * @param clientServerDebug  turn on debug logs for client
  */
 public record Cdoc2RpClientConfigurationProps(
     String hostUrl,
     String certificateLevel,
     String trustStore,
     String trustStorePassword,
-    String sidSigningCertificateTrustStore,
-    String sidSigningCertificateTrustStorePassword,
-    String midSigningCertificateTrustStore,
-    String midSigningCertificateTrustStorePassword,
     String displayText,
     MidDisplayTextFormat displayTextFormat,
     MidLanguage language,
@@ -58,14 +50,6 @@ public record Cdoc2RpClientConfigurationProps(
         String certificateLevel = getRequiredProperty(properties, RP_SERVER_CLIENT_CERT_LEVEL);
         String trustStore = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE);
         String trustStorePassword = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE_PWD);
-        String sidSigningCertificateTrustStore =
-            getRequiredProperty(properties, RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE);
-        String sidSigningCertificateTrustStorePassword =
-            getRequiredProperty(properties, RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE_PWD);
-        String midSigningCertificateTrustStore =
-            getRequiredProperty(properties, RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE);
-        String midSigningCertificateTrustStorePassword =
-            getRequiredProperty(properties, RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE_PWD);
         String displayText = properties.getProperty(
             RP_SERVER_MOBILE_ID_DISPLAY_TEXT, DEFAULT_DISPLAY_TEXT
         );
@@ -79,8 +63,6 @@ public record Cdoc2RpClientConfigurationProps(
 
         return new Cdoc2RpClientConfigurationProps(
             hostUrl, certificateLevel, trustStore, trustStorePassword,
-            sidSigningCertificateTrustStore, sidSigningCertificateTrustStorePassword,
-            midSigningCertificateTrustStore, midSigningCertificateTrustStorePassword,
             displayText, displayTextFormat, language, clientServerDebug
         );
     }
@@ -103,26 +85,6 @@ public record Cdoc2RpClientConfigurationProps(
     @Override
     public String getTrustStorePassword() {
         return trustStorePassword;
-    }
-
-    @Override
-    public String getSidSigningCertificateTrustStore() {
-        return sidSigningCertificateTrustStore;
-    }
-
-    @Override
-    public String getSidSigningCertificateTrustStorePassword() {
-        return sidSigningCertificateTrustStorePassword;
-    }
-
-    @Override
-    public String getMidSigningCertificateTrustStore() {
-        return midSigningCertificateTrustStore;
-    }
-
-    @Override
-    public String getMidSigningCertificateTrustStorePassword() {
-        return midSigningCertificateTrustStorePassword;
     }
 
     @Override

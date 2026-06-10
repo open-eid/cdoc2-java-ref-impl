@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import com.nimbusds.jose.JOSEException;
 
-import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.TrustStoreUtil;
 import ee.cyber.cdoc2.auth.AuthTokenVerifier;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
@@ -31,7 +30,6 @@ import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
@@ -135,13 +133,11 @@ public class AuthTokenCreatorTest {
     }
 
     KeyStore loadSIDTestTrustStore() {
-        Cdoc2RpClientConfiguration sidConf = ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
-        return TrustStoreUtil.readSidSigningCertificateTrustStore(sidConf);
+        return TrustStoreUtil.readSidSigningCertificateTrustStore();
     }
 
     KeyStore loadMIDTestTrustStore() {
-        Cdoc2RpClientConfiguration sidConf = ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
-        return TrustStoreUtil.readMidSidSigningCertificateTrustStore(sidConf);
+        return TrustStoreUtil.readMidSidSigningCertificateTrustStore();
     }
 
     // requires a running and accessible cdoc2-rp-server with net access (or smart-id mocks) and

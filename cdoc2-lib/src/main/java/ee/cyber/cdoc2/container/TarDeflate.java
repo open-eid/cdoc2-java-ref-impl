@@ -254,6 +254,7 @@ public class TarDeflate implements AutoCloseable {
 
         double diskUsageThreshold = Tar.getDiskUsedPercentageThreshold();
         long written = 0;
+        long lastDiskCheckAt = 0;
         boolean processed;
 
         if (tarArchiveEntry.isFile()) {
@@ -268,15 +269,22 @@ public class TarDeflate implements AutoCloseable {
                 createdFiles.add(createdFile);
             }
 
+            checkAvailableDiskSpace(delegate.getOutputDir(), diskUsageThreshold);
+
             byte[] buffer = new byte[Tar.DEFAULT_BUFFER_SIZE];
             int read;
             while ((read = fromTarInputStream.read(buffer, 0, Tar.DEFAULT_BUFFER_SIZE)) >= 0) {
 
-                //check available disk space
-                checkAvailableDiskSpace(delegate.getOutputDir(), diskUsageThreshold);
-
                 delegate.write(buffer, 0, read);
                 written += read;
+
+                // Throttle disk-space checks to once per MB: getUsableSpace()/getTotalSpace()
+                // are expensive filesystem calls (especially on Windows) and 8 KB chunks make
+                // them fire ~12 800 times for a 100 MB file otherwise.
+                if (written - lastDiskCheckAt >= Tar.DISK_CHECK_INTERVAL_BYTES) {
+                    checkAvailableDiskSpace(delegate.getOutputDir(), diskUsageThreshold);
+                    lastDiskCheckAt = written;
+                }
 
                 checkCompressionRatioThreshold(tarArchiveEntry, inputStreamStatistics);
             }

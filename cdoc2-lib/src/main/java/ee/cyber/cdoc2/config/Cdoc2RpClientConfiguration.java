@@ -21,14 +21,6 @@ public interface Cdoc2RpClientConfiguration {
 
     String getTrustStorePassword();
 
-    String getSidSigningCertificateTrustStore();
-
-    String getSidSigningCertificateTrustStorePassword();
-
-    String getMidSigningCertificateTrustStore();
-
-    String getMidSigningCertificateTrustStorePassword();
-
     /**
      * Default display text, can be overwritten with InteractionParams
      */
