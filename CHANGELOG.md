@@ -9,6 +9,15 @@
 * Remove unused properties from rp-server configuration
 * Improve error messages for encryption and decryption with SiD/MiD
 
+### Maven package versions:
+```
+cdoc2 3.4.1
+cdoc2-schema 2.1.0
+cdoc2-lib 3.6.1
+cdoc2-client 2.2.3
+cdoc2-cli 1.9.1
+```
+
 ## [3.4.0]
 
 ### Improvements
@@ -16,7 +25,7 @@
 
 ### Maven package versions:
 ```
-cdoc2 3.3.0
+cdoc2 3.4.0
 cdoc2-schema 2.1.0
 cdoc2-lib 3.6.0
 cdoc2-client 2.2.2
