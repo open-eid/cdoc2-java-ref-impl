@@ -4,11 +4,11 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>3.4.0</version>
+        <version>3.4.1</version>
     </parent>
 
     <artifactId>cdoc2-client</artifactId>
-    <version>2.2.2</version>
+    <version>2.2.3</version>
     <description>CDOC2 server client generation from openapi specifications https://github.com/open-eid/cdoc2-openapi</description>
 
     <properties>
