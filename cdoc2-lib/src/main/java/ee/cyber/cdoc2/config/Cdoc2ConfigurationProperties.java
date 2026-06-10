@@ -6,14 +6,18 @@ package ee.cyber.cdoc2.config;
  */
 public final class Cdoc2ConfigurationProperties {
 
-    private Cdoc2ConfigurationProperties() { }
+    private Cdoc2ConfigurationProperties() {
+    }
 
-    /** Defines key-capsules server properties file location and initializes mTLS, initialize KeyCapsuleClientFactory
+    /**
+     * Defines key-capsules server properties file location and initializes mTLS, initialize KeyCapsuleClientFactory
      * may ask for PIN, when private key is on smart-card
      */
     public static final String KEY_CAPSULE_PROPERTIES = "key-capsule.properties";
 
-    /** Initialize KeyCapsuleClient only that doesn't require mTLS */
+    /**
+     * Initialize KeyCapsuleClient only that doesn't require mTLS
+     */
     public static final String KEY_CAPSULE_POST_PROPERTIES = "key-capsule-post.properties";
 
     public static final String CLIENT_SERVER_BASE_URL_GET = "cdoc2.client.server.base-url.get";
@@ -35,13 +39,17 @@ public final class Cdoc2ConfigurationProperties {
 
     public static final String GZIP_COMPRESSION_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.compressionThreshold";
 
-    /** Key label file name field */
+    /**
+     * Key label file name field
+     */
     public static final String KEY_LABEL_FILE_NAME_PROPERTY
         = "ee.cyber.cdoc2.key-label.file-name.added";
     // added by default
     public static final boolean KEY_LABEL_FILE_NAME_ADDED_DEFAULT = true;
 
-    /** Key label machine-readable format is enabled */
+    /**
+     * Key label machine-readable format is enabled
+     */
     public static final String KEY_LABEL_FORMAT_PROPERTY
         = "ee.cyber.cdoc2.key-label.machine-readable-format.enabled";
     // enabled by default
@@ -62,26 +70,38 @@ public final class Cdoc2ConfigurationProperties {
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_TYPE
         = "cdoc2.key-shares.client.ssl.trust-store.type";
 
-    /** If files overwrite is allowed */
+    /**
+     * If files overwrite is allowed
+     */
     public static final String OVERWRITE_PROPERTY = "ee.cyber.cdoc2.overwrite";
     // by default files overwrite is not allowed
     public static final boolean OVERWRITE_DEFAULT = false;
 
     public static final String PKCS11_CONF_FILE = "cdoc2.pkcs11.conf-file";
 
-    /** Overwrite PKCS11 library location e.g /usr/local/lib/opensc-pkcs11.so */
+    /**
+     * Overwrite PKCS11 library location e.g /usr/local/lib/opensc-pkcs11.so
+     */
     public static final String PKCS11_LIBRARY_PROPERTY = "pkcs11-library";
 
-    /** Provider name that provides KeyStore.PKCS11, usually SunPKCS11-...*/
+    /**
+     * Provider name that provides KeyStore.PKCS11, usually SunPKCS11-...
+     */
     public static final String PKCS11_PROVIDER_SYSTEM_PROPERTY = "ee.cyber.cdoc2.pkcs11.name";
 
-    /** The slot to use with pkcs11 provider, if not set, then the default of 0 is used */
+    /**
+     * The slot to use with pkcs11 provider, if not set, then the default of 0 is used
+     */
     public static final String PKCS11_SLOT = "ee.cyber.cdoc2.pkcs11.slot";
 
-    /** The key alias to choose the key form pkcs11 keystore, if not set, then the first key is used */
+    /**
+     * The key alias to choose the key form pkcs11 keystore, if not set, then the first key is used
+     */
     public static final String PKCS11_ALIAS = "ee.cyber.cdoc2.pkcs11.alias";
 
-    /** Defines CDOC2 Authentication Server client properties file location */
+    /**
+     * Defines CDOC2 Authentication Server client properties file location
+     */
     public static final String AUTH_SERVER_PROPERTIES = "auth-server.properties";
     public static final String AUTH_SERVER_CLIENT_HOST_URL = "auth-server.client.hostUrl";
     public static final String AUTH_SERVER_CLIENT_TRUST_STORE =
@@ -89,21 +109,15 @@ public final class Cdoc2ConfigurationProperties {
     public static final String AUTH_SERVER_CLIENT_TRUST_STORE_PWD
         = "auth-server.client.ssl.trust-store-password";
 
-    /** Defines CDOC2 RP Server properties file location */
+    /**
+     * Defines CDOC2 RP Server properties file location
+     */
     public static final String RP_SERVER_PROPERTIES = "rp-server.properties";
     public static final String RP_SERVER_CLIENT_HOST_URL = "rp-server.client.hostUrl";
     public static final String RP_SERVER_CLIENT_CERT_LEVEL = "rp-server.client.certificateLevel";
     public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
-    public static final String RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE
-        = "rp-server.sid.signing-certificate.trust-store";
-    public static final String RP_SERVER_SID_SIGNING_CERTIFICATE_TRUST_STORE_PWD
-        = "rp-server.sid.signing-certificate.trust-store-password";
-    public static final String RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE
-        = "rp-server.mid.signing-certificate.trust-store";
-    public static final String RP_SERVER_MID_SIGNING_CERTIFICATE_TRUST_STORE_PWD
-        = "rp-server.mid.signing-certificate.trust-store-password";
 
     public static final String RP_SERVER_MOBILE_ID_DISPLAY_TEXT
         = "rp-server.mid.display-text";
