@@ -1,15 +1,18 @@
 package ee.cyber.cdoc2.client;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 
 import static ee.cyber.cdoc2.util.ApiClientUtil.handleOpenApiException;
 
@@ -56,6 +59,13 @@ public final class KeySharesClientImpl implements KeySharesClient {
             return apiClient.createKeyShare(keyShare);
         } catch (ApiException e) {
             throw new ExtApiException("Failed to save key share. Error code: " + e.getCode(), e);
+        } catch (Exception e) {
+            log.error("Failed to connect to key share server {}", serverUrl, e);
+            if (e.getCause() instanceof IOException) {
+                throw new CDocUserException(UserErrorCode.NETWORK_ERROR,
+                    "Failed to connect to key share server " + serverUrl);
+            }
+            throw new ExtApiException("Failed to store key share to " + serverUrl, e);
         }
     }
 
@@ -65,7 +75,15 @@ public final class KeySharesClientImpl implements KeySharesClient {
         String sessionToken,
         String signingCertificate
     ) throws ApiException {
-        return apiClient.createNonce(shareId, sessionToken, signingCertificate);
+        try {
+            return apiClient.createNonce(shareId, sessionToken, signingCertificate);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to connect to key share server {}", serverUrl, e);
+            throw new CDocUserException(UserErrorCode.NETWORK_ERROR,
+                "Failed to connect to key share server " + serverUrl);
+        }
     }
 
     @Override

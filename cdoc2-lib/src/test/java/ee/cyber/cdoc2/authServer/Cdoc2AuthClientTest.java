@@ -9,9 +9,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
-import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -52,7 +52,7 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void successfulStartAuth() throws CdocAuthClientException, JsonProcessingException {
+    void successfulStartAuth() throws ExtApiException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
         cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
 
@@ -66,7 +66,7 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void successfulGetAutStatus() throws CdocAuthClientException, JsonProcessingException {
+    void successfulGetAutStatus() throws ExtApiException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
         cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
 
@@ -78,12 +78,49 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void successfulGetWellKnownJwks() throws CdocAuthClientException, JsonProcessingException {
+    void successfulGetWellKnownJwks() throws ExtApiException, JsonProcessingException {
         cdoc2AuthClientMock.stubForGetWellKnownJwks();
 
         var wellKnownResponse = cdoc2AuthClient.getWellKnown();
 
         assertNotNull(wellKnownResponse);
         assertFalse(wellKnownResponse.getKeys().isEmpty());
+    }
+
+    @Test
+    void networkFaultStartAuth() {
+        cdoc2AuthClientMock.stubStartAuthWithNetworkFault();
+
+        AuthIdentity authIdentity = new AuthIdentity()
+            .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
+            .mobileNr(DEFAULT_MOBILE_NR);
+
+        Exception ex = assertThrows(
+            ExtApiException.class,
+            () -> cdoc2AuthClient.startAuth(authIdentity)
+        );
+
+        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+            "actual message: " + ex.getMessage());
+    }
+
+    @Test
+    void serverErrorStartAuth() {
+        cdoc2AuthClientMock.stubStartAuthWithServerError();
+
+        AuthIdentity authIdentity = new AuthIdentity()
+            .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
+            .mobileNr(DEFAULT_MOBILE_NR);
+
+        Exception ex = assertThrows(
+            ExtApiException.class,
+            () -> cdoc2AuthClient.startAuth(authIdentity)
+        );
+
+        assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
+            "actual message: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("AUTH_SERVER_ERROR_CODE"),
+            "actual cause message: " + ex.getMessage());
+
     }
 }

@@ -7,12 +7,12 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.authserver.AuthProcessData;
 import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
-import ee.cyber.cdoc2.exceptions.CdocAuthClientException;
 
 import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClaimValue;
 
@@ -44,11 +44,20 @@ public class SessionToken {
     }
 
     public String getSessionToken(KeyShareUri shareUri) {
-        return discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+        var sessionToken =
+            discloseAudByClaimValue(this.sessionTokenBase64Url, shareUri.serverBaseUrl());
+        if (sessionToken == null) {
+            throwSessionTokenDisclosureError(shareUri.serverBaseUrl());
+        }
+        return sessionToken;
     }
 
     public String getSessionToken(String claimValue) {
-        return discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
+        var sessionToken = discloseAudByClaimValue(this.sessionTokenBase64Url, claimValue);
+        if (sessionToken == null) {
+            throwSessionTokenDisclosureError(claimValue);
+        }
+        return sessionToken;
     }
 
     private void create(
@@ -73,7 +82,7 @@ public class SessionToken {
     private AuthProcessData startAuth(AuthIdentity identity) {
         try {
             return cdoc2AuthClient.startAuth(identity);
-        } catch (CdocAuthClientException e) {
+        } catch (ExtApiException e) {
             throw new RuntimeException("Failed to start authentication process", e);
         }
     }
@@ -81,12 +90,21 @@ public class SessionToken {
     private AuthProcessStatusResponse getAuthStatus(UUID uuid) {
         try {
             return cdoc2AuthClient.getAuthProcessStatus(uuid);
-        } catch (CdocAuthClientException e) {
+        } catch (ExtApiException e) {
             throw new RuntimeException("Failed to retrieve authentication process status", e);
         }
     }
 
     public String getSigningCertificate() {
         return signingCertificate;
+    }
+
+    private void throwSessionTokenDisclosureError(String claimValue) {
+        var message = String.format(
+            "Failed to create the disclosed session token, the claim value '%s' is missing from the session token",
+            claimValue
+        );
+        log.error(message);
+        throw new RuntimeException(message);
     }
 }
