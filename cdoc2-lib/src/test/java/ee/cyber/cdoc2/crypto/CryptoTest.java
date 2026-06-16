@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.crypto;
 
+import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.recipients.KDFAlgorithmIdentifier;
 
@@ -151,7 +152,8 @@ class CryptoTest {
     void deriveKeyEncryptionKeyFromSharedPassword() throws GeneralSecurityException {
         SecretKey kekSecretKey = Crypto.extractSymmetricKeyFromPassword(
             "myPlainTextPassword".toCharArray(),
-            getSalt()
+            getSalt(),
+            PBKDF2Recipient.PBKDF2_ITERATIONS
         );
 
         assertEquals(

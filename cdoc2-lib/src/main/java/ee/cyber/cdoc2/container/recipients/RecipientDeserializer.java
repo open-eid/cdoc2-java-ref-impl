@@ -114,11 +114,14 @@ public final class RecipientDeserializer {
         byte[] pwSalt =
             Arrays.copyOfRange(pwSaltBuf.array(), pwSaltBuf.position(), pwSaltBuf.limit());
 
+        int kdfIterations = pbkdf2Capsule.kdfIterations();
+
         return new PBKDF2Recipient(
             encSalt,
             encryptedFmkBytes,
             keyLabel,
-            pwSalt
+            pwSalt,
+            kdfIterations
         );
     }
 

@@ -32,11 +32,21 @@ public class PBKDF2Recipient extends Recipient {
         String recipientLabel,
         byte[] passwordSalt
     ) {
+        this(encSalt, encFmk, recipientLabel, passwordSalt, PBKDF2_ITERATIONS);
+    }
+
+    public PBKDF2Recipient(
+        byte[] encSalt,
+        byte[] encFmk,
+        String recipientLabel,
+        byte[] passwordSalt,
+        int kdfIterations
+    ) {
         super(encFmk, recipientLabel);
         this.encryptionSalt = encSalt.clone();
         this.passwordSalt = passwordSalt;
         this.kdfAlgorithmIdentifier = KDFAlgorithmIdentifier.PBKDF2WithHmacSHA256;
-        this.kdfIterations = PBKDF2_ITERATIONS;
+        this.kdfIterations = kdfIterations;
     }
 
     @Override
