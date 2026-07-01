@@ -2,7 +2,6 @@ package ee.cyber.cdoc2.crypto;
 
 import at.favre.lib.hkdf.HKDF;
 
-import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.fbs.header.FMKEncryptionMethod;
 import ee.cyber.cdoc2.fbs.recipients.KDFAlgorithmIdentifier;
 
@@ -177,7 +176,7 @@ public final class Crypto {
      * @throws GeneralSecurityException if key creation has failed
      */
     public static SecretKey extractSymmetricKeyFromPassword(
-        final char[] passwordChars, byte[] salt
+        final char[] passwordChars, byte[] salt, int iterations
     ) throws GeneralSecurityException {
 
         // Java char is 16 bit Unicode. It gets secretly encoded into bytes using utf-8 encoding
@@ -194,7 +193,7 @@ public final class Crypto {
         PBEKeySpec spec = new PBEKeySpec(
             passwordChars,
             salt,
-            PBKDF2Recipient.PBKDF2_ITERATIONS,
+            iterations,
             PBKDF2_KEY_LENGTH_BITS
         );
         return skf.generateSecret(spec);

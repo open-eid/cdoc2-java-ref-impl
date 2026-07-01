@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.4.2]
+
+* For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
+
+### Bug Fixes
+
 ## [3.4.1] 
 
 ### Improvements

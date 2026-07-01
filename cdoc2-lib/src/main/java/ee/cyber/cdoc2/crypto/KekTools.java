@@ -100,7 +100,8 @@ public final class KekTools {
 
         SecretKey pwDerivedSymmetricKey = Crypto.extractSymmetricKeyFromPassword(
             keyMaterial.getPassword(),
-            recipient.getPasswordSalt()
+            recipient.getPasswordSalt(),
+            recipient.getKdfIterations()
         );
 
         SecretKey kek = Crypto.deriveKeyEncryptionKey(recipient.getRecipientKeyLabel(),

@@ -399,7 +399,9 @@ public final class RecipientFactory {
         Objects.requireNonNull(keyLabel);
 
         byte[] passwordSalt = Crypto.generateSaltForKey();
-        SecretKey preSharedKey = Crypto.extractSymmetricKeyFromPassword(password, passwordSalt);
+        SecretKey preSharedKey = Crypto.extractSymmetricKeyFromPassword(
+            password, passwordSalt, PBKDF2Recipient.PBKDF2_ITERATIONS
+        );
 
         byte[] encryptionSalt = Crypto.generateSaltForKey();
         SecretKey kek = Crypto.deriveKeyEncryptionKey(
