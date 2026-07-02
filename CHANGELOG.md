@@ -3,7 +3,8 @@
 ## [3.4.2]
 
 ### Improvements
-* Add attentional unit tests
+* Add attentional unit tests.
+* New optional constructor for Cdoc2AuthClient with configurable read timeout.
 
 ### Bug Fixes
 * For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
