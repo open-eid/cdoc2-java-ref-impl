@@ -1,5 +1,8 @@
 package ee.cyber.cdoc2.client;
 
+import jakarta.annotation.Nullable;
+
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -48,15 +51,19 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param keyShare key share data from openAPI
+     * @param xExpiryTime key share expiry time. If not set, then the key server will use its default
      * @return created key share ID
      * @throws ApiException if Key share creation fails
      */
-    public String createKeyShare(KeyShare keyShare) throws ApiException {
+    public String createKeyShare(
+        KeyShare keyShare,
+        @Nullable OffsetDateTime xExpiryTime
+    ) throws ApiException {
         Objects.requireNonNull(keyShare);
         Objects.requireNonNull(keyShare.getShare());
         Objects.requireNonNull(keyShare.getRecipient());
 
-        ApiResponse<Void> response = sharesApi.createKeyShareWithHttpInfo(keyShare, null);
+        ApiResponse<Void> response = sharesApi.createKeyShareWithHttpInfo(keyShare, xExpiryTime);
 
         return extractIdFromHeader(response, "KeyShare", "shareId", log);
     }

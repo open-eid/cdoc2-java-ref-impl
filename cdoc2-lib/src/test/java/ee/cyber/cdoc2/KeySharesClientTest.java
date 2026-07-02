@@ -120,7 +120,7 @@ class KeySharesClientTest {
         KeyShare keyShare = getKeyShare();
         clientImpl.storeKeyShare(keyShare);
 
-        verify(apiClient, times(1)).createKeyShare(keyShare);
+        verify(apiClient, times(1)).createKeyShare(keyShare, null);
     }
 
     @Test

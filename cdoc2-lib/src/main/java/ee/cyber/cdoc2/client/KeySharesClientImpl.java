@@ -56,7 +56,7 @@ public final class KeySharesClientImpl implements KeySharesClient {
     @Override
     public String storeKeyShare(KeyShare keyShare) throws ExtApiException {
         try {
-            return apiClient.createKeyShare(keyShare);
+            return apiClient.createKeyShare(keyShare, null);
         } catch (ApiException e) {
             throw new ExtApiException("Failed to save key share. Error code: " + e.getCode(), e);
         } catch (Exception e) {
