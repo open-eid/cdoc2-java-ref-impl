@@ -56,7 +56,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         Objects.requireNonNull(keyShare.getShare());
         Objects.requireNonNull(keyShare.getRecipient());
 
-        ApiResponse<Void> response = sharesApi.createKeyShareWithHttpInfo(keyShare);
+        ApiResponse<Void> response = sharesApi.createKeyShareWithHttpInfo(keyShare, null);
 
         return extractIdFromHeader(response, "KeyShare", "shareId", log);
     }
