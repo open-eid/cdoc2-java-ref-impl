@@ -2,6 +2,9 @@
 
 ## [3.4.2]
 
+### Improvements
+* Add attentional unit tests
+
 ### Bug Fixes
 * For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
 
