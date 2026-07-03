@@ -5,9 +5,11 @@
 ### Improvements
 * Add attentional unit tests.
 * New optional constructor for Cdoc2AuthClient with configurable read timeout.
+* Updated openapi versions for cdoc2-client
 
 ### Bug Fixes
 * For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
+* xExpiryTime header added to createKeyShare method of Cdoc2KeySharesApiClient
 
 ### Maven package versions:
 ```
