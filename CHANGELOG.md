@@ -2,9 +2,23 @@
 
 ## [3.4.2]
 
-* For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
+### Improvements
+* Add attentional unit tests.
+* New optional constructor for Cdoc2AuthClient with configurable read timeout.
+* Updated openapi versions for cdoc2-client
 
 ### Bug Fixes
+* For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
+* xExpiryTime header added to createKeyShare method of Cdoc2KeySharesApiClient
+
+### Maven package versions:
+```
+cdoc2 3.4.1
+cdoc2-schema 2.1.0
+cdoc2-lib 3.6.2
+cdoc2-client 2.2.4
+cdoc2-cli 1.9.1
+```
 
 ## [3.4.1] 
 

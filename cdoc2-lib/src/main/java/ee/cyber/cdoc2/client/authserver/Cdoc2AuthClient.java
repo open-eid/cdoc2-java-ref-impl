@@ -49,13 +49,23 @@ public class Cdoc2AuthClient {
      * @param conf client configuration
      */
     public Cdoc2AuthClient(@Nonnull Cdoc2AuthClientConfiguration conf) {
+        this(conf, 0);
+    }
+
+    /**
+     * Constructs a {@code Cdoc2AuthClient} with an explicit HTTP read timeout.
+     *
+     * @param conf           client configuration
+     * @param readTimeoutMs  read timeout in milliseconds; {@code 0} means no timeout
+     */
+    public Cdoc2AuthClient(@Nonnull Cdoc2AuthClientConfiguration conf, int readTimeoutMs) {
         try {
             KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
                 conf.getTrustStore(),
                 "JKS",
                 conf.getTrustStorePassword()
             );
-            this.authApi = buildApi(conf, trustStore);
+            this.authApi = buildApi(conf, trustStore, readTimeoutMs);
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
             throw new RuntimeException(e);
         }
@@ -148,8 +158,11 @@ public class Cdoc2AuthClient {
         }
     }
 
-    private static Cdoc2AuthApi buildApi(Cdoc2AuthClientConfiguration conf, KeyStore trustStore)
-        throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    private static Cdoc2AuthApi buildApi(
+        Cdoc2AuthClientConfiguration conf,
+        KeyStore trustStore,
+        int readTimeoutMs
+    ) throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         SSLContext sslContext = ApiClientUtil.createSslContext(trustStore, log);
 
@@ -164,6 +177,9 @@ public class Cdoc2AuthClient {
 
         apiClient.setBasePath(conf.getHostUrl());
         apiClient.setDebugging(conf.getClientServerDebug());
+        if (readTimeoutMs > 0) {
+            apiClient.setReadTimeout(readTimeoutMs);
+        }
 
         log.info("Cdoc2AuthClient configured with base URL: {}", conf.getHostUrl());
         return new Cdoc2AuthApi(apiClient);
