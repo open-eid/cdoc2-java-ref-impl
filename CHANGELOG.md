@@ -11,6 +11,7 @@
 * For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
 * xExpiryTime header added to createKeyShare method of Cdoc2KeySharesApiClient
 * Fix invalid parameter name in DirectPKCS11Wrapper
+* Throw CDocParseException instead of IllegalArgumentException when RecipientRecord.keyLabel contains corrupt CDOC2 header
 
 ### Maven package versions:
 ```

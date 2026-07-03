@@ -990,6 +990,54 @@ class EnvelopeTest implements TestLifecycleLogger {
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
     }
 
+    @Test
+    @DisplayName("Check that invalid UTF-8 in RecipientRecord.keyLabel throws CDocParseException")
+    void testContainerCorruptKeyLabelThrowsCDocParseException(@TempDir Path tempDir) throws Exception {
+        KeyPair bobKeyPair = createKeyPairEc384();
+        UUID uuid = UUID.randomUUID();
+        String payloadFileName = "payload-" + uuid + ".txt";
+        String payloadData = "payload-" + uuid;
+        File payloadFile = tempDir.resolve(payloadFileName).toFile();
+
+        Path outDir = tempDir.resolve("testContainer-" + uuid);
+        Files.createDirectories(outDir);
+
+        var encKM = EncryptionKeyMaterial.fromPublicKey(bobKeyPair.getPublic(), bobKeyLabelParams);
+
+        byte[] cdocContainerBytes = EnvelopeTestUtils.createContainer(payloadFile,
+            payloadData.getBytes(StandardCharsets.UTF_8), encKM, null, null);
+
+        // locate "bobKeyPem" (the keyLabel used above) inside the FlatBuffers header and corrupt
+        // its first byte into an invalid UTF-8 sequence: a 2-byte lead (0xC2) followed by a byte
+        // that is not a valid continuation byte
+        byte[] keyLabelBytes = "bobKeyPem".getBytes(StandardCharsets.UTF_8);
+        int labelOffset = indexOf(cdocContainerBytes, keyLabelBytes);
+        assertTrue(labelOffset >= 0, "keyLabel bytes not found in serialized header");
+        cdocContainerBytes[labelOffset] = (byte) 0xC2;
+
+        var ex = assertThrows(
+            CDocParseException.class,
+            () -> Envelope.decrypt(new ByteArrayInputStream(cdocContainerBytes),
+                DecryptionKeyMaterial.fromKeyPair(bobKeyPair), outDir, null)
+        );
+
+        assertTrue(ex.getMessage().contains("keyLabel"));
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
+    }
+
+    private static int indexOf(byte[] data, byte[] pattern) {
+        outer:
+        for (int i = 0; i <= data.length - pattern.length; i++) {
+            for (int j = 0; j < pattern.length; j++) {
+                if (data[i + j] != pattern[j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+
     /**
      * This test fails under Windows because creating file with this invalid file name fails first
      *
