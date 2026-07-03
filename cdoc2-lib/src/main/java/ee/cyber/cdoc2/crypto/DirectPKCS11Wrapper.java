@@ -7,8 +7,7 @@ import javax.annotation.Nullable;
 //CHECKSTYLE:OFF
 import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.CK_ATTRIBUTE.DECRYPT_TRUE;
-import static sun.security.pkcs11.wrapper.PKCS11Constants.CKF_SERIAL_SESSION;
-import static sun.security.pkcs11.wrapper.PKCS11Constants.CKM_RSA_PKCS_OAEP;
+import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
 //CHECKSTYLE:ON
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
@@ -37,11 +36,6 @@ import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_
  * application configuration properties.
  */
 public final class DirectPKCS11Wrapper {
-
-    // PKCS#11 mechanism constants
-    private static final long CKM_SHA256 = 0x00000250L;
-    private static final long CKG_MGF1_SHA1 = 0x00000002L;
-    private static final long CKZ_DATA_SPECIFIED = 0x00000001L;
 
     private static final long FINDOBJECTS_MAX = 100;
 
@@ -116,7 +110,7 @@ public final class DirectPKCS11Wrapper {
     ) throws PKCS11Exception {
         CK_RSA_PKCS_OAEP_PARAMS params = new CK_RSA_PKCS_OAEP_PARAMS();
         params.hashAlg = CKM_SHA256;
-        params.mgf = CKG_MGF1_SHA1;
+        params.mgf = CKG_MGF1_SHA256;
         params.source = CKZ_DATA_SPECIFIED;
         params.pSourceData = null;
 

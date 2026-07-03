@@ -10,6 +10,7 @@
 ### Bug Fixes
 * For password based decryption, use the kdf_iterations from the capsule instead of hardcoded value.
 * xExpiryTime header added to createKeyShare method of Cdoc2KeySharesApiClient
+* Fix invalid parameter name in DirectPKCS11Wrapper
 
 ### Maven package versions:
 ```
