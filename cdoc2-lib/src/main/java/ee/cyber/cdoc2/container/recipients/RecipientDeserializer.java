@@ -51,8 +51,14 @@ public final class RecipientDeserializer {
 
         ByteBuffer encryptedFmkBuf = r.encryptedFmkAsByteBuffer();
         byte[] encryptedFmkBytes = Arrays.copyOfRange(encryptedFmkBuf.array(),
-                encryptedFmkBuf.position(), encryptedFmkBuf.limit());
-        String keyLabel = r.keyLabel();
+            encryptedFmkBuf.position(), encryptedFmkBuf.limit());
+        String keyLabel;
+
+        try {
+            keyLabel = r.keyLabel();
+        } catch (IllegalArgumentException iae) {
+            throw new CDocParseException("error parsing RecipientRecord.keyLabel", iae);
+        }
 
         return getDeserializedRecipientByKeyOrigin(r, encryptedFmkBytes, keyLabel);
     }
