@@ -209,6 +209,36 @@ class TarDeflateTest implements TestLifecycleLogger {
         System.clearProperty(DISK_USAGE_THRESHOLD_PROPERTY);
     }
 
+    @DisabledOnOs(OS.WINDOWS)
+    @Test
+    void testCheckDiskSpaceAvailableDoesNotThrowWhenUsageBelowThreshold(@TempDir Path tempDir) {
+        // might cause other tests to fail, if tests executed parallel
+        // threshold set unrealistically high so the test dir's actual disk usage is always below it;
+        // catches the used/free percentage mix-up that the low-threshold test above cannot detect
+        System.setProperty(DISK_USAGE_THRESHOLD_PROPERTY, "99.99");
+
+        assertDoesNotThrow(() -> testExtract(tempDir));
+
+        System.clearProperty(DISK_USAGE_THRESHOLD_PROPERTY);
+    }
+
+    @Test
+    void checkAvailableDiskSpackeThrowsWhenUsedPercentageAboveThreshold() {
+        // total=100, usable=10 -> 90% used
+        File fakeDir = new FakeDiskSpaceFile(100L, 10L);
+
+        assertThrows(IllegalStateException.class,
+            () -> TarDeflate.checkAvailableDiskSpace(fakeDir, 50.0));
+    }
+
+    @Test
+    void checkAvailableDiskSpaceDoesNotThrowWhenUsedPercentageBelowThreshold() {
+        // total=100, usable=90 -> 10% used
+        File fakeDir = new FakeDiskSpaceFile(100L, 90L);
+
+        assertDoesNotThrow(() -> TarDeflate.checkAvailableDiskSpace(fakeDir, 50.0));
+    }
+
     @Test
     void testMaxExtractEntries(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
@@ -464,6 +494,32 @@ class TarDeflateTest implements TestLifecycleLogger {
         }
 
         return fileName;
+    }
+
+    private static final class FakeDiskSpaceFile extends File {
+        private final long totalSpace;
+        private final long usableSpace;
+
+        FakeDiskSpaceFile(long totalSpace, long usableSpace) {
+            super(".");
+            this.totalSpace = totalSpace;
+            this.usableSpace = usableSpace;
+        }
+
+        @Override
+        public boolean exists() {
+            return true;
+        }
+
+        @Override
+        public long getTotalSpace() {
+            return totalSpace;
+        }
+
+        @Override
+        public long getUsableSpace() {
+            return usableSpace;
+        }
     }
 
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4.3]
+
+### Bug Fixes
+* Fix TarDeflate.checkAvailableDiskSpace available disc space calculation.
+
 ## [3.4.2]
 
 ### Improvements
