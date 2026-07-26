@@ -88,7 +88,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         this.interactionParams = interactionParams;
         this.sessionToken = sessionToken;
         this.sessionTokenCertAlgorithm = X509CertUtils.parse(Base64.getUrlDecoder()
-                .decode(sessionToken.getSigningCertificate())).getPublicKey().getAlgorithm();
+            .decode(sessionToken.getSigningCertificate())).getPublicKey().getAlgorithm();
     }
 
     @Override

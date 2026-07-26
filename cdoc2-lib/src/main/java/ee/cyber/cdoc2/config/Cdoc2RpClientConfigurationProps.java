@@ -34,7 +34,6 @@ public record Cdoc2RpClientConfigurationProps(
     MidLanguage midLanguage,
     boolean clientServerDebug
 ) implements Cdoc2RpClientConfiguration {
-    private static final String DEFAULT_DISPLAY_TEXT = "Please confirm authentication";
     private static final String DEFAULT_MID_DISPLAY_TEXT_FORMAT = "GSM_7";
     private static final String DEFAULT_MID_LANGUAGE = "ENG";
 
