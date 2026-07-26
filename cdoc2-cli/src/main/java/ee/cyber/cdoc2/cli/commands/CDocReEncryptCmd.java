@@ -6,6 +6,7 @@ import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
 import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
 import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
 import ee.cyber.cdoc2.services.Cdoc2Services;
@@ -91,6 +92,16 @@ public class CDocReEncryptCmd implements Callable<Void> {
             + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
 
+    @CommandLine.Option(names = {"-l", "--interaction-language"},
+        description = "Specify the interaction language used for MID/SID decryption"
+            + "[ET, EN, RU, LT]")
+    private InteractionParams.InteractionLanguage interactionLanguage;
+
+    @CommandLine.Option(names = {"-dt", "--display-text"},
+        description = "Client side specified text to display on the user's device when creating "
+            + "authentication tokens for MID/SID decryption")
+    private String displayText;
+
     @Override
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
@@ -101,7 +112,9 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
+            : getDecryptionKeyMaterial(
+                this.cdocFile, this.exclusive, this.interactionLanguage, this.displayText
+        );
 
         File destCdocFile = getDestinationFile();
         CDocReEncrypter cDocReEncrypter = new CDocReEncrypter(

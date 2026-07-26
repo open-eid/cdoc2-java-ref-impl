@@ -27,11 +27,12 @@ public class SessionToken {
     public SessionToken(
         Cdoc2AuthClient cdoc2AuthClient,
         String recipient,
-        @Nullable String mobileNumber
+        @Nullable String mobileNumber,
+        @Nullable InteractionParams.InteractionLanguage interactionLanguage
     ) {
         this.cdoc2AuthClient = cdoc2AuthClient;
 
-        create(recipient, mobileNumber);
+        create(recipient, mobileNumber, interactionLanguage);
     }
 
     // package-private, for tests only
@@ -62,11 +63,18 @@ public class SessionToken {
 
     private void create(
         String recipient,
-        @Nullable String mobileNumber
+        @Nullable String mobileNumber,
+        @Nullable InteractionParams.InteractionLanguage interactionLanguage
     ) {
         var identity = new AuthIdentity();
         identity.setIdentifier(recipient);
         identity.setMobileNr(mobileNumber);
+
+        if (interactionLanguage != null) {
+            identity.setLanguage(AuthIdentity.LanguageEnum.fromValue(
+                interactionLanguage.toString().toLowerCase()
+            ));
+        }
 
         AuthProcessData authProcess = startAuth(identity);
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());

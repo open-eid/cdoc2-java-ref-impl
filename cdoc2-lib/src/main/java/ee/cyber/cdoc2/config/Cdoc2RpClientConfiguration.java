@@ -21,14 +21,9 @@ public interface Cdoc2RpClientConfiguration {
 
     String getTrustStorePassword();
 
-    /**
-     * Default display text, can be overwritten with InteractionParams
-     */
-    String getDefaultDisplayText();
+    MidDisplayTextFormat getMidDisplayTextFormat();
 
-    MidDisplayTextFormat getDefaultDisplayTextFormat();
-
-    MidLanguage getDefaultDisplayTextLanguage();
+    MidLanguage getMidLanguage();
 
     boolean getClientServerDebug();
 }

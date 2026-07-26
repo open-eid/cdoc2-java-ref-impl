@@ -20,9 +20,8 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param certificateLevel   Certificate level to use for SiD
  * @param trustStore         client trust store
  * @param trustStorePassword client trust store password
- * @param displayText        displayText
- * @param displayTextFormat  displayText format
- * @param language           displayText language
+ * @param midDisplayTextFormat  MID displayText format
+ * @param midLanguage           MID language
  * @param clientServerDebug  turn on debug logs for client
  */
 public record Cdoc2RpClientConfigurationProps(
@@ -30,14 +29,14 @@ public record Cdoc2RpClientConfigurationProps(
     String certificateLevel,
     String trustStore,
     String trustStorePassword,
-    String displayText,
-    MidDisplayTextFormat displayTextFormat,
-    MidLanguage language,
+//    String displayText,
+    MidDisplayTextFormat midDisplayTextFormat,
+    MidLanguage midLanguage,
     boolean clientServerDebug
 ) implements Cdoc2RpClientConfiguration {
     private static final String DEFAULT_DISPLAY_TEXT = "Please confirm authentication";
-    private static final String DEFAULT_DISPLAY_TEXT_FORMAT = "GSM_7";
-    private static final String DEFAULT_DISPLAY_TEXT_LANG = "ENG";
+    private static final String DEFAULT_MID_DISPLAY_TEXT_FORMAT = "GSM_7";
+    private static final String DEFAULT_MID_LANGUAGE = "ENG";
 
     private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClientConfigurationProps.class);
 
@@ -50,20 +49,17 @@ public record Cdoc2RpClientConfigurationProps(
         String certificateLevel = getRequiredProperty(properties, RP_SERVER_CLIENT_CERT_LEVEL);
         String trustStore = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE);
         String trustStorePassword = getRequiredProperty(properties, RP_SERVER_CLIENT_TRUST_STORE_PWD);
-        String displayText = properties.getProperty(
-            RP_SERVER_MOBILE_ID_DISPLAY_TEXT, DEFAULT_DISPLAY_TEXT
-        );
         MidDisplayTextFormat displayTextFormat = MidDisplayTextFormat.valueOf(
-            properties.getProperty(RP_SERVER_MOBILE_ID_DISPLAY_TEXT_FORMAT, DEFAULT_DISPLAY_TEXT_FORMAT)
+            properties.getProperty(RP_SERVER_MID_DISPLAY_TEXT_FORMAT, DEFAULT_MID_DISPLAY_TEXT_FORMAT)
         );
         MidLanguage language = MidLanguage.valueOf(
-            properties.getProperty(RP_SERVER_MOBILE_ID_DISPLAY_LANG, DEFAULT_DISPLAY_TEXT_LANG)
+            properties.getProperty(RP_SERVER_MID_LANGUAGE, DEFAULT_MID_LANGUAGE)
         );
         Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
         return new Cdoc2RpClientConfigurationProps(
             hostUrl, certificateLevel, trustStore, trustStorePassword,
-            displayText, displayTextFormat, language, clientServerDebug
+            displayTextFormat, language, clientServerDebug
         );
     }
 
@@ -88,18 +84,13 @@ public record Cdoc2RpClientConfigurationProps(
     }
 
     @Override
-    public String getDefaultDisplayText() {
-        return displayText;
+    public MidDisplayTextFormat getMidDisplayTextFormat() {
+        return midDisplayTextFormat;
     }
 
     @Override
-    public MidDisplayTextFormat getDefaultDisplayTextFormat() {
-        return displayTextFormat;
-    }
-
-    @Override
-    public MidLanguage getDefaultDisplayTextLanguage() {
-        return language;
+    public MidLanguage getMidLanguage() {
+        return midLanguage;
     }
 
     @Override

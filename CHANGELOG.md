@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4.3]
+### Improvements
+* Added command line options to allow specifying the interaction language and display text for 
+  SID/MID decryption.
+
 ## [3.4.2]
 
 ### Improvements

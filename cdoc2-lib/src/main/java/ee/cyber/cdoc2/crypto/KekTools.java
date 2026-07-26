@@ -39,6 +39,7 @@ import ee.cyber.cdoc2.container.recipients.RSAPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.RSAServerKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.SymmetricKeyRecipient;
 import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SessionToken;
@@ -309,6 +310,7 @@ public final class KekTools {
         var sessionTokenCreator = fetchSessionToken(
             keySharesRecipient,
             keyMaterial.getAuthIdentifier().getMobileNumber(),
+            keyMaterial.getInteractionParams().getInteractionLanguage(),
             services
         );
 
@@ -335,6 +337,7 @@ public final class KekTools {
     private static SessionToken fetchSessionToken(
         KeySharesRecipient keySharesRecipient,
         @Nullable String mobileNumber,
+        @Nullable InteractionParams.InteractionLanguage interactionLanguage,
         Services services
     ) throws CDocException {
         if (!services.hasService(Cdoc2AuthClient.class)) {
@@ -346,7 +349,8 @@ public final class KekTools {
         return new SessionToken(
             cdoc2AuthClient,
             (String) keySharesRecipient.getRecipientId(),
-            mobileNumber
+            mobileNumber,
+            interactionLanguage
         );
     }
 

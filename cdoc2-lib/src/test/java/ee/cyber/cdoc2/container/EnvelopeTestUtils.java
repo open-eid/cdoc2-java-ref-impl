@@ -360,7 +360,8 @@ public final class EnvelopeTestUtils {
             decryptAuthIdentifier
         );
 
-        InteractionParams interactionParams = InteractionParams.displayTextAndPin().addAuthListener(
+        InteractionParams interactionParams =
+            InteractionParams.displayTextAndPin(null, null).addAuthListener(
             e -> System.out.println("Verification code:" + e.getVerificationCode())
         );
 

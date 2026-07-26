@@ -80,7 +80,7 @@ public class CDocListCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive, null, null);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)
