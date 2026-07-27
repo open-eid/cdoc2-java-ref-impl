@@ -4,7 +4,7 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>3.4.2</version>
+        <version>3.4.3</version>
     </parent>
 
     <artifactId>cdoc2-cli</artifactId>
