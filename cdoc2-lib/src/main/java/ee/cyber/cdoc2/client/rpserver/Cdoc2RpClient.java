@@ -173,16 +173,16 @@ public class Cdoc2RpClient {
      * Get MID language from interactionParams if defined, otherwise get default value from configuration
      */
     protected MidLanguage getLanguage(InteractionParams interactionParams) {
-        MidLanguage lang = cdoc2RpClientConfiguration.getMidLanguage();
         if (interactionParams != null && interactionParams.getInteractionLanguage() != null) {
-            lang = switch (interactionParams.getInteractionLanguage()) {
+            return switch (interactionParams.getInteractionLanguage()) {
                 case ET -> MidLanguage.EST;
                 case EN -> MidLanguage.ENG;
                 case RU -> MidLanguage.RUS;
                 case LT -> MidLanguage.LIT;
             };
         }
-        return lang;
+
+        return cdoc2RpClientConfiguration.getMidLanguage();
     }
 
     /**

@@ -72,13 +72,13 @@ public class CDocDecryptCmd implements Callable<Void> {
     }
 
     @Option(names = {"-c", "--crypto-stick"},
-        description = "Specify what type of crypto stick is used, allowed values: "
-            + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
+        description = "Specify what type of crypto stick is used, allowed values (case "
+            + "insensitive): [SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
 
     @Option(names = {"-l", "--interaction-language"},
-        description = "Specify the interaction language used for MID/SID decryption"
-            + "[ET, EN, RU, LT]")
+        description = "Specify the interaction language used for MID/SID decryption (case "
+            + "insensitive): [ET, EN, RU, LT]")
     private InteractionParams.InteractionLanguage interactionLanguage;
 
     @Option(names = {"-dt", "--display-text"},
