@@ -322,12 +322,12 @@ public class TarDeflate implements AutoCloseable {
     /**
      * Throws exception when disk usage is above diskUsageThreshold
      * @param destDir directory (and partition) where available disk space is checked
-     * @param diskUsageThreshold
+     * @param diskUsageThreshold maximum allowed percentage of used disk space, above which processing is aborted
      */
-    private static void checkAvailableDiskSpace(File destDir, double diskUsageThreshold) {
+    static void checkAvailableDiskSpace(File destDir, double diskUsageThreshold) {
         if ((destDir != null) && (destDir.exists())) {
-            double usedPercentage = (double) destDir.getUsableSpace()
-                / (double) destDir.getTotalSpace() * 100;
+            double totalSpace = (double) destDir.getTotalSpace();
+            double usedPercentage = (totalSpace - (double) destDir.getUsableSpace()) / totalSpace * 100;
 
             if (usedPercentage >= diskUsageThreshold) {
                 String err = String.format("More than  %.2f%% disk space used. Aborting", diskUsageThreshold);

@@ -10,6 +10,9 @@
   * `"-c", "--crypto-stick"`
   * `"-l", "--interaction-language"`
 
+### Bug Fixes
+* Fix TarDeflate.checkAvailableDiskSpace available disc space calculation.
+
 ### Maven package versions:
 ```
 cdoc2 3.4.3
