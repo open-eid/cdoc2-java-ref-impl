@@ -29,7 +29,6 @@ public record Cdoc2RpClientConfigurationProps(
     String certificateLevel,
     String trustStore,
     String trustStorePassword,
-//    String displayText,
     MidDisplayTextFormat midDisplayTextFormat,
     MidLanguage midLanguage,
     boolean clientServerDebug
