@@ -88,8 +88,10 @@ public final class CDocDecryptionHelper {
      *                         .p12:password". null when not provided
      *                         - privKeyFile: file containing privateKey in PEM format.
      *                         null when not provided
-     * @param interactionLanguage sd
-     * @param displayText dt
+     * @param interactionLanguage language for server component interactions with the user for
+     *                            SID/MID decryption
+     * @param displayText text to be displayed on the user's device when creating authentication
+     *                    tokens for SID/MID decryption
      * @return loaded DecryptionKeyMaterial
      * @throws GeneralSecurityException general security exception
      * @throws IOException              in case decryption key material extraction has failed
@@ -146,11 +148,6 @@ public final class CDocDecryptionHelper {
         return decryptionKm;
     }
 
-    /**
-     * @param idCode   estonian national identity code
-     * @param cdocFile cdoc2 file decrypted
-     * @return DecryptionKeyMaterial object
-     */
     private static DecryptionKeyMaterial getSidDecryptionKeyMaterial(
         String idCode,
         File cdocFile,
@@ -167,12 +164,6 @@ public final class CDocDecryptionHelper {
 
     }
 
-    /**
-     * @param idCode      estonian national identity code
-     * @param phoneNumber user phone number international format +372...
-     * @param cdocFile    cdoc2 file decrypted
-     * @return DecryptionKeyMaterial object
-     */
     private static DecryptionKeyMaterial getMidDecryptionKeyMaterial(
         String idCode,
         String phoneNumber,

@@ -26,6 +26,9 @@ public class InteractionParams {
         CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE
     }
 
+    /**
+     * ISO 639-1 language codes
+     */
     public enum InteractionLanguage {
         ET,
         EN,
@@ -50,13 +53,15 @@ public class InteractionParams {
      */
     private final @Nullable String document;
 
+    /**
+     * text to be displayed on the user's device during authentication token creation
+     */
     protected String displayText;
 
     /**
-     * MID language {@link ee.sk.mid.MidLanguage}
+     * language for server component interactions with the user. This includes session token
+     * creation via auth-server and part of the MID interaction messaging.
      */
-    private String language;
-
     private final @Nullable InteractionLanguage interactionLanguage;
 
     /**
