@@ -6,6 +6,8 @@
   SID/MID decryption. The provided display text is shown on the user's device when creating 
   authentication tokens for decryption. Display text for session token creation is controlled by 
   auth-server.
+  * `-l`, `--interaction-language`
+  * `-dt`, `--display-text`
 * Command line parameters that are converted to enums are now case-insensitive:
   * `"-c", "--crypto-stick"`
   * `"-l", "--interaction-language"`
