@@ -149,7 +149,6 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
         String interactionsBase64 =
             InteractionUtil.encodeToBase64(InteractionsMapper.from(List.of(interaction)));
-        byte[] interactionsBase64Bytes = interactionsBase64.getBytes(StandardCharsets.UTF_8);
 
         try {
             String disclosedSessionToken = sessionToken.getSessionToken(rpClient.getBaseUrl());
@@ -166,7 +165,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
                             .hashAlgorithm(HashAlgorithm.SHA_256)
                     )
                 )
-                .interactions(interactionsBase64Bytes)
+                .interactions(interactionsBase64)
                 .vcType(VerificationCodeType.NUMERIC4);
 
             UUID sessionId = rpClient.sidAuthenticate(
@@ -197,7 +196,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
             this.signatureValidationParamsBase64Url = createSignatureValidationParams(
                 response,
-                interactionsBase64Bytes
+                interactionsBase64
             );
 
             return Base64URL.encode(response.getSignature().getValue());
@@ -208,11 +207,11 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
     private String createSignatureValidationParams(
         SessionStatusResponse response,
-        byte[] interactionsBase64Bytes
+        String interactionsBase64
     ) throws JsonProcessingException {
         String interactionsDigest = Base64.getEncoder().encodeToString(
             DigestCalculator.calculateDigest(
-                interactionsBase64Bytes,
+                interactionsBase64.getBytes(StandardCharsets.UTF_8),
                 ee.sk.smartid.HashAlgorithm.SHA_256
             )
         );

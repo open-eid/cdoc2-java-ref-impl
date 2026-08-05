@@ -11,6 +11,7 @@
 * Command line parameters that are converted to enums are now case-insensitive:
   * `"-c", "--crypto-stick"`
   * `"-l", "--interaction-language"`
+* Updated rp-server openapi version
 
 ### Bug Fixes
 * Fix TarDeflate.checkAvailableDiskSpace available disc space calculation.
