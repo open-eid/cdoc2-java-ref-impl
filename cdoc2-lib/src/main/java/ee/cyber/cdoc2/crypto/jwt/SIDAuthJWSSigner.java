@@ -65,25 +65,10 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
     private final EtsiIdentifier signerId;
     private final SessionToken sessionToken;
 
-    private @Nullable InteractionParams interactionParams = null;
+    private final InteractionParams interactionParams;
     private @Nullable String signatureValidationParamsBase64Url = null;
 
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
-
-    /**
-     * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized Cdoc2RpClient
-     *
-     * @param rpClient pre-initialized Cdoc2RpClient to use for signing
-     * @param signer   PNOEE-37807156011
-     */
-    public SIDAuthJWSSigner(EtsiIdentifier signer, Cdoc2RpClient rpClient, SessionToken sessionToken) {
-        Objects.requireNonNull(rpClient);
-        Objects.requireNonNull(signer);
-
-        this.rpClient = rpClient;
-        this.signerId = signer;
-        this.sessionToken = sessionToken;
-    }
 
     /**
      * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized Cdoc2RpClient
@@ -94,8 +79,13 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
      *                 not interested in verification code or default interaction behaviour is ok.
      */
     public SIDAuthJWSSigner(EtsiIdentifier signer, Cdoc2RpClient rpClient,
-                            @Nullable InteractionParams params, SessionToken sessionToken) {
-        this(signer, rpClient, sessionToken);
+                            InteractionParams params, SessionToken sessionToken) {
+        Objects.requireNonNull(rpClient);
+        Objects.requireNonNull(signer);
+
+        this.rpClient = rpClient;
+        this.signerId = signer;
+        this.sessionToken = sessionToken;
         this.interactionParams = params;
     }
 

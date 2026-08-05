@@ -119,12 +119,10 @@ public final class Cdoc2ConfigurationProperties {
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
 
-    public static final String RP_SERVER_MOBILE_ID_DISPLAY_TEXT
-        = "rp-server.mid.display-text";
-    public static final String RP_SERVER_MOBILE_ID_DISPLAY_TEXT_FORMAT
+    public static final String RP_SERVER_MID_DISPLAY_TEXT_FORMAT
         = "rp-server.mid.display-text-format";
-    public static final String RP_SERVER_MOBILE_ID_DISPLAY_LANG
-        = "rp-server.mid.display-text-language";
+    public static final String RP_SERVER_MID_LANGUAGE
+        = "rp-server.mid.language";
 
     public static final String TAR_ENTRIES_THRESHOLD_PROPERTY = "ee.cyber.cdoc2.tarEntriesThreshold";
 
@@ -151,7 +149,4 @@ public final class Cdoc2ConfigurationProperties {
         }
         return isEnabled;
     }
-
-    // for running on highDP display
-    //-Dsun.java2d.uiScale=2.0
 }

@@ -1,9 +1,28 @@
 # Changelog
 
 ## [3.4.3]
+### Improvements
+* Added command line options to allow specifying the interaction language and display text for 
+  SID/MID decryption. The provided display text is shown on the user's device when creating 
+  authentication tokens for decryption. Display text for session token creation is controlled by 
+  auth-server.
+  * `-l`, `--interaction-language`
+  * `-dt`, `--display-text`
+* Command line parameters that are converted to enums are now case-insensitive:
+  * `"-c", "--crypto-stick"`
+  * `"-l", "--interaction-language"`
 
 ### Bug Fixes
 * Fix TarDeflate.checkAvailableDiskSpace available disc space calculation.
+
+### Maven package versions:
+```
+cdoc2 3.4.3
+cdoc2-schema 2.1.0
+cdoc2-lib 3.7.0
+cdoc2-client 2.2.4
+cdoc2-cli 1.9.2
+```
 
 ## [3.4.2]
 
@@ -20,7 +39,7 @@
 
 ### Maven package versions:
 ```
-cdoc2 3.4.1
+cdoc2 3.4.2
 cdoc2-schema 2.1.0
 cdoc2-lib 3.6.2
 cdoc2-client 2.2.4

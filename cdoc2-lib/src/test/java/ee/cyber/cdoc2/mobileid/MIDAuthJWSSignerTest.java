@@ -82,7 +82,7 @@ public class MIDAuthJWSSignerTest {
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
         final String[] verificationCode = {null};
         InteractionParams interactionParams = InteractionParams
-            .displayTextAndVCCForDocument("JWSSignerTest::testSignature")
+            .displayTextAndVCCForDocument("JWSSignerTest::testSignature", null, null)
             .addAuthListener(e -> {
                 verificationCode[0] = e.getVerificationCode();
                 log.debug("Verification code: {}", verificationCode[0]);

@@ -39,6 +39,7 @@ public class Cdoc2AuthClientTest {
     @RegisterExtension
     static WireMockExtension wiremock = WireMockExtension.newInstance()
         .options(wireMockConfig()
+            .httpDisabled(true)
             .httpsPort(WIREMOCK_PORT)
             .keystorePath("wiremock_keystore.p12")
             .keystorePassword("changeit")

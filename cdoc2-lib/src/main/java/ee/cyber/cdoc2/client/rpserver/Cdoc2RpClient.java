@@ -1,7 +1,6 @@
 package ee.cyber.cdoc2.client.rpserver;
 
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.ws.rs.client.ClientBuilder;
 
 import java.io.IOException;
@@ -17,11 +16,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.api.ApiClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.api.ApiResponse;
 import ee.cyber.cdoc2.client.api.Cdoc2RpApi;
 import ee.cyber.cdoc2.client.model.MidAuthenticateRequest;
 import ee.cyber.cdoc2.client.model.MidDisplayTextFormat;
+import ee.cyber.cdoc2.client.model.MidHashType;
 import ee.cyber.cdoc2.client.model.MidLanguage;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SessionStatusResponse;
@@ -92,7 +93,7 @@ public class Cdoc2RpClient {
         String phoneNumber,
         byte[] hash,
         String hashType,
-        @Nullable InteractionParams interactionParams
+        InteractionParams interactionParams
 
     ) throws ExtApiException {
         try {
@@ -100,7 +101,7 @@ public class Cdoc2RpClient {
                 .nationalIdentityNumber(identityNumber)
                 .phoneNumber(phoneNumber)
                 .hash(hash)
-                .hashType(ee.cyber.cdoc2.client.model.MidHashType
+                .hashType(MidHashType
                     .fromValue(hashType)
                 )
                 .displayText(getDisplayText(interactionParams))
@@ -152,7 +153,7 @@ public class Cdoc2RpClient {
         );
         SSLContext sslContext = ApiClientUtil.createSslContext(trustStore, log);
 
-        ee.cyber.cdoc2.client.api.ApiClient apiClient = new ee.cyber.cdoc2.client.api.ApiClient() {
+        ApiClient apiClient = new ApiClient() {
             @Override
             protected void customizeClientBuilder(ClientBuilder clientBuilder) {
                 if (sslContext != null) {
@@ -171,26 +172,24 @@ public class Cdoc2RpClient {
     /**
      * Get MID language from interactionParams if defined, otherwise get default value from configuration
      */
-    protected MidLanguage getLanguage(@Nullable InteractionParams interactionParams) {
-        MidLanguage lang = cdoc2RpClientConfiguration.getDefaultDisplayTextLanguage();
-        if (interactionParams != null) {
-            String iLang = interactionParams.getLanguage();
-            if (iLang != null) {
-                try {
-                    lang = ee.cyber.cdoc2.client.model.MidLanguage.valueOf(iLang);
-                } catch (IllegalArgumentException e) {
-                    log.warn("Illegal MidLanguage value, using {}", lang, e);
-                }
-            }
+    protected MidLanguage getLanguage(InteractionParams interactionParams) {
+        if (interactionParams != null && interactionParams.getInteractionLanguage() != null) {
+            return switch (interactionParams.getInteractionLanguage()) {
+                case ET -> MidLanguage.EST;
+                case EN -> MidLanguage.ENG;
+                case RU -> MidLanguage.RUS;
+                case LT -> MidLanguage.LIT;
+            };
         }
-        return lang;
+
+        return cdoc2RpClientConfiguration.getMidLanguage();
     }
 
     /**
      * Get MidDisplayTextFormat from interactionParams if defined, otherwise get default value from configuration
      */
-    protected MidDisplayTextFormat getEncoding(@Nullable InteractionParams interactionParams) {
-        MidDisplayTextFormat enc = cdoc2RpClientConfiguration.getDefaultDisplayTextFormat();
+    protected MidDisplayTextFormat getEncoding(InteractionParams interactionParams) {
+        MidDisplayTextFormat enc = cdoc2RpClientConfiguration.getMidDisplayTextFormat();
         if (interactionParams != null) {
             String iEnc = interactionParams.getEncoding();
             if (iEnc != null) {
@@ -206,21 +205,17 @@ public class Cdoc2RpClient {
     }
 
     /**
-     * Get displayText from interactionParams if defined, otherwise get default value from configuration
+     * Get displayText from interactionParams
      */
-    protected String getDisplayText(@Nullable InteractionParams interactionParams) {
+    protected String getDisplayText(InteractionParams interactionParams) {
 
         // Mobile-ID doesn't support interactionType and text length is limited to 100 bytes -
         // 50 chars for UCS2 and 100 chars for GSM7
         // https://github.com/SK-EID/MID?tab=readme-ov-file#323-request-parameters
 
-        String textAndPIN = cdoc2RpClientConfiguration.getDefaultDisplayText();
-        if (interactionParams != null) {
-            textAndPIN = (getEncoding(interactionParams) == MidDisplayTextFormat.GSM_7)
-                ? interactionParams.getDisplayText(100) // GSM7
-                : interactionParams.getDisplayText(50); // UCS2
-        }
-        return textAndPIN;
+        return (getEncoding(interactionParams) == MidDisplayTextFormat.GSM_7)
+            ? interactionParams.getDisplayText(100) // GSM7
+            : interactionParams.getDisplayText(50);
     }
 
     private ExtApiException wrapNetworkException(Exception ex) {

@@ -55,7 +55,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     private final SessionToken sessionToken;
     private final String sessionTokenCertAlgorithm;
 
-    private final @Nullable InteractionParams interactionParams;
+    private final InteractionParams interactionParams;
 
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
     private Cdoc2KeySharesApiClient.RpCountersignatureParams countersignatureParams = null;
@@ -75,7 +75,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         EtsiIdentifier signer,
         String phoneNumber,
         Cdoc2RpClient rpClient,
-        @Nullable InteractionParams interactionParams,
+        InteractionParams interactionParams,
         SessionToken sessionToken
     ) {
         Objects.requireNonNull(rpClient);
@@ -88,7 +88,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         this.interactionParams = interactionParams;
         this.sessionToken = sessionToken;
         this.sessionTokenCertAlgorithm = X509CertUtils.parse(Base64.getUrlDecoder()
-                .decode(sessionToken.getSigningCertificate())).getPublicKey().getAlgorithm();
+            .decode(sessionToken.getSigningCertificate())).getPublicKey().getAlgorithm();
     }
 
     @Override

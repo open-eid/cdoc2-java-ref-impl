@@ -2,6 +2,7 @@ package ee.cyber.cdoc2.cli.commands;
 
 import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
@@ -71,9 +72,19 @@ public class CDocDecryptCmd implements Callable<Void> {
     }
 
     @Option(names = {"-c", "--crypto-stick"},
-        description = "Specify what type of crypto stick is used, allowed values: "
-            + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
+        description = "Specify what type of crypto stick is used, allowed values (case "
+            + "insensitive): [SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
+
+    @Option(names = {"-l", "--interaction-language"},
+        description = "Specify the interaction language used for MID/SID decryption (case "
+            + "insensitive): [ET, EN, RU, LT]")
+    private InteractionParams.InteractionLanguage interactionLanguage;
+
+    @Option(names = {"-dt", "--display-text"},
+        description = "Text to display on the user's device when creating "
+            + "authentication tokens for MID/SID decryption")
+    private String displayText;
 
     @Override
     public Void call() throws Exception {
@@ -85,7 +96,9 @@ public class CDocDecryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
+            : getDecryptionKeyMaterial(
+                this.cdocFile, this.exclusive, this.interactionLanguage, this.displayText
+        );
 
         CDocDecrypter cDocDecrypter = getDecrypterWithFilesExtraction(
             this.cdocFile,

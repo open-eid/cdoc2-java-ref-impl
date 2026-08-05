@@ -66,8 +66,8 @@ public class CDocListCmd implements Callable<Void> {
     private boolean helpRequested = false;
 
     @Option(names = {"-c", "--crypto-stick"},
-        description = "Specify what type of crypto stick is used, allowed values: "
-            + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
+        description = "Specify what type of crypto stick is used, allowed values (case "
+            + "insensitive): [SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
 
     @Override
@@ -80,7 +80,7 @@ public class CDocListCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive, null, null);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
                 .withCDoc(cdocFile)

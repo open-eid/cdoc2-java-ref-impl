@@ -4,11 +4,11 @@
     <parent>
         <artifactId>cdoc2</artifactId>
         <groupId>ee.cyber.cdoc2</groupId>
-        <version>3.4.2</version>
+        <version>3.4.3</version>
     </parent>
 
     <artifactId>cdoc2-cli</artifactId>
-    <version>1.9.1</version>
+    <version>1.9.2</version>
     <description>Command line utility to create/process CDOC2 files</description>
 
     <properties>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>ee.cyber.cdoc2</groupId>
             <artifactId>cdoc2-lib</artifactId>
-            <version>3.6.2</version>
+            <version>3.7.0</version>
         </dependency>
     </dependencies>
 

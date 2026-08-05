@@ -1,11 +1,10 @@
 package ee.cyber.cdoc2.crypto.keymaterial.decrypt;
 
-import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
+import ee.cyber.cdoc2.crypto.EncryptionKeyOrigin;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParamsConfigurable;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
-import jakarta.annotation.Nullable;
 
 
 /**
@@ -16,11 +15,11 @@ import jakarta.annotation.Nullable;
 public class KeyShareDecryptionKeyMaterial implements DecryptionKeyMaterial, InteractionParamsConfigurable {
 
     private final AuthenticationIdentifier authIdentifier;
-    private @Nullable InteractionParams interactionParams;
+    private InteractionParams interactionParams;
 
     /**
      * @param authIdentifier identifier for
-                               {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
+     *                       {@link ee.cyber.cdoc2.crypto.KeyShareRecipientType#SID_MID}
      */
     public KeyShareDecryptionKeyMaterial(AuthenticationIdentifier authIdentifier) {
         this.authIdentifier = authIdentifier;
@@ -45,11 +44,8 @@ public class KeyShareDecryptionKeyMaterial implements DecryptionKeyMaterial, Int
         this.interactionParams = interactionParameters;
     }
 
-
     @Override
-    public @Nullable InteractionParams getInteractionParams() {
+    public InteractionParams getInteractionParams() {
         return this.interactionParams;
     }
-
-
 }

@@ -155,7 +155,7 @@ public class AuthTokenCreatorTest {
         IdentityJWSSigner idJwsSigner = new SIDAuthJWSSigner(
             etsiIdentifier,
             setupRpClient(),
-            InteractionParams.displayTextAndVCCForDocument("Doc123"),
+            InteractionParams.displayTextAndVCCForDocument("Doc123", null, null),
             sessionToken
         );
 
@@ -187,7 +187,7 @@ public class AuthTokenCreatorTest {
             etsiIdentifier,
             phoneNumber,
             demoEnvClient,
-            null,
+            InteractionParams.displayTextAndPin(null, null),
             sessionToken
         );
 
@@ -219,7 +219,7 @@ public class AuthTokenCreatorTest {
             etsiIdentifier,
             phoneNumber,
             demoEnvClient,
-            null,
+            InteractionParams.displayTextAndPin(null, null),
             sessionToken
         );
 

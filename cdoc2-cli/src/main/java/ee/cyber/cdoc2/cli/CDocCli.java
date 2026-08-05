@@ -46,7 +46,10 @@ public class CDocCli implements Callable<Void> {
             CommandLine.usage(new CDocListCmd(), System.out);
             CommandLine.usage(new CDocInfoCmd(), System.out);
         }
-        int exitCode = new CommandLine(new CDocCli()).execute(args);
+        CommandLine cmd = new CommandLine(new CDocCli());
+        cmd.setCaseInsensitiveEnumValuesAllowed(true);
+
+        int exitCode = cmd.execute(args);
 
         System.exit(exitCode);
     }

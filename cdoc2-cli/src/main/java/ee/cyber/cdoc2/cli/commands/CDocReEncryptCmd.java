@@ -1,30 +1,30 @@
 package ee.cyber.cdoc2.cli.commands;
 
-import ee.cyber.cdoc2.CryptoStickConf;
-import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
-import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
-import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
-import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
-import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
-import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
-import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
-import ee.cyber.cdoc2.services.Cdoc2Services;
 import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Map;
-
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.cli.util.CliConstants;
 import ee.cyber.cdoc2.CDocReEncrypter;
+import ee.cyber.cdoc2.CryptoStickConf;
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.cli.util.CliConstants;
+import ee.cyber.cdoc2.cli.util.InteractiveCommunicationUtil;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParam;
+import ee.cyber.cdoc2.cli.util.LabeledPasswordParamConverter;
+import ee.cyber.cdoc2.cli.util.LabeledSecretConverter;
+import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.EncryptionKeyMaterial;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
+import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToSystemProps;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
@@ -40,7 +40,7 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
     private static final Logger log = LoggerFactory.getLogger(CDocReEncryptCmd.class);
 
-    @CommandLine.Option(names = {"-f", "--file" }, required = true,
+    @CommandLine.Option(names = {"-f", "--file"}, required = true,
         paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
@@ -71,13 +71,14 @@ public class CDocReEncryptCmd implements Callable<Void> {
     private File outputPath;
 
     private String keyServerPropertiesFile;
+
     @CommandLine.Option(names = {"--server"}, paramLabel = "FILE.properties")
     private void setKeyServerPropertiesFile(String server) {
         keyServerPropertiesFile = server;
         System.setProperty(KEY_CAPSULE_PROPERTIES, keyServerPropertiesFile);
     }
 
-    @CommandLine.Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+    @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
     // allow -Dkey for setting System properties
@@ -87,9 +88,19 @@ public class CDocReEncryptCmd implements Callable<Void> {
     }
 
     @CommandLine.Option(names = {"-c", "--crypto-stick"},
-        description = "Specify what type of crypto stick is used, allowed values: "
-            + "[SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
+        description = "Specify what type of crypto stick is used, allowed values (case "
+            + "insensitive): [SECP256R1, SECP384R1, SECP521R1, RSA3072, RSA4096]")
     private CryptoStickConf cryptoStickConf;
+
+    @CommandLine.Option(names = {"-l", "--interaction-language"},
+        description = "Specify the interaction language used for MID/SID decryption (case "
+            + "insensitive): [ET, EN, RU, LT]")
+    private InteractionParams.InteractionLanguage interactionLanguage;
+
+    @CommandLine.Option(names = {"-dt", "--display-text"},
+        description = "Client side specified text to display on the user's device when creating "
+            + "authentication tokens for MID/SID decryption")
+    private String displayText;
 
     @Override
     public Void call() throws Exception {
@@ -101,7 +112,9 @@ public class CDocReEncryptCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive);
+            : getDecryptionKeyMaterial(
+            this.cdocFile, this.exclusive, this.interactionLanguage, this.displayText
+        );
 
         File destCdocFile = getDestinationFile();
         CDocReEncrypter cDocReEncrypter = new CDocReEncrypter(
@@ -122,8 +135,8 @@ public class CDocReEncryptCmd implements Callable<Void> {
     private EncryptionKeyMaterial extractSymmetricKeyEncKeyMaterial() {
         if (null != this.reEncryptPasswordParam) {
             LabeledPassword labeledPassword = (this.reEncryptPasswordParam.isEmpty())
-                    ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
-                    : this.reEncryptPasswordParam.labeledPassword();
+                ? InteractiveCommunicationUtil.readPasswordAndLabelInteractively(true)
+                : this.reEncryptPasswordParam.labeledPassword();
 
             return EncryptionKeyMaterial.fromPassword(
                 labeledPassword.getPassword(), labeledPassword.getLabel()
