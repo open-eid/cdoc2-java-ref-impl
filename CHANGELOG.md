@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.4.4]
+### Improvements
+* updated auth-server openapi version
+
 ## [3.4.3]
 ### Improvements
 * Added command line options to allow specifying the interaction language and display text for 

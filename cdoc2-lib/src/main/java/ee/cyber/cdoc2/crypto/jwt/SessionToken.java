@@ -71,9 +71,9 @@ public class SessionToken {
         identity.setMobileNr(mobileNumber);
 
         if (interactionLanguage != null) {
-            identity.setLanguage(AuthIdentity.LanguageEnum.fromValue(
+            identity.setLanguage(
                 interactionLanguage.toString().toLowerCase()
-            ));
+            );
         }
 
         AuthProcessData authProcess = startAuth(identity);
