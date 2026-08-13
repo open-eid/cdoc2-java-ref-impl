@@ -2,7 +2,6 @@ package ee.cyber.cdoc2.client;
 
 import jakarta.annotation.Nonnull;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +14,9 @@ import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.client.model.WellKnownResponse;
 import ee.cyber.cdoc2.config.AuthClientConfiguration;
+
+import static ee.cyber.cdoc2.client.ClientUtil.wrapApiException;
+import static ee.cyber.cdoc2.client.ClientUtil.wrapNetworkException;
 
 public final class AuthClientImpl implements AuthClient {
     private static final TimeUnit STATUS_POLL_SLEEP_TIMEUNIT = TimeUnit.MILLISECONDS;
@@ -65,9 +67,9 @@ public final class AuthClientImpl implements AuthClient {
             return response;
 
         } catch (ApiException ex) {
-            throw wrapApiException("Failed to start authentication process", ex);
+            throw wrapApiException("Failed to start authentication process", ex, log);
         } catch (Exception ex) {
-            throw wrapNetworkException(ex);
+            throw wrapNetworkException(ex, this.serverUrl, log);
         }
     }
 
@@ -107,11 +109,12 @@ public final class AuthClientImpl implements AuthClient {
             }
         } catch (ApiException ex) {
             throw wrapApiException(
-                "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex);
+                "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex, log
+            );
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (Exception ex) {
-            throw wrapNetworkException(ex);
+            throw wrapNetworkException(ex, this.serverUrl, log);
         }
 
         return status;
@@ -127,38 +130,9 @@ public final class AuthClientImpl implements AuthClient {
             return response;
 
         } catch (ApiException ex) {
-            throw wrapApiException("Failed to retrieve well-known JWKS", ex);
+            throw wrapApiException("Failed to retrieve well-known JWKS", ex, log);
         } catch (Exception ex) {
-            throw wrapNetworkException(ex);
+            throw wrapNetworkException(ex, this.serverUrl, log);
         }
-    }
-
-    private static ExtApiException wrapApiException(String context, ApiException ex) {
-        String detail = switch (ex.getCode()) {
-            case 400 -> "Bad request — check the parameters";
-            case 401 -> "Unauthorized — missing or invalid auth ticket";
-            case 403 -> "Forbidden — authentication failed";
-            case 404 -> "Not found — record missing or recipient ID mismatch";
-            default -> "Unexpected server response";
-        };
-        log.error("{}: {} (HTTP {}) — {}", context, detail, ex.getCode(), ex.getMessage());
-        return new ExtApiException(
-            context + ": " + detail + " (HTTP " + ex.getCode() + ") — " + ex.getMessage(), ex
-        );
-    }
-
-    private ExtApiException wrapNetworkException(Exception ex) {
-        log.error("{} {}: {}", "Failed to connect to authentication server",
-            this.serverUrl,
-            ex.getMessage(),
-            ex
-        );
-        String detail = (ex.getCause() instanceof IOException)
-            ? ex.getCause().getMessage()
-            : ex.getMessage();
-        return new ExtApiException(
-            "Failed to connect to authentication server" + " " + this.serverUrl + ": " + detail,
-            ex
-        );
     }
 }

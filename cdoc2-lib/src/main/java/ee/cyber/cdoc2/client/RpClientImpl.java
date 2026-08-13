@@ -2,7 +2,6 @@ package ee.cyber.cdoc2.client;
 
 import jakarta.annotation.Nonnull;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.UUID;
 
@@ -20,6 +19,9 @@ import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
 import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
+
+import static ee.cyber.cdoc2.client.ClientUtil.wrapApiException;
+import static ee.cyber.cdoc2.client.ClientUtil.wrapNetworkException;
 
 public final class RpClientImpl implements RpClient {
     private static final Logger log = LoggerFactory.getLogger(RpClientImpl.class);
@@ -65,9 +67,9 @@ public final class RpClientImpl implements RpClient {
                 request
             );
         } catch (ApiException e) {
-            throw wrapApiException("RP SID authenticate request error. ", e);
+            throw wrapApiException("RP SID authenticate request error. ", e, log);
         } catch (Exception e) {
-            throw wrapNetworkException(e);
+            throw wrapNetworkException(e, this.serverUrl, log);
         }
     }
 
@@ -80,9 +82,9 @@ public final class RpClientImpl implements RpClient {
         try {
             return cdoc2RpApiClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
         } catch (ApiException e) {
-            throw wrapApiException("RP SID session request error. ", e);
+            throw wrapApiException("RP SID session request error. ", e, log);
         } catch (Exception e) {
-            throw wrapNetworkException(e);
+            throw wrapNetworkException(e, this.serverUrl, log);
         }
     }
 
@@ -114,9 +116,9 @@ public final class RpClientImpl implements RpClient {
                 request
             );
         } catch (ApiException e) {
-            throw wrapApiException("RP MID authenticate request error. ", e);
+            throw wrapApiException("RP MID authenticate request error. ", e, log);
         } catch (Exception e) {
-            throw wrapNetworkException(e);
+            throw wrapNetworkException(e, this.serverUrl, log);
         }
     }
 
@@ -130,9 +132,9 @@ public final class RpClientImpl implements RpClient {
             return cdoc2RpApiClient
                 .midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
         } catch (ApiException e) {
-            throw wrapApiException("RP MID session request error. ", e);
+            throw wrapApiException("RP MID session request error. ", e, log);
         } catch (Exception e) {
-            throw wrapNetworkException(e);
+            throw wrapNetworkException(e, this.serverUrl, log);
         }
     }
 
@@ -192,34 +194,5 @@ public final class RpClientImpl implements RpClient {
         return (getEncoding(interactionParams) == MidDisplayTextFormat.GSM_7)
             ? interactionParams.getDisplayText(100) // GSM7
             : interactionParams.getDisplayText(50);
-    }
-
-    private static ExtApiException wrapApiException(String context, ApiException ex) {
-        String detail = switch (ex.getCode()) {
-            case 400 -> "Bad request — check the parameters";
-            case 401 -> "Unauthorized — missing or invalid auth ticket";
-            case 403 -> "Forbidden — authentication failed";
-            case 404 -> "Not found — record missing or recipient ID mismatch";
-            default -> "Unexpected server response";
-        };
-        log.error("{}: {} (HTTP {}) — {}", context, detail, ex.getCode(), ex.getMessage());
-        return new ExtApiException(
-            context + ": " + detail + " (HTTP " + ex.getCode() + ") — " + ex.getMessage(), ex
-        );
-    }
-
-    private ExtApiException wrapNetworkException(Exception ex) {
-        log.error("{} {}: {}", "Failed to connect to authentication server",
-            this.serverUrl,
-            ex.getMessage(),
-            ex
-        );
-        String detail = (ex.getCause() instanceof IOException)
-            ? ex.getCause().getMessage()
-            : ex.getMessage();
-        return new ExtApiException(
-            "Failed to connect to authentication server" + " " + this.serverUrl + ": " + detail,
-            ex
-        );
     }
 }
