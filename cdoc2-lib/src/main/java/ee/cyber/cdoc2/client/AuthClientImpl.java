@@ -83,41 +83,58 @@ public final class AuthClientImpl implements AuthClient {
         int pollCount = 0;
         try {
             while (status == null || AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
-                if (pollCount == this.pollingMaxCount) {
-                    String message = "Max poll count reached when polling for complete auth "
-                        + "process status. pollCount: "
-                        + pollCount
-                        + " status: "
-                        + status;
-                    log.error(message);
+                checkForPollMaxCount(pollCount, status);
 
-                    throw new ExtApiException(message);
-                }
-
-                status = cdoc2AuthApiClient.getAuthProcessStatus(authProcessUuid);
+                status = getAuthProcessStatus(authProcessUuid);
 
                 if (status != null && !AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
                     break;
                 }
                 log.debug("Incomplete auth process {} status: {}", authProcessUuid, status);
-                log.debug("Sleeping for {} {}", this.pollingIntervalMs,
-                    STATUS_POLL_SLEEP_TIMEUNIT);
-                STATUS_POLL_SLEEP_TIMEUNIT.sleep(
-                    this.pollingIntervalMs
-                );
+
+                pollSleep();
+
                 pollCount++;
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        return status;
+    }
+
+    private AuthProcessStatusResponse getAuthProcessStatus(@Nonnull UUID authProcessUuid)
+        throws ExtApiException {
+        try {
+            return cdoc2AuthApiClient.getAuthProcessStatus(authProcessUuid);
         } catch (ApiException ex) {
             throw wrapApiException(
                 "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex, log
             );
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (Exception ex) {
             throw wrapNetworkException(ex, this.serverUrl, log);
         }
+    }
 
-        return status;
+    private void checkForPollMaxCount(int pollCount, AuthProcessStatusResponse status) throws ExtApiException {
+        if (pollCount == this.pollingMaxCount) {
+            String message = "Max poll count reached when polling for complete auth "
+                + "process status. pollCount: "
+                + pollCount
+                + " status: "
+                + status;
+            log.error(message);
+
+            throw new ExtApiException(message);
+        }
+    }
+
+    private void pollSleep() throws InterruptedException {
+        log.debug("Sleeping for {} {}", this.pollingIntervalMs,
+            STATUS_POLL_SLEEP_TIMEUNIT);
+        STATUS_POLL_SLEEP_TIMEUNIT.sleep(
+            this.pollingIntervalMs
+        );
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
@@ -35,6 +36,17 @@ public class AuthClientMock {
 
     public static final int TIMEOUT_DELAY_MS = 3_000;
 
+    public static final Map<String, Object> AUTH_STATUS_COMPLETE_RESPONSE = Map.of(
+        "status", "COMPLETE",
+        "endResult", "OK",
+        "sessionToken", SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL,
+        "signingCertificate", SID_SIGNING_CERTIFICATE_BASE64URL
+    );
+
+    public static final Map<String, Object> AUTH_STATUS_STARTED_RESPONSE = Map.of(
+        "status", "STARTED"
+    );
+
     private final WireMockExtension wiremock;
 
     public AuthClientMock(WireMockExtension wiremock) {
@@ -53,6 +65,49 @@ public class AuthClientMock {
                     Map.of("vc", DEFAULT_VERIFICATION_CODE)
                 ))
             )
+        );
+    }
+
+    public void stubSAuthStatusCompleteOnThirdTry(UUID authProccessUuid) throws JsonProcessingException {
+        wiremock.resetScenarios();
+
+        // First response with null request body
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                )
+                .willSetStateTo("state-2")
+        );
+
+        // Second response with STARTED status
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs("state-2")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_STARTED_RESPONSE))
+                )
+                .willSetStateTo("state-3")
+        );
+
+        // Third response with COMPLETE status
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs("state-3")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_COMPLETE_RESPONSE))
+                )
         );
     }
 
@@ -191,20 +246,13 @@ public class AuthClientMock {
     }
 
     public void stubForAuthStatus(UUID authProccessUuid) throws JsonProcessingException {
-        Map<String, Object> response = Map.of(
-            "status", "COMPLETE",
-            "endResult", "OK",
-            "sessionToken", SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL,
-            "signingCertificate", SID_SIGNING_CERTIFICATE_BASE64URL
-        );
-
         wiremock.stubFor(
             WireMock.get(
                 urlEqualTo("/auth/status/" + authProccessUuid)
             ).willReturn(aResponse()
                 .withStatus(HttpStatus.OK_200)
                 .withHeader("Content-Type", "application/json")
-                .withBody(OBJECT_MAPPER.writeValueAsString(response))
+                .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_COMPLETE_RESPONSE))
             )
         );
     }

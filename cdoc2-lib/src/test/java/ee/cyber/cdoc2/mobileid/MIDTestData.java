@@ -68,7 +68,7 @@ public final class MIDTestData {
     public static RpClient getDemoEnvClient()
         throws ConfigurationLoadingException {
         RpClientConfiguration demoEnvConfiguration =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
         return RpClientImpl.create(demoEnvConfiguration);
     }
 

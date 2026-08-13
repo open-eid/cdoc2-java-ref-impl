@@ -23,7 +23,7 @@ class ServicesTest {
     @Test
     void testServicesRegisterService() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         Service<RpClient, RpClientConfiguration> rpService =
             ServiceTemplate.service(rpConf, RpClientImpl::create);
@@ -46,7 +46,7 @@ class ServicesTest {
     @Test
     void shouldThrowWithNonMatchingParams() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         Service<RpClient, RpClientConfiguration> sidService =
             ServiceTemplate.service(rpConf, RpClientImpl::create);
@@ -62,7 +62,7 @@ class ServicesTest {
     @Test
     void testServiceDecoratorConfiguration() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         ServiceConfiguration<RpClient, RpClientConfiguration> serviceConf =
             ServiceTemplate.configuration(rpConf, conf -> new Service<RpClient, RpClientConfiguration>() {
@@ -92,7 +92,7 @@ class ServicesTest {
     @Test
     void testServiceDecoratorServiceFromFactory() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         // lambda to implement ServiceFac::create method
         // full signature: Service<S, C> create(ServiceConfigurationExt<S,C> config)
@@ -119,7 +119,7 @@ class ServicesTest {
     @Test
     void testServiceDecoratorGenericService() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         Service<RpClient, RpClientConfiguration> service =
             ServiceTemplate.serviceFromFactory(rpConf,
@@ -131,7 +131,7 @@ class ServicesTest {
     @Test
     void testServiceDecoratorService() {
         RpClientConfiguration rpConf =
-            ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
+            ClientConfigurationUtil.getRpClientConfiguration();
 
         Service<RpClient, RpClientConfiguration> service =
             ServiceTemplate.service(rpConf, RpClientImpl::create);

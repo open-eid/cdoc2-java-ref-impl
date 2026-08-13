@@ -39,19 +39,20 @@ public final class ClientConfigurationUtil {
     private ClientConfigurationUtil() {
     }
 
-    public static RpClientConfiguration getCdoc2RpClientDemoEnvConfiguration()
+    public static RpClientConfiguration getRpClientConfiguration()
         throws ConfigurationLoadingException {
 
         return RpClientConfiguration.load(PropertiesLoader.loadProperties(
             DEMO_ENV_PROPERTIES.getProperty(RP_SERVER_PROPERTIES)));
     }
 
-    public static AuthClientConfiguration getCdoc2AuthClientConfiguration() {
-        return getCdoc2AuthClientConfiguration(Map.of());
+    public static AuthClientConfiguration getAuthClientConfiguration() {
+        return getAuthClientConfiguration(Map.of());
     }
 
-    public static AuthClientConfiguration getCdoc2AuthClientConfiguration(
-        Map<String, String> propOverrides) throws ConfigurationLoadingException {
+    public static AuthClientConfiguration getAuthClientConfiguration(
+        Map<String, String> propOverrides
+    ) throws ConfigurationLoadingException {
 
         Properties properties = PropertiesLoader.loadProperties(
             DEMO_ENV_PROPERTIES.getProperty(AUTH_SERVER_PROPERTIES)

@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getRpClientConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -13,7 +13,7 @@ class RpClientConfigurationTest {
 
     @Test
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
-        RpClientConfiguration rpClientConfiguration = getCdoc2RpClientDemoEnvConfiguration();
+        RpClientConfiguration rpClientConfiguration = getRpClientConfiguration();
 
         assertEquals(HOST_URL, rpClientConfiguration.getHostUrl());
         assertEquals(

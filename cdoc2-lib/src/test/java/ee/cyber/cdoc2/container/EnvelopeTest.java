@@ -178,7 +178,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     Capsule capsuleData;
 
     EnvelopeTest() throws ConfigurationLoadingException, GeneralSecurityException {
-        this.authClient = AuthClientImpl.create(getCdoc2AuthClientConfiguration());
+        this.authClient = AuthClientImpl.create(getAuthClientConfiguration());
     }
 
     @BeforeAll
@@ -677,7 +677,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         verifyMockedKeyShareClients();
 
-        RpClient rpClient = RpClientImpl.create(getCdoc2RpClientDemoEnvConfiguration());
+        RpClient rpClient = RpClientImpl.create(getRpClientConfiguration());
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(RpClient.class, rpClient, null)

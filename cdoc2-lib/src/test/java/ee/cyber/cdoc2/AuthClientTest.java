@@ -11,19 +11,19 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
-import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.AuthClientImpl;
+import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
-import static ee.cyber.cdoc2.config.ConfigurationProperties.AUTH_SERVER_CLIENT_READ_TIMEOUT;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getAuthClientConfiguration;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-public class Cdoc2AuthClientTest {
+public class AuthClientTest {
 
     private static final int WIREMOCK_PORT = 7500;
     private static final int SHORT_READ_TIMEOUT_MS = 500;
@@ -36,8 +36,8 @@ public class Cdoc2AuthClientTest {
     private final AuthClient authClient;
     private AuthClientMock authClientMock;
 
-    Cdoc2AuthClientTest() throws ConfigurationLoadingException, GeneralSecurityException {
-        this.authClient = AuthClientImpl.create(getCdoc2AuthClientConfiguration());
+    AuthClientTest() throws ConfigurationLoadingException, GeneralSecurityException {
+        this.authClient = AuthClientImpl.create(ClientConfigurationUtil.getAuthClientConfiguration());
     }
 
     @RegisterExtension
@@ -59,24 +59,24 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void successfulStartAuth() throws ExtApiException, JsonProcessingException {
-        var authProccessUuid = UUID.randomUUID();
-        authClientMock.stubStartAuthResp(authProccessUuid);
+        var authProcessUuid = UUID.randomUUID();
+        authClientMock.stubStartAuthResp(authProcessUuid);
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
             .mobileNr(DEFAULT_MOBILE_NR);
 
         var startAuthResponse = authClient.startAuth(authIdentity);
-        assertEquals(authProccessUuid, startAuthResponse.uuid());
+        assertEquals(authProcessUuid, startAuthResponse.uuid());
         assertEquals(DEFAULT_VERIFICATION_CODE, startAuthResponse.verificationCode());
     }
 
     @Test
     void successfulGetAutStatus() throws ExtApiException, JsonProcessingException {
-        var authProccessUuid = UUID.randomUUID();
-        authClientMock.stubForAuthStatus(authProccessUuid);
+        var authProcessUuid = UUID.randomUUID();
+        authClientMock.stubForAuthStatus(authProcessUuid);
 
-        var authProcessStatusResponse = authClient.pollForCompleteAuthProcessStatus(authProccessUuid);
+        var authProcessStatusResponse = authClient.pollForCompleteAuthProcessStatus(authProcessUuid);
 
         assertNotNull(authProcessStatusResponse);
         assertNotNull(authProcessStatusResponse.getStatus());
@@ -172,7 +172,7 @@ public class Cdoc2AuthClientTest {
         authClientMock.stubStartAuthWithDelay();
 
         AuthClient clientWithTimeout =
-            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+            AuthClientImpl.create(getAuthClientConfiguration(
                 Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
             ));
 
@@ -243,7 +243,7 @@ public class Cdoc2AuthClientTest {
         authClientMock.stubAuthStatusWithDelay(authProcessUuid);
 
         AuthClient clientWithTimeout =
-            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+            AuthClientImpl.create(getAuthClientConfiguration(
                 Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
             ));
 
@@ -253,6 +253,48 @@ public class Cdoc2AuthClientTest {
         );
 
         assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+            "actual message: " + ex.getMessage());
+    }
+
+    @Test
+    void pollGetAuthStatusComplete() throws Exception {
+        var authProcessUuid = UUID.randomUUID();
+        authClientMock.stubSAuthStatusCompleteOnThirdTry(authProcessUuid);
+
+        AuthClient clientWithPollCount =
+            AuthClientImpl.create(getAuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_POLLING_MAX_COUNT, "3",
+                    AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS, "100")
+            ));
+
+        var authProcessStatusResponse = clientWithPollCount.pollForCompleteAuthProcessStatus(
+            authProcessUuid
+        );
+
+        assertNotNull(authProcessStatusResponse);
+        assertNotNull(authProcessStatusResponse.getStatus());
+        assertEquals("COMPLETE", authProcessStatusResponse.getStatus());
+    }
+
+    @Test
+    void pollGetAuthStatusIncomplete() throws Exception {
+        var authProcessUuid = UUID.randomUUID();
+        authClientMock.stubSAuthStatusCompleteOnThirdTry(authProcessUuid);
+
+        AuthClient clientWithPollCount =
+            AuthClientImpl.create(getAuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_POLLING_MAX_COUNT, "2",
+                    AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS, "100")
+            ));
+
+        Exception ex = assertThrows(
+            ExtApiException.class,
+            () -> clientWithPollCount.pollForCompleteAuthProcessStatus(
+                authProcessUuid
+            )
+        );
+
+        assertTrue(ex.getMessage().contains("Max poll count reached"),
             "actual message: " + ex.getMessage());
     }
 
@@ -306,7 +348,7 @@ public class Cdoc2AuthClientTest {
         authClientMock.stubWellKnownWithDelay();
 
         AuthClient clientWithTimeout =
-            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+            AuthClientImpl.create(getAuthClientConfiguration(
                 Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
             ));
 
