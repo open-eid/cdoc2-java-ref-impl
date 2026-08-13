@@ -31,7 +31,7 @@ import ee.cyber.cdoc2.crypto.jwt.SessionToken;
 import ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static ee.cyber.cdoc2.authServer.Cdoc2AuthClientMock.SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL;
+import static ee.cyber.cdoc2.AuthClientMock.SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL;
 import static ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock.MID_SIGNING_CERTIFICATE_BASE64URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

@@ -7,9 +7,9 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.client.Cdoc2AuthApiClient;
 import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.authserver.AuthProcessData;
-import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
@@ -19,18 +19,18 @@ import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClai
 
 public class SessionToken {
     private static final Logger log = LoggerFactory.getLogger(SessionToken.class);
-    Cdoc2AuthClient cdoc2AuthClient;
+    AuthClient authClient;
 
     private String sessionTokenBase64Url;
     private String signingCertificate;
 
     public SessionToken(
-        Cdoc2AuthClient cdoc2AuthClient,
+        AuthClient authClient,
         String recipient,
         @Nullable String mobileNumber,
         @Nullable InteractionParams.InteractionLanguage interactionLanguage
     ) {
-        this.cdoc2AuthClient = cdoc2AuthClient;
+        this.authClient = authClient;
 
         create(recipient, mobileNumber, interactionLanguage);
     }
@@ -76,7 +76,7 @@ public class SessionToken {
             );
         }
 
-        AuthProcessData authProcess = startAuth(identity);
+        Cdoc2AuthApiClient.AuthProcessData authProcess = startAuth(identity);
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());
         log.debug("Final auth process {} status: {}", authProcess.uuid(), status);
         if (!"COMPLETE".equals(status.getStatus())) {
@@ -87,9 +87,9 @@ public class SessionToken {
         this.signingCertificate = status.getSigningCertificate();
     }
 
-    private AuthProcessData startAuth(AuthIdentity identity) {
+    private Cdoc2AuthApiClient.AuthProcessData startAuth(AuthIdentity identity) {
         try {
-            return cdoc2AuthClient.startAuth(identity);
+            return authClient.startAuth(identity);
         } catch (ExtApiException e) {
             throw new RuntimeException("Failed to start authentication process", e);
         }
@@ -97,7 +97,7 @@ public class SessionToken {
 
     private AuthProcessStatusResponse getAuthStatus(UUID uuid) {
         try {
-            return cdoc2AuthClient.getAuthProcessStatus(uuid);
+            return authClient.pollForCompleteAuthProcessStatus(uuid);
         } catch (ExtApiException e) {
             throw new RuntimeException("Failed to retrieve authentication process status", e);
         }

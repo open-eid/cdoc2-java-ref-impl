@@ -27,7 +27,7 @@ import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.RsaCapsuleClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
-import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.container.CDocParseException;
@@ -340,14 +340,14 @@ public final class KekTools {
         @Nullable InteractionParams.InteractionLanguage interactionLanguage,
         Services services
     ) throws CDocException {
-        if (!services.hasService(Cdoc2AuthClient.class)) {
-            throw new CDocException("Cdoc2AuthClient not initialized. "
+        if (!services.hasService(AuthClient.class)) {
+            throw new CDocException("AuthClient not initialized. "
                 + "Make sure you have provided the -Dauth-server.properties option.");
         }
 
-        Cdoc2AuthClient cdoc2AuthClient = services.get(Cdoc2AuthClient.class);
+        AuthClient authClient = services.get(AuthClient.class);
         return new SessionToken(
-            cdoc2AuthClient,
+            authClient,
             (String) keySharesRecipient.getRecipientId(),
             mobileNumber,
             interactionLanguage

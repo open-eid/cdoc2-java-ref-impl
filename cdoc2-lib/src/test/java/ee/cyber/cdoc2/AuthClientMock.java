@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.authServer;
+package ee.cyber.cdoc2;
 
 import java.util.List;
 import java.util.Map;
@@ -15,7 +15,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 
-public class Cdoc2AuthClientMock {
+public class AuthClientMock {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String DEFAULT_VERIFICATION_CODE = "1234";
@@ -37,7 +37,7 @@ public class Cdoc2AuthClientMock {
 
     private final WireMockExtension wiremock;
 
-    public Cdoc2AuthClientMock(WireMockExtension wiremock) {
+    public AuthClientMock(WireMockExtension wiremock) {
         this.wiremock = wiremock;
     }
 

@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.config;
 
+import java.security.KeyStore;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
@@ -12,7 +13,10 @@ public interface Cdoc2AuthClientConfiguration {
     }
 
     String getHostUrl();
-    String getTrustStore();
-    String getTrustStorePassword();
+    KeyStore getTrustStore();
+    int getReadTimeout();
+    int getConnectTimeout();
+    int getPollingIntervalMs();
+    int getPollingMaxCount();
     boolean getClientServerDebug();
 }

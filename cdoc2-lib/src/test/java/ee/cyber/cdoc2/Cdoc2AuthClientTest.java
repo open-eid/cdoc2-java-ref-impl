@@ -1,5 +1,7 @@
-package ee.cyber.cdoc2.authServer;
+package ee.cyber.cdoc2;
 
+import java.security.GeneralSecurityException;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -10,12 +12,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
 import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.AuthClient;
+import ee.cyber.cdoc2.client.AuthClientImpl;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
+import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.AUTH_SERVER_CLIENT_READ_TIMEOUT;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -29,11 +33,11 @@ public class Cdoc2AuthClientTest {
     private static final String DEFAULT_MOBILE_NR = "1234567890";
     private static final String DEFAULT_VERIFICATION_CODE = "1234";
 
-    private final Cdoc2AuthClient cdoc2AuthClient;
-    private Cdoc2AuthClientMock cdoc2AuthClientMock;
+    private final AuthClient authClient;
+    private AuthClientMock authClientMock;
 
-    Cdoc2AuthClientTest() throws ConfigurationLoadingException {
-        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
+    Cdoc2AuthClientTest() throws ConfigurationLoadingException, GeneralSecurityException {
+        this.authClient = AuthClientImpl.create(getCdoc2AuthClientConfiguration());
     }
 
     @RegisterExtension
@@ -50,19 +54,19 @@ public class Cdoc2AuthClientTest {
 
     @BeforeEach
     void setUp() {
-        cdoc2AuthClientMock = new Cdoc2AuthClientMock(wiremock);
+        authClientMock = new AuthClientMock(wiremock);
     }
 
     @Test
     void successfulStartAuth() throws ExtApiException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
+        authClientMock.stubStartAuthResp(authProccessUuid);
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
             .mobileNr(DEFAULT_MOBILE_NR);
 
-        var startAuthResponse = cdoc2AuthClient.startAuth(authIdentity);
+        var startAuthResponse = authClient.startAuth(authIdentity);
         assertEquals(authProccessUuid, startAuthResponse.uuid());
         assertEquals(DEFAULT_VERIFICATION_CODE, startAuthResponse.verificationCode());
     }
@@ -70,9 +74,9 @@ public class Cdoc2AuthClientTest {
     @Test
     void successfulGetAutStatus() throws ExtApiException, JsonProcessingException {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        authClientMock.stubForAuthStatus(authProccessUuid);
 
-        var authProcessStatusResponse = cdoc2AuthClient.getAuthProcessStatus(authProccessUuid);
+        var authProcessStatusResponse = authClient.pollForCompleteAuthProcessStatus(authProccessUuid);
 
         assertNotNull(authProcessStatusResponse);
         assertNotNull(authProcessStatusResponse.getStatus());
@@ -81,9 +85,9 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void successfulGetWellKnownJwks() throws ExtApiException, JsonProcessingException {
-        cdoc2AuthClientMock.stubForGetWellKnownJwks();
+        authClientMock.stubForGetWellKnownJwks();
 
-        var wellKnownResponse = cdoc2AuthClient.getWellKnown();
+        var wellKnownResponse = authClient.getWellKnown();
 
         assertNotNull(wellKnownResponse);
         assertFalse(wellKnownResponse.getKeys().isEmpty());
@@ -91,7 +95,7 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void networkFaultStartAuth() {
-        cdoc2AuthClientMock.stubStartAuthWithNetworkFault();
+        authClientMock.stubStartAuthWithNetworkFault();
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -99,7 +103,7 @@ public class Cdoc2AuthClientTest {
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.startAuth(authIdentity)
+            () -> authClient.startAuth(authIdentity)
         );
 
         assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
@@ -108,7 +112,7 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void serverErrorStartAuth() {
-        cdoc2AuthClientMock.stubStartAuthWithServerError();
+        authClientMock.stubStartAuthWithServerError();
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -116,7 +120,7 @@ public class Cdoc2AuthClientTest {
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.startAuth(authIdentity)
+            () -> authClient.startAuth(authIdentity)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
@@ -127,7 +131,7 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void badRequestStartAuth() {
-        cdoc2AuthClientMock.stubStartAuthWith400();
+        authClientMock.stubStartAuthWith400();
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -135,7 +139,7 @@ public class Cdoc2AuthClientTest {
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.startAuth(authIdentity)
+            () -> authClient.startAuth(authIdentity)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
@@ -146,7 +150,7 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void notFoundStartAuth() {
-        cdoc2AuthClientMock.stubStartAuthWith404();
+        authClientMock.stubStartAuthWith404();
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -154,7 +158,7 @@ public class Cdoc2AuthClientTest {
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.startAuth(authIdentity)
+            () -> authClient.startAuth(authIdentity)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to start authentication process"),
@@ -164,11 +168,13 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void timeoutStartAuth() throws ConfigurationLoadingException {
-        cdoc2AuthClientMock.stubStartAuthWithDelay();
+    void timeoutStartAuth() throws Exception {
+        authClientMock.stubStartAuthWithDelay();
 
-        Cdoc2AuthClient clientWithTimeout =
-            new Cdoc2AuthClient(getCdoc2AuthClientConfiguration(), SHORT_READ_TIMEOUT_MS);
+        AuthClient clientWithTimeout =
+            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
+            ));
 
         AuthIdentity authIdentity = new AuthIdentity()
             .identifier(DEFAULT_IDENTIFIER + IDENTIFIER_OK)
@@ -186,11 +192,11 @@ public class Cdoc2AuthClientTest {
     @Test
     void badRequestGetAuthStatus() {
         var authProcessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubAuthStatusWith400(authProcessUuid);
+        authClientMock.stubAuthStatusWith400(authProcessUuid);
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.getAuthProcessStatus(authProcessUuid)
+            () -> authClient.pollForCompleteAuthProcessStatus(authProcessUuid)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve auth process status"),
@@ -202,11 +208,11 @@ public class Cdoc2AuthClientTest {
     @Test
     void notFoundGetAuthStatus() {
         var authProcessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubAuthStatusWith404(authProcessUuid);
+        authClientMock.stubAuthStatusWith404(authProcessUuid);
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.getAuthProcessStatus(authProcessUuid)
+            () -> authClient.pollForCompleteAuthProcessStatus(authProcessUuid)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve auth process status"),
@@ -218,11 +224,11 @@ public class Cdoc2AuthClientTest {
     @Test
     void serverErrorGetAuthStatus() {
         var authProcessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubAuthStatusWithServerError(authProcessUuid);
+        authClientMock.stubAuthStatusWithServerError(authProcessUuid);
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> cdoc2AuthClient.getAuthProcessStatus(authProcessUuid)
+            () -> authClient.pollForCompleteAuthProcessStatus(authProcessUuid)
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve auth process status"),
@@ -232,16 +238,18 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void timeoutGetAuthStatus() throws ConfigurationLoadingException {
+    void timeoutGetAuthStatus() throws Exception {
         var authProcessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubAuthStatusWithDelay(authProcessUuid);
+        authClientMock.stubAuthStatusWithDelay(authProcessUuid);
 
-        Cdoc2AuthClient clientWithTimeout =
-            new Cdoc2AuthClient(getCdoc2AuthClientConfiguration(), SHORT_READ_TIMEOUT_MS);
+        AuthClient clientWithTimeout =
+            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
+            ));
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            () -> clientWithTimeout.getAuthProcessStatus(authProcessUuid)
+            () -> clientWithTimeout.pollForCompleteAuthProcessStatus(authProcessUuid)
         );
 
         assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
@@ -250,11 +258,11 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void badRequestGetWellKnown() {
-        cdoc2AuthClientMock.stubWellKnownWith400();
+        authClientMock.stubWellKnownWith400();
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            cdoc2AuthClient::getWellKnown
+            authClient::getWellKnown
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve well-known JWKS"),
@@ -265,11 +273,11 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void notFoundGetWellKnown() {
-        cdoc2AuthClientMock.stubWellKnownWith404();
+        authClientMock.stubWellKnownWith404();
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            cdoc2AuthClient::getWellKnown
+            authClient::getWellKnown
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve well-known JWKS"),
@@ -280,11 +288,11 @@ public class Cdoc2AuthClientTest {
 
     @Test
     void serverErrorGetWellKnown() {
-        cdoc2AuthClientMock.stubWellKnownWithServerError();
+        authClientMock.stubWellKnownWithServerError();
 
         Exception ex = assertThrows(
             ExtApiException.class,
-            cdoc2AuthClient::getWellKnown
+            authClient::getWellKnown
         );
 
         assertTrue(ex.getMessage().startsWith("Failed to retrieve well-known JWKS"),
@@ -294,11 +302,13 @@ public class Cdoc2AuthClientTest {
     }
 
     @Test
-    void timeoutGetWellKnown() throws ConfigurationLoadingException {
-        cdoc2AuthClientMock.stubWellKnownWithDelay();
+    void timeoutGetWellKnown() throws Exception {
+        authClientMock.stubWellKnownWithDelay();
 
-        Cdoc2AuthClient clientWithTimeout =
-            new Cdoc2AuthClient(getCdoc2AuthClientConfiguration(), SHORT_READ_TIMEOUT_MS);
+        AuthClient clientWithTimeout =
+            AuthClientImpl.create(getCdoc2AuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_READ_TIMEOUT, String.valueOf(SHORT_READ_TIMEOUT_MS))
+            ));
 
         Exception ex = assertThrows(
             ExtApiException.class,

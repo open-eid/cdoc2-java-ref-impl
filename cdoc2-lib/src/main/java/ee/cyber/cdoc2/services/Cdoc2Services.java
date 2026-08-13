@@ -11,7 +11,8 @@ import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.AuthClient;
+import ee.cyber.cdoc2.client.AuthClientImpl;
 import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
@@ -121,8 +122,8 @@ public final class Cdoc2Services {
             var config = Cdoc2AuthClientConfiguration.load(
                 loadFromPropertyValue(AUTH_SERVER_PROPERTIES)
             );
-            services.registerService(Cdoc2AuthClient.class,
-                ServiceTemplate.service(config, Cdoc2AuthClient::new), null);
+            services.register(AuthClient.class,
+                AuthClientImpl.create(config), null);
         }
 
         if (isPropertyDefined(RP_SERVER_PROPERTIES)) {

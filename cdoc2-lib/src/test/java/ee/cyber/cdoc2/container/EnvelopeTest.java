@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
@@ -59,12 +60,13 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.TestLifecycleLogger;
-import ee.cyber.cdoc2.authServer.Cdoc2AuthClientMock;
+import ee.cyber.cdoc2.AuthClientMock;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.authserver.Cdoc2AuthClient;
+import ee.cyber.cdoc2.client.AuthClient;
+import ee.cyber.cdoc2.client.AuthClientImpl;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
@@ -118,9 +120,9 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     private static KeyLabelParams bobKeyLabelParams;
 
-    private Cdoc2AuthClientMock cdoc2AuthClientMock;
+    private AuthClientMock authClientMock;
     private Cdoc2RpClientMock cdoc2RpClientMock;
-    private final Cdoc2AuthClient cdoc2AuthClient;
+    private final AuthClient authClient;
 
     private static final int AUTH_WIREMOCK_PORT = 7500;
     private static final int RP_WIREMOCK_PORT = 7600;
@@ -151,7 +153,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @BeforeEach
     void setUp() {
-        cdoc2AuthClientMock = new Cdoc2AuthClientMock(authWiremock);
+        authClientMock = new AuthClientMock(authWiremock);
         cdoc2RpClientMock = new Cdoc2RpClientMock(rpWiremock);
     }
 
@@ -174,8 +176,8 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     Capsule capsuleData;
 
-    EnvelopeTest() throws ConfigurationLoadingException {
-        this.cdoc2AuthClient = new Cdoc2AuthClient(getCdoc2AuthClientConfiguration());
+    EnvelopeTest() throws ConfigurationLoadingException, GeneralSecurityException {
+        this.authClient = AuthClientImpl.create(getCdoc2AuthClientConfiguration());
     }
 
     @BeforeAll
@@ -650,8 +652,8 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     void testKeySharesScenarioWithSmartId(@TempDir Path tempDir) throws Exception {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
-        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        authClientMock.stubStartAuthResp(authProccessUuid);
+        authClientMock.stubForAuthStatus(authProccessUuid);
         cdoc2RpClientMock.stubSidAuthenticate(SESSION_ID);
         cdoc2RpClientMock.stubSidSession(SESSION_ID);
 
@@ -678,7 +680,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(Cdoc2RpClient.class, rpClient, null)
-            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
+            .register(AuthClient.class, authClient, null)
             .build();
 
         checkContainerDecrypt(
@@ -695,8 +697,8 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     void testKeySharesScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
-        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        authClientMock.stubStartAuthResp(authProccessUuid);
+        authClientMock.stubForAuthStatus(authProccessUuid);
         cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
         cdoc2RpClientMock.stubMidSession(SESSION_ID);
 
@@ -726,7 +728,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(Cdoc2RpClient.class, rpClient, null)
-            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
+            .register(AuthClient.class, authClient, null)
             .build();
 
         checkContainerDecrypt(
@@ -806,8 +808,8 @@ class EnvelopeTest implements TestLifecycleLogger {
     @Test
     void testReEncryptionScenarioWithMobileId(@TempDir Path tempDir) throws Exception {
         var authProccessUuid = UUID.randomUUID();
-        cdoc2AuthClientMock.stubStartAuthResp(authProccessUuid);
-        cdoc2AuthClientMock.stubForAuthStatus(authProccessUuid);
+        authClientMock.stubStartAuthResp(authProccessUuid);
+        authClientMock.stubForAuthStatus(authProccessUuid);
         cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
         cdoc2RpClientMock.stubMidSession(SESSION_ID);
 
@@ -855,7 +857,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
             .register(Cdoc2RpClient.class, rpClient, null)
-            .register(Cdoc2AuthClient.class, cdoc2AuthClient, null)
+            .register(AuthClient.class, authClient, null)
             .build();
 
         // run re-encryption flow

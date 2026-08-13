@@ -180,10 +180,10 @@ public abstract class ApiClientBuilder {
         };
 
         apiClient.setBasePath(this.baseUrl);
+        apiClient.setDebugging(debug);
         apiClient.setConnectTimeout(connectTimeoutMs);
         apiClient.setReadTimeout(readTimeoutMs);
 
-        apiClient.setDebugging(debug);
         apiClient.addDefaultHeader("Accept", "application/json");
         apiClient.selectHeaderAccept("application/json");
 

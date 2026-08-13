@@ -108,6 +108,13 @@ public final class Cdoc2ConfigurationProperties {
         "auth-server.client.ssl.trust-store";
     public static final String AUTH_SERVER_CLIENT_TRUST_STORE_PWD
         = "auth-server.client.ssl.trust-store-password";
+    public static final String AUTH_SERVER_CLIENT_READ_TIMEOUT = "auth-server.client.readTimeout";
+    public static final String AUTH_SERVER_CLIENT_CONNECT_TIMEOUT =
+        "auth-server.client.connectTimeout";
+    public static final String AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS =
+        "auth-server.client.polling.intervalMs";
+    public static final String AUTH_SERVER_CLIENT_POLLING_MAX_COUNT =
+        "auth-server.client.polling.maxCount";
 
     /**
      * Defines CDOC2 RP Server properties file location

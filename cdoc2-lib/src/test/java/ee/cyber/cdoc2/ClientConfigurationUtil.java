@@ -46,10 +46,20 @@ public final class ClientConfigurationUtil {
             DEMO_ENV_PROPERTIES.getProperty(RP_SERVER_PROPERTIES)));
     }
 
-    public static Cdoc2AuthClientConfiguration getCdoc2AuthClientConfiguration() throws ConfigurationLoadingException {
-        return Cdoc2AuthClientConfiguration.load(PropertiesLoader.loadProperties(
+    public static Cdoc2AuthClientConfiguration getCdoc2AuthClientConfiguration() {
+        return getCdoc2AuthClientConfiguration(Map.of());
+    }
+
+    public static Cdoc2AuthClientConfiguration getCdoc2AuthClientConfiguration(
+        Map<String, String> propOverrides) throws ConfigurationLoadingException {
+
+        Properties properties = PropertiesLoader.loadProperties(
             DEMO_ENV_PROPERTIES.getProperty(AUTH_SERVER_PROPERTIES)
-        ));
+        );
+
+        properties.putAll(propOverrides);
+
+        return Cdoc2AuthClientConfiguration.load(properties);
     }
 
     public static KeySharesConfiguration initKeySharesTestEnvConfiguration() throws ConfigurationLoadingException {
