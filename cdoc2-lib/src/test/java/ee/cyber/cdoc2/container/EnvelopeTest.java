@@ -58,19 +58,20 @@ import org.slf4j.LoggerFactory;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 
+import ee.cyber.cdoc2.AuthClientMock;
 import ee.cyber.cdoc2.CDocBuilder;
 import ee.cyber.cdoc2.TestLifecycleLogger;
-import ee.cyber.cdoc2.AuthClientMock;
+import ee.cyber.cdoc2.client.AuthClient;
+import ee.cyber.cdoc2.client.AuthClientImpl;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.AuthClient;
-import ee.cyber.cdoc2.client.AuthClientImpl;
+import ee.cyber.cdoc2.client.RpClient;
+import ee.cyber.cdoc2.client.RpClientImpl;
 import ee.cyber.cdoc2.client.model.Capsule;
 import ee.cyber.cdoc2.client.model.KeyShare;
 import ee.cyber.cdoc2.client.model.NonceResponse;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.container.recipients.EccRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
@@ -93,7 +94,7 @@ import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
 import ee.cyber.cdoc2.mobileid.MIDTestData;
-import ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock;
+import ee.cyber.cdoc2.rpserver.RpClientMock;
 import ee.cyber.cdoc2.services.Services;
 import ee.cyber.cdoc2.services.ServicesBuilder;
 
@@ -121,7 +122,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     private static KeyLabelParams bobKeyLabelParams;
 
     private AuthClientMock authClientMock;
-    private Cdoc2RpClientMock cdoc2RpClientMock;
+    private RpClientMock rpClientMock;
     private final AuthClient authClient;
 
     private static final int AUTH_WIREMOCK_PORT = 7500;
@@ -154,7 +155,7 @@ class EnvelopeTest implements TestLifecycleLogger {
     @BeforeEach
     void setUp() {
         authClientMock = new AuthClientMock(authWiremock);
-        cdoc2RpClientMock = new Cdoc2RpClientMock(rpWiremock);
+        rpClientMock = new RpClientMock(rpWiremock);
     }
 
     @Mock
@@ -654,8 +655,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         var authProccessUuid = UUID.randomUUID();
         authClientMock.stubStartAuthResp(authProccessUuid);
         authClientMock.stubForAuthStatus(authProccessUuid);
-        cdoc2RpClientMock.stubSidAuthenticate(SESSION_ID);
-        cdoc2RpClientMock.stubSidSession(SESSION_ID);
+        rpClientMock.stubSidAuthenticate(SESSION_ID);
+        rpClientMock.stubSidSession(SESSION_ID);
 
         setupKeyShareClientMocks();
 
@@ -676,10 +677,10 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         verifyMockedKeyShareClients();
 
-        Cdoc2RpClient rpClient = new Cdoc2RpClient(getCdoc2RpClientDemoEnvConfiguration());
+        RpClient rpClient = RpClientImpl.create(getCdoc2RpClientDemoEnvConfiguration());
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
-            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(RpClient.class, rpClient, null)
             .register(AuthClient.class, authClient, null)
             .build();
 
@@ -699,8 +700,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         var authProccessUuid = UUID.randomUUID();
         authClientMock.stubStartAuthResp(authProccessUuid);
         authClientMock.stubForAuthStatus(authProccessUuid);
-        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
-        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+        rpClientMock.stubMidAuthenticate(SESSION_ID);
+        rpClientMock.stubMidSession(SESSION_ID);
 
         // MID demo env that authenticates automatically
         setupKeyShareClientMocks();
@@ -723,11 +724,11 @@ class EnvelopeTest implements TestLifecycleLogger {
 
         verifyMockedKeyShareClients();
 
-        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
+        RpClient rpClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
-            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(RpClient.class, rpClient, null)
             .register(AuthClient.class, authClient, null)
             .build();
 
@@ -810,8 +811,8 @@ class EnvelopeTest implements TestLifecycleLogger {
         var authProccessUuid = UUID.randomUUID();
         authClientMock.stubStartAuthResp(authProccessUuid);
         authClientMock.stubForAuthStatus(authProccessUuid);
-        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
-        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+        rpClientMock.stubMidAuthenticate(SESSION_ID);
+        rpClientMock.stubMidSession(SESSION_ID);
 
         // encrypt initial cdoc2 document
         setupKeyShareClientMocks();
@@ -852,11 +853,11 @@ class EnvelopeTest implements TestLifecycleLogger {
         when(mockKeySharesClient1.createKeyShareNonce(any(), any(), any())).thenReturn(nonce1);
         when(mockKeySharesClient2.createKeyShareNonce(any(), any(), any())).thenReturn(nonce2);
 
-        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
+        RpClient rpClient = MIDTestData.getDemoEnvClient();
 
         Services services = new ServicesBuilder()
             .register(KeySharesClientFactory.class, sharesClientFactory, null)
-            .register(Cdoc2RpClient.class, rpClient, null)
+            .register(RpClient.class, rpClient, null)
             .register(AuthClient.class, authClient, null)
             .build();
 
@@ -1288,7 +1289,6 @@ class EnvelopeTest implements TestLifecycleLogger {
         //extracted files were deleted
         assertTrue(Arrays.stream(outDir.toFile().listFiles()).toList().isEmpty());
     }
-
 
     // test that near max size header can be created and parsed
     //TODO fails at senderEnvelope.serializeHeader() with

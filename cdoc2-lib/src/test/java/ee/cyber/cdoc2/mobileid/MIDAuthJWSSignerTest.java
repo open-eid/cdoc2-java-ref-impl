@@ -23,16 +23,16 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import ee.cyber.cdoc2.crypto.jwt.SessionToken;
-import ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock;
+import ee.cyber.cdoc2.rpserver.RpClientMock;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.AuthClientMock.SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL;
-import static ee.cyber.cdoc2.rpserver.Cdoc2RpClientMock.MID_SIGNING_CERTIFICATE_BASE64URL;
+import static ee.cyber.cdoc2.rpserver.RpClientMock.MID_SIGNING_CERTIFICATE_BASE64URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -43,7 +43,7 @@ public class MIDAuthJWSSignerTest {
     private static final int RP_WIREMOCK_PORT = 7600;
     private static final UUID SESSION_ID = UUID.fromString("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
-    private Cdoc2RpClientMock cdoc2RpClientMock;
+    private RpClientMock rpClientMock;
 
     @RegisterExtension
     static WireMockExtension rpWiremock = WireMockExtension.newInstance()
@@ -59,16 +59,16 @@ public class MIDAuthJWSSignerTest {
 
     @BeforeEach
     void setUp() {
-        cdoc2RpClientMock = new Cdoc2RpClientMock(rpWiremock);
+        rpClientMock = new RpClientMock(rpWiremock);
     }
 
     @Tag("net")
     @Test
     void testGenerateJWTWithMIDSignature() throws Exception {
-        cdoc2RpClientMock.stubMidAuthenticate(SESSION_ID);
-        cdoc2RpClientMock.stubMidSession(SESSION_ID);
+        rpClientMock.stubMidAuthenticate(SESSION_ID);
+        rpClientMock.stubMidSession(SESSION_ID);
 
-        Cdoc2RpClient rpClient = MIDTestData.getDemoEnvClient();
+        RpClient rpClient = MIDTestData.getDemoEnvClient();
         assertNotNull(rpClient);
 
         SessionToken sessionToken = new SessionToken(

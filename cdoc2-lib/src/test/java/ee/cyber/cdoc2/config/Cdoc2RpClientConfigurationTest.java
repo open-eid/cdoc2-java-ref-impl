@@ -10,13 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class Cdoc2RpClientConfigurationTest {
     private static final String HOST_URL = "https://localhost:7600";
-    private static final String CERTIFICATE_LEVEL = "QUALIFIED";
 
     @Test
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
         Cdoc2RpClientConfiguration rpClientConfiguration = getCdoc2RpClientDemoEnvConfiguration();
 
         assertEquals(HOST_URL, rpClientConfiguration.getHostUrl());
-        assertEquals(CERTIFICATE_LEVEL, rpClientConfiguration.getCertificateLevel());
+        assertEquals(
+            Cdoc2RpClientConfigurationProps.CertificateLevel.QUALIFIED,
+            rpClientConfiguration.getCertificateLevel()
+        );
     }
 }

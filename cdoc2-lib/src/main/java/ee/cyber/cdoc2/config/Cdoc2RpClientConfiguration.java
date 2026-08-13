@@ -1,5 +1,6 @@
 package ee.cyber.cdoc2.config;
 
+import java.security.KeyStore;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.client.model.MidDisplayTextFormat;
@@ -15,11 +16,13 @@ public interface Cdoc2RpClientConfiguration {
 
     String getHostUrl();
 
-    String getCertificateLevel();
+    Cdoc2RpClientConfigurationProps.CertificateLevel getCertificateLevel();
 
-    String getTrustStore();
+    KeyStore getTrustStore();
 
-    String getTrustStorePassword();
+    int getReadTimeout();
+
+    int getConnectTimeout();
 
     MidDisplayTextFormat getMidDisplayTextFormat();
 

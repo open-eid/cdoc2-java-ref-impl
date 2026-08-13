@@ -28,7 +28,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
@@ -38,7 +38,6 @@ import ee.cyber.cdoc2.services.Cdoc2Services;
 
 import static ee.cyber.cdoc2.ClientConfigurationUtil.DEMO_ENV_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.*;
-
 
 class JWSSignerTest {
 
@@ -92,8 +91,8 @@ class JWSSignerTest {
 
         EtsiIdentifier signerId = new EtsiIdentifier("etsi/PNOEE-" + IDENTITY_NUMBER);
 
-        Cdoc2RpClient rpClient =
-            Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(Cdoc2RpClient.class);
+        RpClient rpClient =
+            Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(RpClient.class);
 
         final String[] verificationCode = {null};
 

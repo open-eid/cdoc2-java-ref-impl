@@ -13,10 +13,16 @@ public interface Cdoc2AuthClientConfiguration {
     }
 
     String getHostUrl();
+
     KeyStore getTrustStore();
+
     int getReadTimeout();
+
     int getConnectTimeout();
+
     int getPollingIntervalMs();
+
     int getPollingMaxCount();
+
     boolean getClientServerDebug();
 }

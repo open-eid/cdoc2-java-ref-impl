@@ -6,14 +6,15 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.client.AuthClient;
+import ee.cyber.cdoc2.client.AuthClientImpl;
 import ee.cyber.cdoc2.client.KeyCapsuleClient;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeyCapsuleClientImpl;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
-import ee.cyber.cdoc2.client.AuthClient;
-import ee.cyber.cdoc2.client.AuthClientImpl;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.client.RpClient;
+import ee.cyber.cdoc2.client.RpClientImpl;
 import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
 import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
@@ -132,8 +133,8 @@ public final class Cdoc2Services {
             var config = Cdoc2RpClientConfiguration.load(
                 loadFromPropertyValue(RP_SERVER_PROPERTIES)
             );
-            services.registerService(Cdoc2RpClient.class,
-                ServiceTemplate.service(config, Cdoc2RpClient::new), null);
+            services.registerService(RpClient.class,
+                ServiceTemplate.service(config, RpClientImpl::create), null);
         }
 
         return services.build();

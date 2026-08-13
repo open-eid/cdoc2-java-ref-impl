@@ -125,6 +125,9 @@ public final class Cdoc2ConfigurationProperties {
     public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
+    public static final String RP_SERVER_CLIENT_READ_TIMEOUT = "rp-server.client.readTimeout";
+    public static final String RP_SERVER_CLIENT_CONNECT_TIMEOUT =
+        "rp-server.client.connectTimeout";
 
     public static final String RP_SERVER_MID_DISPLAY_TEXT_FORMAT
         = "rp-server.mid.display-text-format";

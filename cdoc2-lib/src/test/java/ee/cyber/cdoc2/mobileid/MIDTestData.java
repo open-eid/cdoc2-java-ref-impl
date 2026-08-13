@@ -7,7 +7,8 @@ import com.nimbusds.jose.jwk.JWK;
 
 import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.auth.RpHttpSignatureVerifier;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
+import ee.cyber.cdoc2.client.RpClient;
+import ee.cyber.cdoc2.client.RpClientImpl;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
@@ -64,10 +65,11 @@ public final class MIDTestData {
     private MIDTestData() {
     }
 
-    public static Cdoc2RpClient getDemoEnvClient() throws ConfigurationLoadingException {
+    public static RpClient getDemoEnvClient()
+        throws ConfigurationLoadingException {
         Cdoc2RpClientConfiguration demoEnvConfiguration =
             ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
-        return new Cdoc2RpClient(demoEnvConfiguration);
+        return RpClientImpl.create(demoEnvConfiguration);
     }
 
     public static RpHttpSignatureVerifier.RpHttpSignatureParams getDefaultHttpSignatureParams()

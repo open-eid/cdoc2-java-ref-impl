@@ -1,25 +1,16 @@
-package ee.cyber.cdoc2.client.rpserver;
+package ee.cyber.cdoc2.client;
 
 import jakarta.annotation.Nonnull;
-import jakarta.ws.rs.client.ClientBuilder;
 
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
 import java.util.UUID;
-import javax.net.ssl.SSLContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.api.ApiClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.api.ApiResponse;
-import ee.cyber.cdoc2.client.api.Cdoc2RpApi;
 import ee.cyber.cdoc2.client.model.MidAuthenticateRequest;
 import ee.cyber.cdoc2.client.model.MidDisplayTextFormat;
 import ee.cyber.cdoc2.client.model.MidHashType;
@@ -29,42 +20,50 @@ import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
 import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
-import ee.cyber.cdoc2.util.ApiClientUtil;
 
-public class Cdoc2RpClient {
-    private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClient.class);
-
-    private final Cdoc2RpApi cdoc2RpApi;
-    private final CertificateLevel certificateLevel;
+public final class RpClientImpl implements RpClient {
+    private static final Logger log = LoggerFactory.getLogger(RpClientImpl.class);
+    private final Cdoc2RpApiClient cdoc2RpApiClient;
+    private final String serverUrl;
     private final Cdoc2RpClientConfiguration cdoc2RpClientConfiguration;
 
-    /**
-     * Constructs a {@code Cdoc2AuthClient} from the supplied configuration.
-     *
-     * @param conf client configuration
-     */
-    public Cdoc2RpClient(@Nonnull Cdoc2RpClientConfiguration conf) {
-        try {
-            this.cdoc2RpApi = buildApi(conf);
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | KeyStoreException
-                 | KeyManagementException e) {
-            throw new RuntimeException(e);
-        }
-        this.certificateLevel = CertificateLevel.valueOf(conf.getCertificateLevel());
-        this.cdoc2RpClientConfiguration = conf;
+    private RpClientImpl(
+        Cdoc2RpApiClient cdoc2RpApiClient,
+        Cdoc2RpClientConfiguration config
+    ) {
+        this.cdoc2RpApiClient = cdoc2RpApiClient;
+        this.serverUrl = config.getHostUrl();
+        this.cdoc2RpClientConfiguration = config;
     }
 
+    public static RpClient create(Cdoc2RpClientConfiguration config) {
+
+        RpClientBuilder builder = (RpClientBuilder) Cdoc2RpApiClient.builder()
+            .withBaseUrl(config.getHostUrl())
+            .withTrustKeyStore(config.getTrustStore())
+            .withReadTimeoutMs(config.getReadTimeout())
+            .withConnectTimeoutMs(config.getConnectTimeout())
+            .withDebuggingEnabled(config.getClientServerDebug());
+
+        try {
+            return new RpClientImpl(builder.build(), config);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public UUID sidAuthenticate(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
         @Nonnull SidAuthenticateRequest request
     ) throws ExtApiException {
         try {
-            return cdoc2RpApi.sidAuthenticateWithHttpInfo(
+            return cdoc2RpApiClient.sidAuthenticate(
                 xCdoc2SessionToken,
                 xCdoc2SessionX5c,
                 request
-            ).getData().getSessionID();
+            );
         } catch (ApiException e) {
             throw wrapApiException("RP SID authenticate request error. ", e);
         } catch (Exception e) {
@@ -72,13 +71,14 @@ public class Cdoc2RpClient {
         }
     }
 
+    @Override
     public SessionStatusResponse sidSession(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
         @Nonnull UUID sessionId
     ) throws ExtApiException {
         try {
-            return cdoc2RpApi.sidSession(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
+            return cdoc2RpApiClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
         } catch (ApiException e) {
             throw wrapApiException("RP SID session request error. ", e);
         } catch (Exception e) {
@@ -86,6 +86,7 @@ public class Cdoc2RpClient {
         }
     }
 
+    @Override
     public UUID midAuthenticate(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
@@ -94,7 +95,6 @@ public class Cdoc2RpClient {
         byte[] hash,
         String hashType,
         InteractionParams interactionParams
-
     ) throws ExtApiException {
         try {
             MidAuthenticateRequest request = new MidAuthenticateRequest()
@@ -108,11 +108,11 @@ public class Cdoc2RpClient {
                 .language(getLanguage(interactionParams))
                 .displayTextFormat(getEncoding(interactionParams));
 
-            return cdoc2RpApi.midAuthenticateWithHttpInfo(
+            return cdoc2RpApiClient.midAuthenticate(
                 xCdoc2SessionToken,
                 xCdoc2SessionX5c,
                 request
-            ).getData().getSessionID();
+            );
         } catch (ApiException e) {
             throw wrapApiException("RP MID authenticate request error. ", e);
         } catch (Exception e) {
@@ -120,14 +120,15 @@ public class Cdoc2RpClient {
         }
     }
 
+    @Override
     public ApiResponse<MidSessionStatusResponse> midSession(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
         @Nonnull UUID sessionId
     ) throws ExtApiException {
         try {
-            return cdoc2RpApi
-                .midSessionWithHttpInfo(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
+            return cdoc2RpApiClient
+                .midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
         } catch (ApiException e) {
             throw wrapApiException("RP MID session request error. ", e);
         } catch (Exception e) {
@@ -135,44 +136,19 @@ public class Cdoc2RpClient {
         }
     }
 
-    public String getBaseUrl() {
-        return cdoc2RpApi.getApiClient().getBasePath();
+    @Override
+    public String getBasePath() {
+        return cdoc2RpApiClient.getBasePath();
     }
 
     public String getCertificateLevel() {
-        return certificateLevel.name();
-    }
-
-    private static Cdoc2RpApi buildApi(Cdoc2RpClientConfiguration conf)
-        throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-
-        KeyStore trustStore = ApiClientUtil.loadClientTrustKeyStore(
-            conf.getTrustStore(),
-            "JKS",
-            conf.getTrustStorePassword()
-        );
-        SSLContext sslContext = ApiClientUtil.createSslContext(trustStore, log);
-
-        ApiClient apiClient = new ApiClient() {
-            @Override
-            protected void customizeClientBuilder(ClientBuilder clientBuilder) {
-                if (sslContext != null) {
-                    clientBuilder.sslContext(sslContext);
-                }
-            }
-        };
-
-        apiClient.setBasePath(conf.getHostUrl());
-        apiClient.setDebugging(conf.getClientServerDebug());
-
-        log.info("Cdoc2RpClient configured with base URL: {}", conf.getHostUrl());
-        return new Cdoc2RpApi(apiClient);
+        return cdoc2RpClientConfiguration.getCertificateLevel().name();
     }
 
     /**
      * Get MID language from interactionParams if defined, otherwise get default value from configuration
      */
-    protected MidLanguage getLanguage(InteractionParams interactionParams) {
+    private MidLanguage getLanguage(InteractionParams interactionParams) {
         if (interactionParams != null && interactionParams.getInteractionLanguage() != null) {
             return switch (interactionParams.getInteractionLanguage()) {
                 case ET -> MidLanguage.EST;
@@ -188,7 +164,7 @@ public class Cdoc2RpClient {
     /**
      * Get MidDisplayTextFormat from interactionParams if defined, otherwise get default value from configuration
      */
-    protected MidDisplayTextFormat getEncoding(InteractionParams interactionParams) {
+    private MidDisplayTextFormat getEncoding(InteractionParams interactionParams) {
         MidDisplayTextFormat enc = cdoc2RpClientConfiguration.getMidDisplayTextFormat();
         if (interactionParams != null) {
             String iEnc = interactionParams.getEncoding();
@@ -207,7 +183,7 @@ public class Cdoc2RpClient {
     /**
      * Get displayText from interactionParams
      */
-    protected String getDisplayText(InteractionParams interactionParams) {
+    private String getDisplayText(InteractionParams interactionParams) {
 
         // Mobile-ID doesn't support interactionType and text length is limited to 100 bytes -
         // 50 chars for UCS2 and 100 chars for GSM7
@@ -218,19 +194,10 @@ public class Cdoc2RpClient {
             : interactionParams.getDisplayText(50);
     }
 
-    private ExtApiException wrapNetworkException(Exception ex) {
-        String baseUrl = cdoc2RpApi.getApiClient().getBasePath();
-        log.error("{} {}: {}", "Failed to connect to RP server", baseUrl, ex.getMessage(), ex);
-        String detail = (ex.getCause() instanceof IOException)
-            ? ex.getCause().getMessage()
-            : ex.getMessage();
-        return new ExtApiException("Failed to connect to RP server" + " " + baseUrl + ": " + detail, ex);
-    }
-
     private static ExtApiException wrapApiException(String context, ApiException ex) {
         String detail = switch (ex.getCode()) {
             case 400 -> "Bad request — check the parameters";
-            case 401 -> "Unauthorized — session token validation failure";
+            case 401 -> "Unauthorized — missing or invalid auth ticket";
             case 403 -> "Forbidden — authentication failed";
             case 404 -> "Not found — record missing or recipient ID mismatch";
             default -> "Unexpected server response";
@@ -241,8 +208,18 @@ public class Cdoc2RpClient {
         );
     }
 
-    enum CertificateLevel {
-        ADVANCED,
-        QUALIFIED
+    private ExtApiException wrapNetworkException(Exception ex) {
+        log.error("{} {}: {}", "Failed to connect to authentication server",
+            this.serverUrl,
+            ex.getMessage(),
+            ex
+        );
+        String detail = (ex.getCause() instanceof IOException)
+            ? ex.getCause().getMessage()
+            : ex.getMessage();
+        return new ExtApiException(
+            "Failed to connect to authentication server" + " " + this.serverUrl + ": " + detail,
+            ex
+        );
     }
 }

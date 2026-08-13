@@ -19,17 +19,17 @@ import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.UserErrorCode;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
+import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.EcCapsuleClient;
 import ee.cyber.cdoc2.client.EcCapsuleClientImpl;
 import ee.cyber.cdoc2.client.ExtApiException;
 import ee.cyber.cdoc2.client.KeyCapsuleClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClient;
 import ee.cyber.cdoc2.client.RsaCapsuleClientImpl;
-import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.model.KeyShare;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.recipients.EccPubKeyRecipient;
 import ee.cyber.cdoc2.container.recipients.EccServerKeyRecipient;
@@ -404,11 +404,11 @@ public final class KekTools {
 
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier(decryptKeyMaterial.getAuthIdentifier().getEtsiIdentifier());
 
-        if (!services.hasService(Cdoc2RpClient.class)) {
-            throw new CDocException("Cdoc2RpClient not initialized. "
+        if (!services.hasService(RpClient.class)) {
+            throw new CDocException("RpClient not initialized. "
                 + "Make sure you have provided the -Drp-server.properties option.");
         }
-        Cdoc2RpClient rpClient = services.get(Cdoc2RpClient.class);
+        RpClient rpClient = services.get(RpClient.class);
 
         switch (authType) {
             case SID -> {
