@@ -1,8 +1,10 @@
 # Changelog
 
-## [3.4.4]
+## [3.5.0]
 ### Improvements
-* updated auth-server openapi version
+* Updated auth-server openapi version
+* Refactored API clients for Auth and RP APIs to match general pattern - Cdoc2AuthApiClient and 
+  Cdoc2RpApiClient are now available in cdoc2-client module
 
 ## [3.4.3]
 ### Improvements
