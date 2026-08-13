@@ -5,6 +5,13 @@
 * Updated auth-server openapi version
 * Refactored API clients for Auth and RP APIs to match general pattern - Cdoc2AuthApiClient and 
   Cdoc2RpApiClient are now available in cdoc2-client module
+* new configuration options for auth and rp clients:
+  * `auth-server.client.readTimeout`
+  * `auth-server.client.connectTimeout`
+  * `auth-server.client.polling.intervalMs`
+  * `auth-server.client.polling.maxCount`
+  * `rp-server.client.readTimeout`
+  * `rp-server.client.connectTimeout`
 
 ## [3.4.3]
 ### Improvements
