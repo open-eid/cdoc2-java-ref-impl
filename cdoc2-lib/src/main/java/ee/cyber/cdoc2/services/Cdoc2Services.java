@@ -15,24 +15,24 @@ import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
 import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.RpClientImpl;
-import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
-import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
+import ee.cyber.cdoc2.config.AuthClientConfiguration;
+import ee.cyber.cdoc2.config.ConfigurationProperties;
+import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.config.KeyCapsuleClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.PropertiesLoader;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 
 /**
  * Initialize Services from properties.
  * Checks if following properties are defined and initializes services accordingly:
  * <ul>
- *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#KEY_CAPSULE_POST_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#KEY_SHARES_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#AUTH_SERVER_PROPERTIES}</li>
- *     <li>{@link Cdoc2ConfigurationProperties#RP_SERVER_PROPERTIES}</li>
+ *     <li>{@link ConfigurationProperties#KEY_CAPSULE_PROPERTIES}</li>
+ *     <li>{@link ConfigurationProperties#KEY_CAPSULE_POST_PROPERTIES}</li>
+ *     <li>{@link ConfigurationProperties#KEY_SHARES_PROPERTIES}</li>
+ *     <li>{@link ConfigurationProperties#AUTH_SERVER_PROPERTIES}</li>
+ *     <li>{@link ConfigurationProperties#RP_SERVER_PROPERTIES}</li>
  * </ul>
  * <p>
  * For example define following properties:
@@ -120,7 +120,7 @@ public final class Cdoc2Services {
         if (isPropertyDefined(AUTH_SERVER_PROPERTIES)) {
             log.info("Initializing Authentication server client from {}",
                 propertiesLocations.getProperty(AUTH_SERVER_PROPERTIES));
-            var config = Cdoc2AuthClientConfiguration.load(
+            var config = AuthClientConfiguration.load(
                 loadFromPropertyValue(AUTH_SERVER_PROPERTIES)
             );
             services.register(AuthClient.class,
@@ -130,7 +130,7 @@ public final class Cdoc2Services {
         if (isPropertyDefined(RP_SERVER_PROPERTIES)) {
             log.info("Initializing RP server client from {}",
                 propertiesLocations.getProperty(RP_SERVER_PROPERTIES));
-            var config = Cdoc2RpClientConfiguration.load(
+            var config = RpClientConfiguration.load(
                 loadFromPropertyValue(RP_SERVER_PROPERTIES)
             );
             services.registerService(RpClient.class,

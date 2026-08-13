@@ -12,7 +12,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ApiClientUtil;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 
@@ -26,7 +26,7 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param midLanguage          MID language
  * @param clientServerDebug    turn on debug logs for client
  */
-public record Cdoc2RpClientConfigurationProps(
+public record RpClientConfigurationProps(
     String hostUrl,
     CertificateLevel certificateLevel,
     KeyStore trustStore,
@@ -35,7 +35,7 @@ public record Cdoc2RpClientConfigurationProps(
     MidDisplayTextFormat midDisplayTextFormat,
     MidLanguage midLanguage,
     boolean clientServerDebug
-) implements Cdoc2RpClientConfiguration {
+) implements RpClientConfiguration {
     private static final String DEFAULT_MID_DISPLAY_TEXT_FORMAT = "GSM_7";
     private static final String DEFAULT_MID_LANGUAGE = "ENG";
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
@@ -46,9 +46,9 @@ public record Cdoc2RpClientConfigurationProps(
         QUALIFIED
     }
 
-    private static final Logger log = LoggerFactory.getLogger(Cdoc2RpClientConfigurationProps.class);
+    private static final Logger log = LoggerFactory.getLogger(RpClientConfigurationProps.class);
 
-    public static Cdoc2RpClientConfiguration load(Properties properties)
+    public static RpClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
 
         log.debug("Loading CDOC2 authentication server client configuration.");
@@ -84,7 +84,7 @@ public record Cdoc2RpClientConfigurationProps(
         );
         Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
-        return new Cdoc2RpClientConfigurationProps(
+        return new RpClientConfigurationProps(
             hostUrl, certificateLevel, trustStore, readTimeout, connectTimeout,
             displayTextFormat, language, clientServerDebug
         );

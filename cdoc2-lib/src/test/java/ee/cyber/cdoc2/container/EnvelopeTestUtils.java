@@ -60,7 +60,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createKeySharesKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;

@@ -1,6 +1,6 @@
 package ee.cyber.cdoc2.container;
 
-import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
+import ee.cyber.cdoc2.config.ConfigurationProperties;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -222,7 +222,7 @@ public class TarDeflate implements AutoCloseable {
             throw new IOException(tarArchiveEntry.getName() + " creates file outside of " + absOutDir);
         }
 
-        if (!Cdoc2ConfigurationProperties.isOverWriteAllowed() && Files.exists(newPath)) {
+        if (!ConfigurationProperties.isOverWriteAllowed() && Files.exists(newPath)) {
             log.info("File {} already exists.", newPath.toAbsolutePath());
             throw new FileAlreadyExistsException(newPath.toAbsolutePath().toString());
         }

@@ -17,7 +17,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 import ee.cyber.cdoc2.util.Resources;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 
 

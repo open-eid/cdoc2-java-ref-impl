@@ -5,11 +5,11 @@ import java.util.Properties;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-public interface Cdoc2AuthClientConfiguration {
+public interface AuthClientConfiguration {
 
-    static Cdoc2AuthClientConfiguration load(Properties properties)
+    static AuthClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
-        return Cdoc2AuthClientConfigurationProps.load(properties);
+        return AuthClientConfigurationProps.load(properties);
     }
 
     String getHostUrl();

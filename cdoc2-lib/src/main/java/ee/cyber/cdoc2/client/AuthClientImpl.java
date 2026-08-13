@@ -14,7 +14,7 @@ import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.client.model.WellKnownResponse;
-import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
+import ee.cyber.cdoc2.config.AuthClientConfiguration;
 
 public final class AuthClientImpl implements AuthClient {
     private static final TimeUnit STATUS_POLL_SLEEP_TIMEUNIT = TimeUnit.MILLISECONDS;
@@ -28,7 +28,7 @@ public final class AuthClientImpl implements AuthClient {
 
     private AuthClientImpl(
         Cdoc2AuthApiClient cdoc2AuthApiClient,
-        Cdoc2AuthClientConfiguration config
+        AuthClientConfiguration config
     ) {
         this.cdoc2AuthApiClient = cdoc2AuthApiClient;
         this.serverUrl = config.getHostUrl();
@@ -36,7 +36,7 @@ public final class AuthClientImpl implements AuthClient {
         this.pollingMaxCount = config.getPollingMaxCount();
     }
 
-    public static AuthClient create(Cdoc2AuthClientConfiguration config)
+    public static AuthClient create(AuthClientConfiguration config)
         throws GeneralSecurityException {
 
         AuthClientBuilder builder = (AuthClientBuilder) Cdoc2AuthApiClient.builder()

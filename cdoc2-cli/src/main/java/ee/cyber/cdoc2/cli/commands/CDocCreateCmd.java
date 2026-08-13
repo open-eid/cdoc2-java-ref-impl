@@ -32,7 +32,7 @@ import java.util.concurrent.Callable;
 import javax.naming.NamingException;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.getServerProperties;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.KEY_CAPSULE_POST_PROPERTIES;
 import static ee.cyber.cdoc2.util.LoggingUtil.censorFileNames;
 
 //S106 - Standard outputs should not be used directly to log anything

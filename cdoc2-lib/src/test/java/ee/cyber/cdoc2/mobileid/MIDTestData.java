@@ -9,7 +9,7 @@ import ee.cyber.cdoc2.ClientConfigurationUtil;
 import ee.cyber.cdoc2.auth.RpHttpSignatureVerifier;
 import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.RpClientImpl;
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
+import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 public final class MIDTestData {
@@ -67,7 +67,7 @@ public final class MIDTestData {
 
     public static RpClient getDemoEnvClient()
         throws ConfigurationLoadingException {
-        Cdoc2RpClientConfiguration demoEnvConfiguration =
+        RpClientConfiguration demoEnvConfiguration =
             ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration();
         return RpClientImpl.create(demoEnvConfiguration);
     }

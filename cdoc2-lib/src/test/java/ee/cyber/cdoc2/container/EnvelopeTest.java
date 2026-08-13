@@ -101,7 +101,7 @@ import ee.cyber.cdoc2.services.ServicesBuilder;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.*;
 import static ee.cyber.cdoc2.KeyUtil.*;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.OVERWRITE_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.OVERWRITE_PROPERTY;
 import static ee.cyber.cdoc2.container.EnvelopeTestUtils.*;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.EllipticCurve.*;

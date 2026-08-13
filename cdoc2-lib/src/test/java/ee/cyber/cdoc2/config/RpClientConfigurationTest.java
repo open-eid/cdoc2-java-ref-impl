@@ -8,16 +8,16 @@ import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2RpClientDemoEnvConf
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-class Cdoc2RpClientConfigurationTest {
+class RpClientConfigurationTest {
     private static final String HOST_URL = "https://localhost:7600";
 
     @Test
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
-        Cdoc2RpClientConfiguration rpClientConfiguration = getCdoc2RpClientDemoEnvConfiguration();
+        RpClientConfiguration rpClientConfiguration = getCdoc2RpClientDemoEnvConfiguration();
 
         assertEquals(HOST_URL, rpClientConfiguration.getHostUrl());
         assertEquals(
-            Cdoc2RpClientConfigurationProps.CertificateLevel.QUALIFIED,
+            RpClientConfigurationProps.CertificateLevel.QUALIFIED,
             rpClientConfiguration.getCertificateLevel()
         );
     }

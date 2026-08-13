@@ -4,9 +4,9 @@ package ee.cyber.cdoc2.config;
 /**
  * CDOC2 configuration properties
  */
-public final class Cdoc2ConfigurationProperties {
+public final class ConfigurationProperties {
 
-    private Cdoc2ConfigurationProperties() {
+    private ConfigurationProperties() {
     }
 
     /**

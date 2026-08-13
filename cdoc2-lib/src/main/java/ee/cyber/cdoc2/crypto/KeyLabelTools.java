@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelFileNameAllowedToBeAdded;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.isKeyLabelFileNameAllowedToBeAdded;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.KeyLabelDataVersion.toNumbericString;
 
 

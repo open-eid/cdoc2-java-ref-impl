@@ -18,25 +18,25 @@ import ee.cyber.cdoc2.client.model.MidLanguage;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
+import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 
 public final class RpClientImpl implements RpClient {
     private static final Logger log = LoggerFactory.getLogger(RpClientImpl.class);
     private final Cdoc2RpApiClient cdoc2RpApiClient;
     private final String serverUrl;
-    private final Cdoc2RpClientConfiguration cdoc2RpClientConfiguration;
+    private final RpClientConfiguration rpClientConfiguration;
 
     private RpClientImpl(
         Cdoc2RpApiClient cdoc2RpApiClient,
-        Cdoc2RpClientConfiguration config
+        RpClientConfiguration config
     ) {
         this.cdoc2RpApiClient = cdoc2RpApiClient;
         this.serverUrl = config.getHostUrl();
-        this.cdoc2RpClientConfiguration = config;
+        this.rpClientConfiguration = config;
     }
 
-    public static RpClient create(Cdoc2RpClientConfiguration config) {
+    public static RpClient create(RpClientConfiguration config) {
 
         RpClientBuilder builder = (RpClientBuilder) Cdoc2RpApiClient.builder()
             .withBaseUrl(config.getHostUrl())
@@ -142,7 +142,7 @@ public final class RpClientImpl implements RpClient {
     }
 
     public String getCertificateLevel() {
-        return cdoc2RpClientConfiguration.getCertificateLevel().name();
+        return rpClientConfiguration.getCertificateLevel().name();
     }
 
     /**
@@ -158,14 +158,14 @@ public final class RpClientImpl implements RpClient {
             };
         }
 
-        return cdoc2RpClientConfiguration.getMidLanguage();
+        return rpClientConfiguration.getMidLanguage();
     }
 
     /**
      * Get MidDisplayTextFormat from interactionParams if defined, otherwise get default value from configuration
      */
     private MidDisplayTextFormat getEncoding(InteractionParams interactionParams) {
-        MidDisplayTextFormat enc = cdoc2RpClientConfiguration.getMidDisplayTextFormat();
+        MidDisplayTextFormat enc = rpClientConfiguration.getMidDisplayTextFormat();
         if (interactionParams != null) {
             String iEnc = interactionParams.getEncoding();
             if (iEnc != null) {

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ApiClientUtil.loadClientTrustKeyStore;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 

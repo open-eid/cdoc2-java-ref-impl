@@ -10,7 +10,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 import ee.cyber.cdoc2.util.ApiClientUtil;
 import ee.cyber.cdoc2.util.ConfigurationPropertyUtil;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
 
@@ -21,7 +21,7 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param trustStore        client trust store
  * @param clientServerDebug turn on debug logs for client
  */
-public record Cdoc2AuthClientConfigurationProps(
+public record AuthClientConfigurationProps(
     String hostUrl,
     KeyStore trustStore,
     int readTimeout,
@@ -29,15 +29,15 @@ public record Cdoc2AuthClientConfigurationProps(
     int pollingIntervalMs,
     int pollingMaxCount,
     boolean clientServerDebug
-) implements Cdoc2AuthClientConfiguration {
+) implements AuthClientConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(Cdoc2AuthClientConfigurationProps.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthClientConfigurationProps.class);
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
     private static final int DEFAULT_READ_TIMEOUT_MS = 500;
     private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
     private static final int DEFAULT_POLLING_MAX_COUNT = 3;
 
-    public static Cdoc2AuthClientConfiguration load(Properties properties)
+    public static AuthClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
 
         log.debug("Loading CDOC2 authentication server client configuration.");
@@ -75,7 +75,7 @@ public record Cdoc2AuthClientConfigurationProps(
 
         Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
-        return new Cdoc2AuthClientConfigurationProps(
+        return new AuthClientConfigurationProps(
             hostUrl, trustStore, readTimeout, connectTimeout,
             pollingIntervalMs, pollingMaxCount, clientServerDebug
         );

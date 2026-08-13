@@ -19,7 +19,7 @@ import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2AuthClientConfiguration;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.AUTH_SERVER_CLIENT_READ_TIMEOUT;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.AUTH_SERVER_CLIENT_READ_TIMEOUT;
 import static org.junit.jupiter.api.Assertions.*;
 
 
