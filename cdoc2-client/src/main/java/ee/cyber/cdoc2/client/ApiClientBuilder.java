@@ -180,7 +180,13 @@ public abstract class ApiClientBuilder {
         };
 
         apiClient.setBasePath(this.baseUrl);
+        // NB! as of openapi-generator-maven-plugin:7.19.0
+        // the generated ApiClient.setDebugging method creates a new instance of the Jersey HTTP
+        // client. This means any settings modifying the Jersey client before the call to
+        // setDebugging will be lost. At the time of writing this applies to
+        // setConnectTimeout, setReadTimeout
         apiClient.setDebugging(debug);
+
         apiClient.setConnectTimeout(connectTimeoutMs);
         apiClient.setReadTimeout(readTimeoutMs);
 
