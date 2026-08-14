@@ -100,7 +100,7 @@ Define `cdoc2-lib` dependency in your `pom.xml`:
 <dependency>
     <groupId>ee.cyber.cdoc2</groupId>
     <artifactId>cdoc2-lib</artifactId>
-    <version>3.7.0</version>
+    <version>3.7.1</version>
 </dependency>
 ```
 
