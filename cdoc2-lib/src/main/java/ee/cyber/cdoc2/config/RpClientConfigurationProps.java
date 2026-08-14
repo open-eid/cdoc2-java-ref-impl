@@ -22,6 +22,8 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param hostUrl              client host URL
  * @param certificateLevel     Certificate level to use for SiD
  * @param trustStore           client trust store
+ * @param readTimeout          read timeout
+ * @param connectTimeout       connection timeout
  * @param midDisplayTextFormat MID displayText format
  * @param midLanguage          MID language
  * @param clientServerDebug    turn on debug logs for client

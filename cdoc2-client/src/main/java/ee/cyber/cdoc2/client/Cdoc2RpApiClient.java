@@ -24,76 +24,82 @@ public class Cdoc2RpApiClient {
     }
 
     /**
+     * Performs SmartID RPv3 authenticate request
      *
-     * @param xCdoc2SessionToken
-     * @param xCdoc2SessionX5c
-     * @param request
-     * @return
-     * @throws ApiException
+     * @param xSessionToken       CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param request             SmartID RPv3 authenticate request structure
+     * @return authentication session UUID
+     * @throws ApiException on API errors
      */
     public UUID sidAuthenticate(
-        @Nonnull String xCdoc2SessionToken,
-        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull String xSessionToken,
+        @Nonnull String xSessionCertificate,
         @Nonnull SidAuthenticateRequest request
     ) throws ApiException {
         return rpApi.sidAuthenticateWithHttpInfo(
-            xCdoc2SessionToken,
-            xCdoc2SessionX5c,
+            xSessionToken,
+            xSessionCertificate,
             request
         ).getData().getSessionID();
     }
 
     /**
+     * Performs SmartID RPv3 session status request
      *
-     * @param xCdoc2SessionToken
-     * @param xCdoc2SessionX5c
-     * @param sessionId
-     * @return
-     * @throws ApiException
+     * @param xSessionToken       CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param sessionId           session ID
+     * @return SmartID RPv3 session status response structure
+     * @throws ApiException on API errors
      */
     public SessionStatusResponse sidSession(
-        @Nonnull String xCdoc2SessionToken,
-        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull String xSessionToken,
+        @Nonnull String xSessionCertificate,
         @Nonnull UUID sessionId
     ) throws ApiException {
-        return rpApi.sidSession(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
+        return rpApi.sidSession(sessionId, xSessionToken, xSessionCertificate);
     }
 
     /**
      *
-     * @param xCdoc2SessionToken
-     * @param xCdoc2SessionX5c
-     * @param request
-     * @return
-     * @throws ApiException
+     * @param xSessionToken       CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param request             MobileID authenticate request structure
+     * @return authentication session UUID
+     * @throws ApiException on API errors
      */
     public UUID midAuthenticate(
-        @Nonnull String xCdoc2SessionToken,
-        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull String xSessionToken,
+        @Nonnull String xSessionCertificate,
         MidAuthenticateRequest request
     ) throws ApiException {
         return rpApi.midAuthenticateWithHttpInfo(
-            xCdoc2SessionToken,
-            xCdoc2SessionX5c,
+            xSessionToken,
+            xSessionCertificate,
             request
         ).getData().getSessionID();
     }
 
     /**
      *
-     * @param xCdoc2SessionToken
-     * @param xCdoc2SessionX5c
-     * @param sessionId
-     * @return
-     * @throws ApiException
+     * @param xSessionToken       CDOC2 Session token (SDJWT)
+     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     *                            generate the MID/SID signature in x-cdoc2-session-token payload.
+     * @param sessionId           authentication session UUID
+     * @return MobileID session status structure
+     * @throws ApiException on API errors
      */
     public ApiResponse<MidSessionStatusResponse> midSession(
-        @Nonnull String xCdoc2SessionToken,
-        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull String xSessionToken,
+        @Nonnull String xSessionCertificate,
         @Nonnull UUID sessionId
     ) throws ApiException {
         return rpApi
-            .midSessionWithHttpInfo(sessionId, xCdoc2SessionToken, xCdoc2SessionX5c);
+            .midSessionWithHttpInfo(sessionId, xSessionToken, xSessionCertificate);
     }
 
     public String getBasePath() {
