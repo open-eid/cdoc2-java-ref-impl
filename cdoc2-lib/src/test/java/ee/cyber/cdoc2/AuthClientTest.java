@@ -263,7 +263,7 @@ public class AuthClientTest {
 
         AuthClient clientWithPollCount =
             AuthClientImpl.create(getAuthClientConfiguration(
-                Map.of(AUTH_SERVER_CLIENT_POLLING_MAX_COUNT, "3",
+                Map.of(AUTH_SERVER_CLIENT_POLLING_MAX_COUNT, "0",
                     AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS, "100")
             ));
 
