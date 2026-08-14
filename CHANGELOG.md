@@ -5,13 +5,29 @@
 * Updated auth-server openapi version
 * Refactored API clients for Auth and RP APIs to match general pattern - Cdoc2AuthApiClient and 
   Cdoc2RpApiClient are now available in cdoc2-client module
-* new configuration options for auth and rp clients:
-  * `auth-server.client.readTimeout`
-  * `auth-server.client.connectTimeout`
-  * `auth-server.client.polling.intervalMs`
-  * `auth-server.client.polling.maxCount`
-  * `rp-server.client.readTimeout`
-  * `rp-server.client.connectTimeout`
+* new configuration options for client timeouts:
+  * `auth-server.client.read-timeout` - default 500
+  * `auth-server.client.connect-timeout` - default 1000
+  * `rp-server.client.read-timeout` - default 500
+  * `rp-server.client.connect-timeout` - default 1000
+  * `key-shares.client.read-timeout` - default 500
+  * `key-shares.client.connect-timeout` - default 1000
+* new configuration options for client polling behavior: 
+  * `auth-server.client.polling.intervalMs` - default 1000
+  * `auth-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE 
+    status or network error
+
+### Bug Fixes
+* Fixed issue where capsule and shares server client read and connect timeouts were never applied
+
+### Maven package versions:
+```
+cdoc2 3.4.3
+cdoc2-schema 2.1.0
+cdoc2-lib 3.7.1
+cdoc2-client 2.3.0
+cdoc2-cli 1.9.2
+```
 
 ## [3.4.3]
 ### Improvements
