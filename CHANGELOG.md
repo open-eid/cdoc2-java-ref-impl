@@ -24,7 +24,7 @@
 
 ### Maven package versions:
 ```
-cdoc2 3.4.3
+cdoc2 3.5.0
 cdoc2-schema 2.1.0
 cdoc2-lib 3.7.1
 cdoc2-client 2.3.0
