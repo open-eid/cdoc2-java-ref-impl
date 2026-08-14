@@ -99,11 +99,11 @@ public class SidMidAuthTokenCreator {
      * Create token (sdjwt) for share id
      *
      * @param shareID shareId from signed shareAccessData
-     * @return ticket as SDJWT
+     * @return token as SDJWT
      * @throws IllegalArgumentException if shareId was not part signed payload
      */
     public String getTokenForShareID(String shareID) {
-        return authTokenCreator.createTicketForShareId(shareID);
+        return authTokenCreator.createTokenForShareId(shareID);
     }
 
     /**

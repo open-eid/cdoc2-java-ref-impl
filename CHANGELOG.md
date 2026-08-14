@@ -3,19 +3,21 @@
 ## [3.5.0]
 ### Improvements
 * Updated auth-server openapi version
+* Updated cdoc2-auth-token
 * Refactored API clients for Auth and RP APIs to match general pattern - Cdoc2AuthApiClient and 
   Cdoc2RpApiClient are now available in cdoc2-client module
-* new configuration options for client timeouts:
+* New configuration options for client timeouts:
   * `auth-server.client.read-timeout` - default 500
   * `auth-server.client.connect-timeout` - default 1000
   * `rp-server.client.read-timeout` - default 500
   * `rp-server.client.connect-timeout` - default 1000
   * `key-shares.client.read-timeout` - default 500
   * `key-shares.client.connect-timeout` - default 1000
-* new configuration options for client polling behavior: 
+* New configuration options for client polling behavior: 
   * `auth-server.client.polling.intervalMs` - default 1000
   * `auth-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE 
     status or network error
+* Code cleanup
 
 ### Bug Fixes
 * Fixed issue where capsule and shares server client read and connect timeouts were never applied

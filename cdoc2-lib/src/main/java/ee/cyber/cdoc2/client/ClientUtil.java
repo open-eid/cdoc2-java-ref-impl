@@ -14,7 +14,7 @@ final class ClientUtil {
     static ExtApiException wrapApiException(String context, ApiException ex, Logger log) {
         String detail = switch (ex.getCode()) {
             case 400 -> "Bad request — check the parameters";
-            case 401 -> "Unauthorized — missing or invalid auth ticket";
+            case 401 -> "Unauthorized — missing or invalid auth token";
             case 403 -> "Forbidden — authentication failed";
             case 404 -> "Not found — record missing or recipient ID mismatch";
             default -> "Unexpected server response";

@@ -91,8 +91,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
     @Override
     public Optional<KeyShare> getKeyShare(
         String shareId,
-        String authTicket,
-        String authTicketSignerCert,
+        String authToken,
+        String authTokenSignerCert,
         String sessionToken,
         String sessionCertificate,
         String sidRpv3SignatureParameters,
@@ -104,8 +104,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
         try {
             result = apiClient.getKeyShare(
                 shareId,
-                authTicket,
-                authTicketSignerCert,
+                authToken,
+                authTokenSignerCert,
                 sessionToken,
                 sessionCertificate,
                 sidRpv3SignatureParameters,

@@ -92,8 +92,8 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param shareId                     key share ID
-     * @param xAuthTicket                 CDOC2 Auth token (SDJWT)
-     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthTicket
+     * @param xAuthToken                 CDOC2 Auth token (SDJWT)
+     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthToken
      * @param xSessionToken               CDOC2 Session token (SDJWT)
      * @param xSessionCertificate         PEM encoded X509 certificate (without newlines) that was used to
      *                                    generate the MID/SID signature in x-cdoc2-session-token payload.
@@ -108,7 +108,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
      */
     public Optional<KeyShare> getKeyShare(
         String shareId,
-        String xAuthTicket,
+        String xAuthToken,
         String xAuthCertificate,
         String xSessionToken,
         String xSessionCertificate,
@@ -124,7 +124,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         try {
             ApiResponse<KeyShare> response
                 = sharesApi.getKeyShareByShareIdWithHttpInfo(
-                shareId, xAuthTicket, xAuthCertificate,
+                shareId, xAuthToken, xAuthCertificate,
                 xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters,
                 countersignatureParams != null ? countersignatureParams.rpSignedHash : null,
                 countersignatureParams != null ? countersignatureParams.rpName : null,
