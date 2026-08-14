@@ -19,6 +19,10 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  *
  * @param hostUrl           client host URL
  * @param trustStore        client trust store
+ * @param readTimeout       read timeout
+ * @param connectTimeout    connection timeout
+ * @param pollingIntervalMs time to sleep between polling attempts
+ * @param pollingMaxCount   maximum number of times to poll. value of 0 means no limit
  * @param clientServerDebug turn on debug logs for client
  */
 public record AuthClientConfigurationProps(
@@ -35,7 +39,7 @@ public record AuthClientConfigurationProps(
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
     private static final int DEFAULT_READ_TIMEOUT_MS = 500;
     private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
-    private static final int DEFAULT_POLLING_MAX_COUNT = 3;
+    private static final int DEFAULT_POLLING_MAX_COUNT = 0;
 
     public static AuthClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {

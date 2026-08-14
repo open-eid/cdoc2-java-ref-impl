@@ -117,7 +117,7 @@ public final class AuthClientImpl implements AuthClient {
     }
 
     private void checkForPollMaxCount(int pollCount, AuthProcessStatusResponse status) throws ExtApiException {
-        if (pollCount == this.pollingMaxCount) {
+        if (this.pollingMaxCount > 0 && pollCount == this.pollingMaxCount) {
             String message = "Max poll count reached when polling for complete auth "
                 + "process status. pollCount: "
                 + pollCount
