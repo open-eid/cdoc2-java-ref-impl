@@ -67,6 +67,10 @@ public final class ConfigurationProperties {
         = "cdoc2.key-shares.client.ssl.trust-store";
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_PWD
         = "cdoc2.key-shares.client.ssl.trust-store-password";
+    public static final String KEY_SHARES_CLIENT_READ_TIMEOUT
+        = "key-shares.client.read-timeout";
+    public static final String KEY_SHARES_CLIENT_CONNECT_TIMEOUT
+        = "key-shares.client.connect-timeout";
     public static final String KEY_SHARES_CLIENT_TRUST_STORE_TYPE
         = "cdoc2.key-shares.client.ssl.trust-store.type";
 
@@ -108,9 +112,9 @@ public final class ConfigurationProperties {
         "auth-server.client.ssl.trust-store";
     public static final String AUTH_SERVER_CLIENT_TRUST_STORE_PWD
         = "auth-server.client.ssl.trust-store-password";
-    public static final String AUTH_SERVER_CLIENT_READ_TIMEOUT = "auth-server.client.readTimeout";
+    public static final String AUTH_SERVER_CLIENT_READ_TIMEOUT = "auth-server.client.read-timeout";
     public static final String AUTH_SERVER_CLIENT_CONNECT_TIMEOUT =
-        "auth-server.client.connectTimeout";
+        "auth-server.client.connect-timeout";
     public static final String AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS =
         "auth-server.client.polling.intervalMs";
     public static final String AUTH_SERVER_CLIENT_POLLING_MAX_COUNT =
@@ -125,9 +129,9 @@ public final class ConfigurationProperties {
     public static final String RP_SERVER_CLIENT_TRUST_STORE = "rp-server.client.ssl.trust-store";
     public static final String RP_SERVER_CLIENT_TRUST_STORE_PWD
         = "rp-server.client.ssl.trust-store-password";
-    public static final String RP_SERVER_CLIENT_READ_TIMEOUT = "rp-server.client.readTimeout";
+    public static final String RP_SERVER_CLIENT_READ_TIMEOUT = "rp-server.client.read-timeout";
     public static final String RP_SERVER_CLIENT_CONNECT_TIMEOUT =
-        "rp-server.client.connectTimeout";
+        "rp-server.client.connect-timeout";
 
     public static final String RP_SERVER_MID_DISPLAY_TEXT_FORMAT
         = "rp-server.mid.display-text-format";

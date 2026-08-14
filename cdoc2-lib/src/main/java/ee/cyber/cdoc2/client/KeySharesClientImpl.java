@@ -47,6 +47,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
         builder.withBaseUrl(serverUrl);
 
         builder.withTrustKeyStore(config.getClientTrustStore());
+        builder.withReadTimeoutMs(config.getReadTimeout());
+        builder.withConnectTimeoutMs(config.getConnectTimeout());
         builder.withDebuggingEnabled(config.getClientServerDebug());
 
         Cdoc2KeySharesApiClient keySharesApiClient = builder.build();

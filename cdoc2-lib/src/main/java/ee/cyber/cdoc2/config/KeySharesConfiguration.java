@@ -25,6 +25,10 @@ public interface KeySharesConfiguration {
 
     KeyStore getClientTrustStore();
 
+    int getReadTimeout();
+
+    int getConnectTimeout();
+
     boolean getClientServerDebug();
 
 }

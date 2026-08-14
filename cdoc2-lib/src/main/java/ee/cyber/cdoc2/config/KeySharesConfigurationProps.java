@@ -18,12 +18,14 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getBoolean;
 /**
  * Key shares client configuration properties.
  *
- * @param keySharesServersNum number of key shares servers
- * @param keySharesServersUrls key shares servers URL-s
+ * @param keySharesServersNum    number of key shares servers
+ * @param keySharesServersUrls   key shares servers URL-s
  * @param keySharesServersMinNum minimum quantity of key shares servers
- * @param keySharesAlgorithm key shares algorithm
- * @param clientTrustStore client trust store
- * @param clientServerDebug turn on debug logs for client
+ * @param keySharesAlgorithm     key shares algorithm
+ * @param clientTrustStore       client trust store
+ * @param readTimeout            read timeout
+ * @param connectTimeout         connection timeout
+ * @param clientServerDebug      turn on debug logs for client
  */
 public record KeySharesConfigurationProps(
     int keySharesServersNum,
@@ -31,8 +33,12 @@ public record KeySharesConfigurationProps(
     int keySharesServersMinNum,
     String keySharesAlgorithm,
     KeyStore clientTrustStore,
+    int readTimeout,
+    int connectTimeout,
     boolean clientServerDebug
 ) implements KeySharesConfiguration {
+    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 500;
 
     private static final Logger log = LoggerFactory.getLogger(KeySharesConfigurationProps.class);
 
@@ -70,6 +76,19 @@ public record KeySharesConfigurationProps(
             clientTrustStoreType,
             clientTrustStorePw
         );
+
+        int readTimeout = ConfigurationPropertyUtil.getInteger(
+            log,
+            properties,
+            KEY_SHARES_CLIENT_READ_TIMEOUT
+        ).orElse(DEFAULT_READ_TIMEOUT_MS);
+
+        int connectTimeout = ConfigurationPropertyUtil.getInteger(
+            log,
+            properties,
+            KEY_SHARES_CLIENT_CONNECT_TIMEOUT
+        ).orElse(DEFAULT_CONNECT_TIMEOUT_MS);
+
         Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
         return new KeySharesConfigurationProps(
@@ -78,6 +97,8 @@ public record KeySharesConfigurationProps(
             keySharesServersMinNum,
             keySharesAlgorithm,
             clientTrustStore,
+            readTimeout,
+            connectTimeout,
             clientServerDebug
         );
     }
@@ -118,6 +139,16 @@ public record KeySharesConfigurationProps(
     @Override
     public KeyStore getClientTrustStore() {
         return clientTrustStore;
+    }
+
+    @Override
+    public int getReadTimeout() {
+        return readTimeout;
+    }
+
+    @Override
+    public int getConnectTimeout() {
+        return connectTimeout;
     }
 
     @Override
