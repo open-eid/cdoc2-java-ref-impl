@@ -45,8 +45,8 @@ services:
         target: /config/servertruststore.jks
       - source: keystore
         target: /config/cdoc2server.p12
-      - source: sid-trusted-issuers-truststore
-        target: /config/sid_trusted_issuers.jks
+      - source: trusted-issuers-truststore
+        target: /config/trusted_issuers.jks
 
     environment:
       - SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/config/application.properties
@@ -78,8 +78,8 @@ services:
         target: /config/servertruststore.jks
       - source: keystore
         target: /config/cdoc2server.p12
-      - source: sid-trusted-issuers-truststore
-        target: /config/sid_trusted_issuers.jks
+      - source: trusted-issuers-truststore
+        target: /config/trusted_issuers.jks
     environment:
       # in real deployment, cdoc2-shares-server-second is installed in different organization
       # and uses separate postgres instance
@@ -100,7 +100,7 @@ configs:
     file: serverconf/application-server.properties
   truststore:
     file: ./serverconf/servertruststore.jks
-  sid-trusted-issuers-truststore:
-      file: ./serverconf/test_sid_trusted_issuers.jks
+  trusted-issuers-truststore:
+      file: ./serverconf/test_trusted_issuers.jks
   keystore:
     file: ./serverconf/cdoc2server.p12
