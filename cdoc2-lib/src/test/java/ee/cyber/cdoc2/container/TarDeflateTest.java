@@ -23,8 +23,8 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.DISK_USAGE_THRESHOLD_PROPERTY;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.TAR_ENTRIES_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.DISK_USAGE_THRESHOLD_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.TAR_ENTRIES_THRESHOLD_PROPERTY;
 import static java.nio.charset.StandardCharsets.*;
 import static org.junit.jupiter.api.Assertions.*;
 

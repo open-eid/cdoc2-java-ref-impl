@@ -32,8 +32,8 @@ import javax.swing.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_PROVIDER_SYSTEM_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_PROVIDER_SYSTEM_PROPERTY;
 import static ee.cyber.cdoc2.util.OperatingSystem.getOS;
 
 

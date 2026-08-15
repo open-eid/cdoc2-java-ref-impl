@@ -9,8 +9,8 @@ import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.CK_ATTRIBUTE.DECRYPT_TRUE;
 import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
 //CHECKSTYLE:ON
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
 
 /**
  * Utility class for performing RSA OAEP decryption via a direct PKCS#11 wrapper.

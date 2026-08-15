@@ -36,8 +36,8 @@ public interface KeySharesClient extends ServerClient {
     /**
      * Get key share by share ID.
      * @param shareId key share ID
-     * @param authTicket server authentication ticket
-     * @param authTicketSignerCert authentication ticket signer certificate in PEM format
+     * @param authToken server authentication token
+     * @param authTokenSignerCert authentication token signer certificate in PEM format
      * @param sessionToken CDOC2 Session token (SDJWT)
      * @param sessionCertificate PEM encoded X509 certificate (without newlines) that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
@@ -50,8 +50,8 @@ public interface KeySharesClient extends ServerClient {
      */
     Optional<KeyShare> getKeyShare(
         String shareId,
-        String authTicket,
-        String authTicketSignerCert,
+        String authToken,
+        String authTokenSignerCert,
         String sessionToken,
         String sessionCertificate,
         String sidRpv3SignatureParameters,

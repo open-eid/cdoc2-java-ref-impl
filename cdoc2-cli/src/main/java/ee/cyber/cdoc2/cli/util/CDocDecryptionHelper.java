@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.sk.mid.MidInputUtil.getValidatedPhoneNumber;
 

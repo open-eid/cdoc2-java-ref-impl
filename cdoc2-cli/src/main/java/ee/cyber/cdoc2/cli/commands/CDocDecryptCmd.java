@@ -22,7 +22,7 @@ import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToS
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecrypterWithFilesExtraction;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getSmartCardDecryptionKeyMaterial;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.KEY_CAPSULE_PROPERTIES;
 
 
 //S106 Standard outputs should not be used directly to log anything

@@ -1,25 +1,28 @@
 package ee.cyber.cdoc2.config;
 
+import java.security.KeyStore;
 import java.util.Properties;
 
 import ee.cyber.cdoc2.client.model.MidDisplayTextFormat;
 import ee.cyber.cdoc2.client.model.MidLanguage;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-public interface Cdoc2RpClientConfiguration {
+public interface RpClientConfiguration {
 
-    static Cdoc2RpClientConfiguration load(Properties properties)
+    static RpClientConfiguration load(Properties properties)
         throws ConfigurationLoadingException {
-        return Cdoc2RpClientConfigurationProps.load(properties);
+        return RpClientConfigurationProps.load(properties);
     }
 
     String getHostUrl();
 
-    String getCertificateLevel();
+    RpClientConfigurationProps.CertificateLevel getCertificateLevel();
 
-    String getTrustStore();
+    KeyStore getTrustStore();
 
-    String getTrustStorePassword();
+    int getReadTimeout();
+
+    int getConnectTimeout();
 
     MidDisplayTextFormat getMidDisplayTextFormat();
 

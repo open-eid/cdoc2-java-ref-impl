@@ -34,6 +34,7 @@ import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier;
 import ee.cyber.cdoc2.auth.SidRpv3SignatureVerifier.AuthTokenSignatureValidationParams;
 import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
 import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.model.AcspV2Signature;
 import ee.cyber.cdoc2.client.model.AuthCertificateLevel;
 import ee.cyber.cdoc2.client.model.AuthSignatureProtocol;
@@ -45,7 +46,6 @@ import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
 import ee.cyber.cdoc2.client.model.SignatureAlgorithm;
 import ee.cyber.cdoc2.client.model.SignatureAlgorithmParametersInRequest;
 import ee.cyber.cdoc2.client.model.VerificationCodeType;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 
 
 /**
@@ -61,7 +61,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
 
     private final JCAContext jcaContext = new JCAContext();
 
-    private final Cdoc2RpClient rpClient;
+    private final RpClient rpClient;
     private final EtsiIdentifier signerId;
     private final SessionToken sessionToken;
 
@@ -71,14 +71,14 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
     private X509Certificate signerCertificate = null; // will be initialized with successful sign()
 
     /**
-     * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized Cdoc2RpClient
+     * Initialize JWSSigner for signer (format "etsi/PNOEE-37807156011") using pre-initialized RpClient
      *
-     * @param rpClient pre-initialized Cdoc2RpClient to use for signing
+     * @param rpClient pre-initialized RpClient to use for signing
      * @param signer   Signer identifier in format etsi/PNOEE-37807156011
      * @param params   InteractionParams to drive SID interaction or to get verification code. {@code null} when user is
      *                 not interested in verification code or default interaction behaviour is ok.
      */
-    public SIDAuthJWSSigner(EtsiIdentifier signer, Cdoc2RpClient rpClient,
+    public SIDAuthJWSSigner(EtsiIdentifier signer, RpClient rpClient,
                             InteractionParams params, SessionToken sessionToken) {
         Objects.requireNonNull(rpClient);
         Objects.requireNonNull(signer);
@@ -151,7 +151,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
             InteractionUtil.encodeToBase64(InteractionsMapper.from(List.of(interaction)));
 
         try {
-            String disclosedSessionToken = sessionToken.getSessionToken(rpClient.getBaseUrl());
+            String disclosedSessionToken = sessionToken.getSessionToken(rpClient.getBasePath());
 
             SidAuthenticateRequest request = new SidAuthenticateRequest()
                 .semanticsIdentifier(signerId.getSemanticsIdentifier())

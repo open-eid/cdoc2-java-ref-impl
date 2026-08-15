@@ -29,7 +29,7 @@ public abstract class ApiClientBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(ApiClientBuilder.class);
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    public static final int DEFAULT_READ_TIMEOUT_MS = 500;
+    public static final int DEFAULT_READ_TIMEOUT_MS = 1000;
 
     private String baseUrl;
     private KeyStore clientKeyStore;
@@ -180,10 +180,16 @@ public abstract class ApiClientBuilder {
         };
 
         apiClient.setBasePath(this.baseUrl);
+        // NB! as of openapi-generator-maven-plugin:7.19.0
+        // the generated ApiClient.setDebugging method creates a new instance of the Jersey HTTP
+        // client. This means any settings modifying the Jersey client before the call to
+        // setDebugging will be lost. At the time of writing this applies to
+        // setConnectTimeout, setReadTimeout
+        apiClient.setDebugging(debug);
+
         apiClient.setConnectTimeout(connectTimeoutMs);
         apiClient.setReadTimeout(readTimeoutMs);
 
-        apiClient.setDebugging(debug);
         apiClient.addDefaultHeader("Accept", "application/json");
         apiClient.selectHeaderAccept("application/json");
 

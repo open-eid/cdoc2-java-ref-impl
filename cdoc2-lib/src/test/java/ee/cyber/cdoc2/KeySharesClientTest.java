@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class KeySharesClientTest {
 
-    private static final String AUTH_TICKET = "";
+    private static final String AUTH_TOKEN = "";
     private static final String SESSION_TOKEN = "";
     private static final String CERT_PEM = "";
     private static final String SHARE_ID = "shareId";
@@ -74,7 +74,7 @@ class KeySharesClientTest {
             client.getKeyShare(any(), any(), any(), any(), any(), any(), any())
         ).thenReturn(Optional.of(keyShare));
         Optional<KeyShare> createdKeyShare = client.getKeyShare(
-            SHARE_ID, AUTH_TICKET, CERT_PEM, "", "", "", null
+            SHARE_ID, AUTH_TOKEN, CERT_PEM, "", "", "", null
         );
 
         assertTrue(createdKeyShare.isPresent());
@@ -92,7 +92,7 @@ class KeySharesClientTest {
             client.getKeyShare(any(), any(), any(), any(), any(), any(), any())
         ).thenReturn(Optional.of(keyShare));
         Optional<KeyShare> createdKeyShare = client.getKeyShare(
-            shareId, AUTH_TICKET, CERT_PEM, "", "", "", null
+            shareId, AUTH_TOKEN, CERT_PEM, "", "", "", null
         );
 
         assertTrue(createdKeyShare.isPresent());
@@ -133,11 +133,11 @@ class KeySharesClientTest {
     @Test
     void shouldInvokeApiWhenGetKeyShare() throws ApiException, ExtApiException {
         clientImpl.getKeyShare(
-            SHARE_ID, AUTH_TICKET, CERT_PEM, "", "", "", null
+            SHARE_ID, AUTH_TOKEN, CERT_PEM, "", "", "", null
         );
 
         verify(apiClient, times(1)).getKeyShare(
-            SHARE_ID, AUTH_TICKET, CERT_PEM,
+            SHARE_ID, AUTH_TOKEN, CERT_PEM,
             "",
             "",
             "",

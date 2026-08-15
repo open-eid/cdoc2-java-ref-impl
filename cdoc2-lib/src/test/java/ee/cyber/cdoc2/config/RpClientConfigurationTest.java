@@ -4,19 +4,21 @@ import org.junit.jupiter.api.Test;
 
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.ClientConfigurationUtil.getCdoc2RpClientDemoEnvConfiguration;
+import static ee.cyber.cdoc2.ClientConfigurationUtil.getRpClientConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-class Cdoc2RpClientConfigurationTest {
+class RpClientConfigurationTest {
     private static final String HOST_URL = "https://localhost:7600";
-    private static final String CERTIFICATE_LEVEL = "QUALIFIED";
 
     @Test
     void loadSmartIdConfigurationProperties() throws ConfigurationLoadingException {
-        Cdoc2RpClientConfiguration rpClientConfiguration = getCdoc2RpClientDemoEnvConfiguration();
+        RpClientConfiguration rpClientConfiguration = getRpClientConfiguration();
 
         assertEquals(HOST_URL, rpClientConfiguration.getHostUrl());
-        assertEquals(CERTIFICATE_LEVEL, rpClientConfiguration.getCertificateLevel());
+        assertEquals(
+            RpClientConfigurationProps.CertificateLevel.QUALIFIED,
+            rpClientConfiguration.getCertificateLevel()
+        );
     }
 }

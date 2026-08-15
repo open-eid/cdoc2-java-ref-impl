@@ -3,13 +3,13 @@ package ee.cyber.cdoc2;
 import java.util.Map;
 import java.util.Properties;
 
-import ee.cyber.cdoc2.config.Cdoc2AuthClientConfiguration;
-import ee.cyber.cdoc2.config.Cdoc2RpClientConfiguration;
+import ee.cyber.cdoc2.config.AuthClientConfiguration;
+import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.config.PropertiesLoader;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 
 public final class ClientConfigurationUtil {
@@ -39,17 +39,28 @@ public final class ClientConfigurationUtil {
     private ClientConfigurationUtil() {
     }
 
-    public static Cdoc2RpClientConfiguration getCdoc2RpClientDemoEnvConfiguration()
+    public static RpClientConfiguration getRpClientConfiguration()
         throws ConfigurationLoadingException {
 
-        return Cdoc2RpClientConfiguration.load(PropertiesLoader.loadProperties(
+        return RpClientConfiguration.load(PropertiesLoader.loadProperties(
             DEMO_ENV_PROPERTIES.getProperty(RP_SERVER_PROPERTIES)));
     }
 
-    public static Cdoc2AuthClientConfiguration getCdoc2AuthClientConfiguration() throws ConfigurationLoadingException {
-        return Cdoc2AuthClientConfiguration.load(PropertiesLoader.loadProperties(
+    public static AuthClientConfiguration getAuthClientConfiguration() {
+        return getAuthClientConfiguration(Map.of());
+    }
+
+    public static AuthClientConfiguration getAuthClientConfiguration(
+        Map<String, String> propOverrides
+    ) throws ConfigurationLoadingException {
+
+        Properties properties = PropertiesLoader.loadProperties(
             DEMO_ENV_PROPERTIES.getProperty(AUTH_SERVER_PROPERTIES)
-        ));
+        );
+
+        properties.putAll(propOverrides);
+
+        return AuthClientConfiguration.load(properties);
     }
 
     public static KeySharesConfiguration initKeySharesTestEnvConfiguration() throws ConfigurationLoadingException {

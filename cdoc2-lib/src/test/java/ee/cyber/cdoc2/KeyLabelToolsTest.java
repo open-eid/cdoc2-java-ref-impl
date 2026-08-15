@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.KEY_LABEL_FILE_NAME_PROPERTY;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.KEY_LABEL_FILE_NAME_PROPERTY;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.convertKeyLabelParamsMapToString;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createCertKeyLabelParams;
