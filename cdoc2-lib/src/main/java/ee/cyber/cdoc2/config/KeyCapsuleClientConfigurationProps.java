@@ -59,7 +59,7 @@ public record KeyCapsuleClientConfigurationProps(
     private static final Logger log = LoggerFactory.getLogger(KeyCapsuleClientConfigurationProps.class);
 
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 500;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 2000;
     private static final int DEFAULT_SLOT = 0;
 
     public static KeyCapsuleClientConfiguration load(Properties properties)

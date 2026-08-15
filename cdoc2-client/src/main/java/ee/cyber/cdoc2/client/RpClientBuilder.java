@@ -9,7 +9,7 @@ import java.security.GeneralSecurityException;
 public class RpClientBuilder extends ApiClientBuilder {
 
     /**
-     * {@link Cdoc2AuthApiClient} builder
+     * {@link Cdoc2RpApiClient} builder
      *
      * @throws GeneralSecurityException when establishing TLS connection fails
      */

@@ -41,7 +41,7 @@ public record RpClientConfigurationProps(
     private static final String DEFAULT_MID_DISPLAY_TEXT_FORMAT = "GSM_7";
     private static final String DEFAULT_MID_LANGUAGE = "ENG";
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 500;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 2000;
 
     public enum CertificateLevel {
         ADVANCED,

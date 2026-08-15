@@ -17,6 +17,7 @@
   * `auth-server.client.polling.intervalMs` - default 1000
   * `auth-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE 
     status or network error
+* Changed default timeouts for all API clients from 500ms to 2000ms
 * Code cleanup
 
 ### Bug Fixes
