@@ -7,17 +7,17 @@
 * Refactored API clients for Auth and RP APIs to match general pattern - Cdoc2AuthApiClient and 
   Cdoc2RpApiClient are now available in cdoc2-client module
 * New configuration options for client timeouts:
-  * `auth-server.client.read-timeout` - default 500
+  * `auth-server.client.read-timeout` - default 2000
   * `auth-server.client.connect-timeout` - default 1000
-  * `rp-server.client.read-timeout` - default 500
+  * `rp-server.client.read-timeout` - default 2000
   * `rp-server.client.connect-timeout` - default 1000
-  * `key-shares.client.read-timeout` - default 500
+  * `key-shares.client.read-timeout` - default 2000
   * `key-shares.client.connect-timeout` - default 1000
 * New configuration options for client polling behavior: 
   * `auth-server.client.polling.intervalMs` - default 1000
   * `auth-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE 
     status or network error
-* Changed default timeouts for all API clients from 500ms to 2000ms
+* Changed default read timeouts for all API clients from 500ms to 2000ms
 * Code cleanup
 
 ### Bug Fixes
