@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.util.LoggingUtil.censorFileName;
 import static ee.cyber.cdoc2.util.LoggingUtil.censorPathFileName;
 

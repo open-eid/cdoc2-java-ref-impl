@@ -27,9 +27,9 @@ import ee.cyber.cdoc2.auth.TokenVerificationResponse;
 import ee.cyber.cdoc2.client.KeySharesClient;
 import ee.cyber.cdoc2.client.KeySharesClientFactory;
 import ee.cyber.cdoc2.client.KeySharesClientHelper;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.api.ApiException;
 import ee.cyber.cdoc2.client.model.NonceResponse;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 import ee.cyber.cdoc2.config.KeySharesConfiguration;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
 import ee.cyber.cdoc2.crypto.jwt.IdentityJWSSigner;
@@ -124,9 +124,9 @@ public class AuthTokenCreatorTest {
         return this.sharesFac;
     }
 
-    Cdoc2RpClient setupRpClient() {
+    RpClient setupRpClient() {
         try {
-            return Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(Cdoc2RpClient.class);
+            return Cdoc2Services.initFromProperties(DEMO_ENV_PROPERTIES).get(RpClient.class);
         } catch (GeneralSecurityException e) {
             throw new UnCheckedException(e);
         }
@@ -181,7 +181,7 @@ public class AuthTokenCreatorTest {
 
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
 
-        Cdoc2RpClient demoEnvClient = MIDTestData.getDemoEnvClient();
+        RpClient demoEnvClient = MIDTestData.getDemoEnvClient();
 
         IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(
             etsiIdentifier,
@@ -213,7 +213,7 @@ public class AuthTokenCreatorTest {
 
         EtsiIdentifier etsiIdentifier = new EtsiIdentifier("etsi/PNOEE-" + identityCode);
 
-        Cdoc2RpClient demoEnvClient = MIDTestData.getDemoEnvClient();
+        RpClient demoEnvClient = MIDTestData.getDemoEnvClient();
 
         IdentityJWSSigner idJwsSigner = new MIDAuthJWSSigner(
             etsiIdentifier,

@@ -3,7 +3,7 @@ package ee.cyber.cdoc2.cli.util;
 import java.io.IOException;
 import java.util.Properties;
 
-import ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties;
+import ee.cyber.cdoc2.config.ConfigurationProperties;
 import ee.cyber.cdoc2.util.Resources;
 
 
@@ -32,13 +32,13 @@ public final class CDocCommonHelper {
     ) {
         if (slot != null) {
             System.setProperty(
-                Cdoc2ConfigurationProperties.PKCS11_SLOT, String.valueOf(slot)
+                ConfigurationProperties.PKCS11_SLOT, String.valueOf(slot)
             );
         }
 
         if (keyAlias != null) {
             System.setProperty(
-                Cdoc2ConfigurationProperties.PKCS11_ALIAS, keyAlias
+                ConfigurationProperties.PKCS11_ALIAS, keyAlias
             );
         }
     }

@@ -17,7 +17,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 
 
-public class Cdoc2RpClientMock {
+public class RpClientMock {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @SuppressWarnings("checkstyle:LineLength")
@@ -76,7 +76,7 @@ public class Cdoc2RpClientMock {
 
     private final WireMockExtension wiremock;
 
-    public Cdoc2RpClientMock(WireMockExtension wiremock) {
+    public RpClientMock(WireMockExtension wiremock) {
         this.wiremock = wiremock;
     }
 

@@ -30,10 +30,9 @@ import com.nimbusds.jose.util.X509CertUtils;
 import ee.cyber.cdoc2.auth.EtsiIdentifier;
 import ee.cyber.cdoc2.client.Cdoc2KeySharesApiClient;
 import ee.cyber.cdoc2.client.ExtApiException;
+import ee.cyber.cdoc2.client.RpClient;
 import ee.cyber.cdoc2.client.api.ApiResponse;
-import ee.cyber.cdoc2.client.mobileid.MobileIdUserData;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
-import ee.cyber.cdoc2.client.rpserver.Cdoc2RpClient;
 
 /**
  * JWSSigner that implements signing using Mobile-ID authentication key/certificate. Supports
@@ -49,9 +48,10 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     private static final Logger log = LoggerFactory.getLogger(MIDAuthJWSSigner.class);
     private final JCAContext jcaContext = new JCAContext();
 
-    private final Cdoc2RpClient rpClient;
+    private final RpClient rpClient;
     private final EtsiIdentifier signerEtsiIdentifier;
-    private final MobileIdUserData mobileIdUserData;
+    private final String phoneNumber;
+    private final String identifier;
     private final SessionToken sessionToken;
     private final String sessionTokenCertAlgorithm;
 
@@ -64,9 +64,9 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
      * Initialize JWSSigner with MobileIdClient and signer identified by identity code and phone number
      * and pre-initialized MobileIdClient
      *
-     * @param rpClient          RP client to perform actual authentication sequence
      * @param signer            signer identifier as etsi semantics identifier
      * @param phoneNumber       signer phone number in international format e.g. "+3725551234"
+     * @param rpClient          RP client to perform actual authentication sequence
      * @param interactionParams Optional parameters to drive user interaction. {@code null} if not used
      * @throws MidInvalidPhoneNumberException            if phone number validation has failed
      * @throws MidInvalidNationalIdentityNumberException if ID code validation has failed
@@ -74,7 +74,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
     public MIDAuthJWSSigner(
         EtsiIdentifier signer,
         String phoneNumber,
-        Cdoc2RpClient rpClient,
+        RpClient rpClient,
         InteractionParams interactionParams,
         SessionToken sessionToken
     ) {
@@ -84,7 +84,8 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
 
         this.rpClient = rpClient;
         this.signerEtsiIdentifier = signer;
-        this.mobileIdUserData = new MobileIdUserData(phoneNumber, signer.getIdentifier());
+        this.phoneNumber = phoneNumber;
+        this.identifier = signer.getIdentifier();
         this.interactionParams = interactionParams;
         this.sessionToken = sessionToken;
         this.sessionTokenCertAlgorithm = X509CertUtils.parse(Base64.getUrlDecoder()
@@ -114,13 +115,13 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
         }
 
         try {
-            String disclosedSessionToken = sessionToken.getSessionToken(rpClient.getBaseUrl());
+            String disclosedSessionToken = sessionToken.getSessionToken(rpClient.getBasePath());
 
             UUID sessionId = rpClient.midAuthenticate(
                 disclosedSessionToken,
                 sessionToken.getSigningCertificate(),
-                mobileIdUserData.identityCode(),
-                mobileIdUserData.phoneNumber(),
+                identifier,
+                phoneNumber,
                 hash.getHash(),
                 midHashType.toString(),
                 interactionParams

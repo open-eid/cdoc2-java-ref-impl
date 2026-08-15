@@ -50,7 +50,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
     }
 
     /**
-     * @param keyShare key share data from openAPI
+     * @param keyShare    key share data from openAPI
      * @param xExpiryTime key share expiry time. If not set, then the key server will use its default
      * @return created key share ID
      * @throws ApiException if Key share creation fails
@@ -92,8 +92,8 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
 
     /**
      * @param shareId                     key share ID
-     * @param xAuthTicket                 CDOC2 Auth token (SDJWT)
-     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthTicket
+     * @param xAuthToken                 CDOC2 Auth token (SDJWT)
+     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthToken
      * @param xSessionToken               CDOC2 Session token (SDJWT)
      * @param xSessionCertificate         PEM encoded X509 certificate (without newlines) that was used to
      *                                    generate the MID/SID signature in x-cdoc2-session-token payload.
@@ -102,12 +102,13 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
      *                                    an auth token (x-cdoc2-auth-token).
      *                                    Required when the auth token is signed  with SID RPv3,
      *                                    omitted otherwise.  (optional)
+     * @param countersignatureParams      components of an RFC9421 HTTP signature
      * @return KeyShare key share
-     * @throws ApiException if http response code is something else that 200
+     * @throws ApiException if http response code is something else than 200
      */
     public Optional<KeyShare> getKeyShare(
         String shareId,
-        String xAuthTicket,
+        String xAuthToken,
         String xAuthCertificate,
         String xSessionToken,
         String xSessionCertificate,
@@ -123,7 +124,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
         try {
             ApiResponse<KeyShare> response
                 = sharesApi.getKeyShareByShareIdWithHttpInfo(
-                shareId, xAuthTicket, xAuthCertificate,
+                shareId, xAuthToken, xAuthCertificate,
                 xSessionToken, xSessionCertificate, xSidRpv3SignatureParameters,
                 countersignatureParams != null ? countersignatureParams.rpSignedHash : null,
                 countersignatureParams != null ? countersignatureParams.rpName : null,

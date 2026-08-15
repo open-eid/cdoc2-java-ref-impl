@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import ee.cyber.cdoc2.exceptions.ConfigurationLoadingException;
 
 import static ee.cyber.cdoc2.ClientConfigurationUtil.TEST_ENV_PROPERTIES;
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.*;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.*;
 import static ee.cyber.cdoc2.ClientConfigurationUtil.initKeySharesTestEnvConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

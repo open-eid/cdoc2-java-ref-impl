@@ -47,6 +47,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
         builder.withBaseUrl(serverUrl);
 
         builder.withTrustKeyStore(config.getClientTrustStore());
+        builder.withReadTimeoutMs(config.getReadTimeout());
+        builder.withConnectTimeoutMs(config.getConnectTimeout());
         builder.withDebuggingEnabled(config.getClientServerDebug());
 
         Cdoc2KeySharesApiClient keySharesApiClient = builder.build();
@@ -89,8 +91,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
     @Override
     public Optional<KeyShare> getKeyShare(
         String shareId,
-        String authTicket,
-        String authTicketSignerCert,
+        String authToken,
+        String authTokenSignerCert,
         String sessionToken,
         String sessionCertificate,
         String sidRpv3SignatureParameters,
@@ -102,8 +104,8 @@ public final class KeySharesClientImpl implements KeySharesClient {
         try {
             result = apiClient.getKeyShare(
                 shareId,
-                authTicket,
-                authTicketSignerCert,
+                authToken,
+                authTokenSignerCert,
                 sessionToken,
                 sessionCertificate,
                 sidRpv3SignatureParameters,

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import ee.cyber.cdoc2.CryptoStickConf;
 import ee.cyber.cdoc2.util.Resources;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.PKCS11_CONF_FILE;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_CONF_FILE;
 import static ee.cyber.cdoc2.util.Resources.CLASSPATH;
 
 

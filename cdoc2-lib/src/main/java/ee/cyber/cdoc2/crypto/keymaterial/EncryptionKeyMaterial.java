@@ -15,7 +15,7 @@ import javax.crypto.SecretKey;
 import java.security.PublicKey;
 import java.util.Objects;
 
-import static ee.cyber.cdoc2.config.Cdoc2ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
+import static ee.cyber.cdoc2.config.ConfigurationProperties.isKeyLabelMachineReadableFormatEnabled;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createPublicKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSecretKeyLabelParams;
 import static ee.cyber.cdoc2.crypto.KeyLabelTools.createSymmetricKeyLabelParams;
