@@ -240,6 +240,45 @@ class TarDeflateTest implements TestLifecycleLogger {
     }
 
     @Test
+    void checkEntryFitsOnDiskThrowsWhenEntryLargerThanUsableSpace() {
+        // usable=1000, entry declares 1000B -> with safety margin required (1050B) exceeds usable
+        File fakeDir = new FakeDiskSpaceFile(0L, 1000L);
+        TarArchiveEntry entry = new TarArchiveEntry("bigfile");
+        entry.setSize(1000L);
+
+        IOException exception = assertThrows(IOException.class,
+            () -> TarDeflate.checkEntryFitsOnDisk(fakeDir, entry));
+
+        assertTrue(exception.getMessage().contains("Not enough disk space"));
+    }
+
+    @Test
+    void checkEntryFitsOnDiskDoesNotThrowWhenEntryFitsInUsableSpace() {
+        // usable=2000, entry declares 1000B -> comfortably fits even with safety margin
+        File fakeDir = new FakeDiskSpaceFile(0L, 2000L);
+        TarArchiveEntry entry = new TarArchiveEntry("smallfile");
+        entry.setSize(1000L);
+
+        assertDoesNotThrow(() -> TarDeflate.checkEntryFitsOnDisk(fakeDir, entry));
+    }
+
+    @Test
+    void checkAvailableDiskSpaceAloneMissesLargeEntryOnMostlyFreeButSmallDisk() {
+        // Reproduces the reported bug: a partition that is mostly free by percentage (here 40% used,
+        // 60% free) can still have far less absolute free space than a single large tar entry needs.
+        // total=10, usable=6 -> 40% used, comfortably below the 98% threshold.
+        File fakeDir = new FakeDiskSpaceFile(10L, 6L);
+        TarArchiveEntry entry = new TarArchiveEntry("huge-file");
+        entry.setSize(10L); // larger than the 6 units of usable space
+
+        // percentage-based check alone does not catch it
+        assertDoesNotThrow(() -> TarDeflate.checkAvailableDiskSpace(fakeDir, 98.0));
+
+        // the size-based check does
+        assertThrows(IOException.class, () -> TarDeflate.checkEntryFitsOnDisk(fakeDir, entry));
+    }
+
+    @Test
     void testMaxExtractEntries(@TempDir Path tempDir) {
         //might cause other tests to fail, if tests executed parallel
         System.setProperty(TAR_ENTRIES_THRESHOLD_PROPERTY, "1");

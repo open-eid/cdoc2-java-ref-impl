@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.5.1]
+
+### Improvements
+* Add additional check to make sure the decrypted file can fit on the disc.
+
+
 ## [3.5.0]
 ### Improvements
 * Updated auth-server openapi version

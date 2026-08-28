@@ -270,6 +270,7 @@ public class TarDeflate implements AutoCloseable {
             }
 
             checkAvailableDiskSpace(delegate.getOutputDir(), diskUsageThreshold);
+            checkEntryFitsOnDisk(delegate.getOutputDir(), tarArchiveEntry);
 
             byte[] buffer = new byte[Tar.DEFAULT_BUFFER_SIZE];
             int read;
@@ -333,6 +334,28 @@ public class TarDeflate implements AutoCloseable {
                 String err = String.format("More than  %.2f%% disk space used. Aborting", diskUsageThreshold);
                 log.error(err);
                 throw new IllegalStateException(err);
+            }
+        }
+    }
+
+    /**
+     * Throws exception when destDir doesn't have enough usable space for tarArchiveEntry's declared size.
+     * @param destDir directory (and partition) where usable disk space is checked
+     * @param tarArchiveEntry tar entry about to be extracted
+     * @throws IOException if destDir doesn't have enough usable space for tarArchiveEntry
+     */
+    static void checkEntryFitsOnDisk(File destDir, TarArchiveEntry tarArchiveEntry) throws IOException {
+        if ((destDir != null) && (destDir.exists())) {
+            long requiredBytes = (long) (tarArchiveEntry.getSize() * Tar.DISK_SPACE_SAFETY_MARGIN);
+            long usableBytes = destDir.getUsableSpace();
+
+            if (requiredBytes > usableBytes) {
+                String err = String.format(
+                    "Not enough disk space to extract \"%s\" (%d bytes required, %d bytes usable at %s)",
+                    censorFileName(tarArchiveEntry.getName()), tarArchiveEntry.getSize(), usableBytes, destDir
+                );
+                log.error(err);
+                throw new IOException(err);
             }
         }
     }
