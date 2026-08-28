@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.5.1]
+### Bug Fixes
+* Fix bug with disk size checks, when path/partiton doesn't exist
+
 ## [3.5.0]
 ### Improvements
 * Updated auth-server openapi version
