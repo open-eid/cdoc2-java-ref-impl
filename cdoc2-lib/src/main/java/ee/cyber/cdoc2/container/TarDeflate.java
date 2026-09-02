@@ -328,6 +328,13 @@ public class TarDeflate implements AutoCloseable {
     static void checkAvailableDiskSpace(File destDir, double diskUsageThreshold) {
         if ((destDir != null) && (destDir.exists())) {
             double totalSpace = (double) destDir.getTotalSpace();
+
+            if (totalSpace <= 0) {
+                String err = "Unable to determine total disk space for " + destDir + ". Aborting";
+                log.error(err);
+                throw new IllegalStateException(err);
+            }
+
             double usedPercentage = (totalSpace - (double) destDir.getUsableSpace()) / totalSpace * 100;
 
             if (usedPercentage >= diskUsageThreshold) {

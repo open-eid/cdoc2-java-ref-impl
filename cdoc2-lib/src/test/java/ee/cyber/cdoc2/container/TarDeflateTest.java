@@ -240,6 +240,16 @@ class TarDeflateTest implements TestLifecycleLogger {
     }
 
     @Test
+    void checkAvailableDiskSpaceThrowsWhenTotalSpaceIsZero() {
+        // total=0, usable=0 -> can't determine usage (e.g. path not on a real partition or I/O error),
+        // must fail closed instead of silently passing a NaN comparison
+        File fakeDir = new FakeDiskSpaceFile(0L, 0L);
+
+        assertThrows(IllegalStateException.class,
+            () -> TarDeflate.checkAvailableDiskSpace(fakeDir, 50.0));
+    }
+
+    @Test
     void checkEntryFitsOnDiskThrowsWhenEntryLargerThanUsableSpace() {
         // usable=1000, entry declares 1000B -> with safety margin required (1050B) exceeds usable
         File fakeDir = new FakeDiskSpaceFile(0L, 1000L);

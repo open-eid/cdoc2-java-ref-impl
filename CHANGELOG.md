@@ -1,10 +1,11 @@
 # Changelog
 
 ## [3.5.1]
-
 ### Improvements
 * Add additional check to make sure the decrypted file can fit on the disc.
 
+### Bug Fixes
+* Fix bug with disk size checks, when path/partiton doesn't exist
 
 ## [3.5.0]
 ### Improvements
