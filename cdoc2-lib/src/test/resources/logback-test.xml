@@ -13,7 +13,7 @@
          all certificates that are not issuer of checked certificate -->
     <logger name="ee.sk.mid.MidAuthenticationResponseValidator" level="ERROR" />
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
