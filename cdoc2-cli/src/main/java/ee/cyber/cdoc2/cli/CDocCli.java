@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
 //CLI needs to interact with standard outputs
 @SuppressWarnings("java:S106")
 @Command(
-        version = {"cdoc2-cli version: 0.0.1", "cdoc2-lib version: 0.0.1"},
+        versionProvider = VersionProvider.class,
         name = "cdoc2-cli",
         header = "\r\ncdoc2-cli is a command line interface for cdoc2 library\r\n",
         customSynopsis = { "cdoc [create] <arguments>",

@@ -6,6 +6,7 @@
 
 ### Bug Fixes
 * Fix bug with disk size checks, when path/partiton doesn't exist
+* Add correct cli and lib version to be returned with the cli `--version` command.
 
 ## [3.5.0]
 ### Improvements
