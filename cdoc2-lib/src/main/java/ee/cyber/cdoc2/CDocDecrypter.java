@@ -102,10 +102,16 @@ public class CDocDecrypter {
             throw new CDocValidationException("Must provide CDOC destination directory");
         }
 
-        if (extract && (!destinationDirectory.exists()
-                || !destinationDirectory.isDirectory()
-                || !destinationDirectory.canWrite())) {
-            throw new CDocValidationException("Destination directory " + destinationDirectory + " is not writable");
+        if (extract) {
+            if (!destinationDirectory.exists()) {
+                throw new CDocValidationException("Destination directory " + destinationDirectory + " does not exist");
+            }
+            if (!destinationDirectory.isDirectory()) {
+                throw new CDocValidationException("Destination path " + destinationDirectory + " is not a directory");
+            }
+            if (!destinationDirectory.canWrite()) {
+                throw new CDocValidationException("Destination directory " + destinationDirectory + " is not writable");
+            }
         }
 
         if (recipientKeyMaterial == null) {

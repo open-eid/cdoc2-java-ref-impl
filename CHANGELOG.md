@@ -3,6 +3,7 @@
 ## [3.5.1]
 ### Improvements
 * Add additional check to make sure the decrypted file can fit on the disc.
+* Improved error messages for encryption and decryption
 
 ### Bug Fixes
 * Fix bug with disk size checks, when path/partiton doesn't exist

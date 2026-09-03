@@ -156,7 +156,22 @@ public class CDocBuilder {
         }
     }
 
-    private void ensureFileCanBeCreatedInOutputDir(File outputCDocFile) throws FileAlreadyExistsException {
+    private void ensureFileCanBeCreatedInOutputDir(File outputCDocFile)
+        throws FileAlreadyExistsException, CDocValidationException {
+
+        File outputDirectory = outputCDocFile.getAbsoluteFile().getParentFile();
+        if (outputDirectory != null) {
+            if (!outputDirectory.exists()) {
+                throw new CDocValidationException("Output directory " + outputDirectory + " does not exist");
+            }
+            if (!outputDirectory.isDirectory()) {
+                throw new CDocValidationException("Output path " + outputDirectory + " is not a directory");
+            }
+            if (!outputDirectory.canWrite()) {
+                throw new CDocValidationException("Output directory " + outputDirectory + " is not writable");
+            }
+        }
+
         if (!ConfigurationProperties.isOverWriteAllowed() && Files.exists(outputCDocFile.toPath())) {
             log.info("File {} already exists.", outputCDocFile.toPath().toAbsolutePath());
             throw new FileAlreadyExistsException(outputCDocFile.toPath().toAbsolutePath().toString());
@@ -300,9 +315,14 @@ public class CDocBuilder {
         }
 
         for (File file: payloadFiles) {
-            if (!(file.exists() && file.isFile() && file.canRead())) {
-                log.error("Invalid payload file {}", file);
-                throw new CDocValidationException("Invalid payload file " + file);
+            if (!file.exists()) {
+                throw new CDocValidationException("Payload file " + file + " does not exist");
+            }
+            if (!file.isFile()) {
+                throw new CDocValidationException("Payload path " + file + " is not a file");
+            }
+            if (!file.canRead()) {
+                throw new CDocValidationException("Payload file " + file + " is not readable");
             }
         }
     }
