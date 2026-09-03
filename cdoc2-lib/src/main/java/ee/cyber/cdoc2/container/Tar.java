@@ -39,6 +39,10 @@ public final class Tar {
     // disk space available percentage allowed
     public static final double DEFAULT_DISK_USED_PERCENTAGE_THRESHOLD = 98;
 
+    // safety margin applied to a tar entry's declared size when checking it fits in usable disk space,
+    // covers filesystem block rounding and reserved blocks (e.g. ext4 reserves ~5% for root)
+    public static final double DISK_SPACE_SAFETY_MARGIN = 1.05;
+
     public static final int DEFAULT_TAR_ENTRIES_THRESHOLD = 1000;
 
     private Tar() {
