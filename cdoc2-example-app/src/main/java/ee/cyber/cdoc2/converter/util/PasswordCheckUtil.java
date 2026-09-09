@@ -24,7 +24,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 public final class PasswordCheckUtil {
 
-    public static final int PW_MIN_LEN = 8;
+    public static final int PW_MIN_LEN = 20;
     public static final int PW_MAX_LEN = 64;
     public static final String PW_LEN_ERR_STR = "Password length must be between "
         + PW_MIN_LEN + " and " + PW_MAX_LEN;

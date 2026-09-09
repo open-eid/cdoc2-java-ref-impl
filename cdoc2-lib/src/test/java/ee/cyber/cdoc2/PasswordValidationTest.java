@@ -12,12 +12,12 @@ class PasswordValidationTest {
 
     @Test
     void testStrongPassword() {
-        PasswordValidationUtil.validatePassword("StrongPassword".toCharArray());
+        PasswordValidationUtil.validatePassword("StrongPassword123456".toCharArray());
     }
 
     @Test
     void shouldAllowSpecialCharacter() {
-        PasswordValidationUtil.validatePassword("Password_with_special_characters!".toCharArray());
+        PasswordValidationUtil.validatePassword("Password_with_special_characters1!".toCharArray());
     }
 
     @Test
@@ -27,27 +27,34 @@ class PasswordValidationTest {
 
     @Test
     void shouldAllowWhitespace() {
-        PasswordValidationUtil.validatePassword("Password With whitespaces".toCharArray());
+        PasswordValidationUtil.validatePassword("Password With whitespaces1".toCharArray());
     }
 
     @Test
     void shouldFailPwValidationWithoutUpperCaseCharacter() {
         assertThrowsIllegalArgumentException(() ->
-                PasswordValidationUtil.validatePassword("password_without_upper_case".toCharArray())
+                PasswordValidationUtil.validatePassword("password_without_upper_case1".toCharArray())
             );
     }
 
     @Test
     void shouldFailPwValidationWithoutLowerCaseCharacter() {
         assertThrowsIllegalArgumentException(() ->
-            PasswordValidationUtil.validatePassword("PASSWORD_WITHOUT_LOWER_CASE".toCharArray())
+            PasswordValidationUtil.validatePassword("PASSWORD_WITHOUT_LOWER_CASE1".toCharArray())
+        );
+    }
+
+    @Test
+    void shouldFailPwValidationWithoutDigit() {
+        assertThrowsIllegalArgumentException(() ->
+            PasswordValidationUtil.validatePassword("PasswordWithoutAnyDigitInIt".toCharArray())
         );
     }
 
     @Test
     void shouldFailTooShortPwValidation() {
         assertThrowsIllegalArgumentException(() ->
-            PasswordValidationUtil.validatePassword("short".toCharArray())
+            PasswordValidationUtil.validatePassword("Short1".toCharArray())
         );
     }
 
