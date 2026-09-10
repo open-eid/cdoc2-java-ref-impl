@@ -28,11 +28,11 @@ import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.MIDAuthJWSSigner;
 import ee.cyber.cdoc2.crypto.jwt.SIDAuthCertData;
 import ee.cyber.cdoc2.crypto.jwt.SessionToken;
-import ee.cyber.cdoc2.rpserver.RpClientMock;
+import ee.cyber.cdoc2.RpClientMock;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static ee.cyber.cdoc2.AuthClientMock.SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL;
-import static ee.cyber.cdoc2.rpserver.RpClientMock.MID_SIGNING_CERTIFICATE_BASE64URL;
+import static ee.cyber.cdoc2.Constants.MID_SIGNING_CERTIFICATE_BASE64URL;
+import static ee.cyber.cdoc2.Constants.SESSION_TOKEN_NONCE_LOCALHOST_BASE64URL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

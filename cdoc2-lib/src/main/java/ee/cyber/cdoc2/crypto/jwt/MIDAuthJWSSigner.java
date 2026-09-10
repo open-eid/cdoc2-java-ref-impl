@@ -127,7 +127,7 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
                 interactionParams
             );
 
-            ApiResponse<MidSessionStatusResponse> apiResponse = pollForFinalSessionStatus(
+            ApiResponse<MidSessionStatusResponse> apiResponse = rpClient.pollForCompleteMidSession(
                 disclosedSessionToken,
                 sessionToken.getSigningCertificate(),
                 sessionId
@@ -152,8 +152,6 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
             return Base64URL.encode(responseBody.getSignature().getValue());
         } catch (ExtApiException ex) {
             throw new JOSEException(ex);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -171,26 +169,6 @@ public class MIDAuthJWSSigner implements IdentityJWSSigner {
             Optional.ofNullable(headers.get("Signature").get(0))
                 .orElseThrow()
         );
-    }
-
-    private ApiResponse<MidSessionStatusResponse> pollForFinalSessionStatus(
-        String xCdoc2SessionToken,
-        String xCdoc2SessionX5c,
-        UUID sessionId
-    ) throws InterruptedException, ExtApiException {
-        ApiResponse<MidSessionStatusResponse> response = null;
-        while (response == null || "RUNNING".equalsIgnoreCase(response.getData().getState().getValue())) {
-            response =
-                rpClient.midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
-            if (response != null && "COMPLETE".equalsIgnoreCase(response.getData().getState().getValue())) {
-                break;
-            }
-            log.debug("Sleeping for {} {}", SESSION_POLL_SLEEP_QUANTITY,
-                SESSION_POLL_SLEEP_TIMEUNIT);
-            SESSION_POLL_SLEEP_TIMEUNIT.sleep(SESSION_POLL_SLEEP_QUANTITY);
-        }
-        log.debug("Got final session status response");
-        return response;
     }
 
     @Override

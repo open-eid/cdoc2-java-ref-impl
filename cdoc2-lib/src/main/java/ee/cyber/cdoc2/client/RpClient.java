@@ -8,6 +8,7 @@ import ee.cyber.cdoc2.client.api.ApiResponse;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
+import ee.cyber.cdoc2.client.model.WellKnownResponse;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 
 public interface RpClient {
@@ -18,6 +19,12 @@ public interface RpClient {
     ) throws ExtApiException;
 
     SessionStatusResponse sidSession(
+        @Nonnull String xCdoc2SessionToken,
+        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull UUID sessionId
+    ) throws ExtApiException;
+
+    SessionStatusResponse pollForCompleteSidSession(
         @Nonnull String xCdoc2SessionToken,
         @Nonnull String xCdoc2SessionX5c,
         @Nonnull UUID sessionId
@@ -39,6 +46,14 @@ public interface RpClient {
         @Nonnull UUID sessionId
     ) throws ExtApiException;
 
+    ApiResponse<MidSessionStatusResponse> pollForCompleteMidSession(
+        @Nonnull String xCdoc2SessionToken,
+        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull UUID sessionId
+    ) throws ExtApiException;
+
     String getBasePath();
     String getCertificateLevel();
+
+    WellKnownResponse getWellKnown() throws ExtApiException;
 }

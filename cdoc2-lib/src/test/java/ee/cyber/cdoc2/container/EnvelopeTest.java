@@ -94,7 +94,7 @@ import ee.cyber.cdoc2.fbs.recipients.PBKDF2Capsule;
 import ee.cyber.cdoc2.fbs.recipients.RSAPublicKeyCapsule;
 import ee.cyber.cdoc2.fbs.recipients.SymmetricKeyCapsule;
 import ee.cyber.cdoc2.mobileid.MIDTestData;
-import ee.cyber.cdoc2.rpserver.RpClientMock;
+import ee.cyber.cdoc2.RpClientMock;
 import ee.cyber.cdoc2.services.Services;
 import ee.cyber.cdoc2.services.ServicesBuilder;
 

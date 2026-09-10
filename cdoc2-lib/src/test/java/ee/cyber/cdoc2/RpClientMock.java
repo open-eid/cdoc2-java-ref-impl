@@ -1,4 +1,4 @@
-package ee.cyber.cdoc2.rpserver;
+package ee.cyber.cdoc2;
 
 import java.util.List;
 import java.util.Map;
@@ -8,13 +8,15 @@ import org.eclipse.jetty.http.HttpStatus;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.HttpHeaders;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 
 public class RpClientMock {
@@ -70,9 +72,27 @@ public class RpClientMock {
         }
         """;
 
+    private static final String SID_SESSION_RESPONSE_RUNNING = """
+        {
+          "state": "RUNNING"
+        }
+        """;
+    private static final String MID_SESSION_RESPONSE_RUNNING = """
+        {
+          "state": "RUNNING"
+        }
+        """;
+
     @SuppressWarnings("checkstyle:LineLength")
-    public static final String MID_SIGNING_CERTIFICATE_BASE64URL =
-        "MIIDqDCCAy6gAwIBAgIQB9W11BzBABj-0d_AZx6UHzAKBggqhkjOPQQDAjBxMQswCQYDVQQGEwJFRTEbMBkGA1UECgwSU0sgSUQgU29sdXRpb25zIEFTMRcwFQYDVQRhDA5OVFJFRS0xMDc0NzAxMzEsMCoGA1UEAwwjVEVTVCBvZiBTSyBJRCBTb2x1dGlvbnMgRUlELVEgMjAyMUUwHhcNMjQwNjEyMDY0NTI4WhcNMjkwNjE2MDY0NTI3WjCBlTELMAkGA1UEBhMCRUUxLzAtBgNVBAMMJk1BUlkgw4ROTixPJ0NPTk5Fxb0txaBVU0xJSyBURVNUTlVNQkVSMSUwIwYDVQQEDBxPJ0NPTk5Fxb0txaBVU0xJSyBURVNUTlVNQkVSMRIwEAYDVQQqDAlNQVJZIMOETk4xGjAYBgNVBAUTEVBOT0VFLTUxMzA3MTQ5NTYwMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWlV1aVSXw6WhagWmFmXE_oe-0R1xZzrHyoiVlgKpGiJ8cwIQLogRGQnWY7NwgQvRHCBmsl99bj57h7SWnd03m6OCAYEwggF9MAkGA1UdEwQCMAAwHwYDVR0jBBgwFoAUScfc7QYUosdtnKbP11L9aOXoBBQwcAYIKwYBBQUHAQEEZDBiMDMGCCsGAQUFBzAChidodHRwOi8vYy5zay5lZS9URVNUX0VJRC1RXzIwMjFFLmRlci5jcnQwKwYIKwYBBQUHMAGGH2h0dHA6Ly9haWEuZGVtby5zay5lZS9laWRxMjAyMWUweAYDVR0gBHEwbzAIBgYEAI96AQIwYwYJKwYBBAHOHxIBMFYwVAYIKwYBBQUHAgEWSGh0dHBzOi8vd3d3LnNraWRzb2x1dGlvbnMuZXUvcmVzb3VyY2VzL2NlcnRpZmljYXRpb24tcHJhY3RpY2Utc3RhdGVtZW50LzA0BgNVHR8ELTArMCmgJ6AlhiNodHRwOi8vYy5zay5lZS90ZXN0X2VpZC1xXzIwMjFlLmNybDAdBgNVHQ4EFgQUj8KjnXvGQJCRYOd5LVfPku7QsZwwDgYDVR0PAQH_BAQDAgeAMAoGCCqGSM49BAMCA2gAMGUCMQCocXWDbBnkM3WEyBdv9Vm0A1MNRv08WrR192dRBcX42Kz5oiH0SdHRJv2ffeuEeSwCMEw2tSA3ClJv233Dl7rIYU_T6UG2NQhvDD5FhnP0umZRmVfAUQ6eVcmU8AhFtNJjwg==";
+    private static final HttpHeaders MID_SESSION_COMPLETE_HEADERS = new HttpHeaders(
+        new HttpHeader("Content-Type", "application/json"),
+        new HttpHeader("x-rp-signed-hash", "sj2RtSo7c1tx+J00KWWkzyv4iQ2L2cuX0InnFFi+GAQ="),
+        new HttpHeader("x-rp-name", "DEMO"),
+        new HttpHeader("Signature-Input", "rp-sig=(\"x-rp-signed-hash\" \"x-rp-name\");created=1779011296;keyid=\"rp-server-ec-key-2026\""),
+        new HttpHeader("Signature", "rp-sig=:nt5aITnpc8JjVrOYw8q46bNieq9L7y8gBjw+rJJ7BoY4X3h8BL5PwwcUBzl70iTOvikGCBOmpjbDY1661EqMMA==:")
+    );
+
+    public static final int TIMEOUT_DELAY_MS = 3_000;
 
     private final WireMockExtension wiremock;
 
@@ -96,13 +116,56 @@ public class RpClientMock {
 
     public void stubSidSession(UUID sessionId) {
         wiremock.stubFor(
-            WireMock.get(
+            get(
                 urlEqualTo("/sid/session/" + sessionId)
             ).willReturn(aResponse()
                 .withStatus(HttpStatus.OK_200)
                 .withHeader("Content-Type", "application/json")
                 .withBody(SID_SESSION_RESPONSE_OK)
             )
+        );
+    }
+
+    public void stubSidSessionCompleteOnThirdTry(UUID sessionId) {
+        wiremock.resetScenarios();
+
+        // First response with null request body
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/sid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                )
+                .willSetStateTo("state-2")
+        );
+
+        // Second response with STARTED status
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/sid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs("state-2")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(SID_SESSION_RESPONSE_RUNNING)
+                )
+                .willSetStateTo("state-3")
+        );
+
+        // Third response with COMPLETE status
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/sid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs("state-3")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(SID_SESSION_RESPONSE_OK)
+                )
         );
     }
 
@@ -120,25 +183,142 @@ public class RpClientMock {
         );
     }
 
-    @SuppressWarnings("checkstyle:LineLength")
     public void stubMidSession(UUID sessionId) {
-        HttpHeaders headers = new HttpHeaders(
-            new HttpHeader("Content-Type", "application/json"),
-            new HttpHeader("x-rp-signed-hash", "sj2RtSo7c1tx+J00KWWkzyv4iQ2L2cuX0InnFFi+GAQ="),
-            new HttpHeader("x-rp-name", "DEMO"),
-            new HttpHeader("Signature-Input", "rp-sig=(\"x-rp-signed-hash\" \"x-rp-name\");created=1779011296;keyid=\"rp-server-ec-key-2026\""),
-            new HttpHeader("Signature", "rp-sig=:nt5aITnpc8JjVrOYw8q46bNieq9L7y8gBjw+rJJ7BoY4X3h8BL5PwwcUBzl70iTOvikGCBOmpjbDY1661EqMMA==:")
-        );
-
         wiremock.stubFor(
-            WireMock.get(
+            get(
                 urlEqualTo("/mid/session/" + sessionId)
             ).willReturn(aResponse()
                 .withStatus(HttpStatus.OK_200)
-                .withHeaders(headers)
+                .withHeaders(MID_SESSION_COMPLETE_HEADERS)
                 .withBody(MID_SESSION_RESPONSE_OK)
             )
         );
+    }
+
+    public void stubMidSessionCompleteOnThirdTry(UUID sessionId) {
+        wiremock.resetScenarios();
+
+        // First response with null request body
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/mid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                )
+                .willSetStateTo("state-2")
+        );
+
+        // Second response with STARTED status
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/mid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs("state-2")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(MID_SESSION_RESPONSE_RUNNING)
+                )
+                .willSetStateTo("state-3")
+        );
+
+        // Third response with COMPLETE status
+        wiremock.stubFor(
+            get(
+                urlEqualTo("/mid/session/" + sessionId)
+            ).inScenario("retry")
+                .whenScenarioStateIs("state-3")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeaders(MID_SESSION_COMPLETE_HEADERS)
+                    .withBody(MID_SESSION_RESPONSE_OK)
+                )
+        );
+    }
+
+    public void stubSidAuthenticateWithNetworkFault() {
+        stubWithNetworkFault(post(urlMatching("/sid/authenticate")));
+    }
+
+    public void stubSidAuthenticateWithServerError() {
+        stubWithServerError(post(urlMatching("/sid/authenticate")));
+    }
+
+    public void stubSidAuthenticateWith400() {
+        stubWith400(post(urlMatching("/sid/authenticate")));
+    }
+
+    public void stubSidAuthenticateWith404() {
+        stubWith404(post(urlMatching("/sid/authenticate")));
+    }
+
+
+    public void stubSidAuthenticateWithDelay() {
+        stubWithDelay(post(urlMatching("/sid/authenticate")));
+    }
+
+    public void stubSidSessionWithNetworkFault() {
+        stubWithNetworkFault(get(urlMatching("/sid/session/.*")));
+    }
+
+    public void stubSidSessionWithServerError() {
+        stubWithServerError(get(urlMatching("/sid/session/.*")));
+    }
+
+    public void stubSidSessionWith400() {
+        stubWith400(get(urlMatching("/sid/session/.*")));
+    }
+
+    public void stubSidSessionWith404() {
+        stubWith404(get(urlMatching("/sid/session/.*")));
+    }
+
+
+    public void stubSidSessionWithDelay() {
+        stubWithDelay(get(urlMatching("/sid/session/.*")));
+    }
+
+    public void stubMidAuthenticateWithNetworkFault() {
+        stubWithNetworkFault(post(urlMatching("/mid/authenticate")));
+    }
+
+    public void stubMidAuthenticateWithServerError() {
+        stubWithServerError(post(urlMatching("/mid/authenticate")));
+    }
+
+    public void stubMidAuthenticateWith400() {
+        stubWith400(post(urlMatching("/mid/authenticate")));
+    }
+
+    public void stubMidAuthenticateWith404() {
+        stubWith404(post(urlMatching("/mid/authenticate")));
+    }
+
+
+    public void stubMidAuthenticateWithDelay() {
+        stubWithDelay(post(urlMatching("/mid/authenticate")));
+    }
+
+    public void stubMidSessionWithNetworkFault() {
+        stubWithNetworkFault(get(urlMatching("/mid/session/.*")));
+    }
+
+    public void stubMidSessionWithServerError() {
+        stubWithServerError(get(urlMatching("/mid/session/.*")));
+    }
+
+    public void stubMidSessionWith400() {
+        stubWith400(get(urlMatching("/mid/session/.*")));
+    }
+
+    public void stubMidSessionWith404() {
+        stubWith404(get(urlMatching("/mid/session/.*")));
+    }
+
+    public void stubMidSessionWithDelay() {
+        stubWithDelay(get(urlMatching("/mid/session/.*")));
     }
 
     public void stubForGetWellKnownJwks() throws JsonProcessingException {
@@ -159,13 +339,58 @@ public class RpClientMock {
         );
 
         wiremock.stubFor(
-            WireMock.get(
+            get(
                 urlEqualTo("/.well-known/jwks.jws")
             ).willReturn(aResponse()
                 .withStatus(HttpStatus.OK_200)
                 .withHeader("Content-Type", "application/json")
                 .withBody(OBJECT_MAPPER.writeValueAsString(response))
             )
+        );
+    }
+
+    private void stubWithNetworkFault(MappingBuilder mappingBuilder) {
+        wiremock.stubFor(
+            mappingBuilder.willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER))
+        );
+    }
+
+    private void stubWithServerError(MappingBuilder mappingBuilder) {
+        wiremock.stubFor(
+            mappingBuilder.willReturn(serverError().withBody(
+                """
+                    {"errorCode":"RP_SERVER_ERROR_CODE"}
+                    """
+            ))
+        );
+    }
+
+    private void stubWith400(MappingBuilder mappingBuilder) {
+        wiremock.stubFor(
+            mappingBuilder.willReturn(aResponse()
+                .withStatus(HttpStatus.BAD_REQUEST_400)
+                .withHeader("Content-Type", "application/json")
+                .withBody("""
+                    {"errorCode":"INVALID_REQUEST"}
+                    """))
+        );
+    }
+
+    private void stubWith404(MappingBuilder mappingBuilder) {
+        wiremock.stubFor(
+            mappingBuilder.willReturn(aResponse()
+                .withStatus(HttpStatus.NOT_FOUND_404)
+                .withHeader("Content-Type", "application/json")
+                .withBody("""
+                    {"errorCode":"NOT_FOUND"}
+                    """))
+        );
+    }
+
+    private void stubWithDelay(MappingBuilder mappingBuilder) {
+        wiremock.stubFor(
+            mappingBuilder.willReturn(aResponse()
+                .withFixedDelay(TIMEOUT_DELAY_MS))
         );
     }
 }
