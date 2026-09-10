@@ -28,7 +28,7 @@ mkdir -p "$REENCRYPTION_DIRECTORY"
 MID_ID_CODE=60001017869
 MID_PHONE_NR=+37268000769
 SID_ID_CODE=30303039914
-PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
+PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword1234"
 KEY_SHARES_PROPERTIES="$TESTING_DIR/shares-properties/key-shares.properties"
 MOBILE_ID_PROPERTIES="$TESTING_DIR/shares-properties/mobile_id-test.properties"
 SMART_ID_PROPERTIES="$TESTING_DIR/shares-properties/smart_id-test.properties"

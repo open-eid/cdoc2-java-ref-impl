@@ -38,7 +38,7 @@ CDOC_DECRYPT_CMD="java -Dee.cyber.cdoc2.overwrite=${OVERWRITE_FILES} -jar ${CLI_
 CDOC_LIST_CMD="java -jar ${CLI_JAR} list"
 
 SECRET_WITH_LABEL="mylabel:base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
-PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword"
+PASSWORD_WITH_LABEL="passwordlabel:myPlainTextPassword1234"
 
 create_simple_ec() {
   local cdoc_file="ec_simple.cdoc2"
@@ -270,7 +270,7 @@ create_password() {
   then
     echo "Creating ${cdoc_file}"
     $CDOC_CREATE_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
-    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud" ${CDOC_DIR}/README.md
+    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud1" ${CDOC_DIR}/README.md
   fi
   echo
 
@@ -278,7 +278,7 @@ create_password() {
   then
     echo "Decrypting ${cdoc_file}"
     $CDOC_DECRYPT_CMD --file ${TESTVECTORS_DIR}/${cdoc_file} \
-    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud" -o ${TMP_DIR}
+    --password="kevade:Kui-Arno-isaga-koolimajja-jõudis-olid-tunnid-juba-alanud1" -o ${TMP_DIR}
   fi
 }
 

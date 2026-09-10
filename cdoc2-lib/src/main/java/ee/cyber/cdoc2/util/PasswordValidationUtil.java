@@ -16,19 +16,19 @@ import org.slf4j.LoggerFactory;
 public final class PasswordValidationUtil {
 
     private static final int PW_MAX_LENGTH = 64;
-    private static final int PW_MIN_LENGTH = 8;
+    private static final int PW_MIN_LENGTH = 20;
 
     private static final String PW_REQUIREMENTS = "Password length should be between "
         + PW_MIN_LENGTH + " and " + PW_MAX_LENGTH
-        + ", should contain at least one upper case and one lower case character";
+        + ", should contain at least one upper case character, one lower case character and one digit";
 
     private PasswordValidationUtil() { }
 
     private static final Logger log = LoggerFactory.getLogger(PasswordValidationUtil.class);
 
     /**
-     * Validates password strength for min requirements to have at least one lower case and one
-     * upper case character.
+     * Validates password strength for min requirements to have at least one lower case, one
+     * upper case character and one digit.
      * @param password password chars
      * @throws IllegalArgumentException if password validation has failed
      */
@@ -53,7 +53,8 @@ public final class PasswordValidationUtil {
         return new PasswordValidator(
             new LengthRule(PW_MIN_LENGTH, PW_MAX_LENGTH),
             new CharacterRule(EnglishCharacterData.LowerCase, 1),
-            new CharacterRule(EnglishCharacterData.UpperCase, 1)
+            new CharacterRule(EnglishCharacterData.UpperCase, 1),
+            new CharacterRule(EnglishCharacterData.Digit, 1)
         );
     }
 

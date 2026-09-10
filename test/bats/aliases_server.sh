@@ -36,7 +36,7 @@ export DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
 export CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc2"
 export CDOC2_CONTAINER=$TEST_RESULTS_DIR/$CDOC2_CONTAINER_NAME
 export CLI_KEYS_DIR=$CDOC2_DIR/cdoc2-cli/keys
-export PW="myPlainTextPassword"
+export PW="myPlainTextPassword1234"
 export PW_LABEL="passwordlabel"
 export PASSWORD_WITH_LABEL="$PW_LABEL:$PW"
 export SECRET="base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
