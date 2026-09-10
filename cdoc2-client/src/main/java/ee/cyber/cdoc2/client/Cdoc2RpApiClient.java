@@ -11,6 +11,7 @@ import ee.cyber.cdoc2.client.model.MidAuthenticateRequest;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
+import ee.cyber.cdoc2.client.model.WellKnownResponse;
 
 public class Cdoc2RpApiClient {
     private final Cdoc2RpApi rpApi;
@@ -100,6 +101,16 @@ public class Cdoc2RpApiClient {
     ) throws ApiException {
         return rpApi
             .midSessionWithHttpInfo(sessionId, xSessionToken, xSessionCertificate);
+    }
+
+    /**
+     * Retrieves the server's well-known JWKS signing-key information.
+     *
+     * @return {@link WellKnownResponse} containing the server's signing keys
+     * @throws ApiException if the API call fails
+     */
+    public WellKnownResponse getWellKnown() throws ApiException {
+        return rpApi.getWellKnown();
     }
 
     public String getBasePath() {
