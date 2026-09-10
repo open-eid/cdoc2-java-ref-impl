@@ -36,8 +36,8 @@ public record AuthClientConfigurationProps(
 ) implements AuthClientConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(AuthClientConfigurationProps.class);
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 2000;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
     private static final int DEFAULT_POLLING_MAX_COUNT = 0;
 
