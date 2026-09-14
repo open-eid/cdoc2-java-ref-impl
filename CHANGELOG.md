@@ -4,6 +4,7 @@
 ### Improvements
 * Add additional check to make sure the decrypted file can fit on the disc.
 * Improved error messages for encryption and decryption
+* Changed the rules for password encryption to match the rules in the CDOC2 documentation
 * New configuration options for client polling behavior:
   * `rp-server.client.polling.intervalMs` - default 1000
   * `rp-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE

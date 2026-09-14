@@ -457,7 +457,7 @@ class EnvelopeTest implements TestLifecycleLogger {
             payloadFos.write(payloadData.getBytes(StandardCharsets.UTF_8));
         }
 
-        String password = "myPlainTextPassword";
+        String password = "myPlainTextPassword1";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         Envelope envelope = Envelope.prepare(
@@ -639,7 +639,7 @@ class EnvelopeTest implements TestLifecycleLogger {
 
     @Test
     void testPasswordKeyScenario(@TempDir Path tempDir) throws Exception {
-        String password = "myPlainTextPassword";
+        String password = "myPlainTextPassword1";
         String keyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         testContainer(
@@ -773,7 +773,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         Files.createDirectories(destinationDir);
         File outputCDocFile = destinationDir.resolve(outputCdocFileName).toFile();
 
-        String password = "myPlainTextPassword";
+        String password = "myPlainTextPassword1";
         String passwordKeyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         EncryptionKeyMaterial reEncryptionKeyMaterial = EncryptionKeyMaterial
@@ -868,7 +868,7 @@ class EnvelopeTest implements TestLifecycleLogger {
         String outputCdocFileName = decryptionData.payloadFileName() + ".cdoc2";
         File outputCDocFile = destinationDir.resolve(outputCdocFileName).toFile();
 
-        String password = "myPlainTextPassword";
+        String password = "myPlainTextPassword1";
         String passwordKeyLabel = "testPBKDF2KeyFromPasswordSerialization";
 
         EncryptionKeyMaterial reEncryptionKeyMaterial = EncryptionKeyMaterial

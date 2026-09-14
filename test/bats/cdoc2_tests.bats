@@ -27,9 +27,14 @@ DECRYPTED_FILE=$TEST_RESULTS_DIR/README.md
 CDOC2_CONTAINER_NAME="cdoc_test_container.cdoc2"
 CDOC2_CONTAINER=$TEST_RESULTS_DIR/$CDOC2_CONTAINER_NAME
 CLI_KEYS_DIR=$CDOC2_DIR/cdoc2-cli/keys
-PW="myPlainTextPassword"
+PW="myPlainTextPassword1234"
 PW_LABEL="passwordlabel"
 PASSWORD_WITH_LABEL="$PW_LABEL:$PW"
+
+# password used only to decrypt pre-existing "*_DO_NOT_DELETE" test vectors, which were
+# encrypted before the password rules required a minimum length of 20 and a digit
+OLD_PW="myPlainTextPassword"
+OLD_PASSWORD_WITH_LABEL="$PW_LABEL:$OLD_PW"
 SECRET="base64,HHeUrHfo+bCZd//gGmEOU2nA5cgQolQ/m18UO/dN1tE="
 SECRET_LABEL="mylabel"
 SECRET_WITH_LABEL="$SECRET_LABEL:$SECRET"
@@ -164,7 +169,7 @@ run_alias() {
   local existing_test_vector="password_old_version_DO_NOT_DELETE.cdoc2"
 
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS}"/${existing_test_vector} -pw $OLD_PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS}/${existing_test_vector}"
@@ -558,7 +563,7 @@ EOF
 
   # ensure encrypted container can be decrypted successfully
   echo "# Decrypting ${existing_test_vector}">&3
-  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector} -pw $PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
+  run run_alias cdoc-cli decrypt -f "${TEST_VECTORS_V_1_2}"/${existing_test_vector} -pw $OLD_PASSWORD_WITH_LABEL --output "$TEST_RESULTS_DIR"
 
   assertSuccessfulExecution
   assert_output --partial "Decrypting ${TEST_VECTORS_V_1_2}/${existing_test_vector}"

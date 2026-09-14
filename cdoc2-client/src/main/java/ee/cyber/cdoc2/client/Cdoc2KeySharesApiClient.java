@@ -71,7 +71,7 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
     /**
      * @param shareId            key share ID
      * @param sessionToken       CDOC2 session token (SDJWT)
-     * @param signingCertificate PEM encoded certificate that signed the sessionToken
+     * @param signingCertificate Base64Url-encoded DER X509 certificate that signed the sessionToken
      * @return NonceResponse created server nonce response
      * @throws ApiException if server nonce creation fails
      */
@@ -93,9 +93,9 @@ public final class Cdoc2KeySharesApiClient extends KeySharesClientBuilder {
     /**
      * @param shareId                     key share ID
      * @param xAuthToken                 CDOC2 Auth token (SDJWT)
-     * @param xAuthCertificate            PEM encoded certificate that signed the xAuthToken
+     * @param xAuthCertificate            Base64Url-encoded DER X509 certificate that signed the xAuthToken
      * @param xSessionToken               CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate         PEM encoded X509 certificate (without newlines) that was used to
+     * @param xSessionCertificate         Base64Url-encoded DER X509 certificate that was used to
      *                                    generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param xSidRpv3SignatureParameters Base64Url-encoded JSON structure containing additional
      *                                    parameters necessary to verify the signature of

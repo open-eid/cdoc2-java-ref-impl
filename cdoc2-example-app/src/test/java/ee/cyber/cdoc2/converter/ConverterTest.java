@@ -39,7 +39,7 @@ class ConverterTest {
     static final String ECC_P12_PW = "test";
 
     // password used to derive bytes for re-encryption
-    static final char[] CDOC2_TEST_PW = {'T', 'e', 's', 't', ' ', 'p', 'w', 'd', '2'};
+    static final char[] CDOC2_TEST_PW = "TestPassword_pwd1234".toCharArray();
 
     // cdoc2 requires label with password
     public static final String CDOC2_TEST_LABEL = "pw_label";

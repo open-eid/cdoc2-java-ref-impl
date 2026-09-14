@@ -35,7 +35,7 @@ class CDocCliTest {
 
     private static final Logger log = LoggerFactory.getLogger(CDocCliTest.class);
 
-    private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword";
+    private static final String PASSWORD_OPTION = "--password=passwordlabel:myPlainTextPassword1";
     private static final String SECRET_OPTION
         = "--secret=label_b64secret:base64,aejUgxxSQXqiiyrxSGACfMiIRBZq5KjlCwr/xVNY/B0=";
     private static final int SUCCESSFUL_EXIT_CODE = 0;
@@ -105,7 +105,7 @@ class CDocCliTest {
     }
 
     @Test
-    @Disabled("Requires user interaction for inserting password 'myPlainTextPassword'")
+    @Disabled("Requires user interaction for inserting password 'myPlainTextPassword1'")
     void testSuccessfulCreateDecryptDocWithPasswordWhenItIsInsertedInteractively()
         throws IOException {
         encrypt(PASSWORD_OPTION);
@@ -115,13 +115,13 @@ class CDocCliTest {
     @Test
     void testSuccessfulCreateDecryptDocWithPasswordWhenLabelIsMissing() throws IOException {
         encrypt(PASSWORD_OPTION);
-        decryptSuccessfully("--password=:myPlainTextPassword");
+        decryptSuccessfully("--password=:myPlainTextPassword1");
     }
 
     @Test
     void testSuccessfulCreateDecryptDocWithMissingLabelInPassword() throws IOException {
-        encrypt("--password=:myPlainTextPassword");
-        decryptSuccessfully("--password=:myPlainTextPassword");
+        encrypt("--password=:myPlainTextPassword1");
+        decryptSuccessfully("--password=:myPlainTextPassword1");
     }
 
     @Test
@@ -194,7 +194,7 @@ class CDocCliTest {
         String secretForEncrypt = "--secret=" + secret;
         String secretForDecrypt = "--secret=" + secret;
 
-        String password = "passwordlabel:myPlainTextPassword";
+        String password = "passwordlabel:myPlainTextPassword1";
         String passwordForEncrypt = "--encpassword=" + password;
         String passwordForDecrypt = "--password=" + password;
 
@@ -215,7 +215,7 @@ class CDocCliTest {
 
         String secretCmd = "--secret=" + secret;
 
-        String password = "passwordlabel:myPlainTextPassword";
+        String password = "passwordlabel:myPlainTextPassword1";
         String passwordForReEncrypt = "--encpassword=" + password;
 
         assertThrowsException(() ->

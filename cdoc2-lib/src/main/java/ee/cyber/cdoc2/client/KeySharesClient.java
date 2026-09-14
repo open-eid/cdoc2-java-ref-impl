@@ -24,7 +24,7 @@ public interface KeySharesClient extends ServerClient {
      * Create server nonce for authentication signature.
      * @param shareId key share ID
      * @param sessionToken CDOC2 session token (SDJWT)
-     * @param signingCertificate PEM encoded certificate that signed the sessionToken
+     * @param signingCertificate Base64Url-encoded DER X509 certificate that signed the sessionToken
      * @return NonceResponse created server nonce response
      */
     NonceResponse createKeyShareNonce(
@@ -37,9 +37,9 @@ public interface KeySharesClient extends ServerClient {
      * Get key share by share ID.
      * @param shareId key share ID
      * @param authToken server authentication token
-     * @param authTokenSignerCert authentication token signer certificate in PEM format
+     * @param authTokenSignerCert authentication token signer certificate as Base64Url-encoded DER X509 certificate
      * @param sessionToken CDOC2 Session token (SDJWT)
-     * @param sessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     * @param sessionCertificate Base64Url-encoded DER X509 certificate that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param sidRpv3SignatureParameters Base64Url-encoded JSON structure containing additional
      *                                   parameters necessary to verify the signature of
