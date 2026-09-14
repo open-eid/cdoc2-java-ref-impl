@@ -1,9 +1,9 @@
 package ee.cyber.cdoc2.cli.commands;
 
-import ee.cyber.cdoc2.CryptoStickConf;
-import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
-import ee.cyber.cdoc2.CDocDecrypter;
-import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 import java.io.File;
 import java.nio.file.InvalidPathException;
 import java.time.LocalDateTime;
@@ -13,12 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import ee.cyber.cdoc2.services.Cdoc2Services;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
+import ee.cyber.cdoc2.CDocDecrypter;
+import ee.cyber.cdoc2.CryptoStickConf;
+import ee.cyber.cdoc2.cli.DecryptionKeyExclusiveArgument;
+import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
+import ee.cyber.cdoc2.services.Cdoc2Services;
 
 import static ee.cyber.cdoc2.cli.util.CDocCommonHelper.assignClientConfValuesToSystemProps;
 import static ee.cyber.cdoc2.cli.util.CDocDecryptionHelper.getDecryptionKeyMaterial;
@@ -31,22 +32,23 @@ import static ee.cyber.cdoc2.config.ConfigurationProperties.KEY_CAPSULE_PROPERTI
 @SuppressWarnings("java:S106")
 @Command(name = "list", aliases = {"l"}, showAtFileInUsageHelp = true)
 public class CDocListCmd implements Callable<Void> {
-    @Option(names = {"-f", "--file" }, required = true,
-            paramLabel = "CDOC2", description = "the CDOC2 file")
+    @Option(names = {"-f", "--file"}, required = true,
+        paramLabel = "CDOC2", description = "the CDOC2 file")
     private File cdocFile;
 
     @CommandLine.ArgGroup
     DecryptionKeyExclusiveArgument exclusive;
 
-    @Option (names = {"--slot"},
-            description = "Key from smartcard slot used for decrypting. Default 0")
+    @Option(names = {"--slot"},
+        description = "Key from smartcard slot used for decrypting. Default 0")
     private Integer slot = 0;
 
     @Option(names = {"-a", "--alias"},
-            description = "Alias of the keystore entry to use for decrypting")
+        description = "Alias of the keystore entry to use for decrypting")
     private String keyAlias;
 
     private String keyServerPropertiesFile;
+
     @Option(names = {"--server"}, paramLabel = "FILE.properties")
     private void setKeyServerPropertiesFile(String server) {
         keyServerPropertiesFile = server;
@@ -59,10 +61,10 @@ public class CDocListCmd implements Callable<Void> {
         props.forEach(System::setProperty);
     }
 
-    @Option(names = { "-v", "--verbose" }, description = "verbose")
+    @Option(names = {"-v", "--verbose"}, description = "verbose")
     private boolean verbose = false;
 
-    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display a help message")
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "display a help message")
     private boolean helpRequested = false;
 
     @Option(names = {"-c", "--crypto-stick"},
@@ -80,12 +82,13 @@ public class CDocListCmd implements Callable<Void> {
 
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
-            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive, null, null);
+            : getDecryptionKeyMaterial(this.cdocFile, this.exclusive, null,
+            null, false);
 
         CDocDecrypter cDocDecrypter = new CDocDecrypter()
-                .withCDoc(cdocFile)
-                .withServices(Cdoc2Services.initFromSystemProperties())
-                .withRecipient(decryptionKeyMaterial);
+            .withCDoc(cdocFile)
+            .withServices(Cdoc2Services.initFromSystemProperties())
+            .withRecipient(decryptionKeyMaterial);
 
         System.out.println("Listing contents of " + cdocFile);
         List<ArchiveEntry> files = cDocDecrypter.list();
@@ -96,7 +99,7 @@ public class CDocListCmd implements Callable<Void> {
             String format = " %" + Math.round(Math.log10(maxFileSize)) + "d %18s %s%n";
             files.forEach(e -> {
                 String isoDateTime = LocalDateTime.ofInstant(e.getLastModifiedDate().toInstant(),
-                        ZoneId.systemDefault()).format(DateTimeFormatter.ISO_DATE_TIME);
+                    ZoneId.systemDefault()).format(DateTimeFormatter.ISO_DATE_TIME);
                 System.out.format(format, e.getSize(), isoDateTime, e.getName());
             });
         }

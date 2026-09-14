@@ -135,12 +135,12 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
         switch (interactionParams.interactionType) {
             case DISPLAY_TEXT_AND_PIN -> {
                 interaction =
-                    NotificationInteraction.displayTextAndPin(interactionParams.displayText);
+                    NotificationInteraction.displayTextAndPin(interactionParams.getDisplayText60());
             }
             case CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE -> {
                 interaction =
                     NotificationInteraction
-                        .confirmationMessageAndVerificationCodeChoice(interactionParams.displayText);
+                        .confirmationMessageAndVerificationCodeChoice(interactionParams.getDisplayText200());
             }
             default -> throw new IllegalStateException(
                 "Interaction type not implemented: " + interactionParams.interactionType

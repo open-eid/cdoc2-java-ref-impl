@@ -11,6 +11,8 @@
     status or network error
 * Increased all default client read and connect timeouts to 5000ms
 * Improved feedback when auth process does not complete successfully
+* New command line option `--truncate-display-text`. When specified, display text will be 
+  automatically truncated to SID/MID maximum allwowd lenght. Not truncation is performed by default.
 
 ### Bug Fixes
 * Fix bug with disk size checks, when path/partiton doesn't exist
@@ -22,7 +24,7 @@ cdoc2 3.5.1
 cdoc2-schema 2.1.0
 cdoc2-lib 3.7.2
 cdoc2-client 2.3.0
-cdoc2-cli 1.9.2
+cdoc2-cli 1.9.3
 ```
 
 ## [3.5.0]
