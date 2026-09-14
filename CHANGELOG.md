@@ -15,6 +15,15 @@
 * Fix bug with disk size checks, when path/partiton doesn't exist
 * Add correct cli and lib version to be returned with the cli `--version` command.
 
+### Maven package versions:
+```
+cdoc2 3.5.1
+cdoc2-schema 2.1.0
+cdoc2-lib 3.7.2
+cdoc2-client 2.3.0
+cdoc2-cli 1.9.2
+```
+
 ## [3.5.0]
 ### Improvements
 * Updated auth-server openapi version
