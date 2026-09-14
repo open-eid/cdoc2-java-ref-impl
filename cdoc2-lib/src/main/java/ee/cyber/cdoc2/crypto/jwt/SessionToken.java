@@ -7,12 +7,14 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ee.cyber.cdoc2.UserErrorCode;
+import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.Cdoc2AuthApiClient;
 import ee.cyber.cdoc2.client.ExtApiException;
-import ee.cyber.cdoc2.client.AuthClient;
 import ee.cyber.cdoc2.client.model.AuthIdentity;
 import ee.cyber.cdoc2.client.model.AuthProcessStatusResponse;
 import ee.cyber.cdoc2.crypto.KeyShareUri;
+import ee.cyber.cdoc2.exceptions.CDocUserException;
 
 import static ee.cyber.cdoc2.auth.SessionTokenDisclosureHelper.discloseAudByClaimValue;
 
@@ -80,7 +82,10 @@ public class SessionToken {
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());
         log.debug("Final auth process {} status: {}", authProcess.uuid(), status);
         if (!"COMPLETE".equals(status.getStatus())) {
-            throw new RuntimeException("Auth process did not complete successfully");
+            throw new CDocUserException(
+                UserErrorCode.USER_INTERACTION_GENERAL,
+                "Auth process did not complete successfully, end result: " + status.getEndResult()
+            );
         }
 
         this.sessionTokenBase64Url = status.getSessionToken();
