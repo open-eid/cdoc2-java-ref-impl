@@ -132,6 +132,10 @@ public final class ConfigurationProperties {
     public static final String RP_SERVER_CLIENT_READ_TIMEOUT = "rp-server.client.read-timeout";
     public static final String RP_SERVER_CLIENT_CONNECT_TIMEOUT =
         "rp-server.client.connect-timeout";
+    public static final String RP_SERVER_CLIENT_POLLING_INTERVAL_MS =
+        "rp-server.client.polling.intervalMs";
+    public static final String RP_SERVER_CLIENT_POLLING_MAX_COUNT =
+        "rp-server.client.polling.maxCount";
 
     public static final String RP_SERVER_MID_DISPLAY_TEXT_FORMAT
         = "rp-server.mid.display-text-format";

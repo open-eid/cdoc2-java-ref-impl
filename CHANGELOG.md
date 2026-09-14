@@ -5,10 +5,25 @@
 * Add additional check to make sure the decrypted file can fit on the disc.
 * Improved error messages for encryption and decryption
 * Changed the rules for password encryption to match the rules in the CDOC2 documentation
+* New configuration options for client polling behavior:
+  * `rp-server.client.polling.intervalMs` - default 1000
+  * `rp-server.client.polling.maxCount` - default 0, meaning indefinite polling until COMPLETE
+    status or network error
+* Increased all default client read and connect timeouts to 5000ms
+* Improved feedback when auth process does not complete successfully
 
 ### Bug Fixes
 * Fix bug with disk size checks, when path/partiton doesn't exist
 * Add correct cli and lib version to be returned with the cli `--version` command.
+
+### Maven package versions:
+```
+cdoc2 3.5.1
+cdoc2-schema 2.1.0
+cdoc2-lib 3.7.2
+cdoc2-client 2.3.0
+cdoc2-cli 1.9.2
+```
 
 ## [3.5.0]
 ### Improvements

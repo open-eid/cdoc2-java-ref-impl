@@ -26,7 +26,7 @@ final class ClientUtil {
     }
 
     static ExtApiException wrapNetworkException(Exception ex, String serverUrl, Logger log) {
-        log.error("{} {}: {}", "Failed to connect to authentication server",
+        log.error("{} {}: {}", "Failed to connect to server",
             serverUrl,
             ex.getMessage(),
             ex
@@ -35,7 +35,7 @@ final class ClientUtil {
             ? ex.getCause().getMessage()
             : ex.getMessage();
         return new ExtApiException(
-            "Failed to connect to authentication server" + " " + serverUrl + ": " + detail,
+            "Failed to connect to server" + " " + serverUrl + ": " + detail,
             ex
         );
     }

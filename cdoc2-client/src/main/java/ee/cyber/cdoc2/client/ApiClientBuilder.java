@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
 public abstract class ApiClientBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(ApiClientBuilder.class);
-    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    public static final int DEFAULT_READ_TIMEOUT_MS = 1000;
+    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;
+    public static final int DEFAULT_READ_TIMEOUT_MS = 5000;
 
     private String baseUrl;
     private KeyStore clientKeyStore;

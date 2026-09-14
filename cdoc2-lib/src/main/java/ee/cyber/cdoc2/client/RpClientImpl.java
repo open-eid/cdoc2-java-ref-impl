@@ -4,6 +4,7 @@ import jakarta.annotation.Nonnull;
 
 import java.security.GeneralSecurityException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import ee.cyber.cdoc2.client.model.MidLanguage;
 import ee.cyber.cdoc2.client.model.MidSessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SessionStatusResponse;
 import ee.cyber.cdoc2.client.model.SidAuthenticateRequest;
+import ee.cyber.cdoc2.client.model.WellKnownResponse;
 import ee.cyber.cdoc2.config.RpClientConfiguration;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 
@@ -24,9 +26,13 @@ import static ee.cyber.cdoc2.client.ClientUtil.wrapApiException;
 import static ee.cyber.cdoc2.client.ClientUtil.wrapNetworkException;
 
 public final class RpClientImpl implements RpClient {
+    private static final TimeUnit STATUS_POLL_SLEEP_TIMEUNIT = TimeUnit.MILLISECONDS;
+
     private static final Logger log = LoggerFactory.getLogger(RpClientImpl.class);
     private final Cdoc2RpApiClient cdoc2RpApiClient;
     private final String serverUrl;
+    private final int pollingMaxCount;
+    private final int pollingIntervalMs;
     private final RpClientConfiguration rpClientConfiguration;
 
     private RpClientImpl(
@@ -35,6 +41,8 @@ public final class RpClientImpl implements RpClient {
     ) {
         this.cdoc2RpApiClient = cdoc2RpApiClient;
         this.serverUrl = config.getHostUrl();
+        this.pollingMaxCount = config.getPollingMaxCount();
+        this.pollingIntervalMs = config.getPollingIntervalMs();
         this.rpClientConfiguration = config;
     }
 
@@ -81,6 +89,21 @@ public final class RpClientImpl implements RpClient {
     ) throws ExtApiException {
         try {
             return cdoc2RpApiClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+        } catch (ApiException e) {
+            throw wrapApiException("RP SID session request error. ", e, log);
+        } catch (Exception e) {
+            throw wrapNetworkException(e, this.serverUrl, log);
+        }
+    }
+
+    @Override
+    public SessionStatusResponse pollForCompleteSidSession(
+        @Nonnull String xCdoc2SessionToken,
+        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull UUID sessionId
+    ) throws ExtApiException {
+        try {
+            return pollForFinalSidSessionStatus(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
         } catch (ApiException e) {
             throw wrapApiException("RP SID session request error. ", e, log);
         } catch (Exception e) {
@@ -139,12 +162,113 @@ public final class RpClientImpl implements RpClient {
     }
 
     @Override
+    public ApiResponse<MidSessionStatusResponse> pollForCompleteMidSession(
+        @Nonnull String xCdoc2SessionToken,
+        @Nonnull String xCdoc2SessionX5c,
+        @Nonnull UUID sessionId
+    ) throws ExtApiException {
+        try {
+            return pollForFinalMidSessionStatus(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+        } catch (ApiException e) {
+            throw wrapApiException("RP MID session request error. ", e, log);
+        } catch (Exception e) {
+            throw wrapNetworkException(e, this.serverUrl, log);
+        }
+    }
+
+    @Override
     public String getBasePath() {
         return cdoc2RpApiClient.getBasePath();
     }
 
     public String getCertificateLevel() {
         return rpClientConfiguration.getCertificateLevel().name();
+    }
+
+    @Override
+    public WellKnownResponse getWellKnown() throws ExtApiException {
+        log.debug("Fetching well-known JWKS");
+
+        try {
+            WellKnownResponse response = cdoc2RpApiClient.getWellKnown();
+            log.debug("Well-known JWKS retrieved successfully");
+            return response;
+
+        } catch (ApiException ex) {
+            throw wrapApiException("Failed to retrieve well-known JWKS", ex, log);
+        } catch (Exception ex) {
+            throw wrapNetworkException(ex, this.serverUrl, log);
+        }
+    }
+
+    private ApiResponse<MidSessionStatusResponse> pollForFinalMidSessionStatus(
+        String xCdoc2SessionToken,
+        String xCdoc2SessionX5c,
+        UUID sessionId
+    ) throws InterruptedException, ExtApiException, ApiException {
+        ApiResponse<MidSessionStatusResponse> response = null;
+        int pollCount = 0;
+
+        while (response == null || response.getData() == null
+            || "RUNNING".equalsIgnoreCase(response.getData().getState().getValue())) {
+            checkForPollMaxCount(pollCount);
+
+            response =
+                cdoc2RpApiClient.midSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+            if (response != null && response.getData() != null
+                && "COMPLETE".equalsIgnoreCase(response.getData().getState().getValue())) {
+                break;
+            }
+
+            pollSleep();
+
+            pollCount++;
+        }
+        log.debug("Got final MID session status response");
+        return response;
+    }
+
+    private SessionStatusResponse pollForFinalSidSessionStatus(
+        String xCdoc2SessionToken,
+        String xCdoc2SessionX5c,
+        UUID sessionId
+    ) throws InterruptedException, ExtApiException, ApiException {
+        SessionStatusResponse sessionStatus = null;
+        int pollCount = 0;
+
+        while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState().getValue())) {
+            checkForPollMaxCount(pollCount);
+
+            sessionStatus = cdoc2RpApiClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
+            if (sessionStatus != null && "COMPLETE".equalsIgnoreCase(sessionStatus.getState().getValue())) {
+                break;
+            }
+
+            pollSleep();
+
+            pollCount++;
+        }
+        log.debug("Got final SID session status response");
+        return sessionStatus;
+    }
+
+    private void checkForPollMaxCount(int pollCount) throws ExtApiException {
+        if (this.pollingMaxCount > 0 && pollCount == this.pollingMaxCount) {
+            String message = "Max poll count reached when polling for final session status "
+                + "pollCount: "
+                + pollCount;
+            log.error(message);
+
+            throw new ExtApiException(message);
+        }
+    }
+
+    private void pollSleep() throws InterruptedException {
+        log.debug("Sleeping for {} {}", this.pollingIntervalMs,
+            STATUS_POLL_SLEEP_TIMEUNIT);
+        STATUS_POLL_SLEEP_TIMEUNIT.sleep(
+            this.pollingIntervalMs
+        );
     }
 
     /**

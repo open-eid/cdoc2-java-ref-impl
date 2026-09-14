@@ -74,6 +74,20 @@ public final class AuthClientImpl implements AuthClient {
     }
 
     @Override
+    public AuthProcessStatusResponse getAuthProcessStatus(@Nonnull UUID authProcessUuid)
+        throws ExtApiException {
+        try {
+            return cdoc2AuthApiClient.getAuthProcessStatus(authProcessUuid);
+        } catch (ApiException ex) {
+            throw wrapApiException(
+                "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex, log
+            );
+        } catch (Exception ex) {
+            throw wrapNetworkException(ex, this.serverUrl, log);
+        }
+    }
+
+    @Override
     public AuthProcessStatusResponse pollForCompleteAuthProcessStatus(@Nonnull UUID authProcessUuid)
         throws ExtApiException {
 
@@ -103,14 +117,17 @@ public final class AuthClientImpl implements AuthClient {
         return status;
     }
 
-    private AuthProcessStatusResponse getAuthProcessStatus(@Nonnull UUID authProcessUuid)
-        throws ExtApiException {
+    @Override
+    public WellKnownResponse getWellKnown() throws ExtApiException {
+        log.debug("Fetching well-known JWKS");
+
         try {
-            return cdoc2AuthApiClient.getAuthProcessStatus(authProcessUuid);
+            WellKnownResponse response = cdoc2AuthApiClient.getWellKnown();
+            log.debug("Well-known JWKS retrieved successfully");
+            return response;
+
         } catch (ApiException ex) {
-            throw wrapApiException(
-                "Failed to retrieve auth process status for UUID: " + authProcessUuid, ex, log
-            );
+            throw wrapApiException("Failed to retrieve well-known JWKS", ex, log);
         } catch (Exception ex) {
             throw wrapNetworkException(ex, this.serverUrl, log);
         }
@@ -135,21 +152,5 @@ public final class AuthClientImpl implements AuthClient {
         STATUS_POLL_SLEEP_TIMEUNIT.sleep(
             this.pollingIntervalMs
         );
-    }
-
-    @Override
-    public WellKnownResponse getWellKnown() throws ExtApiException {
-        log.debug("Fetching well-known JWKS");
-
-        try {
-            WellKnownResponse response = cdoc2AuthApiClient.getWellKnown();
-            log.debug("Well-known JWKS retrieved successfully");
-            return response;
-
-        } catch (ApiException ex) {
-            throw wrapApiException("Failed to retrieve well-known JWKS", ex, log);
-        } catch (Exception ex) {
-            throw wrapNetworkException(ex, this.serverUrl, log);
-        }
     }
 }

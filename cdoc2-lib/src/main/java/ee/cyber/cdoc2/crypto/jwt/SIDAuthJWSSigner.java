@@ -174,7 +174,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
                 request
             );
 
-            SessionStatusResponse response = pollForFinalSessionStatus(
+            SessionStatusResponse response = rpClient.pollForCompleteSidSession(
                 disclosedSessionToken,
                 sessionToken.getSigningCertificate(),
                 sessionId
@@ -200,7 +200,7 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
             );
 
             return Base64URL.encode(response.getSignature().getValue());
-        } catch (ExtApiException | InterruptedException | JsonProcessingException e) {
+        } catch (ExtApiException | JsonProcessingException e) {
             throw new JOSEException(e);
         }
     }
@@ -249,25 +249,6 @@ public class SIDAuthJWSSigner implements IdentityJWSSigner {
         return Base64.getUrlEncoder().encodeToString(
             signatureValidationParamsJson.getBytes(StandardCharsets.UTF_8)
         );
-    }
-
-    private SessionStatusResponse pollForFinalSessionStatus(
-        String xCdoc2SessionToken,
-        String xCdoc2SessionX5c,
-        UUID sessionId
-    ) throws InterruptedException, ExtApiException {
-        SessionStatusResponse sessionStatus = null;
-        while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState().getValue())) {
-            sessionStatus = rpClient.sidSession(xCdoc2SessionToken, xCdoc2SessionX5c, sessionId);
-            if (sessionStatus != null && "COMPLETE".equalsIgnoreCase(sessionStatus.getState().getValue())) {
-                break;
-            }
-            log.debug("Sleeping for {} {}", SESSION_POLL_SLEEP_QUANTITY,
-                SESSION_POLL_SLEEP_TIMEUNIT);
-            SESSION_POLL_SLEEP_TIMEUNIT.sleep(SESSION_POLL_SLEEP_QUANTITY);
-        }
-        log.debug("Got final session status response");
-        return sessionStatus;
     }
 
     @Override

@@ -26,6 +26,8 @@ import static ee.cyber.cdoc2.util.ConfigurationPropertyUtil.getRequiredProperty;
  * @param connectTimeout       connection timeout
  * @param midDisplayTextFormat MID displayText format
  * @param midLanguage          MID language
+ * @param pollingIntervalMs    time to sleep between polling attempts
+ * @param pollingMaxCount      maximum number of times to poll. value of 0 means no limit
  * @param clientServerDebug    turn on debug logs for client
  */
 public record RpClientConfigurationProps(
@@ -36,12 +38,16 @@ public record RpClientConfigurationProps(
     int connectTimeout,
     MidDisplayTextFormat midDisplayTextFormat,
     MidLanguage midLanguage,
+    int pollingIntervalMs,
+    int pollingMaxCount,
     boolean clientServerDebug
 ) implements RpClientConfiguration {
     private static final String DEFAULT_MID_DISPLAY_TEXT_FORMAT = "GSM_7";
     private static final String DEFAULT_MID_LANGUAGE = "ENG";
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 2000;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 5000;
+    private static final int DEFAULT_POLLING_INTERVAL_MS = 1000;
+    private static final int DEFAULT_POLLING_MAX_COUNT = 0;
 
     public enum CertificateLevel {
         ADVANCED,
@@ -84,11 +90,24 @@ public record RpClientConfigurationProps(
         MidLanguage language = MidLanguage.valueOf(
             properties.getProperty(RP_SERVER_MID_LANGUAGE, DEFAULT_MID_LANGUAGE)
         );
+
+        int pollingIntervalMs = ConfigurationPropertyUtil.getInteger(
+            log,
+            properties,
+            RP_SERVER_CLIENT_POLLING_INTERVAL_MS
+        ).orElse(DEFAULT_POLLING_INTERVAL_MS);
+
+        int pollingMaxCount = ConfigurationPropertyUtil.getInteger(
+            log,
+            properties,
+            RP_SERVER_CLIENT_POLLING_MAX_COUNT
+        ).orElse(DEFAULT_POLLING_MAX_COUNT);
+
         Boolean clientServerDebug = getBoolean(properties, CLIENT_SERVER_DEBUG).orElse(false);
 
         return new RpClientConfigurationProps(
             hostUrl, certificateLevel, trustStore, readTimeout, connectTimeout,
-            displayTextFormat, language, clientServerDebug
+            displayTextFormat, language, pollingIntervalMs, pollingMaxCount, clientServerDebug
         );
     }
 
@@ -125,6 +144,16 @@ public record RpClientConfigurationProps(
     @Override
     public MidLanguage getMidLanguage() {
         return midLanguage;
+    }
+
+    @Override
+    public int getPollingIntervalMs() {
+        return pollingIntervalMs;
+    }
+
+    @Override
+    public int getPollingMaxCount() {
+        return pollingMaxCount;
     }
 
     @Override

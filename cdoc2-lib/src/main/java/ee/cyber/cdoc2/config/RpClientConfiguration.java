@@ -28,5 +28,9 @@ public interface RpClientConfiguration {
 
     MidLanguage getMidLanguage();
 
+    int getPollingIntervalMs();
+
+    int getPollingMaxCount();
+
     boolean getClientServerDebug();
 }

@@ -12,6 +12,8 @@ public interface AuthClient {
     Cdoc2AuthApiClient.AuthProcessData startAuth(@Nonnull AuthIdentity authIdentity)
         throws ExtApiException;
 
+    AuthProcessStatusResponse getAuthProcessStatus(@Nonnull UUID authProcessUuid) throws ExtApiException;
+
     AuthProcessStatusResponse pollForCompleteAuthProcessStatus(@Nonnull UUID authProcessUuid) throws ExtApiException;
 
     WellKnownResponse getWellKnown() throws ExtApiException;

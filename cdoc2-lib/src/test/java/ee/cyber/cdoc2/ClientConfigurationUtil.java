@@ -42,8 +42,20 @@ public final class ClientConfigurationUtil {
     public static RpClientConfiguration getRpClientConfiguration()
         throws ConfigurationLoadingException {
 
-        return RpClientConfiguration.load(PropertiesLoader.loadProperties(
-            DEMO_ENV_PROPERTIES.getProperty(RP_SERVER_PROPERTIES)));
+        return getRpClientConfiguration(Map.of());
+    }
+
+    public static RpClientConfiguration getRpClientConfiguration(
+        Map<String, String> propOverrides
+    ) throws ConfigurationLoadingException {
+
+        Properties properties = PropertiesLoader.loadProperties(
+            DEMO_ENV_PROPERTIES.getProperty(RP_SERVER_PROPERTIES)
+        );
+
+        properties.putAll(propOverrides);
+
+        return RpClientConfiguration.load(properties);
     }
 
     public static AuthClientConfiguration getAuthClientConfiguration() {

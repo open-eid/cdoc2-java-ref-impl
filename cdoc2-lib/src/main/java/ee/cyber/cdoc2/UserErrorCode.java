@@ -34,5 +34,10 @@ public enum UserErrorCode {
     /**
      * The user cancelled the operation.
      */
-    USER_CANCEL;
+    USER_CANCEL,
+
+    /**
+     * General non-specific user interaction error
+     */
+    USER_INTERACTION_GENERAL
 }

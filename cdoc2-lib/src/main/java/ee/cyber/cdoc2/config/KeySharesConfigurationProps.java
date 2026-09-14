@@ -37,8 +37,8 @@ public record KeySharesConfigurationProps(
     int connectTimeout,
     boolean clientServerDebug
 ) implements KeySharesConfiguration {
-    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 1000;
-    private static final int DEFAULT_READ_TIMEOUT_MS = 2000;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MS = 5000;
+    private static final int DEFAULT_READ_TIMEOUT_MS = 5000;
 
     private static final Logger log = LoggerFactory.getLogger(KeySharesConfigurationProps.class);
 

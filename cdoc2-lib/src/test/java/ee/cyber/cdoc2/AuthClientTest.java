@@ -106,7 +106,7 @@ public class AuthClientTest {
             () -> authClient.startAuth(authIdentity)
         );
 
-        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+        assertTrue(ex.getMessage().contains("Failed to connect to server"),
             "actual message: " + ex.getMessage());
     }
 
@@ -185,7 +185,7 @@ public class AuthClientTest {
             () -> clientWithTimeout.startAuth(authIdentity)
         );
 
-        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+        assertTrue(ex.getMessage().contains("Failed to connect to server"),
             "actual message: " + ex.getMessage());
     }
 
@@ -252,7 +252,7 @@ public class AuthClientTest {
             () -> clientWithTimeout.pollForCompleteAuthProcessStatus(authProcessUuid)
         );
 
-        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+        assertTrue(ex.getMessage().contains("Failed to connect to server"),
             "actual message: " + ex.getMessage());
     }
 
@@ -357,7 +357,7 @@ public class AuthClientTest {
             clientWithTimeout::getWellKnown
         );
 
-        assertTrue(ex.getMessage().contains("Failed to connect to authentication server"),
+        assertTrue(ex.getMessage().contains("Failed to connect to server"),
             "actual message: " + ex.getMessage());
     }
 }
