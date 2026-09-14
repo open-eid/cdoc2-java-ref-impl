@@ -601,7 +601,7 @@ public class RpClientTest {
             request.getHash(),
             request.getHashType().getValue(),
             InteractionParams.displayTextAndPin(
-                InteractionParams.InteractionLanguage.EN, "displayText")
+                InteractionParams.InteractionLanguage.EN, "displayText", false)
         );
     }
 }

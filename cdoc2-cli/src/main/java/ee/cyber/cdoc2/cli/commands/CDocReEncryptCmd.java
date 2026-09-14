@@ -102,6 +102,11 @@ public class CDocReEncryptCmd implements Callable<Void> {
             + "authentication tokens for MID/SID decryption")
     private String displayText;
 
+    @CommandLine.Option(names = {"-tdt", "--truncate-display-text"},
+        description = "Flag to enable automatic truncation of display text to "
+            + "SID/MID maximum allowed length")
+    private boolean truncateDisplayText = false;
+
     @Override
     public Void call() throws Exception {
         if (!this.cdocFile.exists()) {
@@ -113,7 +118,8 @@ public class CDocReEncryptCmd implements Callable<Void> {
         DecryptionKeyMaterial decryptionKeyMaterial = (null == this.exclusive)
             ? getSmartCardDecryptionKeyMaterial(this.slot, this.keyAlias, this.cryptoStickConf)
             : getDecryptionKeyMaterial(
-            this.cdocFile, this.exclusive, this.interactionLanguage, this.displayText
+            this.cdocFile, this.exclusive, this.interactionLanguage,
+            this.displayText, this.truncateDisplayText
         );
 
         File destCdocFile = getDestinationFile();

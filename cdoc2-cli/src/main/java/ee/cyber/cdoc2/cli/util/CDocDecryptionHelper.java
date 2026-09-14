@@ -8,6 +8,11 @@ import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ee.cyber.cdoc2.CDocDecrypter;
 import ee.cyber.cdoc2.CryptoStickConf;
@@ -16,22 +21,15 @@ import ee.cyber.cdoc2.container.CDocParseException;
 import ee.cyber.cdoc2.container.Envelope;
 import ee.cyber.cdoc2.container.recipients.PBKDF2Recipient;
 import ee.cyber.cdoc2.container.recipients.Recipient;
+import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.PemTools;
 import ee.cyber.cdoc2.crypto.Pkcs11Tools;
-import ee.cyber.cdoc2.crypto.AuthenticationIdentifier;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParams;
 import ee.cyber.cdoc2.crypto.jwt.InteractionParamsConfigurable;
 import ee.cyber.cdoc2.crypto.keymaterial.DecryptionKeyMaterial;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledPassword;
 import ee.cyber.cdoc2.crypto.keymaterial.LabeledSecret;
-
 import ee.cyber.cdoc2.services.Services;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static ee.cyber.cdoc2.config.ConfigurationProperties.PKCS11_LIBRARY_PROPERTY;
 import static ee.cyber.cdoc2.crypto.AuthenticationIdentifier.createSemanticsIdentifier;
@@ -77,21 +75,21 @@ public final class CDocDecryptionHelper {
     /**
      * Loads DecryptionKeyMaterial from CLI options.
      *
-     * @param cdocFile         cdoc file that is decrypted. Used to find correct key label,
-     *                         if password is entered without a label ":password"
-     * @param decryptArguments exclusive decryption arguments. At least one of them must be present:
-     *                         - labeledPasswordParam: when labeledPasswordParam.isEmpty() == true
-     *                         (-pw without value), then password is read interactively. Has value
-     *                         when password was provided from CLI
-     *                         - secret: LabeledSecret value when provided, otherwise null
-     *                         - p12: Read private key from .p12 file. Format is "FILE
-     *                         .p12:password". null when not provided
-     *                         - privKeyFile: file containing privateKey in PEM format.
-     *                         null when not provided
+     * @param cdocFile            cdoc file that is decrypted. Used to find correct key label,
+     *                            if password is entered without a label ":password"
+     * @param decryptArguments    exclusive decryption arguments. At least one of them must be present:
+     *                            - labeledPasswordParam: when labeledPasswordParam.isEmpty() == true
+     *                            (-pw without value), then password is read interactively. Has value
+     *                            when password was provided from CLI
+     *                            - secret: LabeledSecret value when provided, otherwise null
+     *                            - p12: Read private key from .p12 file. Format is "FILE
+     *                            .p12:password". null when not provided
+     *                            - privKeyFile: file containing privateKey in PEM format.
+     *                            null when not provided
      * @param interactionLanguage language for server component interactions with the user for
      *                            SID/MID decryption
-     * @param displayText text to be displayed on the user's device when creating authentication
-     *                    tokens for SID/MID decryption
+     * @param displayText         text to be displayed on the user's device when creating authentication
+     *                            tokens for SID/MID decryption
      * @return loaded DecryptionKeyMaterial
      * @throws GeneralSecurityException general security exception
      * @throws IOException              in case decryption key material extraction has failed
@@ -101,7 +99,8 @@ public final class CDocDecryptionHelper {
         File cdocFile,
         DecryptionKeyExclusiveArgument decryptArguments,
         InteractionParams.InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) throws GeneralSecurityException, IOException, CDocParseException {
         Objects.requireNonNull(cdocFile);
         LabeledPasswordParam labeledPasswordParam = decryptArguments.getLabeledPasswordParam();
@@ -126,7 +125,8 @@ public final class CDocDecryptionHelper {
 
         if (isWithSid && decryptionKm == null) {
             decryptionKm = getSidDecryptionKeyMaterial(
-                decryptArguments.getSid(), cdocFile, interactionLanguage, displayText
+                decryptArguments.getSid(), cdocFile, interactionLanguage,
+                displayText, truncateDisplayText
             );
         }
 
@@ -136,7 +136,8 @@ public final class CDocDecryptionHelper {
                 decryptArguments.getMidPhone(),
                 cdocFile,
                 interactionLanguage,
-                displayText
+                displayText,
+                truncateDisplayText
             );
         }
 
@@ -152,14 +153,15 @@ public final class CDocDecryptionHelper {
         String idCode,
         File cdocFile,
         InteractionParams.InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) {
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forKeyShares(
             createSemanticsIdentifier(idCode), AuthenticationIdentifier.AuthenticationType.SID
         );
 
         DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
-        addInteractionParameters(cdocFile, dkm, interactionLanguage, displayText);
+        addInteractionParameters(cdocFile, dkm, interactionLanguage, displayText, truncateDisplayText);
         return dkm;
 
     }
@@ -169,7 +171,8 @@ public final class CDocDecryptionHelper {
         String phoneNumber,
         File cdocFile,
         InteractionParams.InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) {
         AuthenticationIdentifier authIdentifier = AuthenticationIdentifier.forMidDecryption(
             createSemanticsIdentifier(idCode),
@@ -177,7 +180,7 @@ public final class CDocDecryptionHelper {
         );
 
         DecryptionKeyMaterial dkm = DecryptionKeyMaterial.fromAuthMeans(authIdentifier);
-        addInteractionParameters(cdocFile, dkm, interactionLanguage, displayText);
+        addInteractionParameters(cdocFile, dkm, interactionLanguage, displayText, truncateDisplayText);
         return dkm;
     }
 
@@ -185,16 +188,18 @@ public final class CDocDecryptionHelper {
         File cdocFile,
         DecryptionKeyMaterial dkm,
         InteractionParams.InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) {
         if (dkm instanceof InteractionParamsConfigurable paramsConfigurable) {
 
             InteractionParams interactionParams = (cdocFile == null)
-                ? InteractionParams.displayTextAndPin(interactionLanguage, displayText)
+                ? InteractionParams.displayTextAndPin(interactionLanguage, displayText, truncateDisplayText)
                 : InteractionParams.displayTextAndVCCForDocument(
                 cdocFile.toPath().getFileName().toString(),
                 interactionLanguage,
-                displayText
+                displayText,
+                truncateDisplayText
             );
             interactionParams.addAuthListener(e -> System.out.println("Verification code:" + e.getVerificationCode()));
             paramsConfigurable.init(interactionParams);

@@ -361,7 +361,7 @@ public final class EnvelopeTestUtils {
         );
 
         InteractionParams interactionParams =
-            InteractionParams.displayTextAndPin(null, null).addAuthListener(
+            InteractionParams.displayTextAndPin(null, null, false).addAuthListener(
             e -> System.out.println("Verification code:" + e.getVerificationCode())
         );
 

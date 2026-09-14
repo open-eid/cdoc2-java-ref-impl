@@ -56,7 +56,8 @@ public class InteractionParams {
     /**
      * text to be displayed on the user's device during authentication token creation
      */
-    protected String displayText;
+    private final String displayText;
+    private final boolean truncateDisplayText;
 
     /**
      * language for server component interactions with the user. This includes session token
@@ -78,12 +79,15 @@ public class InteractionParams {
         InteractionType type,
         @Nullable String document,
         @Nullable InteractionLanguage interactionLanguage,
-        @Nullable String displayText
+        @Nullable String displayText,
+        boolean truncateDisplayText
     ) {
         this.interactionType = type;
         this.document = document;
         this.interactionLanguage = interactionLanguage;
         this.displayText = displayText;
+        this.truncateDisplayText = truncateDisplayText;
+
     }
 
     /**
@@ -92,7 +96,8 @@ public class InteractionParams {
     public static InteractionParams displayTextAndVCCForDocument(
         String document,
         InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) {
         return new InteractionParams(
             InteractionType.CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE,
@@ -100,7 +105,8 @@ public class InteractionParams {
             interactionLanguage,
             displayText == null
                 ? String.format(DEFAULT_DISPLAY_TEMPLATE, document)
-                : displayText
+                : displayText,
+            truncateDisplayText
         );
     }
 
@@ -109,7 +115,8 @@ public class InteractionParams {
      */
     public static InteractionParams displayTextAndPin(
         InteractionLanguage interactionLanguage,
-        String displayText
+        String displayText,
+        boolean truncateDisplayText
     ) {
         return new InteractionParams(
             InteractionType.DISPLAY_TEXT_AND_PIN,
@@ -117,29 +124,30 @@ public class InteractionParams {
             interactionLanguage,
             displayText == null
                 ? DEFAULT_DISPLAY_TEXT
-                : displayText
+                : displayText,
+            truncateDisplayText
         );
     }
 
     /**
-     * Get text displayed. If text is longer than 60 chars, will be capped to 60 chars
+     * Get text displayed. If text is longer than 60 chars and text truncation is allowed, will be
+     * capped to 60 chars
      */
     public String getDisplayText60() {
         return getDisplayText(60);
     }
 
     /**
-     * Get text displayed capped to length
+     * Get text displayed capped to length if display text truncation is allowed
      *
      * @param length text will be capped to length
      * @return displayText
      */
     public String getDisplayText(int length) {
-        if (displayText.length() > length) {
+        if (this.truncateDisplayText && displayText.length() > length) {
             return displayText.substring(0, length);
-        } else {
-            return displayText;
         }
+        return displayText;
     }
 
     /**
@@ -157,7 +165,8 @@ public class InteractionParams {
     }
 
     /**
-     * Get text displayed. If text is longer than 200 chars, will be capped to 200 chars
+     * Get text displayed. If text is longer than 200 chars and text truncation is allowed, will
+     * be capped to 200 chars
      */
     public String getDisplayText200() {
         return getDisplayText(200);
