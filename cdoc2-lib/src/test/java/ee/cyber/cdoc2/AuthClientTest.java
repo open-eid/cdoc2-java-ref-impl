@@ -72,7 +72,7 @@ public class AuthClientTest {
     }
 
     @Test
-    void successfulGetAutStatus() throws ExtApiException, JsonProcessingException {
+    void successfulGetAuthStatus() throws ExtApiException, JsonProcessingException {
         var authProcessUuid = UUID.randomUUID();
         authClientMock.stubForAuthStatus(authProcessUuid);
 
@@ -80,7 +80,7 @@ public class AuthClientTest {
 
         assertNotNull(authProcessStatusResponse);
         assertNotNull(authProcessStatusResponse.getStatus());
-        assertEquals("COMPLETE", authProcessStatusResponse.getStatus());
+        assertEquals("COMPLETE", authProcessStatusResponse.getStatus().getValue());
     }
 
     @Test
@@ -273,7 +273,7 @@ public class AuthClientTest {
 
         assertNotNull(authProcessStatusResponse);
         assertNotNull(authProcessStatusResponse.getStatus());
-        assertEquals("COMPLETE", authProcessStatusResponse.getStatus());
+        assertEquals("COMPLETE", authProcessStatusResponse.getStatus().getValue());
     }
 
     @Test

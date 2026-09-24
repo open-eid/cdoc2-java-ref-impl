@@ -81,7 +81,7 @@ public class SessionToken {
         Cdoc2AuthApiClient.AuthProcessData authProcess = startAuth(identity);
         AuthProcessStatusResponse status = getAuthStatus(authProcess.uuid());
         log.debug("Final auth process {} status: {}", authProcess.uuid(), status);
-        if (!"COMPLETE".equals(status.getStatus())) {
+        if (!"COMPLETE".equals(status.getStatus().getValue())) {
             throw new CDocUserException(
                 UserErrorCode.USER_INTERACTION_GENERAL,
                 "Auth process did not complete successfully, end result: " + status.getEndResult()

@@ -96,12 +96,16 @@ public final class AuthClientImpl implements AuthClient {
         AuthProcessStatusResponse status = null;
         int pollCount = 0;
         try {
-            while (status == null || AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
+            while (status == null || AUTH_PROCESS_STATUS_STARTED.equals(
+                status.getStatus().getValue()
+            )) {
                 checkForPollMaxCount(pollCount, status);
 
                 status = getAuthProcessStatus(authProcessUuid);
 
-                if (status != null && !AUTH_PROCESS_STATUS_STARTED.equals(status.getStatus())) {
+                if (status != null && !AUTH_PROCESS_STATUS_STARTED.equals(
+                    status.getStatus().getValue())
+                ) {
                     break;
                 }
                 log.debug("Incomplete auth process {} status: {}", authProcessUuid, status);
