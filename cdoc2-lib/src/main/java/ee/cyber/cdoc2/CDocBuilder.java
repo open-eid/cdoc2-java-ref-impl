@@ -167,7 +167,7 @@ public class CDocBuilder {
             if (!outputDirectory.isDirectory()) {
                 throw new CDocValidationException("Output path " + outputDirectory + " is not a directory");
             }
-            if (!outputDirectory.canWrite()) {
+            if (!Files.isWritable(outputDirectory.toPath())) {
                 throw new CDocValidationException("Output directory " + outputDirectory + " is not writable");
             }
         }

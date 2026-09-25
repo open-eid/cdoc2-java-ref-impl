@@ -14,7 +14,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <cdoc2-lib.version>3.7.2</cdoc2-lib.version>
+        <cdoc2-lib.version>3.7.3</cdoc2-lib.version>
     </properties>
 
     <pluginRepositories>
