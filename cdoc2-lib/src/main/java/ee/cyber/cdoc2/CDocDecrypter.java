@@ -10,6 +10,7 @@ import ee.cyber.cdoc2.exceptions.CDocValidationException;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.List;
@@ -109,7 +110,7 @@ public class CDocDecrypter {
             if (!destinationDirectory.isDirectory()) {
                 throw new CDocValidationException("Destination path " + destinationDirectory + " is not a directory");
             }
-            if (!destinationDirectory.canWrite()) {
+            if (!Files.isWritable(destinationDirectory.toPath())) {
                 throw new CDocValidationException("Destination directory " + destinationDirectory + " is not writable");
             }
         }
