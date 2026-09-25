@@ -28,7 +28,7 @@ public class Cdoc2RpApiClient {
      * Performs SmartID RPv3 authenticate request
      *
      * @param xSessionToken       CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     * @param xSessionCertificate Base64Url-encoded DER certificate that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param request             SmartID RPv3 authenticate request structure
      * @return authentication session UUID
@@ -50,7 +50,7 @@ public class Cdoc2RpApiClient {
      * Performs SmartID RPv3 session status request
      *
      * @param xSessionToken       CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     * @param xSessionCertificate Base64Url-encoded DER certificate that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param sessionId           session ID
      * @return SmartID RPv3 session status response structure
@@ -67,7 +67,7 @@ public class Cdoc2RpApiClient {
     /**
      *
      * @param xSessionToken       CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     * @param xSessionCertificate Base64Url-encoded DER certificate that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param request             MobileID authenticate request structure
      * @return authentication session UUID
@@ -88,7 +88,7 @@ public class Cdoc2RpApiClient {
     /**
      *
      * @param xSessionToken       CDOC2 Session token (SDJWT)
-     * @param xSessionCertificate PEM encoded X509 certificate (without newlines) that was used to
+     * @param xSessionCertificate Base64Url-encoded DER certificate that was used to
      *                            generate the MID/SID signature in x-cdoc2-session-token payload.
      * @param sessionId           authentication session UUID
      * @return MobileID session status structure
