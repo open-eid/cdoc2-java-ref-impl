@@ -299,6 +299,27 @@ public class AuthClientTest {
     }
 
     @Test
+    void pollGetAuthStatusFailed() throws Exception {
+        var authProcessUuid = UUID.randomUUID();
+        authClientMock.stubSAuthStatusFailedOnThirdTry(authProcessUuid);
+
+        AuthClient clientWithPollCount =
+            AuthClientImpl.create(getAuthClientConfiguration(
+                Map.of(AUTH_SERVER_CLIENT_POLLING_MAX_COUNT, "0",
+                    AUTH_SERVER_CLIENT_POLLING_INTERVAL_MS, "100")
+            ));
+
+        var authProcessStatusResponse = clientWithPollCount.pollForCompleteAuthProcessStatus(
+            authProcessUuid
+        );
+
+        assertNotNull(authProcessStatusResponse);
+        assertNotNull(authProcessStatusResponse.getStatus());
+        assertEquals("FAILED", authProcessStatusResponse.getStatus().getValue());
+        assertEquals("TIMEOUT", authProcessStatusResponse.getEndResult());
+    }
+
+    @Test
     void badRequestGetWellKnown() {
         authClientMock.stubWellKnownWith400();
 

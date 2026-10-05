@@ -31,6 +31,11 @@ public class AuthClientMock {
         "signingCertificate", SID_SIGNING_CERTIFICATE_BASE64URL
     );
 
+    public static final Map<String, Object> AUTH_STATUS_FAILED_RESPONSE = Map.of(
+        "status", "FAILED",
+        "endResult", "TIMEOUT"
+    );
+
     public static final Map<String, Object> AUTH_STATUS_STARTED_RESPONSE = Map.of(
         "status", "STARTED"
     );
@@ -59,7 +64,7 @@ public class AuthClientMock {
     public void stubSAuthStatusCompleteOnThirdTry(UUID authProccessUuid) throws JsonProcessingException {
         wiremock.resetScenarios();
 
-        // First response with null request body
+        // First response with null response body
         wiremock.stubFor(
             WireMock.get(
                     urlEqualTo("/auth/status/" + authProccessUuid)
@@ -95,6 +100,49 @@ public class AuthClientMock {
                     .withStatus(HttpStatus.OK_200)
                     .withHeader("Content-Type", "application/json")
                     .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_COMPLETE_RESPONSE))
+                )
+        );
+    }
+
+    public void stubSAuthStatusFailedOnThirdTry(UUID authProccessUuid) throws JsonProcessingException {
+        wiremock.resetScenarios();
+
+        // First response with null response body
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                )
+                .willSetStateTo("state-2")
+        );
+
+        // Second response with STARTED status
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs("state-2")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_STARTED_RESPONSE))
+                )
+                .willSetStateTo("state-3")
+        );
+
+        // Third response with FAILED status
+        wiremock.stubFor(
+            WireMock.get(
+                    urlEqualTo("/auth/status/" + authProccessUuid)
+                ).inScenario("retry")
+                .whenScenarioStateIs("state-3")
+                .willReturn(aResponse()
+                    .withStatus(HttpStatus.OK_200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(OBJECT_MAPPER.writeValueAsString(AUTH_STATUS_FAILED_RESPONSE))
                 )
         );
     }
