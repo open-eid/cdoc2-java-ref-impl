@@ -213,8 +213,6 @@ class TarDeflateTest implements TestLifecycleLogger {
     @Test
     void testCheckDiskSpaceAvailableDoesNotThrowWhenUsageBelowThreshold(@TempDir Path tempDir) {
         // might cause other tests to fail, if tests executed parallel
-        // threshold set unrealistically high so the test dir's actual disk usage is always below it;
-        // catches the used/free percentage mix-up that the low-threshold test above cannot detect
         System.setProperty(DISK_USAGE_THRESHOLD_PROPERTY, "99.99");
 
         assertDoesNotThrow(() -> testExtract(tempDir));
