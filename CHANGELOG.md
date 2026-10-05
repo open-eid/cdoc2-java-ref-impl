@@ -12,7 +12,7 @@
 * Increased all default client read and connect timeouts to 5000ms
 * Improved feedback when auth process does not complete successfully
 * New command line option `--truncate-display-text`. When specified, display text will be 
-  automatically truncated to SID/MID maximum allwowd lenght. Not truncation is performed by default.
+  automatically truncated to SID/MID maximum allowed length. No truncation is performed by default.
 
 ### Bug Fixes
 * Fix bug with disk size checks, when path/partiton doesn't exist
