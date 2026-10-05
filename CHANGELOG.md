@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.5.2]
+### Improvements
+* Directory accessibility check operates correctly on multiple platforms
+* Update to auth-server and rp-server Openapi interfaces
+
+### Maven package versions:
+```
+cdoc2 3.5.1
+cdoc2-schema 2.1.0
+cdoc2-lib 3.7.3
+cdoc2-client 2.3.2
+cdoc2-cli 1.9.4
+```
+
 ## [3.5.1]
 ### Improvements
 * Add additional check to make sure the decrypted file can fit on the disc.
@@ -23,7 +37,7 @@
 cdoc2 3.5.1
 cdoc2-schema 2.1.0
 cdoc2-lib 3.7.2
-cdoc2-client 2.3.2
+cdoc2-client 2.3.1
 cdoc2-cli 1.9.3
 ```
 
